@@ -1,0 +1,8 @@
+# ignore data files
+*.[ct]sv
+*.zip
+*.tar
+*.gz
+
+# ignore byte compiled files
+*.py[co]
