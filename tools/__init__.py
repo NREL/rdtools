@@ -1,1 +1,0 @@
-from energy_normalization import normalize_with_sapm
