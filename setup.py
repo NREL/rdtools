@@ -23,12 +23,16 @@ AUTHOR = 'Rdtools Python Developers'
 MAINTAINER_EMAIL = 'adam.b.shinn@gmail.com'
 URL = 'https://github.com/kwhanalytics/rdtools'
 
-INSTALL_REQUIRES = ['numpy >= 1.9.0',
-                    'pandas >= 0.14.0',
-                    'pvlib >= 0.4.1',
-                    'pytz',
-                    'six']
-TESTS_REQUIRE = ['pytest', 'nose']
+INSTALL_REQUIRES = [
+    'numpy >= 1.11.0',
+    'pandas >= 0.19.0',
+    'pvlib >= 0.4.1',
+    'nose >= 1.3.7',
+    'pytz',
+    'six',
+]
+
+TESTS_REQUIRE = ['nose']
 
 CLASSIFIERS = [
     'Development Status :: 1 - Beta',
