@@ -9,7 +9,7 @@ import pandas as pd
 import numpy as np
 
 
-def rd_with_ols(normalized_energy):
+def degradation_with_ols(normalized_energy):
     '''
     Description
 
