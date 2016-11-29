@@ -7,6 +7,7 @@ photovoltaic systems.
 from __future__ import division
 import pandas as pd
 import numpy as np
+import statsmodels.api as sm
 
 
 def degradation_with_ols(normalized_energy):
@@ -26,23 +27,31 @@ def degradation_with_ols(normalized_energy):
 
     y = normalized_energy
 
-    if pd.infer_freq(normalized_energy.index) == 'MS':
+    if pd.infer_freq(normalized_energy.index) == 'MS' and len(y) > 12:
         y = y.rolling(12, center=True).mean()
 
-    y = y.dropna()  # remove NaN values
-    x = pd.Series(np.arange(0, len(y)), index=y.index)  # integer-months
+    # remove NaN values
+    y = y.dropna()
 
-    results = pd.ols(y=y, x=x)
+    # integer-months
+    months = np.arange(0, len(y))
+    X = sm.add_constant(months)
+    columns = ['constant', 'months']
+    exog = pd.DataFrame(X, index=y.index, columns=columns)
 
-    m, b = results.sm_ols.params
+    ols_model = sm.OLS(endog=y, exog=exog, hasconst=True)
+    results = ols_model.fit()
+
+    # collect intercept and slope
+    b, m = results.params
 
     Rd = (m * 12) / b
 
     N = len(y)
-    rmse = np.sqrt(np.power(y - results.predict(x=x), 2).sum() / N)
-    SE_m = rmse * np.sqrt((1/N) + np.power(x.mean(), 2)
-                          / np.power(x - x.mean(), 2).sum())
-    SE_b = rmse * np.sqrt(1 / np.power(x - x.mean(), 2).sum())
+    rmse = np.sqrt(np.power(y - results.predict(exog=exog), 2).sum() / N)
+    SE_m = rmse * np.sqrt((1/N) + np.power(months.mean(), 2)
+                          / np.power(months - months.mean(), 2).sum())
+    SE_b = rmse * np.sqrt(1 / np.power(months - months.mean(), 2).sum())
     SE_Rd = np.power(SE_m * 12/b, 2) + np.power((-12*m / b**2) * SE_b, 2)
 
     degradation = {
