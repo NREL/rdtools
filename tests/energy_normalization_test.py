@@ -80,6 +80,7 @@ class EnergyNormalizationTestCase(unittest.TestCase):
                                           self.irrad)
 
         # Test output is same frequency and length as energy
+        self.assertEqual(corr_energy.index.freq, self.energy.index.freq)
         self.assertEqual(len(corr_energy), 13)
 
         # edge cases

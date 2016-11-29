@@ -17,7 +17,7 @@ def degradation_with_ols(normalized_energy):
     Parameters
     ----------
     normalized_energy: Pandas Series (numeric)
-        Energy time series to be normalized.
+        Monthly time series of normalized system ouput.
 
     Returns
     -------
@@ -28,6 +28,7 @@ def degradation_with_ols(normalized_energy):
     y = normalized_energy
 
     if pd.infer_freq(normalized_energy.index) == 'MS' and len(y) > 12:
+        # apply 12-month rolling mean
         y = y.rolling(12, center=True).mean()
 
     # remove NaN values
