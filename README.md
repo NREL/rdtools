@@ -3,8 +3,24 @@ Degradation Tools
 
 Python tools for photovoltaic degradation analysis.
 
-## TODO
+## Install using pip
 
-- Add repository and dependency install instructions.
-- Add tool tests.
-- Provide usage examples.
+1. Clone or download the rdtools repository.
+2. Navigate to repository: `cd rdtools`
+3. Install via pip: `pip install .`
+
+## Usage
+
+```
+import rdtools
+```
+
+More usage examples to come...
+
+## Unit tests
+
+Run unit tests via nose in the main directory.
+
+```bash
+$ nosetests
+```
