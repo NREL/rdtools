@@ -62,7 +62,7 @@ def degradation_with_ols(normalized_energy):
     tss_months = np.power(months - months.mean(), 2).sum()
 
     # standard error of the slope and intercept
-    stderr_b = rmse * np.sqrt((1/N) + np.power(months.mean(), 2) / tss_months)
+    stderr_b = rmse * np.sqrt((1/(N-1)) + months.mean()**2 / tss_months)
     stderr_m = rmse * np.sqrt(1 / tss_months)
 
     # standard error of the regression
