@@ -32,6 +32,38 @@ def normalize_with_sapm(pvlib_pvsystem, energy, irradiance):
         Energy divided by Sandia Model DC energy.
     '''
 
+    if energy.index.freq is None:
+        freq = pd.infer_freq(energy.index)
+    else:
+        freq = energy.index.freq
+
+    p_dc = sapm_dc_power(pvlib_pvsystem, irradiance)
+
+    energy_dc = p_dc.resample(freq).sum()
+    normalized_energy = energy / energy_dc
+
+    return normalized_energy
+
+
+def sapm_dc_power(pvlib_pvsystem, irradiance):
+    '''
+    Use Sandia Array Performance Model (SAPM) to compute
+    the effective DC power using measured irradiance, ambient temperature, and
+    wind speed.
+
+    Parameters
+    ----------
+    pvlib_pvsystem: pvlib-python LocalizedPVSystem object
+        Object contains orientation, geographic coordinates, equipment constants.
+    irradiance: Pandas DataFrame (numeric)
+        Measured irradiance components, ambient temperature, and wind speed.
+
+    Returns
+    -------
+    p_dc: Pandas Series (numeric)
+        DC power derived using Sandia Array Performance Model.
+    '''
+
     solar_position = pvlib_pvsystem.get_solarposition(irradiance.index)
 
     total_irradiance = pvlib_pvsystem\
@@ -65,12 +97,4 @@ def normalize_with_sapm(pvlib_pvsystem, energy, irradiance):
         .pvwatts_dc(g_poa_effective=effective_poa,
                     temp_cell=temp_cell['temp_cell'])
 
-    if energy.index.freq is None:
-        freq = pd.infer_freq(energy.index)
-    else:
-        freq = energy.index.freq
-
-    energy_dc = p_dc.resample(freq).sum()
-    normalized_energy = energy / energy_dc
-
-    return normalized_energy
+    return p_dc

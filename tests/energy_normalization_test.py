@@ -7,6 +7,7 @@ import numpy as np
 import pvlib
 
 from rdtools.energy_normalization import normalize_with_sapm
+from rdtools.energy_normalization import sapm_dc_power
 
 
 class EnergyNormalizationTestCase(unittest.TestCase):
@@ -72,24 +73,28 @@ class EnergyNormalizationTestCase(unittest.TestCase):
     def tearDown(self):
         pass
 
+    def test_sapm_dc_power(self):
+        ''' Test SAPM DC power. '''
+
+        dc_power = sapm_dc_power(self.pvsystem, self.irrad)
+        self.assertEqual(self.irrad.index.freq, dc_power.index.freq)
+        self.assertEqual(self.irrad, len(dc_power))
+
     def test_normalization_with_sapm(self):
         ''' Test SAPM normalization. '''
 
-        corr_energy = normalize_with_sapm(self.pvsystem,
-                                          self.energy,
-                                          self.irrad)
+        corr_energy = normalize_with_sapm(self.pvsystem, self.energy, self.irrad)
 
         # Test output is same frequency and length as energy
         self.assertEqual(corr_energy.index.freq, self.energy.index.freq)
         self.assertEqual(len(corr_energy), 13)
 
-        # edge cases
+        # TODO, test for:
         #     incorrect data format
         #     incomplete data
         #     missing pvsystem metadata
         #     missing measured irradiance data
         #     irradiance freq > energy freq, issue/warining?
-        # test output
 
 if __name__ == '__main__':
     unittest.main()
