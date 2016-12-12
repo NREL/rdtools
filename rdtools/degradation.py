@@ -34,35 +34,49 @@ def degradation_with_ols(normalized_energy):
     # remove NaN values
     y = y.dropna()
 
-    # integer-months
+    # number of examples
+    N = len(y)
+
+    # integer-months, the exogeneous variable
     months = np.arange(0, len(y))
+
+    # add intercept-constant to the exogeneous variable
     X = sm.add_constant(months)
     columns = ['constant', 'months']
     exog = pd.DataFrame(X, index=y.index, columns=columns)
 
+    # fit linear model
     ols_model = sm.OLS(endog=y, exog=exog, hasconst=True)
     results = ols_model.fit()
 
     # collect intercept and slope
     b, m = results.params
 
-    Rd = (m * 12) / b
+    # rate of degradation in terms of percent/year
+    Rd_pct = 100 * (m * 12) / b
 
-    N = len(y)
-    rmse = np.sqrt(np.power(y - results.predict(exog=exog), 2).sum() / N)
-    SE_m = rmse * np.sqrt((1/N) + np.power(months.mean(), 2)
-                          / np.power(months - months.mean(), 2).sum())
-    SE_b = rmse * np.sqrt(1 / np.power(months - months.mean(), 2).sum())
-    SE_Rd = np.power(SE_m * 12/b, 2) + np.power((-12*m / b**2) * SE_b, 2)
+    # root mean square error
+    rmse = np.sqrt(np.power(y - results.predict(exog=exog), 2).sum() / (N - 2))
+
+    # total sum of squares of the time variable
+    tss_months = np.power(months - months.mean(), 2).sum()
+
+    # standard error of the slope and intercept
+    stderr_b = rmse * np.sqrt((1/(N-1)) + months.mean()**2 / tss_months)
+    stderr_m = rmse * np.sqrt(1 / tss_months)
+
+    # standard error of the regression
+    stderr_Rd = np.sqrt((stderr_m * 12/b)**2 + ((-12*m / b**2) * stderr_b)**2)
+    stderr_Rd_pct = 100 * stderr_Rd
 
     degradation = {
-        'Rd': Rd,
+        'Rd_pct': Rd_pct,
         'slope': m,
         'intercept': b,
         'rmse': rmse,
-        'slope_stderr': SE_m,
-        'intercept_stderr': SE_b,
-        'Rd_stderr': SE_Rd,
+        'slope_stderr': stderr_m,
+        'intercept_stderr': stderr_b,
+        'Rd_stderr_pct': stderr_Rd_pct,
     }
 
     return degradation
