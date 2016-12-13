@@ -1,4 +1,4 @@
-""" Energy Normalization Tests. """
+""" Energy Normalization with SAPM Tests. """
 
 import unittest
 
@@ -10,7 +10,7 @@ from rdtools.energy_normalization import normalize_with_sapm
 from rdtools.energy_normalization import sapm_dc_power
 
 
-class EnergyNormalizationTestCase(unittest.TestCase):
+class SapmNormalizationTestCase(unittest.TestCase):
     ''' Unit tests for energy_normalization module. '''
 
     def setUp(self):
@@ -78,7 +78,7 @@ class EnergyNormalizationTestCase(unittest.TestCase):
 
         dc_power = sapm_dc_power(self.pvsystem, self.irrad)
         self.assertEqual(self.irrad.index.freq, dc_power.index.freq)
-        self.assertEqual(self.irrad, len(dc_power))
+        self.assertEqual(len(self.irrad), len(dc_power))
 
     def test_normalization_with_sapm(self):
         ''' Test SAPM normalization. '''
