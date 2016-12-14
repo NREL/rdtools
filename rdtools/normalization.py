@@ -8,6 +8,46 @@ import pandas as pd
 import pvlib
 
 
+def pvwatts_dc_power(poa_global, P_stc, T_cell=None,
+                     G_stc=1000, T_stc=25, gamma_pdc=None):
+    '''
+    PVWatts v5 Module Model: DC power given effective poa irradiance, module
+    nameplate power, and cell temperature.
+
+    Note: If either T_cell or gamma_pdc is not provided, the temperature term
+          will be ignored.
+
+    Parameters
+    ----------
+    poa_global: Pandas Series (numeric)
+        Total effective plane of array irradiance.
+    P_stc: numeric
+        Module nameplate power at standard test condition.
+    T_cell: Pandas Series (numeric)
+        Measured or derived cell temperature [degrees celsius].
+        Time series assumed to be same frequency as poa_global.
+    G_stc: numeric, default value is 1000
+        Reference irradiance at standard test condition [W/m**2].
+    T_stc: numeric, default value is 25
+        Reference temperature at standard test condition [degrees celsius].
+    gamma_pdc: numeric, default is None
+        Linear array efficiency temperature coefficient [1 / degree celsius].
+
+    Returns
+    -------
+    p_dc: Pandas Series (numeric)
+        DC power determined by PVWatts v5 equation.
+    '''
+
+    dc_power = P_stc * poa_global / G_stc
+
+    if T_cell is not None and gamma_pdc is not None:
+        temperature_factor = 1 + gamma_pdc*(T_cell - T_stc)
+        dc_power = dc_power * temperature_factor
+
+    return dc_power
+
+
 def normalize_with_sapm(pvlib_pvsystem, energy, irradiance):
     '''
     Normalize system AC energy output given measured irradiance and
