@@ -237,3 +237,129 @@ def degradation_year_on_year(normalized_energy):
       
     # End YOY approach
     ################################################################################################################################
+
+      
+def degradation_ARIMA(normalized_energy):
+    # (Rd_decomp,SE_Rd_decomp,test_trend,p,df4) = classical_decomposition(normalized_energy,Month)
+    #
+    # ARIMA seasonal decomponsition method using statsmodel.api
+    # from Dirk Jordan (NREL) 12/10/16
+    # input parameters:  
+    #       dataframe['normalized_energy'] : corrected performance ratio.
+    #output parameters:
+    #   (Rd_decomp,SE_Rd_decomp,test_trend,p) : tuple of annual degradation rate and standard error
+    # TODO:  check timebase for other input time options (day, week)    
+
+    ################################################################################################################################
+    # ARIMA approach - Seasonal decompostion is a special type of ARIMA model   
+
+    # deal with missing values
+    #y = y.interpolate(inplace=True)
+    
+    res = sm.tsa.seasonal_decompose(normalized_energy, freq=12)
+    #resplot = res.plot()         
+    y_decomp = res.trend.dropna()        
+    df4 = pd.DataFrame({'MS':y_decomp.index,'normalized_energy':y_decomp.values})
+    df4['Month'] = range(0, len(df4))
+    y3=df4['normalized_energy']
+    x3=df4['Month']           
+    
+    
+    
+    if len(df4) <=2:
+        Rd_decomp = 11111
+        SE_Rd_decomp = 11111
+        test_trend = 11111
+        p = 11111
+        print '\nNot enough data for ARIMA decomposition:'
+       
+    else:
+ 
+       # OLS regression with constant
+        x3=sm.add_constant(x3)
+        model3 = sm.OLS(y3,x3).fit()
+    
+        b_decomp = model3.params['const']
+        m_decomp = model3.params['Month']
+        SE_b_decomp = model3.bse['const']
+        SE_m_decomp = model3.bse['Month']
+    
+        Rd_decomp = (m_decomp * 12) / b_decomp * 100
+        SE_Rd_decomp = np.sqrt(np.power(SE_m_decomp * 12/b_decomp, 2) + np.power((-12*m_decomp/b_decomp**2) * SE_b_decomp, 2))*100
+
+        #print '\nDegradation and Standard Error of ARIMA decomposition:'
+        #print 'Rd = {:.2f} +/- {:.2f}'.format(Rd_decomp, SE_Rd_decomp)              
+       
+        test_trend,h,p,z = _mk_test(y_decomp,alpha=0.05)  
+        #print test_trend, h, p    
+    
+        
+        degradation_values = {
+        'Rd_pct': Rd_decomp,
+        'test_trend': test_trend,
+        'p': p,
+        #'rmse': rmse,
+        #'slope_stderr': stderr_m,
+        #'intercept_stderr': stderr_b,
+        'Rd_stderr_pct': SE_Rd_decomp,
+        'Dataframe':df4,
+        }
+    return(degradation_values)
+
+
+    
+    
+#Mann-Kendall test of significance for trend (used in ARIMA function)
+def _mk_test(x, alpha = 0.05):  
+
+#    Input:
+#        x:   a vector of data
+#        alpha: significance level (0.05 default)
+#    Output:
+#        trend: tells the trend (increasing, decreasing or no trend)
+#        h: True (if trend is present) or False (if trend is absence)
+#        p: p value of the significance test
+#        z: normalized test statistics 
+
+    from scipy.stats import norm
+    
+    n = len(x)
+
+    # calculate S 
+    s = 0
+    for k in range(n-1):
+        for j in range(k+1,n):
+            s += np.sign(x[j] - x[k])
+
+    # calculate the unique data
+    unique_x = np.unique(x)
+    g = len(unique_x)
+
+    # calculate the var(s)
+    if n == g: # there is no tie
+        var_s = (n*(n-1)*(2*n+5))/18
+    else: # there are some ties in data
+        tp = np.zeros(unique_x.shape)
+        for i in range(len(unique_x)):
+            tp[i] = sum(unique_x[i] == x)
+        var_s = (n*(n-1)*(2*n+5) + np.sum(tp*(tp-1)*(2*tp+5)))/18
+
+    if s>0:
+        z = (s - 1)/np.sqrt(var_s)
+    elif s == 0:
+            z = 0
+    elif s<0:
+        z = (s + 1)/np.sqrt(var_s)
+
+    # calculate the p_value
+    p = 2*(1-norm.cdf(abs(z))) # two tail test
+    h = abs(z) > norm.ppf(1-alpha/2) 
+
+    if (z<0) and h:
+        trend = 'decreasing'
+    elif (z>0) and h:
+        trend = 'increasing'
+    else:
+        trend = 'no trend'
+
+    return trend, h, p, z
