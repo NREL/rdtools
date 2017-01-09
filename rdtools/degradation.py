@@ -186,14 +186,21 @@ def degradation_year_on_year(normalized_energy):
     ################################################################################################################################
     # YOY approach
     
-    # ensure we have monthly data
-    normalized_energy = normalized_energy.resample('MS').mean()
-    
-
+    # check the index frequency
+    freq = pd.infer_freq(normalized_energy.index)
+    if freq == 'MS': #monthly
+        YearSampleSize = 12
+    elif freq == 'W':
+        YearSampleSize = 52
+    elif freq == 'D':
+        YearSampleSize = 365
+    else:  #sample to daily by default
+        normalized_energy = normalized_energy.resample('D').mean()
+        YearSampleSize = 365
     #  year-on-year approach.
     YoYresult = []
-    for index in range(normalized_energy.size-12):
-        YoYresult.append( (normalized_energy[index+12]-normalized_energy[index])/+normalized_energy[index]*100 )
+    for index in range(normalized_energy.size-YearSampleSize):
+        YoYresult.append( (normalized_energy[index+YearSampleSize]-normalized_energy[index])/+normalized_energy[index]*100 )
     
     #print YoYresult    
     #YoY = pd.Series(YoYresult)
