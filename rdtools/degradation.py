@@ -109,21 +109,6 @@ def degradation_classical_decomposition(normalized_energy, interpolate_flag = Fa
     dataframe = normalized_energy.to_frame()
 
     ''' try to extract month information from the dataframe index. Fill missing data with median value '''
-    # try:
-    #    energy_median = normalized_energy.median()
-    #    dataframe = dataframe.resample('MS').mean()
-        
-    #    if interpolate_flag:
-    #        dataframe = dataframe.interpolate()    
-    #    else:  '''append the median value to missing months '''
-    #        dataframe = dataframe.fillna(value = energy_median)
-        
-    #    dataframe['Month'] = np.arange(0, len(dataframe))
-
-    # except:
-    #    ''' if you don't pass a datetime index, it assumes that there is data for each month '''
-    #    dataframe['Month'] = np.arange(0, len(dataframe))
-
     energy_median = normalized_energy.median()
 
     ''' check for DatetimeIndex '''    
@@ -216,9 +201,6 @@ def degradation_year_on_year(normalized_energy, freq = 'D'):
         raise Exception('Frequency {} not supported'.format(freq))
 
     '''  year-on-year approach '''
-    #YoYresult = []
-    #for index in range(normalized_energy.size - YearSampleSize):
-    #    YoYresult.append( (normalized_energy[index + YearSampleSize] - normalized_energy[index])/+normalized_energy[index] * 100 )
     YoYresult = normalized_energy.diff(YearSampleSize) / normalized_energy * 100
     
     def remove_outliers(x): 
