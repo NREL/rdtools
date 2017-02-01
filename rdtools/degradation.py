@@ -136,6 +136,7 @@ def degradation_classical_decomposition(normalized_energy, interpolate_flag = Fa
     # OLS regression with constant
     x2 = sm.add_constant(x2)
     model2 = sm.OLS(y2,x2).fit()
+    b_cd, m_cd = model2.params
     Rd_cd, SE_Rd_cd = ols_rd_uncertainty(model2)    
 
     print '\nDegradation and Standard Error of Classical decomposition:'
