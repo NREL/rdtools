@@ -30,44 +30,44 @@ def degradation_with_ols(normalized_energy):
     y = normalized_energy
 
     if pd.infer_freq(normalized_energy.index) == 'MS' and len(y) > 12:
-        ''' apply 12-month rolling mean '''
+        # apply 12-month rolling mean
         y = y.rolling(12, center = True).mean()
 
-    ''' remove NaN values '''
+    # remove NaN values
     y = y.dropna()
 
-    ''' number of examples '''
+    # number of examples
     N = len(y)
 
-    ''' integer-months, the exogeneous variable '''
+    # integer-months, the exogeneous variable
     months = np.arange(0, len(y))
 
-    ''' add intercept-constant to the exogeneous variable '''
+    # add intercept-constant to the exogeneous variable
     X = sm.add_constant(months)
     columns = ['constant', 'months']
     exog = pd.DataFrame(X, index = y.index, columns = columns)
 
-    ''' fit linear model '''
+    # fit linear model
     ols_model = sm.OLS(endog = y, exog = exog, hasconst = True)
     results = ols_model.fit()
 
-    ''' collect intercept and slope '''
+    # collect intercept and slope
     b, m = results.params
 
-    ''' rate of degradation in terms of percent/year '''
+    # rate of degradation in terms of percent/year
     Rd_pct = 100 * (m * 12) / b
 
-    ''' root mean square error '''
+    # root mean square error
     rmse = np.sqrt(np.power(y - results.predict(exog = exog), 2).sum() / (N - 2))
 
-    ''' total sum of squares of the time variable '''
+    # total sum of squares of the time variable
     tss_months = np.power(months - months.mean(), 2).sum()
 
-    ''' standard error of the slope and intercept '''
+    # standard error of the slope and intercept
     stderr_b = rmse * np.sqrt((1 / (N - 1)) + months.mean()**2 / tss_months)
     stderr_m = rmse * np.sqrt(1 / tss_months)
 
-    ''' standard error of the regression '''
+    # standard error of the regression
     stderr_Rd = np.sqrt((stderr_m * 12 / b)**2 + ((-12 * m / b**2) * stderr_b)**2)
     stderr_Rd_pct = 100 * stderr_Rd
 
@@ -108,20 +108,20 @@ def degradation_classical_decomposition(normalized_energy, interpolate_flag = Fa
     normalized_energy.name = 'normalized_energy'
     dataframe = normalized_energy.to_frame()
 
-    ''' try to extract month information from the dataframe index. Fill missing data with median value '''
+    # try to extract month information from the dataframe index. Fill missing data with median value
     energy_median = normalized_energy.median()
 
-    ''' check for DatetimeIndex '''    
+    # check for DatetimeIndex
     if isinstance(dataframe.index, pd.DatetimeIndex):
         dataframe = dataframe.resample('MS').mean()
         
         if interpolate_flag:
 	    dataframe = dataframe.interpolate()
         else:
-            '''append the median value to missing months '''
+            # append the median value to missing months
             dataframe = dataframe.fillna(value = energy_median)
 
-    ''' assume an array of months '''
+    # assume an array of months
     dataframe['Month'] = np.arange(0, len(dataframe))
 
     if pd.infer_freq(dataframe.index) == 'MS' and len(normalized_energy) > 12:
@@ -137,7 +137,7 @@ def degradation_classical_decomposition(normalized_energy, interpolate_flag = Fa
         print '\nNot enough data for seasonal decomposition:'
         return {}
         
-    ''' OLS regression with constant '''
+    # OLS regression with constant
     x2 = sm.add_constant(x2)
     model2 = sm.OLS(y2,x2).fit()
     Rd_cd, SE_Rd_cd = ols_rd_uncertainty(model2)    
@@ -178,29 +178,29 @@ def degradation_year_on_year(normalized_energy, freq = 'D'):
     '''
     
     if freq == 'MS':
-        ''' monthly (month start) '''
+        # monthly (month start)
         normalized_energy = normalized_energy.resample('MS').mean()
         YearSampleSize = 12
     elif freq == 'M':
-        ''' monthly (month end) '''
+        # monthly (month end)
         normalized_energy = normalized_energy.resample('M').mean()
         YearSampleSize = 12
     elif freq == 'W':
-        ''' weekly '''
+        # weekly
         normalized_energy = normalized_energy.resample('W').mean()
         YearSampleSize = 52
     elif freq == 'H':
-        ''' hourly '''
+        # hourly
         normalized_energy = normalized_energy.resample('H').mean()
         YearSampleSize = 8760
     elif freq in ['D', '30T', '15T', 'T']:
-        '''sample to daily by default '''
+        # sample to daily by default
         normalized_energy = normalized_energy.resample('D').mean()
         YearSampleSize = 365
     else:
         raise Exception('Frequency {} not supported'.format(freq))
 
-    '''  year-on-year approach '''
+    # year-on-year approach
     YoYresult = normalized_energy.diff(YearSampleSize) / normalized_energy * 100
     
     def remove_outliers(x): 
@@ -225,7 +225,7 @@ def degradation_year_on_year(normalized_energy, freq = 'D'):
   
     med1 = np.median(YoY_filtered1)                       
     
-    ''' bootstrap to determine 95% CI for the 2 different outlier removal methods '''
+    # bootstrap to determine 95% CI for the 2 different outlier removal methods
     n1 = len(YoY_filtered1)
     reps = 1000
     xb1 = np.random.choice(YoY_filtered1, (n1, reps), replace=True)
@@ -274,7 +274,7 @@ def degradation_ARIMA(normalized_energy):
         print '\nNot enough data for ARIMA decomposition:'
         return {}
        
-    ''' OLS regression with constant '''
+    # OLS regression with constant
     x3 = sm.add_constant(x3)
     model3 = sm.OLS(y3,x3).fit()
     Rd_decomp, SE_Rd_decomp = ols_rd_uncertainty(model3)    
@@ -314,22 +314,22 @@ def _mk_test(x, alpha = 0.05):
     
     n = len(x)
 
-    ''' calculate S '''
+    # calculate S
     s = 0
     for k in range(n - 1):
         for j in range(k + 1, n):
             s += np.sign(x[j] - x[k])
 
-    ''' calculate the unique data '''
+    # calculate the unique data
     unique_x = np.unique(x)
     g = len(unique_x)
 
-    ''' calculate the var(s) '''
+    # calculate the var(s)
     if n == g:
-        ''' there is no tie '''
+        # there is no tie
         var_s = (n * (n - 1) * (2 * n + 5))/18
     else:
-        ''' there are some ties in data '''
+        # there are some ties in data
         tp = np.zeros(unique_x.shape)
         for i in range(len(unique_x)):
             tp[i] = sum(unique_x[i] == x)
@@ -343,8 +343,7 @@ def _mk_test(x, alpha = 0.05):
     elif s < 0:
         z = (s + 1) / np.sqrt(var_s)
 
-    ''' calculate the p_value '''
-    ''' two tail test '''
+    # calculate the p_value for two tail test
     p = 2 * (1 - norm.cdf(abs(z)))
     h = abs(z) > norm.ppf(1 - alpha / 2) 
 
