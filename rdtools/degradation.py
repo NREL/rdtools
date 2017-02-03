@@ -18,54 +18,44 @@ def degradation_with_ols(normalized_energy):
 
     Parameters
     ----------
-    normalized_energy: Pandas Series (numeric)
-        Monthly time series of normalized system ouput.
+    normalized_energy: Pandas Time Series (numeric)
+        Daily or lower frequency time series of normalized system ouput.
 
     Returns
     -------
     degradation: dictionary
-        Contains degradation rate and standard errors of regression
+        Contains degradation rate (%/year), standard errors of regression, and the 
+        ols RegressionResults object
     '''
 
-    y = normalized_energy
-
-    # remove NaN values
-    y = y.dropna()
-
-    # number of examples
-    N = len(y)
-
-    # integer-months, the exogeneous variable
-    months = np.arange(0, len(y))
-
-    # add intercept-constant to the exogeneous variable
-    X = sm.add_constant(months)
-    columns = ['constant', 'months']
-    exog = pd.DataFrame(X, index = y.index, columns = columns)
-
-    # fit linear model
-    ols_model = sm.OLS(endog = y, exog = exog, hasconst = True)
+    normalized_energy.name = 'normalized_energy'
+    df = normalized_energy.to_frame()
+    
+    #calculate a years column as x value for regression, ignoreing leap years
+    day_diffs = (df.index - df.index[0])
+    df['days'] = day_diffs.astype('timedelta64[s]')/(60*60*24)
+    df['years'] = df.days/365.0
+    
+    #add intercept-constant to the exogeneous variable
+    df = sm.add_constant(df)
+    
+    #perform regression
+    ols_model = sm.OLS(endog = df.normalized_energy, exog = df.loc[:,['const','years']],
+                       hasconst = True, missing = 'drop' )
+    
     results = ols_model.fit()
-
+    
     # collect intercept and slope
     b, m = results.params
-
+    
     # rate of degradation in terms of percent/year
-    Rd_pct = 100 * (m * 12) / b
-
-    # root mean square error
-    rmse = np.sqrt(np.power(y - results.predict(exog = exog), 2).sum() / (N - 2))
-
-    # total sum of squares of the time variable
-    tss_months = np.power(months - months.mean(), 2).sum()
-
-    # standard error of the slope and intercept
-    stderr_b = rmse * np.sqrt((1 / (N - 1)) + months.mean()**2 / tss_months)
-    stderr_m = rmse * np.sqrt(1 / tss_months)
-
-    # standard error of the regression
-    stderr_Rd = np.sqrt((stderr_m * 12 / b)**2 + ((-12 * m / b**2) * stderr_b)**2)
-    stderr_Rd_pct = 100 * stderr_Rd
+    Rd_pct = 100.0 * m / b
+    
+    #Calculate RMSE
+    rmse = np.sqrt(results.mse_resid)
+    
+    #Collect standrd errors
+    stderr_b, stderr_m = results.bse
 
     degradation = {
         'Rd_pct': Rd_pct,
@@ -74,7 +64,7 @@ def degradation_with_ols(normalized_energy):
         'rmse': rmse,
         'slope_stderr': stderr_m,
         'intercept_stderr': stderr_b,
-        'Rd_stderr_pct': stderr_Rd_pct,
+        'ols_result': results
     }
 
     return degradation
