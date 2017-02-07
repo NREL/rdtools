@@ -23,9 +23,11 @@ def degradation_with_ols(normalized_energy):
 
     Returns
     -------
-    degradation: dictionary
-        Contains degradation rate (%/year), standard errors of regression, and the 
-        ols RegressionResults object
+    degradation_values: dictionary
+        Contains values for annual degradation rate as %/year ('Rd_pct'),
+        slope, intercept, root mean square error of regression ('rmse'),
+        standard error of the slope ('slope_stderr') and intercept ('intercept_stderr'),
+        and least squares RegressionResults object ('ols_results')
     '''
 
     normalized_energy.name = 'normalized_energy'
@@ -85,7 +87,7 @@ def degradation_classical_decomposition(normalized_energy):
     -------
     degradation_values: dictionary
         Contains values for annual degradation rate as %/year ('Rd_pct'),
-        slope, intercet, root mean square error of regression ('rmse'),
+        slope, intercept, root mean square error of regression ('rmse'),
         standard error of the slope ('slope_stderr') and intercept ('intercept_stderr'),
         least squares RegressionResults object ('ols_results'), and
         dataframe for the annual rolling mean ('dataframe')
