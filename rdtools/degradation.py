@@ -117,6 +117,10 @@ def degradation_classical_decomposition(normalized_energy):
     df['years_ma'] = years_ma
     df['energy_ma'] = energy_ma
     
+    #it no longer makes sense to keep the timestamps, the moving average
+    # may have shifted things
+    df= df.reset_index(drop=True)
+    
     #add intercept-constant to the exogeneous variable
     df = sm.add_constant(df)
     
