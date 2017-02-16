@@ -7,6 +7,6 @@ python-dateutil==2.6.0
 pytz==2016.7
 scipy==0.18.1
 six==1.10.0
-statsmodels==0.6.1
+statsmodels==0.8.0
 versioneer==0.17
 wsgiref==0.1.2
