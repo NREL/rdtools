@@ -82,6 +82,7 @@ def degradation_classical_decomposition(normalized_energy):
     ----------
     normalized_energy: Pandas Time Series (numeric)
         Daily or lower frequency time series of normalized system ouput.
+        Must be regular time series.
 
     Returns
     -------
@@ -90,7 +91,7 @@ def degradation_classical_decomposition(normalized_energy):
         slope, intercept, root mean square error of regression ('rmse'),
         standard error of the slope ('slope_stderr') and intercept ('intercept_stderr'),
         least squares RegressionResults object ('ols_results'), and
-        dataframe for the annual rolling mean ('dataframe')
+        pandas series for the annual rolling mean ('series')
     '''
     
     normalized_energy.name = 'normalized_energy'
@@ -100,32 +101,26 @@ def degradation_classical_decomposition(normalized_energy):
     day_diffs = (df.index - df.index[0])
     df['days'] = day_diffs.astype('timedelta64[s]')/(60*60*24)
     df['years'] = df.days/365.0
+
+
     
-    #Compute rolling mean to isolate trend component using moving average
+    #Compute yearly rolling mean to isolate trend component using moving average
     it = df.iterrows()
-    years_ma = []
     energy_ma = []
     for i, row in it:
         if row.years-0.5 >= min(df.years) and row.years+0.5 <= max(df.years):
-            roll = df[(df.years < row.years+0.5) & (df.years > row.years-0.5)]
-            years_ma.append(roll.years.mean())
+            roll = df[(df.years <= row.years+0.5) & (df.years >= row.years-0.5)]
             energy_ma.append(roll.normalized_energy.mean())
         else:
-            years_ma.append(np.nan)
             energy_ma.append(np.nan)
     
-    df['years_ma'] = years_ma
     df['energy_ma'] = energy_ma
-    
-    #it no longer makes sense to keep the timestamps, the moving average
-    # may have shifted things
-    df= df.reset_index(drop=True)
     
     #add intercept-constant to the exogeneous variable
     df = sm.add_constant(df)
     
     #perform regression
-    ols_model = sm.OLS(endog = df.energy_ma, exog = df.loc[:,['const','years_ma']],
+    ols_model = sm.OLS(endog = df.energy_ma, exog = df.loc[:,['const','years']],
                        hasconst = True, missing = 'drop' )
     
     results = ols_model.fit()
@@ -150,7 +145,7 @@ def degradation_classical_decomposition(normalized_energy):
         'slope_stderr': stderr_m,
         'intercept_stderr': stderr_b,
         'ols_result': results,
-        'dataframe': df.loc[:, ['years_ma', 'energy_ma']]
+        'series': df.energy_ma
     }
 
     return degradation
