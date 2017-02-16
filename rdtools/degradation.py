@@ -90,8 +90,9 @@ def degradation_classical_decomposition(normalized_energy):
         Contains values for annual degradation rate as %/year ('Rd_pct'),
         slope, intercept, root mean square error of regression ('rmse'),
         standard error of the slope ('slope_stderr') and intercept ('intercept_stderr'),
-        least squares RegressionResults object ('ols_results'), and
-        pandas series for the annual rolling mean ('series')
+        least squares RegressionResults object ('ols_results'),
+        pandas series for the annual rolling mean ('series'),
+        Mann-Kendall test trend ('mk_test_trend')
     '''
     
     normalized_energy.name = 'normalized_energy'
@@ -137,6 +138,9 @@ def degradation_classical_decomposition(normalized_energy):
     #Collect standrd errors
     stderr_b, stderr_m = results.bse
 
+    #Perform Mann-Kendall 
+    test_trend, h, p, z = _mk_test(df.energy_ma.dropna(), alpha=0.05)
+
     degradation = {
         'Rd_pct': Rd_pct,
         'slope': m,
@@ -145,7 +149,8 @@ def degradation_classical_decomposition(normalized_energy):
         'slope_stderr': stderr_m,
         'intercept_stderr': stderr_b,
         'ols_result': results,
-        'series': df.energy_ma
+        'series': df.energy_ma,
+        'mk_test_trend': test_trend
     }
 
     return degradation
