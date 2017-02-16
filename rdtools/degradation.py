@@ -246,51 +246,6 @@ def degradation_year_on_year(normalized_energy, freq = 'D'):
         }
     return degradation_values
       
-def degradation_ARIMA(normalized_energy):
-    '''
-    Description
-    -----------
-    ARIMA approach - Seasonal decompostion is a special type of ARIMA model
-
-    Parameters
-    ----------
-    normalized_energy: Pandas data series (numeric) containing corrected performance ratio
-
-    Returns
-    -------
-    degradation_values: dictionary
-        Contains values for annual degradation rate and standard error
-        'Rd_pct', 'test_trend', 'p', 'Rd_stderr_pct', 'dataframe'
-    '''
-    res = sm.tsa.seasonal_decompose(normalized_energy, freq=12)
-    y_decomp = res.trend.dropna()        
-    df4 = pd.DataFrame({'MS':y_decomp.index,'normalized_energy':y_decomp.values})
-    df4['Month'] = range(0, len(df4))
-    y3=df4['normalized_energy']
-    x3=df4['Month']           
-    
-    
-    
-    if len(df4) <=2:
-        print '\nNot enough data for ARIMA decomposition:'
-        return {}
-       
-    # OLS regression with constant
-    x3 = sm.add_constant(x3)
-    model3 = sm.OLS(y3,x3).fit()
-    Rd_decomp, SE_Rd_decomp = ols_rd_uncertainty(model3)    
-
-    test_trend,h,p,z = _mk_test(y_decomp, alpha = 0.05)  
-        
-    degradation_values = {
-    'Rd_pct': Rd_decomp,
-    'test_trend': test_trend,
-    'p': p,
-    'Rd_stderr_pct': SE_Rd_decomp,
-    'Dataframe':df4,
-    }
-    return degradation_values
-    
     
 def _mk_test(x, alpha = 0.05):  
     '''
