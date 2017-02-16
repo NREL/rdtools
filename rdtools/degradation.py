@@ -312,31 +312,4 @@ def _mk_test(x, alpha = 0.05):
 
     return trend, h, p, z
 
-def ols_rd_uncertainty(ols_model):
-    '''
-    Description
-    -----------
-    OLS uncertainty calculation
 
-    Parameters
-    ----------
-    a simple ordinary least squares model created using
-    statsmodel.api.OLS 
-
-    Returns
-    -------
-    Rd_decomp: float, annual degradation rate (in percentage)
-    SE_Rd_decomp: float, standard error of annual degradation rate (in percentage)
-    '''
-
-    model = ols_model
-
-    b_decomp = model.params['const']
-    m_decomp = model.params['Month']
-    SE_b_decomp = model.bse['const']
-    SE_m_decomp = model.bse['Month']
-    
-    Rd_decomp = (m_decomp * 12) / b_decomp * 100
-    SE_Rd_decomp = np.sqrt(np.power(SE_m_decomp * 12 / b_decomp, 2) + np.power((- 12 * m_decomp / b_decomp**2) * SE_b_decomp, 2))*100
-
-    return Rd_decomp, SE_Rd_decomp
