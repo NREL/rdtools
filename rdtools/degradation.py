@@ -26,8 +26,8 @@ def degradation_ols(normalized_energy):
     degradation_values: dictionary
         Contains values for annual degradation rate as %/year ('Rd_pct'),
         slope, intercept, root mean square error of regression ('rmse'),
-        standard error of the slope ('slope_stderr') and intercept ('intercept_stderr'),
-        and least squares RegressionResults object ('ols_results')
+        standard error of the slope ('slope_stderr'), intercept ('intercept_stderr'),
+        68.2% confidence interval in Rd, and least squares RegressionResults object ('ols_results')
     '''
 
     normalized_energy.name = 'normalized_energy'
@@ -59,6 +59,11 @@ def degradation_ols(normalized_energy):
     #Collect standrd errors
     stderr_b, stderr_m = results.bse
 
+    #Monte Carlo for error in degradation rate
+    dist = [z[1]/z[0] for z in np.random.multivariate_normal(results.params, results.cov_params(), 10000)]
+    Rd_CI = np.percentile(dist, [50-34.1, 50+34.1])*100.0
+
+
     degradation = {
         'Rd_pct': Rd_pct,
         'slope': m,
@@ -66,7 +71,8 @@ def degradation_ols(normalized_energy):
         'rmse': rmse,
         'slope_stderr': stderr_m,
         'intercept_stderr': stderr_b,
-        'ols_result': results
+        'ols_result': results,
+        'Rd_CI': Rd_CI
     }
 
     return degradation
@@ -90,6 +96,7 @@ def degradation_classical_decomposition(normalized_energy):
         Contains values for annual degradation rate as %/year ('Rd_pct'),
         slope, intercept, root mean square error of regression ('rmse'),
         standard error of the slope ('slope_stderr') and intercept ('intercept_stderr'),
+        the 68.2% confidence interval for Rd ('Rd_CI'),
         least squares RegressionResults object ('ols_results'),
         pandas series for the annual rolling mean ('series'),
         Mann-Kendall test trend ('mk_test_trend')
@@ -147,8 +154,13 @@ def degradation_classical_decomposition(normalized_energy):
     #Perform Mann-Kendall 
     test_trend, h, p, z = _mk_test(df.energy_ma.dropna(), alpha=0.05)
 
+    #Monte Carlo for error in degradation rate
+    dist = [z[1]/z[0] for z in np.random.multivariate_normal(results.params, results.cov_params(), 10000)]
+    Rd_CI = np.percentile(dist, [50-34.1, 50+34.1])*100.0
+
     degradation = {
         'Rd_pct': Rd_pct,
+        'Rd_CI':Rd_CI,
         'slope': m,
         'intercept': b,
         'rmse': rmse,
@@ -232,7 +244,7 @@ def degradation_year_on_year(normalized_energy, freq = 'D'):
   
     med1 = np.median(YoY_filtered1)                       
     
-    # bootstrap to determine 95% CI for the 2 different outlier removal methods
+    # bootstrap to determine 68% CI for the 2 different outlier removal methods
     n1 = len(YoY_filtered1)
     reps = 1000
     xb1 = np.random.choice(YoY_filtered1, (n1, reps), replace=True)
