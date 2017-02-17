@@ -98,12 +98,18 @@ def degradation_classical_decomposition(normalized_energy):
     normalized_energy.name = 'normalized_energy'
     df = normalized_energy.to_frame()
     
+    df_check_freq = df.copy()
+
+    df_check_freq = df_check_freq.dropna()
+
+    if df_check_freq.index.freq is None:
+        raise ValueError('Classical decomposition requires a regular time series with'
+                         ' defined frequency and no missing data.')
+
     #calculate a years column as x value for regression, ignoreing leap years
     day_diffs = (df.index - df.index[0])
     df['days'] = day_diffs.astype('timedelta64[s]')/(60*60*24)
     df['years'] = df.days/365.0
-
-
     
     #Compute yearly rolling mean to isolate trend component using moving average
     it = df.iterrows()
