@@ -257,7 +257,7 @@ def _mk_test(x, alpha = 0.05):
     '''
     Description
     -----------
-    Mann-Kendall test of significance for trend (used in ARIMA function)
+    Mann-Kendall test of significance for trend (used in classical decomposition function)
 
     Parameters
     ----------
