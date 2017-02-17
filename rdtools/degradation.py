@@ -10,7 +10,7 @@ import numpy as np
 import statsmodels.api as sm
 
 
-def degradation_with_ols(normalized_energy):
+def degradation_ols(normalized_energy):
     '''
     Description
     -----------
