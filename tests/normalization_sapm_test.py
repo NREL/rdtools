@@ -1,4 +1,4 @@
-""" Energy Normalization with SAPM Tests. """
+""" Energy Normalization with SAPM Unit Tests. """
 
 import unittest
 
@@ -6,12 +6,12 @@ import pandas as pd
 import numpy as np
 import pvlib
 
-from rdtools.energy_normalization import normalize_with_sapm
-from rdtools.energy_normalization import sapm_dc_power
+from rdtools.normalization import normalize_with_sapm
+from rdtools.normalization import sapm_dc_power
 
 
 class SapmNormalizationTestCase(unittest.TestCase):
-    ''' Unit tests for energy_normalization module. '''
+    ''' Unit tests for energy normalization module. '''
 
     def setUp(self):
         # define module constants and parameters
@@ -83,7 +83,12 @@ class SapmNormalizationTestCase(unittest.TestCase):
     def test_normalization_with_sapm(self):
         ''' Test SAPM normalization. '''
 
-        corr_energy = normalize_with_sapm(self.pvsystem, self.energy, self.irrad)
+        sapm_kws = {
+            'pvlib_pvsystem': self.pvsystem,
+            'irradiance': self.irrad,
+        }
+
+        corr_energy = normalize_with_sapm(self.energy, sapm_kws)
 
         # Test output is same frequency and length as energy
         self.assertEqual(corr_energy.index.freq, self.energy.index.freq)

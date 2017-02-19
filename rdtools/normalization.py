@@ -98,10 +98,10 @@ def normalize_with_pvwatts(energy, pvwatts_kws):
     return normalized_energy
 
 
-def sapm_dc_power(pvlib_pvsystem, poa_global):
+def sapm_dc_power(pvlib_pvsystem, irradiance):
     '''
     Use Sandia Array Performance Model (SAPM) to compute
-    the effective DC power using measured poa_global, ambient temperature, and
+    the effective DC power using measured irradiance, ambient temperature, and
     wind speed.
 
     Parameters
@@ -109,8 +109,8 @@ def sapm_dc_power(pvlib_pvsystem, poa_global):
     pvlib_pvsystem: pvlib-python LocalizedPVSystem object
         Object contains orientation, geographic coordinates, equipment
         constants.
-    poa_global: Pandas DataFrame (numeric)
-        Measured poa_global components, ambient temperature, and wind speed.
+    irradiance: Pandas DataFrame (numeric)
+        Measured irradiance components, ambient temperature, and wind speed.
 
     Returns
     -------
@@ -118,14 +118,14 @@ def sapm_dc_power(pvlib_pvsystem, poa_global):
         DC power derived using Sandia Array Performance Model.
     '''
 
-    solar_position = pvlib_pvsystem.get_solarposition(poa_global.index)
+    solar_position = pvlib_pvsystem.get_solarposition(irradiance.index)
 
     total_irradiance = pvlib_pvsystem\
-        .get_poa_global(solar_position['zenith'],
+        .get_irradiance(solar_position['zenith'],
                         solar_position['azimuth'],
-                        poa_global['DNI'],
-                        poa_global['GHI'],
-                        poa_global['DHI'])
+                        irradiance['DNI'],
+                        irradiance['GHI'],
+                        irradiance['DHI'])
 
     aoi = pvlib_pvsystem.get_aoi(solar_position['zenith'],
                                  solar_position['azimuth'])
@@ -135,17 +135,17 @@ def sapm_dc_power(pvlib_pvsystem, poa_global):
     airmass_absolute = airmass['airmass_absolute']
 
     effective_poa = pvlib.pvsystem\
-        .sapm_effective_poa_global(poa_direct=total_irradiance['poa_direct'],
+        .sapm_effective_irradiance(poa_direct=total_irradiance['poa_direct'],
                                    poa_diffuse=total_irradiance['poa_diffuse'],
                                    airmass_absolute=airmass_absolute,
                                    aoi=aoi,
                                    module=pvlib_pvsystem.module,
-                                   reference_poa_global=1)
+                                   reference_irradiance=1)
 
     temp_cell = pvlib_pvsystem\
         .sapm_celltemp(irrad=total_irradiance['poa_global'],
-                       wind=poa_global['Wind Speed'],
-                       temp=poa_global['Temperature'])
+                       wind=irradiance['Wind Speed'],
+                       temp=irradiance['Temperature'])
 
     dc_power = pvlib_pvsystem\
         .pvwatts_dc(g_poa_effective=effective_poa,
@@ -156,12 +156,12 @@ def sapm_dc_power(pvlib_pvsystem, poa_global):
 
 def normalize_with_sapm(energy, sapm_kws):
     '''
-    Normalize system AC energy output given measured poa_global and
+    Normalize system AC energy output given measured irradiance and
     meteorological data. This method relies on the Sandia Array Performance
-    Model (SAPM) to compute the effective DC energy using measured poa_global,
+    Model (SAPM) to compute the effective DC energy using measured irradiance,
     ambient temperature, and wind speed.
 
-    Energy timeseries and poa_global timeseries can be different granularities.
+    Energy timeseries and irradiance timeseries can be different granularities.
 
     Parameters
     ----------
@@ -175,8 +175,8 @@ def normalize_with_sapm(energy, sapm_kws):
         pvlib_pvsystem: pvlib-python LocalizedPVSystem object
             Object contains orientation, geographic coordinates, equipment
             constants.
-        poa_global: Pandas DataFrame (numeric)
-            Measured poa_global, ambient temperature, and wind speed.
+        irradiance: Pandas DataFrame (numeric)
+            Measured irradiance, ambient temperature, and wind speed.
 
     Returns
     -------
