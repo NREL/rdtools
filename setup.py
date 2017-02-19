@@ -9,10 +9,10 @@ except ImportError:
 import versioneer
 
 
-DESCRIPTION = ('Functions for analytics the degradation rate of photovoltaic'
-               ' systems.')
+DESCRIPTION = 'Functions for analytics the degradation of photovoltaic systems.'
+
 LONG_DESCRIPTION = """
-Rdtools is a collection of functions that help analyze.
+Rdtools is a collection of tools for the analysis of photovoltaic degradation.
 
 Source code: https://github.com/kwhanalytics/rdtools
 """
@@ -44,10 +44,6 @@ CLASSIFIERS = [
     'Programming Language :: Python',
     'Programming Language :: Python :: 2',
     'Programming Language :: Python :: 2.7',
-    'Programming Language :: Python :: 3',
-    'Programming Language :: Python :: 3.3',
-    'Programming Language :: Python :: 3.4',
-    'Programming Language :: Python :: 3.5',
     'Topic :: Scientific/Engineering',
 ]
 
@@ -57,7 +53,7 @@ setuptools_kwargs = {
     'include_package_data': True
 }
 
-# set up pvlib packages to be installed and extensions to be compiled
+# set up packages to be installed and extensions to be compiled
 PACKAGES = ['rdtools']
 
 setup(name=DISTNAME,
