@@ -60,8 +60,7 @@ def degradation_ols(normalized_energy):
     stderr_b, stderr_m = results.bse
 
     #Monte Carlo for error in degradation rate
-    dist = [z[1]/z[0] for z in np.random.multivariate_normal(results.params, results.cov_params(), 10000)]
-    Rd_CI = np.percentile(dist, [50-34.1, 50+34.1])*100.0
+    Rd_CI = _degradation_CI(results)
 
 
     degradation = {
@@ -107,6 +106,8 @@ def degradation_classical_decomposition(normalized_energy):
     
     df_check_freq = df.copy()
 
+    #The frequency attribute will be set to None if rows are dropped.
+    #We can use this to check for missing data and raise a ValueError.
     df_check_freq = df_check_freq.dropna()
 
     if df_check_freq.index.freq is None:
@@ -155,8 +156,7 @@ def degradation_classical_decomposition(normalized_energy):
     test_trend, h, p, z = _mk_test(df.energy_ma.dropna(), alpha=0.05)
 
     #Monte Carlo for error in degradation rate
-    dist = [z[1]/z[0] for z in np.random.multivariate_normal(results.params, results.cov_params(), 10000)]
-    Rd_CI = np.percentile(dist, [50-34.1, 50+34.1])*100.0
+    Rd_CI = _degradation_CI(results)
 
     degradation = {
         'Rd_pct': Rd_pct,
@@ -250,8 +250,8 @@ def degradation_year_on_year(normalized_energy, freq = 'D'):
     xb1 = np.random.choice(YoY_filtered1, (n1, reps), replace=True)
     mb1 = np.median(xb1, axis=0)
     mb1.sort()
-    lpc1 = np.percentile(mb1, 16)
-    upc1 = np.percentile(mb1, 84)
+    lpc1 = np.percentile(mb1, 15.9)
+    upc1 = np.percentile(mb1, 84.1)
     unc1 = np.round(upc1 - lpc1,2)         
       
     print '\nDegradation and 68% confidence interval YOY approach:'
@@ -331,3 +331,23 @@ def _mk_test(x, alpha = 0.05):
     return trend, h, p, z
 
 
+def _degradation_CI(results):
+    '''
+    Description
+    -----------
+    Monte Carlo estimation of uncertainty in degradation rate from OLS results
+
+    Parameters
+    ----------
+    results: OLSResults object from fitting a model of the form:
+    results = sm.OLS(endog = df.energy_ma, exog = df.loc[:,['const','years']]).fit()
+    Returns
+    -------
+    68.2% confidence interval for degradation rate
+
+    '''
+
+    sampled_normal = np.random.multivariate_normal(results.params, results.cov_params(), 10000)
+    dist = sampled_normal[:, 1] / sampled_normal[:, 0]
+    Rd_CI = np.percentile(dist, [50-34.1, 50+34.1])*100.0
+    return Rd_CI
