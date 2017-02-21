@@ -250,8 +250,8 @@ def degradation_year_on_year(normalized_energy, freq = 'D'):
     xb1 = np.random.choice(YoY_filtered1, (n1, reps), replace=True)
     mb1 = np.median(xb1, axis=0)
     mb1.sort()
-    lpc1 = np.percentile(mb1, 16)
-    upc1 = np.percentile(mb1, 84)
+    lpc1 = np.percentile(mb1, 15.9)
+    upc1 = np.percentile(mb1, 84.1)
     unc1 = np.round(upc1 - lpc1,2)         
       
     print '\nDegradation and 68% confidence interval YOY approach:'
