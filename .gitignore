@@ -6,3 +6,5 @@
 
 # ignore byte compiled files
 *.py[co]
+
+.DS_Store

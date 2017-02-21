@@ -10,7 +10,7 @@ import numpy as np
 import statsmodels.api as sm
 
 
-def degradation_with_ols(normalized_energy):
+def degradation_ols(normalized_energy):
     '''
     Description
     -----------
@@ -18,54 +18,51 @@ def degradation_with_ols(normalized_energy):
 
     Parameters
     ----------
-    normalized_energy: Pandas Series (numeric)
-        Monthly time series of normalized system ouput.
+    normalized_energy: Pandas Time Series (numeric)
+        Daily or lower frequency time series of normalized system ouput.
 
     Returns
     -------
-    degradation: dictionary
-        Contains degradation rate and standard errors of regression
+    degradation_values: dictionary
+        Contains values for annual degradation rate as %/year ('Rd_pct'),
+        slope, intercept, root mean square error of regression ('rmse'),
+        standard error of the slope ('slope_stderr'), intercept ('intercept_stderr'),
+        68.2% confidence interval in Rd, and least squares RegressionResults object ('ols_results')
     '''
 
-    y = normalized_energy
-
-    # remove NaN values
-    y = y.dropna()
-
-    # number of examples
-    N = len(y)
-
-    # integer-months, the exogeneous variable
-    months = np.arange(0, len(y))
-
-    # add intercept-constant to the exogeneous variable
-    X = sm.add_constant(months)
-    columns = ['constant', 'months']
-    exog = pd.DataFrame(X, index = y.index, columns = columns)
-
-    # fit linear model
-    ols_model = sm.OLS(endog = y, exog = exog, hasconst = True)
+    normalized_energy.name = 'normalized_energy'
+    df = normalized_energy.to_frame()
+    
+    #calculate a years column as x value for regression, ignoreing leap years
+    day_diffs = (df.index - df.index[0])
+    df['days'] = day_diffs.astype('timedelta64[s]')/(60*60*24)
+    df['years'] = df.days/365.0
+    
+    #add intercept-constant to the exogeneous variable
+    df = sm.add_constant(df)
+    
+    #perform regression
+    ols_model = sm.OLS(endog = df.normalized_energy, exog = df.loc[:,['const','years']],
+                       hasconst = True, missing = 'drop' )
+    
     results = ols_model.fit()
-
+    
     # collect intercept and slope
     b, m = results.params
-
+    
     # rate of degradation in terms of percent/year
-    Rd_pct = 100 * (m * 12) / b
+    Rd_pct = 100.0 * m / b
+    
+    #Calculate RMSE
+    rmse = np.sqrt(results.mse_resid)
+    
+    #Collect standrd errors
+    stderr_b, stderr_m = results.bse
 
-    # root mean square error
-    rmse = np.sqrt(np.power(y - results.predict(exog = exog), 2).sum() / (N - 2))
+    #Monte Carlo for error in degradation rate
+    dist = [z[1]/z[0] for z in np.random.multivariate_normal(results.params, results.cov_params(), 10000)]
+    Rd_CI = np.percentile(dist, [50-34.1, 50+34.1])*100.0
 
-    # total sum of squares of the time variable
-    tss_months = np.power(months - months.mean(), 2).sum()
-
-    # standard error of the slope and intercept
-    stderr_b = rmse * np.sqrt((1 / (N - 1)) + months.mean()**2 / tss_months)
-    stderr_m = rmse * np.sqrt(1 / tss_months)
-
-    # standard error of the regression
-    stderr_Rd = np.sqrt((stderr_m * 12 / b)**2 + ((-12 * m / b**2) * stderr_b)**2)
-    stderr_Rd_pct = 100 * stderr_Rd
 
     degradation = {
         'Rd_pct': Rd_pct,
@@ -74,82 +71,107 @@ def degradation_with_ols(normalized_energy):
         'rmse': rmse,
         'slope_stderr': stderr_m,
         'intercept_stderr': stderr_b,
-        'Rd_stderr_pct': stderr_Rd_pct,
+        'ols_result': results,
+        'Rd_CI': Rd_CI
     }
 
     return degradation
 
       
-def degradation_classical_decomposition(normalized_energy, interpolate_flag = False):
+def degradation_classical_decomposition(normalized_energy):
     '''
     Description
     -----------
-    Classical decomposition routine from Dirk Jordan and Chris Deline
+    Classical decomposition routine from Dirk Jordan, Chris Deline, and Michael Deceglie
 
     Parameters
     ----------
-    normalized_energy: Pandas Series (numeric) containing corrected performance ratio, 
-        with index being monthly frequency in timestamp format
-    interpolate_flag: boolean flag to either interpolate missing data or fill 
-        with the median value (default)
+    normalized_energy: Pandas Time Series (numeric)
+        Daily or lower frequency time series of normalized system ouput.
+        Must be regular time series.
 
     Returns
     -------
     degradation_values: dictionary
-        Contains values for annual degradation rate and standard error
-        'Rd_pct', 'slope', 'intercept', 'Rd_stderr_pct', 'dataframe'
-        where dataframe contains annual rolling mean values
+        Contains values for annual degradation rate as %/year ('Rd_pct'),
+        slope, intercept, root mean square error of regression ('rmse'),
+        standard error of the slope ('slope_stderr') and intercept ('intercept_stderr'),
+        the 68.2% confidence interval for Rd ('Rd_CI'),
+        least squares RegressionResults object ('ols_results'),
+        pandas series for the annual rolling mean ('series'),
+        Mann-Kendall test trend ('mk_test_trend')
     '''
     
     normalized_energy.name = 'normalized_energy'
-    dataframe = normalized_energy.to_frame()
-
-    # try to extract month information from the dataframe index. Fill missing data with median value
-    energy_median = normalized_energy.median()
-
-    # check for DatetimeIndex
-    if isinstance(dataframe.index, pd.DatetimeIndex):
-        dataframe = dataframe.resample('MS').mean()
-        
-        if interpolate_flag:
-	    dataframe = dataframe.interpolate()
-        else:
-            # append the median value to missing months
-            dataframe = dataframe.fillna(value = energy_median)
-
-    # assume an array of months
-    dataframe['Month'] = np.arange(0, len(dataframe))
-
-    if pd.infer_freq(dataframe.index) == 'MS' and len(normalized_energy) > 12:
-        dataframe = dataframe.rolling(window = 12, center = True).mean()
-        
-    dataframe = dataframe.dropna()
-    y2 = dataframe['normalized_energy']
-    x2 = dataframe['Month']
+    df = normalized_energy.to_frame()
     
+    df_check_freq = df.copy()
 
+    df_check_freq = df_check_freq.dropna()
 
-    if len(dataframe) <= 2:
-        print '\nNot enough data for seasonal decomposition:'
-        return {}
-        
-    # OLS regression with constant
-    x2 = sm.add_constant(x2)
-    model2 = sm.OLS(y2,x2).fit()
-    b_cd, m_cd = model2.params
-    Rd_cd, SE_Rd_cd = ols_rd_uncertainty(model2)    
+    if df_check_freq.index.freq is None:
+        raise ValueError('Classical decomposition requires a regular time series with'
+                         ' defined frequency and no missing data.')
 
-    print '\nDegradation and Standard Error of Classical decomposition:'
-    print 'Rd = {:.2f} +/- {:.2f}'.format(Rd_cd, SE_Rd_cd)  
+    #calculate a years column as x value for regression, ignoreing leap years
+    day_diffs = (df.index - df.index[0])
+    df['days'] = day_diffs.astype('timedelta64[s]')/(60*60*24)
+    df['years'] = df.days/365.0
+    
+    #Compute yearly rolling mean to isolate trend component using moving average
+    it = df.iterrows()
+    energy_ma = []
+    for i, row in it:
+        if row.years-0.5 >= min(df.years) and row.years+0.5 <= max(df.years):
+            roll = df[(df.years <= row.years+0.5) & (df.years >= row.years-0.5)]
+            energy_ma.append(roll.normalized_energy.mean())
+        else:
+            energy_ma.append(np.nan)
+    
+    df['energy_ma'] = energy_ma
+    
+    #add intercept-constant to the exogeneous variable
+    df = sm.add_constant(df)
+    
+    #perform regression
+    ols_model = sm.OLS(endog = df.energy_ma, exog = df.loc[:,['const','years']],
+                       hasconst = True, missing = 'drop' )
+    
+    results = ols_model.fit()
+    
+    # collect intercept and slope
+    b, m = results.params
+    
+    # rate of degradation in terms of percent/year
+    Rd_pct = 100.0 * m / b
+    
+    #Calculate RMSE
+    rmse = np.sqrt(results.mse_resid)
+    
+    #Collect standrd errors
+    stderr_b, stderr_m = results.bse
 
-    degradation_values = {
-    'Rd_pct': Rd_cd,
-    'slope': m_cd,
-    'intercept': b_cd,
-    'Rd_stderr_pct': SE_Rd_cd,
-    'Dataframe':dataframe
+    #Perform Mann-Kendall 
+    test_trend, h, p, z = _mk_test(df.energy_ma.dropna(), alpha=0.05)
+
+    #Monte Carlo for error in degradation rate
+    dist = [z[1]/z[0] for z in np.random.multivariate_normal(results.params, results.cov_params(), 10000)]
+    Rd_CI = np.percentile(dist, [50-34.1, 50+34.1])*100.0
+
+    degradation = {
+        'Rd_pct': Rd_pct,
+        'Rd_CI':Rd_CI,
+        'slope': m,
+        'intercept': b,
+        'rmse': rmse,
+        'slope_stderr': stderr_m,
+        'intercept_stderr': stderr_b,
+        'ols_result': results,
+        'series': df.energy_ma,
+        'mk_test_trend': test_trend
     }
-    return degradation_values
+
+    return degradation
      
 
 
@@ -222,7 +244,7 @@ def degradation_year_on_year(normalized_energy, freq = 'D'):
   
     med1 = np.median(YoY_filtered1)                       
     
-    # bootstrap to determine 95% CI for the 2 different outlier removal methods
+    # bootstrap to determine 68% CI for the 2 different outlier removal methods
     n1 = len(YoY_filtered1)
     reps = 1000
     xb1 = np.random.choice(YoY_filtered1, (n1, reps), replace=True)
@@ -242,57 +264,12 @@ def degradation_year_on_year(normalized_energy, freq = 'D'):
         }
     return degradation_values
       
-def degradation_ARIMA(normalized_energy):
-    '''
-    Description
-    -----------
-    ARIMA approach - Seasonal decompostion is a special type of ARIMA model
-
-    Parameters
-    ----------
-    normalized_energy: Pandas data series (numeric) containing corrected performance ratio
-
-    Returns
-    -------
-    degradation_values: dictionary
-        Contains values for annual degradation rate and standard error
-        'Rd_pct', 'test_trend', 'p', 'Rd_stderr_pct', 'dataframe'
-    '''
-    res = sm.tsa.seasonal_decompose(normalized_energy, freq=12)
-    y_decomp = res.trend.dropna()        
-    df4 = pd.DataFrame({'MS':y_decomp.index,'normalized_energy':y_decomp.values})
-    df4['Month'] = range(0, len(df4))
-    y3=df4['normalized_energy']
-    x3=df4['Month']           
-    
-    
-    
-    if len(df4) <=2:
-        print '\nNot enough data for ARIMA decomposition:'
-        return {}
-       
-    # OLS regression with constant
-    x3 = sm.add_constant(x3)
-    model3 = sm.OLS(y3,x3).fit()
-    Rd_decomp, SE_Rd_decomp = ols_rd_uncertainty(model3)    
-
-    test_trend,h,p,z = _mk_test(y_decomp, alpha = 0.05)  
-        
-    degradation_values = {
-    'Rd_pct': Rd_decomp,
-    'test_trend': test_trend,
-    'p': p,
-    'Rd_stderr_pct': SE_Rd_decomp,
-    'Dataframe':df4,
-    }
-    return degradation_values
-    
     
 def _mk_test(x, alpha = 0.05):  
     '''
     Description
     -----------
-    Mann-Kendall test of significance for trend (used in ARIMA function)
+    Mann-Kendall test of significance for trend (used in classical decomposition function)
 
     Parameters
     ----------
@@ -353,31 +330,4 @@ def _mk_test(x, alpha = 0.05):
 
     return trend, h, p, z
 
-def ols_rd_uncertainty(ols_model):
-    '''
-    Description
-    -----------
-    OLS uncertainty calculation
 
-    Parameters
-    ----------
-    a simple ordinary least squares model created using
-    statsmodel.api.OLS 
-
-    Returns
-    -------
-    Rd_decomp: float, annual degradation rate (in percentage)
-    SE_Rd_decomp: float, standard error of annual degradation rate (in percentage)
-    '''
-
-    model = ols_model
-
-    b_decomp = model.params['const']
-    m_decomp = model.params['Month']
-    SE_b_decomp = model.bse['const']
-    SE_m_decomp = model.bse['Month']
-    
-    Rd_decomp = (m_decomp * 12) / b_decomp * 100
-    SE_Rd_decomp = np.sqrt(np.power(SE_m_decomp * 12 / b_decomp, 2) + np.power((- 12 * m_decomp / b_decomp**2) * SE_b_decomp, 2))*100
-
-    return Rd_decomp, SE_Rd_decomp
