@@ -60,7 +60,8 @@ def degradation_ols(normalized_energy):
     stderr_b, stderr_m = results.bse
 
     #Monte Carlo for error in degradation rate
-    dist = [z[1]/z[0] for z in np.random.multivariate_normal(results.params, results.cov_params(), 10000)]
+    sampled_normal = np.random.multivariate_normal(results.params, results.cov_params(), 10000)
+    dist = sampled_normal[:,1] / sampled_normal[:,0]
     Rd_CI = np.percentile(dist, [50-34.1, 50+34.1])*100.0
 
 
@@ -156,8 +157,10 @@ def degradation_classical_decomposition(normalized_energy):
     #Perform Mann-Kendall 
     test_trend, h, p, z = _mk_test(df.energy_ma.dropna(), alpha=0.05)
 
+
     #Monte Carlo for error in degradation rate
-    dist = [x_[1]/x_[0] for x_ in np.random.multivariate_normal(results.params, results.cov_params(), 10000)]
+    sampled_normal = np.random.multivariate_normal(results.params, results.cov_params(), 10000)
+    dist = sampled_normal[:,1] / sampled_normal[:,0]
     Rd_CI = np.percentile(dist, [50-34.1, 50+34.1])*100.0
 
     degradation = {
