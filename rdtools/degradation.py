@@ -107,6 +107,8 @@ def degradation_classical_decomposition(normalized_energy):
     
     df_check_freq = df.copy()
 
+    #The frequency attribute will be set to None if rows are dropped.
+    #We can use this to check for missing data and raise a ValueError.
     df_check_freq = df_check_freq.dropna()
 
     if df_check_freq.index.freq is None:
