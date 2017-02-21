@@ -157,7 +157,7 @@ def degradation_classical_decomposition(normalized_energy):
     test_trend, h, p, z = _mk_test(df.energy_ma.dropna(), alpha=0.05)
 
     #Monte Carlo for error in degradation rate
-    dist = [z[1]/z[0] for z in np.random.multivariate_normal(results.params, results.cov_params(), 10000)]
+    dist = [x_[1]/x_[0] for x_ in np.random.multivariate_normal(results.params, results.cov_params(), 10000)]
     Rd_CI = np.percentile(dist, [50-34.1, 50+34.1])*100.0
 
     degradation = {
