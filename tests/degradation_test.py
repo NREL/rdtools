@@ -5,7 +5,7 @@ import unittest
 import pandas as pd
 import numpy as np
 
-from rdtools import degradation_with_ols
+from rdtools import degradation_ols
 
 
 class DegradationTestCase(unittest.TestCase):
@@ -24,11 +24,11 @@ class DegradationTestCase(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def test_degradation_with_ols(self):
+    def test_degradation_ols(self):
         ''' Test degradation with ols. '''
 
         # test ols degradation calc
-        rd_result = degradation_with_ols(self.test_corr_energy)
+        rd_result = degradation_ols(self.test_corr_energy)
         self.assertAlmostEqual(rd_result['Rd_pct'], 100*self.rd, places=3)
 
         # TODO
