@@ -33,17 +33,18 @@ def degradation_ols(normalized_energy):
     normalized_energy.name = 'normalized_energy'
     df = normalized_energy.to_frame()
 
-    #calculate a years column as x value for regression, ignoreing leap years
+    # calculate a years column as x value for regression, ignoreing leap years
     day_diffs = (df.index - df.index[0])
     df['days'] = day_diffs.astype('timedelta64[s]')/(60*60*24)
     df['years'] = df.days/366.0
 
-    #add intercept-constant to the exogeneous variable
+    # add intercept-constant to the exogeneous variable
     df = sm.add_constant(df)
 
-    #perform regression
-    ols_model = sm.OLS(endog = df.normalized_energy, exog = df.loc[:,['const','years']],
-                       hasconst = True, missing = 'drop' )
+    # perform regression
+    ols_model = sm.OLS(endog=df.normalized_energy,
+                       exog=df.loc[:, ['const', 'years']],
+                       hasconst=True, missing='drop')
 
     results = ols_model.fit()
 
@@ -53,13 +54,13 @@ def degradation_ols(normalized_energy):
     # rate of degradation in terms of percent/year
     Rd_pct = 100.0 * m / b
 
-    #Calculate RMSE
+    # Calculate RMSE
     rmse = np.sqrt(results.mse_resid)
 
-    #Collect standrd errors
+    # Collect standrd errors
     stderr_b, stderr_m = results.bse
 
-    #Monte Carlo for error in degradation rate
+    # Monte Carlo for error in degradation rate
     Rd_CI = _degradation_CI(results)
 
     Rd_CI_diff = Rd_CI[1] - Rd_CI[0]
@@ -206,16 +207,12 @@ def degradation_year_on_year(normalized_energy, freq='D'):
         Contains values for median degradation rate and standard error
         'Rd_med', 'Rd_stderr_pct', 'YoY_filtered'
         where YoY_filtered is list containing year on year data for
-	specified frequency
+        specified frequency
     '''
 
-    if freq == 'MS':
-        # monthly (month start)
+    if freq in ['M', 'MS']:
+        # monthly (M is month end, MS is month start)
         normalized_energy = normalized_energy.resample('MS').mean()
-        YearSampleSize = 12
-    elif freq == 'M':
-        # monthly (month end)
-        normalized_energy = normalized_energy.resample('M').mean()
         YearSampleSize = 12
     elif freq == 'W':
         # weekly
@@ -239,8 +236,9 @@ def degradation_year_on_year(normalized_energy, freq='D'):
         '''
         Description
         -----------
-        Remove data points greater or smaller than 100: the system can only lose 100%/year,
-        however arbitrary large number can originate by division close to zero!
+        Remove data points greater or smaller than 100: the system can only
+        lose 100%/year, however arbitrary large number can originate by
+        division close to zero!
 
         Parameters
         ----------
@@ -322,7 +320,7 @@ def _mk_test(x, alpha=0.05):
         for i in range(len(unique_x)):
             tp[i] = sum(unique_x[i] == x)
         var_s = (n * (n - 1) * (2 * n + 5) + \
-                np.sum(tp * (tp - 1) * (2 * tp + 5))) / 18
+                 np.sum(tp * (tp - 1) * (2 * tp + 5))) / 18
 
     if s > 0:
         z = (s - 1)/np.sqrt(var_s)
@@ -362,9 +360,12 @@ def _degradation_CI(results):
     '''
     n_samples = int(1e5)
 
-    sampled_normal = np.random.multivariate_normal(results.params, results.cov_params(), n_samples)
+    sampled_normal = np.random.multivariate_normal(results.params,
+                                                   results.cov_params(),
+                                                   n_samples)
     dist = sampled_normal[:, 1] / sampled_normal[:, 0]
-    upper, lower = np.around(np.percentile(dist, [50-34.1, 50+34.1]) * 100.0, decimals=5)
-    Rd_CI = (upper, lower)
+    Rd_CI = np.around(np.percentile(dist, [50-34.1, 50+34.1]) * 100.0,
+                      decimals=5)
+    Rd_CI = tuple(Rd_CI)
 
     return Rd_CI
