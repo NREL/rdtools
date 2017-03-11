@@ -66,9 +66,9 @@ class SapmNormalizationTestCase(unittest.TestCase):
         irrad_index = pd.date_range(start='2012-01-01',
                                     periods=irrad_periods,
                                     freq=irrad_freq)
-        self.irrad = pd.DataFrame([[100, 45, 30, 25, 10]],
-                                  index=irrad_index,
-                                  columns=irrad_columns)
+        self.met_data = pd.DataFrame([[100, 45, 30, 25, 10]],
+                                     index=irrad_index,
+                                     columns=irrad_columns)
 
     def tearDown(self):
         pass
@@ -76,16 +76,16 @@ class SapmNormalizationTestCase(unittest.TestCase):
     def test_sapm_dc_power(self):
         ''' Test SAPM DC power. '''
 
-        dc_power = sapm_dc_power(self.pvsystem, self.irrad)
-        self.assertEqual(self.irrad.index.freq, dc_power.index.freq)
-        self.assertEqual(len(self.irrad), len(dc_power))
+        dc_power = sapm_dc_power(self.pvsystem, self.met_data)
+        self.assertEqual(self.met_data.index.freq, dc_power.index.freq)
+        self.assertEqual(len(self.met_data), len(dc_power))
 
     def test_normalization_with_sapm(self):
         ''' Test SAPM normalization. '''
 
         sapm_kws = {
             'pvlib_pvsystem': self.pvsystem,
-            'irradiance': self.irrad,
+            'met_data': self.met_data,
         }
 
         corr_energy = normalize_with_sapm(self.energy, sapm_kws)
