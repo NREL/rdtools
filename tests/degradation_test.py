@@ -29,7 +29,7 @@ class DegradationTestCase(unittest.TestCase):
 
         # test ols degradation calc
         rd_result = degradation_ols(self.test_corr_energy)
-        self.assertAlmostEqual(rd_result['Rd_pct'], 100*self.rd, places=3)
+        self.assertAlmostEqual(rd_result['Rd_pct'], 100*self.rd, places=1)
 
         # TODO
         # - support for different time series frequencies
