@@ -5,7 +5,7 @@ import unittest
 import pandas as pd
 import numpy as np
 
-from rdtools import degradation_with_ols
+from rdtools import degradation_ols
 
 
 class DegradationTestCase(unittest.TestCase):
@@ -28,8 +28,8 @@ class DegradationTestCase(unittest.TestCase):
         ''' Test degradation with ols. '''
 
         # test ols degradation calc
-        rd_result = degradation_with_ols(self.test_corr_energy)
-        self.assertAlmostEqual(rd_result['Rd_pct'], 100*self.rd, places=3)
+        rd_result = degradation_ols(self.test_corr_energy)
+        self.assertAlmostEqual(rd_result['Rd_pct'], 100*self.rd, places=1)
 
         # TODO
         # - support for different time series frequencies
