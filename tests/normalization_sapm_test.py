@@ -1,4 +1,4 @@
-""" Energy Normalization Tests. """
+""" Energy Normalization with SAPM Unit Tests. """
 
 import unittest
 
@@ -6,11 +6,12 @@ import pandas as pd
 import numpy as np
 import pvlib
 
-from rdtools.energy_normalization import normalize_with_sapm
+from rdtools.normalization import normalize_with_sapm
+from rdtools.normalization import sapm_dc_power
 
 
-class EnergyNormalizationTestCase(unittest.TestCase):
-    ''' Unit tests for energy_normalization module. '''
+class SapmNormalizationTestCase(unittest.TestCase):
+    ''' Unit tests for energy normalization module. '''
 
     def setUp(self):
         # define module constants and parameters
@@ -72,24 +73,33 @@ class EnergyNormalizationTestCase(unittest.TestCase):
     def tearDown(self):
         pass
 
+    def test_sapm_dc_power(self):
+        ''' Test SAPM DC power. '''
+
+        dc_power = sapm_dc_power(self.pvsystem, self.irrad)
+        self.assertEqual(self.irrad.index.freq, dc_power.index.freq)
+        self.assertEqual(len(self.irrad), len(dc_power))
+
     def test_normalization_with_sapm(self):
         ''' Test SAPM normalization. '''
 
-        corr_energy = normalize_with_sapm(self.pvsystem,
-                                          self.energy,
-                                          self.irrad)
+        sapm_kws = {
+            'pvlib_pvsystem': self.pvsystem,
+            'met_data': self.irrad,
+        }
+
+        corr_energy = normalize_with_sapm(self.energy, sapm_kws)
 
         # Test output is same frequency and length as energy
         self.assertEqual(corr_energy.index.freq, self.energy.index.freq)
         self.assertEqual(len(corr_energy), 13)
 
-        # edge cases
+        # TODO, test for:
         #     incorrect data format
         #     incomplete data
         #     missing pvsystem metadata
         #     missing measured irradiance data
-        #     irradiance freq > energy freq, issue/warining?
-        # test output
+        #     met_data freq > energy freq, issue/warining?
 
 if __name__ == '__main__':
     unittest.main()
