@@ -192,7 +192,7 @@ def degradation_year_on_year(normalized_energy, freq = 'D'):
     degradation_values: dictionary
         Contains values for median degradation rate and standard error
         'Rd_med', 'Rd_stderr_pct', 'YoY_filtered'
-        where YoY_filtered is list containing year on year data for
+        where YoY_filtered is a pandas series with yoy pct change in
 	specified frequency
     '''
     
@@ -220,34 +220,21 @@ def degradation_year_on_year(normalized_energy, freq = 'D'):
         raise Exception('Frequency {} not supported'.format(freq))
 
     # year-on-year approach
-    YoYresult = normalized_energy.diff(YearSampleSize) / normalized_energy * 100
-    
-    def remove_outliers(x): 
-        '''
-        Description
-        -----------
-        Remove data points greater or smaller than 100: the system can only lose 100%/year,
-        however arbitrary large number can originate by division close to zero!
-   
-        Parameters
-        ----------
-        x: float, element of list
-
-        Returns
-        -------
-        x: float x if absolute value of x is < 100
-        '''
-        if x < 100 and x > -100:
-            return x    
-        
-    YoY_filtered1 = filter(remove_outliers, YoYresult)
-  
-    med1 = np.median(YoY_filtered1)                       
+    YoYresult = (normalized_energy / normalized_energy.shift(YearSampleSize) 
+		 - 1) * 100
+    # Remove outliers: system can only lose 100%/year. However arbitrary
+    #    division of small numbers can result in large YoY Pct change
+    # Filter data based on min irradiance, etc. prior to calling degradation function
+    YoYresult[(YoYresult >= 100) | (YoYresult <= -100)] = np.nan
+    # rename column to yoy_pct
+    YoYresult.name = 'yoy_pct'
+    # caclulate median YoY change
+    med1 = YoYresult.median()                       
     
     # bootstrap to determine 68% CI for the 2 different outlier removal methods
-    n1 = len(YoY_filtered1)
+    n1 = len(YoYresult.dropna())
     reps = 1000
-    xb1 = np.random.choice(YoY_filtered1, (n1, reps), replace=True)
+    xb1 = np.random.choice(YoYresult.dropna(), (n1, reps), replace=True)
     mb1 = np.median(xb1, axis=0)
     mb1.sort()
     lpc1 = np.percentile(mb1, 15.9)
