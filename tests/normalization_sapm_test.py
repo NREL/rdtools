@@ -85,7 +85,7 @@ class SapmNormalizationTestCase(unittest.TestCase):
 
         sapm_kws = {
             'pvlib_pvsystem': self.pvsystem,
-            'irradiance': self.irrad,
+            'met_data': self.irrad,
         }
 
         corr_energy = normalize_with_sapm(self.energy, sapm_kws)
@@ -99,7 +99,7 @@ class SapmNormalizationTestCase(unittest.TestCase):
         #     incomplete data
         #     missing pvsystem metadata
         #     missing measured irradiance data
-        #     irradiance freq > energy freq, issue/warining?
+        #     met_data freq > energy freq, issue/warining?
 
 if __name__ == '__main__':
     unittest.main()

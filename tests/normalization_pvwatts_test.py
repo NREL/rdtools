@@ -67,7 +67,7 @@ class PVWattsNormalizationTestCase(unittest.TestCase):
 
         pvw_kws = {
             'poa_global': self.poa_global,
-            'P_stc': self.power,
+            'P_ref': self.power,
             'T_cell': self.temp,
             'gamma_pdc': self.gamma_pdc,
         }
