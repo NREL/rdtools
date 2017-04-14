@@ -8,28 +8,28 @@ import pandas as pd
 import pvlib
 
 
-def pvwatts_dc_power(poa_global, P_stc, T_cell=None,
-                     G_stc=1000, T_stc=25, gamma_pdc=None):
+def pvwatts_dc_power(poa_global, P_ref, T_cell=None,
+                     G_ref=1000, T_ref=25, gamma_pdc=None):
     '''
     PVWatts v5 Module Model: DC power given effective poa poa_global, module
     nameplate power, and cell temperature. This function differs from the PVLIB
     implementation by allowing cell temperature to be an optional parameter.
 
-    Note: If T_cell and gamma_pdc are omitted, the temperature term will be
+    Note: If T_cell or gamma_pdc are omitted, the temperature term will be
           ignored.
 
     Parameters
     ----------
     poa_global: Pandas Series (numeric)
         Total effective plane of array irradiance.
-    P_stc: numeric
-        Module nameplate power at standard test condition.
+    P_ref: numeric
+        Rated DC power of array.
     T_cell: Pandas Series (numeric)
         Measured or derived cell temperature [degrees celsius].
         Time series assumed to be same frequency as poa_global.
-    G_stc: numeric, default value is 1000
+    G_ref: numeric, default value is 1000
         Reference irradiance at standard test condition [W/m**2].
-    T_stc: numeric, default value is 25
+    T_ref: numeric, default value is 25
         Reference temperature at standard test condition [degrees celsius].
     gamma_pdc: numeric, default is None
         Linear array efficiency temperature coefficient [1 / degree celsius].
@@ -40,10 +40,10 @@ def pvwatts_dc_power(poa_global, P_stc, T_cell=None,
         DC power determined by PVWatts v5 equation.
     '''
 
-    dc_power = P_stc * poa_global / G_stc
+    dc_power = P_ref * poa_global / G_ref
 
     if T_cell is not None and gamma_pdc is not None:
-        temperature_factor = 1 + gamma_pdc*(T_cell - T_stc)
+        temperature_factor = 1 + gamma_pdc*(T_cell - T_ref)
         dc_power = dc_power * temperature_factor
 
     return dc_power
@@ -56,6 +56,10 @@ def normalize_with_pvwatts(energy, pvwatts_kws):
 
     Energy timeseries and poa_global timeseries can be different granularities.
 
+    Note: If energy is a higher frequency than the time series provided in
+          pvwatts_kws, there will be NaNs in place of missing values due to
+          mismatch in time series.
+
     Parameters
     ----------
     energy: Pandas Series (numeric)
@@ -67,14 +71,14 @@ def normalize_with_pvwatts(energy, pvwatts_kws):
         ------------------
         poa_global: Pandas Series (numeric)
             Total effective plane of array irradiance.
-        P_stc: numeric
-            Module nameplate power at standard test condition.
+        P_ref: numeric
+            Rated DC power of array.
         T_cell: Pandas Series (numeric)
             Measured or derived cell temperature [degrees celsius].
             Time series assumed to be same frequency as poa_global.
-        G_stc: numeric, default value is 1000
+        G_ref: numeric, default value is 1000
             Reference irradiance at standard test condition [W/m**2].
-        T_stc: numeric, default value is 25
+        T_ref: numeric, default value is 25
             Reference temperature at standard test condition [degrees celsius].
         gamma_pdc: numeric, default is None
             Linear array efficiency temperature coefficient [1 / degree celsius].
@@ -98,19 +102,22 @@ def normalize_with_pvwatts(energy, pvwatts_kws):
     return normalized_energy
 
 
-def sapm_dc_power(pvlib_pvsystem, irradiance):
+def sapm_dc_power(pvlib_pvsystem, met_data):
     '''
-    Use Sandia Array Performance Model (SAPM) to compute
-    the effective DC power using measured irradiance, ambient temperature, and
-    wind speed.
+    Use Sandia Array Performance Model (SAPM) and PVWatts to compute the
+    effective DC power using measured irradiance, ambient temperature, and wind
+    speed. Effective irradiance and cell temperature are calculated with SAPM,
+    and DC power with PVWatts.
 
     Parameters
     ----------
     pvlib_pvsystem: pvlib-python LocalizedPVSystem object
         Object contains orientation, geographic coordinates, equipment
         constants.
-    irradiance: Pandas DataFrame (numeric)
+    met_data: Pandas DataFrame (numeric)
         Measured irradiance components, ambient temperature, and wind speed.
+        Expected met_data DataFrame column names:
+            ['DNI', 'GHI', 'DHI', 'Temperature', 'Wind Speed']
 
     Returns
     -------
@@ -118,14 +125,14 @@ def sapm_dc_power(pvlib_pvsystem, irradiance):
         DC power derived using Sandia Array Performance Model.
     '''
 
-    solar_position = pvlib_pvsystem.get_solarposition(irradiance.index)
+    solar_position = pvlib_pvsystem.get_solarposition(met_data.index)
 
     total_irradiance = pvlib_pvsystem\
         .get_irradiance(solar_position['zenith'],
                         solar_position['azimuth'],
-                        irradiance['DNI'],
-                        irradiance['GHI'],
-                        irradiance['DHI'])
+                        met_data['DNI'],
+                        met_data['GHI'],
+                        met_data['DHI'])
 
     aoi = pvlib_pvsystem.get_aoi(solar_position['zenith'],
                                  solar_position['azimuth'])
@@ -144,8 +151,8 @@ def sapm_dc_power(pvlib_pvsystem, irradiance):
 
     temp_cell = pvlib_pvsystem\
         .sapm_celltemp(irrad=total_irradiance['poa_global'],
-                       wind=irradiance['Wind Speed'],
-                       temp=irradiance['Temperature'])
+                       wind=met_data['Wind Speed'],
+                       temp=met_data['Temperature'])
 
     dc_power = pvlib_pvsystem\
         .pvwatts_dc(g_poa_effective=effective_poa,
@@ -156,12 +163,16 @@ def sapm_dc_power(pvlib_pvsystem, irradiance):
 
 def normalize_with_sapm(energy, sapm_kws):
     '''
-    Normalize system AC energy output given measured irradiance and
+    Normalize system AC energy output given measured met_data and
     meteorological data. This method relies on the Sandia Array Performance
     Model (SAPM) to compute the effective DC energy using measured irradiance,
     ambient temperature, and wind speed.
 
-    Energy timeseries and irradiance timeseries can be different granularities.
+    Energy timeseries and met_data timeseries can be different granularities.
+
+    Note: If energy is a higher frequency than the time series provided in
+          sapm_kws, there will be NaNs in place of missing values due to
+          mismatch in time series.
 
     Parameters
     ----------
@@ -175,8 +186,8 @@ def normalize_with_sapm(energy, sapm_kws):
         pvlib_pvsystem: pvlib-python LocalizedPVSystem object
             Object contains orientation, geographic coordinates, equipment
             constants.
-        irradiance: Pandas DataFrame (numeric)
-            Measured irradiance, ambient temperature, and wind speed.
+        met_data: Pandas DataFrame (numeric)
+            Measured met_data, ambient temperature, and wind speed.
 
     Returns
     -------
