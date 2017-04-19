@@ -43,3 +43,19 @@ def get_clearsky_poa(system_loc, clearsky):
     
     sim=system_loc.get_irradiance(solar_position['apparent_zenith'],solar_position['azimuth'],clearsky['dni'],clearsky['ghi'],clearsky['dhi'])
     return sim['poa_global']
+
+def detect_clearsky_params(w):
+    '''
+    Estimate parameters for pvlib detect_clearsky
+
+    Parameters
+    ----------
+    w : measurement period in minutes
+    '''
+    dur = max(15,w*3) # moving window period in minutes
+    mean_diff = max(75,w/2.0)
+    max_diff = max(120,w/1.5)
+    lower_line_length = min(-25,-1.0*w/2.0)
+    upper_line_length = max(30,w/2.0)
+
+    return dur, mean_diff, max_diff, lower_line_length, upper_line_length
