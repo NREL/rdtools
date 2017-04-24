@@ -16,7 +16,7 @@ def get_period(times):
     ----------
     times: DatetimeIndex of measurement time series
     '''    
-    times_diff = times[1:]-times[0:-1] # the first entry is NaN
+    times_diff = times[1:]-times[0:-1]
     if len(times_diff.unique()) is not 1: # need there to be just one timestep
         raise(ValueError('The timestep is not constant; cannot compute the series period.'))
     period = times_diff[0] / pd.Timedelta(minutes=1)
@@ -33,7 +33,7 @@ def get_clearsky_irrad(system_loc, times, correct_bin_labelling=False):
         constants.    	    
     times: DatetimeIndex of measurement time series
     correct_bin_labelling: Boolean
-        Specifies whether clearsky values should be taken from times offset by
+        Whether clearsky values should be taken from times offset by
         half a period from the reported index.
     '''
     location = pvlib.location.Location(system_loc.latitude,system_loc.longitude)
@@ -127,7 +127,7 @@ def remove_cloudy_times(df,irrad,system_loc,viz=False,correct_bin_labelling=Fals
     # Plot the unfiltered and filtered data
     if viz:
         import matplotlib.pyplot as plt
-        fig = plt.figure(figsize=(9,5))
+        fig = plt.figure(figsize=(15,5))
         ax = fig.add_subplot(111)
         ax.plot(clearsky['dni'],label='Simulated DNI',color='g')
         ax.plot(irrad,lw=1,color='gray',label='Measured irradiance')
@@ -169,57 +169,20 @@ def remove_cloudy_days(df,is_clear,start_time='8:00',end_time='16:00',thresh=0.8
     unique_dates = np.unique(df.index.date)
     
     # initialize the series
-    clear_days = pd.Series(index=unique_dates)
-    is_clear_series = pd.Series(index=df.index,data=is_clear)
+    clear_days = pd.Series(index=unique_dates) 
+    is_clear_series = pd.Series(index=df.index,data=is_clear) # just the Boolean "is clear", now with an index
     
     # For each date, look at how many times during the day are clear, and call
     # the whole day clear or not.
     for date in unique_dates:
-        inst_for_this_day = is_clear_series[is_clear_series.index.date==date].between_time(start_time,end_time)
-        num_true = len(inst_for_this_day[inst_for_this_day==True])
-        num_false = len(inst_for_this_day[inst_for_this_day==False])
+        inst_for_this_day = is_clear_series[is_clear_series.index.date==date].between_time(start_time,end_time) # instantaneous datapoints during this day
+        num_true = len(inst_for_this_day[inst_for_this_day==True]) # how many are clear
+        num_false = len(inst_for_this_day[inst_for_this_day==False]) # how many are cloudy
         clear_days[date] = float(num_true)/float(num_false+num_true) >= thresh
 
-    print(clear_days)
+    # now up-sample this back to the original index
     clear_days.index = pd.to_datetime(clear_days.index).tz_localize(df.index.tz)
     clear_times = clear_days.reindex(index=df.index,method='ffill')
     df_filtered = df[clear_times==True]
     
     return df_filtered
-    
-def test_with_STM_data():
-    '''
-    Test this module with irradiance data from South Table Mountain.
-    '''
-    
-    import matplotlib.pyplot as plt
-
-    # properties of the PV system at South Table 
-    latlon = [39.742,-105.18]
-    tilt = 40
-    azimuth = 180
-    elevation = 1828.8
-    
-    # Read in recorded minutely data
-    repo_dir = 'C:\Users\druth\Documents\GitHub\clearsky_method_comparisons\\' # CHANGE THIS!!
-    data = pd.read_csv(repo_dir+'data\\STM_MarMay2016.csv')
-    data['time'] = data.iloc[:,0] + ' ' + data.iloc[:,1]
-    data = data.set_index(pd.to_datetime(data['time']))
-    data.index = data.index.tz_localize('Etc/GMT+7')
-    data = data[~data.index.duplicated(keep='first')]
-    data = data.reindex(index=pd.date_range(start=data.index[0],end=data.index[-1],freq='1T')).fillna(0)
-    
-    irrad_orig = data[u'Global 40-South LI-200 [W/m^2]']
-    
-    system_noloc = pvlib.pvsystem.PVSystem(surface_tilt=tilt,surface_azimuth=azimuth)
-    loc = pvlib.location.Location(latlon[0],latlon[1],altitude=elevation)
-    system_loc = pvlib.pvsystem.LocalizedPVSystem(pvsystem=system_noloc,location=loc)
-    df_filtered, is_clear = remove_cloudy_times(data,irrad_orig,system_loc,viz=True,correct_bin_labelling=True,return_when_clear=True)
-    
-    just_clear_days = remove_cloudy_days(irrad_orig,is_clear,start_time='8:00',end_time='16:00',thresh=0.8)
-    plt.plot(just_clear_days)
-    
-    return just_clear_days
-        
-just_clear_days = test_with_STM_data()
-    
