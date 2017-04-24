@@ -6,5 +6,6 @@
 
 # ignore byte compiled files
 *.py[co]
+*.ipynb_checkpoints/*
 
 .DS_Store
