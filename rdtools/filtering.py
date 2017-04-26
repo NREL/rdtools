@@ -7,6 +7,8 @@ module contains functions for clearsky filtering
 import pandas as pd
 import pvlib
 import numpy as np
+import datetime
+from datetime import datetime
 
 def get_period(times):
     '''
@@ -63,7 +65,8 @@ def get_clearsky_poa(system_loc, clearsky):
     '''
     location = pvlib.location.Location(system_loc.latitude,system_loc.longitude) # timezone here too?
     
-    times = clearsky.index.tz_convert('utc')
+    if (clearsky.index.tzinfo in None):
+       raise ValueError('Time zone information required for clearsky times')
     
     solar_position = location.get_solarposition(times)
 
@@ -109,7 +112,10 @@ def remove_cloudy_times(df,irrad,system_loc,viz=False,correct_bin_labelling=Fals
     '''
     
     # Get the clearsky irradiance
-    clearsky = get_clearsky_irrad(system_loc, irrad.index.tz_convert('utc'), correct_bin_labelling=correct_bin_labelling)
+    if (irrad.index.tzinfo is None):
+       raise ValueError('Time zone information required for times of irradiance measurement')
+       
+    clearsky = get_clearsky_irrad(system_loc, irrad.index, correct_bin_labelling=correct_bin_labelling)
     clearsky_poa = get_clearsky_poa(system_loc, clearsky)
     
     # Get the period
@@ -165,6 +171,15 @@ def remove_cloudy_days(df,is_clear,start_time='8:00',end_time='16:00',thresh=0.8
     if len(df)!=len(is_clear):
         raise ValueError('Inputs df and is_clear must be the same length.')
     
+    if (df.index.tzinfo is None):
+       raise ValueError('Time zone information required for dataframe DatetimeIndex')
+
+    # redefine start_time and end_time for timezone of df.index
+    start_time = datetime.strptime(start_time, '%H:%M').time()
+    start_time = start_time.replace(tzinfo=df.index.tzinfo)
+    end_time = datetime.strptime(end_time, '%H:%M').time()
+    end_time = end_time.replace(tzinfo=df.index.tzinfo)
+
     # get the unique dates
     unique_dates = np.unique(df.index.date)
     

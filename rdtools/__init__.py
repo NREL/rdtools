@@ -10,7 +10,6 @@ from filtering import get_clearsky_poa
 from filtering import detect_clearsky_params
 from filtering import remove_cloudy_times
 from filtering import remove_cloudy_days
-from filtering import test_with_STM_data
 
 
 from ._version import get_versions
