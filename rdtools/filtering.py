@@ -195,7 +195,12 @@ def remove_cloudy_days(df,is_clear,start_time='8:00',end_time='16:00',thresh=0.8
         inst_for_this_day = is_clear_series[is_clear_series.index.date==date].between_time(start_time,end_time) # instantaneous datapoints during this day
         num_true = len(inst_for_this_day[inst_for_this_day==True]) # how many are clear
         num_false = len(inst_for_this_day[inst_for_this_day==False]) # how many are cloudy
-        clear_days[date] = float(num_true)/float(num_false+num_true) >= thresh
+        
+        # call a day cloudy if there are no valid points to look at between start_time and end_time
+        if (num_false+num_true)==0:
+            clear_days[date] = False
+        else:
+            clear_days[date] = float(num_true)/float(num_false+num_true) >= thresh
 
     # now up-sample this back to the original index
     clear_days.index = pd.to_datetime(clear_days.index).tz_localize(df.index.tz)
