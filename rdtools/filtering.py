@@ -65,9 +65,11 @@ def get_clearsky_poa(system_loc, clearsky):
     '''
     location = pvlib.location.Location(system_loc.latitude,system_loc.longitude) # timezone here too?
     
-    if (clearsky.index.tzinfo in None):
+    if (clearsky.index.tzinfo is None):
        raise ValueError('Time zone information required for clearsky times')
     
+    times = clearsky.index
+
     solar_position = location.get_solarposition(times)
 
     sim=system_loc.get_irradiance(solar_position['apparent_zenith'],solar_position['azimuth'],clearsky['dni'],clearsky['ghi'],clearsky['dhi'])
@@ -133,7 +135,7 @@ def remove_cloudy_times(df,irrad,system_loc,viz=False,correct_bin_labelling=Fals
     # Plot the unfiltered and filtered data
     if viz:
         import matplotlib.pyplot as plt
-        fig = plt.figure(figsize=(9,5))
+        fig = plt.figure(figsize=(14,9))
         ax = fig.add_subplot(111)
         ax.plot(clearsky['dni'],label='Simulated DNI',color='g')
         ax.plot(irrad,lw=1,color='gray',label='Measured irradiance')
