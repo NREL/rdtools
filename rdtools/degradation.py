@@ -23,11 +23,11 @@ def degradation_ols(normalized_energy):
 
     Returns
     -------
-    degradation_values: dictionary
-        Contains values for annual degradation rate as %/year ('Rd_pct'),
-        slope, intercept, root mean square error of regression ('rmse'),
-        standard error of the slope ('slope_stderr'), intercept ('intercept_stderr'),
-        68.2% confidence interval in Rd, and least squares RegressionResults object ('ols_results')
+    (degradation rate, confidence interval, calc_info)
+        calc_info is a dict that contains slope, intercept,
+        root mean square error of regression ('rmse'), standard error
+        of the slope ('slope_stderr'), intercept ('intercept_stderr'),
+        and least squares RegressionResults object ('ols_results')
     '''
 
     normalized_energy.name = 'normalized_energy'
@@ -62,25 +62,23 @@ def degradation_ols(normalized_energy):
     # Monte Carlo for error in degradation rate
     Rd_CI = _degradation_CI(results)
 
-    degradation = {
-        'Rd_pct': Rd_pct,
+    calc_info = {
         'slope': m,
         'intercept': b,
         'rmse': rmse,
         'slope_stderr': stderr_m,
         'intercept_stderr': stderr_b,
         'ols_result': results,
-        'Rd_CI': Rd_CI
     }
 
-    return degradation
+    return (Rd_pct, Rd_CI, calc_info)
 
 
 def degradation_classical_decomposition(normalized_energy):
     '''
     Description
     -----------
-    Classical decomposition routine from Dirk Jordan, Chris Deline, and Michael Deceglie
+    Classical decomposition routine
 
     Parameters
     ----------
@@ -90,13 +88,12 @@ def degradation_classical_decomposition(normalized_energy):
 
     Returns
     -------
-    degradation_values: dictionary
-        Contains values for annual degradation rate as %/year ('Rd_pct'),
+    (degradation rate, confidence interval, calc_info)
+    calc_info is a dict that contains values for
         slope, intercept, root mean square error of regression ('rmse'),
         standard error of the slope ('slope_stderr') and intercept ('intercept_stderr'),
-        the 68.2% confidence interval for Rd ('Rd_CI'),
         least squares RegressionResults object ('ols_results'),
-        pandas series for the annual rolling mean ('series'),
+        pandas series for the annual rolling mean ('series'), and
         Mann-Kendall test trend ('mk_test_trend')
     '''
 
@@ -157,9 +154,7 @@ def degradation_classical_decomposition(normalized_energy):
     # Monte Carlo for error in degradation rate
     Rd_CI = _degradation_CI(results)
 
-    degradation = {
-        'Rd_pct': Rd_pct,
-        'Rd_CI': Rd_CI,
+    calc_info = {
         'slope': m,
         'intercept': b,
         'rmse': rmse,
@@ -170,7 +165,7 @@ def degradation_classical_decomposition(normalized_energy):
         'mk_test_trend': test_trend
     }
 
-    return degradation
+    return (Rd_pct, Rd_CI, calc_info)
 
 
 def degradation_year_on_year(normalized_energy, recenter=True):
@@ -188,11 +183,9 @@ def degradation_year_on_year(normalized_energy, recenter=True):
 
     Returns
     -------
-    degradation_values: dictionary
-        Contains values for median degradation rate and standard error
-        'Rd_med', 'Rd_stderr_pct', 'YoY_filtered'
-        where YoY_filtered is a pandas series containing right-labeled
-        year on year data
+    (degradation rate, confidence interval, calc_info)
+        calc_info is a dict that contains a pandas series
+        of right-labeled year on year slopes ('YoY_values')
     '''
 
     # Ensure the data is in order
@@ -233,21 +226,20 @@ def degradation_year_on_year(normalized_energy, recenter=True):
 
     yoy_result = df.yoy.dropna()
 
-    med1 = yoy_result.median()
+    Rd_pct = yoy_result.median()
 
-    # bootstrap to determine 68% CI for the 2 different outlier removal methods
+    # bootstrap to determine 68% CI
     n1 = len(yoy_result)
     reps = 10000
     xb1 = np.random.choice(yoy_result, (n1, reps), replace=True)
     mb1 = np.median(xb1, axis=0)
-    CI = np.percentile(mb1, [15.9, 84.1])
+    Rd_CI = np.percentile(mb1, [15.9, 84.1])
 
-    degradation_values = {
-        'Rd_pct': med1,
-        'Rd_CI': CI,
+    calc_info = {
         'YoY_values': yoy_result
     }
-    return degradation_values
+
+    return (Rd_pct, Rd_CI, calc_info)
 
 
 def _mk_test(x, alpha=0.05):
