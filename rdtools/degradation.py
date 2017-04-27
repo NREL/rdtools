@@ -173,7 +173,7 @@ def degradation_classical_decomposition(normalized_energy):
     return degradation
 
 
-def degradation_year_on_year(normalized_energy, freq='D'):
+def degradation_year_on_year(normalized_energy, recenter=True):
     '''
     Description
     -----------
@@ -183,79 +183,69 @@ def degradation_year_on_year(normalized_energy, freq='D'):
     ----------
     normalized_energy: Pandas data series (numeric) containing corrected performance ratio
         timeseries index in monthly format
-    freq: string to specify aggregation frequency, default value 'D' (daily)
+    recenter: bool to specify whether data is automaticalys centered to normalized yield
+        of 1 based on first year, default value True
 
     Returns
     -------
     degradation_values: dictionary
         Contains values for median degradation rate and standard error
         'Rd_med', 'Rd_stderr_pct', 'YoY_filtered'
-        where YoY_filtered is list containing year on year data for
-        specified frequency
+        where YoY_filtered is a pandas series containing right-labeled
+        year on year data
     '''
 
-    if freq == 'MS':
-        # monthly (month start)
-        normalized_energy = normalized_energy.resample('MS').mean()
-        YearSampleSize = 12
-    elif freq == 'M':
-        # monthly (month end)
-        normalized_energy = normalized_energy.resample('M').mean()
-        YearSampleSize = 12
-    elif freq == 'W':
-        # weekly
-        normalized_energy = normalized_energy.resample('W').mean()
-        YearSampleSize = 52
-    elif freq == 'H':
-        # hourly
-        normalized_energy = normalized_energy.resample('H').mean()
-        YearSampleSize = 8760
-    elif freq in ['D', '30T', '15T', 'T']:
-        # sample to daily by default
-        normalized_energy = normalized_energy.resample('D').mean()
-        YearSampleSize = 365
+    # Ensure the data is in order
+    normalized_energy = normalized_energy.sort_index()
+    normalized_energy.name = 'energy'
+    normalized_energy.index.name = 'dt'
+
+    # Detect sub-daily data:
+    if min(np.diff(normalized_energy.index.values, n=1)) < np.timedelta64(24, 'h'):
+        raise ValueError('normalized_energy must not be more frequent than daily')
+
+    # Detect less than 2 years of data
+    if normalized_energy.index[-1] - normalized_energy.index[1] < pd.Timedelta('730h'):
+        raise ValueError('must provide at least two years or normalized energy')
+
+    # Auto center
+    if recenter:
+        start = normalized_energy.index[0]
+        oneyear = start + pd.Timedelta('364d')
+        renorm = normalized_energy[start:oneyear].median()
     else:
-        raise Exception('Frequency {} not supported'.format(freq))
+        renorm = 1
 
-    # year-on-year approach
-    YoYresult = normalized_energy.diff(YearSampleSize) / normalized_energy * 100
+    normalized_energy = normalized_energy.reset_index()
+    normalized_energy['dt_shifted'] = normalized_energy.dt + pd.DateOffset(years=1)
 
-    def remove_outliers(x):
-        '''
-        Description
-        -----------
-        Remove data points greater or smaller than 100: the system can only lose 100%/year,
-        however arbitrary large number can originate by division close to zero!
+    # Merge with what happened one year ago, use tolerance of 8 days to allow for
+    # weekly aggregated data
+    df = pd.merge_asof(normalized_energy[['dt', 'energy']], normalized_energy,
+                       left_on='dt', right_on='dt_shifted',
+                       suffixes=['', '_right'],
+                       tolerance=pd.Timedelta('8D')
+                       )
 
-        Parameters
-        ----------
-        x: float, element of list
+    df['time_diff_years'] = (df.dt - df.dt_right).astype('timedelta64[h]') / 8760.0
+    df['yoy'] = 100.0 * (df.energy - df.energy_right) / (renorm * df.time_diff_years)
+    df.index = df.dt
 
-        Returns
-        -------
-        x: float x if absolute value of x is < 100
-        '''
-        if x < 100 and x > -100:
-            return x
+    yoy_result = df.yoy.dropna()
 
-    YoY_filtered1 = filter(remove_outliers, YoYresult)
-
-    med1 = np.median(YoY_filtered1)
+    med1 = yoy_result.median()
 
     # bootstrap to determine 68% CI for the 2 different outlier removal methods
-    n1 = len(YoY_filtered1)
-    reps = 1000
-    xb1 = np.random.choice(YoY_filtered1, (n1, reps), replace=True)
+    n1 = len(yoy_result)
+    reps = 10000
+    xb1 = np.random.choice(yoy_result, (n1, reps), replace=True)
     mb1 = np.median(xb1, axis=0)
-    mb1.sort()
-    lpc1 = np.percentile(mb1, 15.9)
-    upc1 = np.percentile(mb1, 84.1)
-    unc1 = np.round(upc1 - lpc1, 2)
+    CI = np.percentile(mb1, [15.9, 84.1])
 
     degradation_values = {
-        'Rd_median': med1,
-        'Rd_stderr_pct': unc1,
-        'YoY_filtered': YoY_filtered1
+        'Rd_pct': med1,
+        'Rd_CI': CI,
+        'YoY_values': yoy_result
     }
     return degradation_values
 
