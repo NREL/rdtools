@@ -247,7 +247,7 @@ def remove_cloudy_days_from_curve(df,energy,quant=0.90,viz=False,return_when_cle
     daily_metrics['ratio'] = (daily_metrics['max']/daily_metrics['linelength']).replace([np.inf,-np.inf],np.nan)
     
     # select clear days based on the ratio
-    clear_days = daily_metrics['ratio'] > daily_metrics['ratio'].quantile(0.95)
+    clear_days = daily_metrics['ratio'] > daily_metrics['ratio'].quantile(quant)
     
     # go from clear DAYS to clear TIMES
     clear_inst = clear_days.reindex(index=energy.index,method='ffill')
