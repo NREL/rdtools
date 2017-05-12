@@ -7,15 +7,12 @@ import numpy as np
 
 from rdtools import degradation_ols, degradation_classical_decomposition, degradation_year_on_year
 
-# Allowed frequencies for degradation_ols
-list_ols_input_freq = ['MS','M','W','D','H','T','S']
-# Allowed frequencies for degradation_classical_decomposition and degradation_year_on_year
-list_CD_YOY_input_freq = ['MS','M','W','D']
-
 class DegradationTestCase(unittest.TestCase):
-    ''' Unit tests for degradation module. '''
+    ''' Unit tests for degradation module. 
+        Works with both python and nosetests
+    '''
 
-    def get_test_ols_corr_energy(self, rd, input_freq):
+    def get_ols_corr_energy(self, rd, input_freq):
         ''' Create input for degradation_ols function, depending on frequency. 
             Allowed frequencies for this degradation function are 'MS', 'M', 'W', 'D'
             'H', 'T' and 'S'.
@@ -61,7 +58,7 @@ class DegradationTestCase(unittest.TestCase):
         corr_energy = pd.Series(data=y, index=x)
         return corr_energy
 
-    def get_test_CD_YOY_corr_energy(self, rd, input_freq):
+    def get_CD_YOY_corr_energy(self, rd, input_freq):
         ''' Create input for degradation_classical_decomposition and degradation_year_on_year
             functions, depending on frequency. Allowed frequencies for both of these degradation 
             functions  are 'MS', 'M', 'W' and 'D'.
@@ -96,19 +93,24 @@ class DegradationTestCase(unittest.TestCase):
     def setUp(self):
         # define module constants and parameters
 
+        # Allowed frequencies for degradation_ols
+        self.list_ols_input_freq = ['MS','M','W','D','H','T','S']
+        # Allowed frequencies for degradation_classical_decomposition and degradation_year_on_year
+        self.list_CD_YOY_input_freq = ['MS','M','W','D']
+
         self.rd = -0.005
      
         test_ols_corr_energy = {}
         test_CD_YOY_corr_energy = {}
         
-        for input_freq in list_ols_input_freq:
-            corr_energy = self.get_test_ols_corr_energy(self.rd, input_freq)
+        for input_freq in self.list_ols_input_freq:
+            corr_energy = self.get_ols_corr_energy(self.rd, input_freq)
             test_ols_corr_energy[input_freq] = corr_energy
 
         self.test_ols_corr_energy = test_ols_corr_energy
         
-        for input_freq in list_CD_YOY_input_freq:
-            corr_energy = self.get_test_CD_YOY_corr_energy(self.rd, input_freq)
+        for input_freq in self.list_CD_YOY_input_freq:
+            corr_energy = self.get_CD_YOY_corr_energy(self.rd, input_freq)
             test_CD_YOY_corr_energy[input_freq] = corr_energy
          
         self.test_CD_YOY_corr_energy = test_CD_YOY_corr_energy
@@ -123,10 +125,12 @@ class DegradationTestCase(unittest.TestCase):
         print '\r', 'Running ', funcName
 
         # test ols degradation calc
-        for input_freq in list_ols_input_freq:
-            print input_freq
+        for input_freq in self.list_ols_input_freq:
+            print 'Frequency: ', input_freq
             rd_result = degradation_ols(self.test_ols_corr_energy[input_freq])
             self.assertAlmostEqual(rd_result[0], 100*self.rd, places=1)
+            print 'Actual: ', 100*self.rd
+            print 'Estimated: ', rd_result[0]
 
         # TODO
         # - support for different time series frequencies
@@ -139,11 +143,12 @@ class DegradationTestCase(unittest.TestCase):
         print '\r', 'Running ', funcName
 
         # test classical decomposition degradation calc
-        for input_freq in list_CD_YOY_input_freq:
-            print input_freq
+        for input_freq in self.list_CD_YOY_input_freq:
+            print 'Frequency: ', input_freq
             rd_result = degradation_classical_decomposition(self.test_CD_YOY_corr_energy[input_freq])
             self.assertAlmostEqual(rd_result[0], 100*self.rd, places=1)
-
+            print 'Actual: ', 100*self.rd
+            print 'Estimated: ', rd_result[0]
         # TODO
         # - support for different time series frequencies
         # - inputs
@@ -155,10 +160,12 @@ class DegradationTestCase(unittest.TestCase):
         print '\r', 'Running ', funcName
 
         # test YOY degradation calc
-        for input_freq in list_CD_YOY_input_freq:
-            print input_freq
+        for input_freq in self.list_CD_YOY_input_freq:
+            print 'Frequency: ', input_freq
             rd_result = degradation_year_on_year(self.test_CD_YOY_corr_energy[input_freq])
             self.assertAlmostEqual(rd_result[0], 100*self.rd, places=1)
+            print 'Actual: ', 100*self.rd
+            print 'Estimated: ', rd_result[0]
 
         # TODO
         # - support for different time series frequencies

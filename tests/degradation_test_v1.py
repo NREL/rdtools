@@ -7,15 +7,17 @@ import numpy as np
 
 from rdtools import degradation_ols, degradation_classical_decomposition, degradation_year_on_year
 
-# Allowed frequencies for degradation_ols
-list_ols_input_freq = ['MS','M','W','D','H','T','S']
-# Allowed frequencies for degradation_classical_decomposition and degradation_year_on_year
-list_CD_YOY_input_freq = ['MS','M','W','D']
-
 class DegradationTestCase(unittest.TestCase):
-    ''' Unit tests for degradation module. '''
+    ''' Unit tests for degradation module. 
+        This code works with python but not with nosetests
+    '''
 
-    def get_test_ols_corr_energy(self, rd, input_freq):
+    def __init__(self, testname, freq, list_CD_YOY_freq):
+        super(DegradationTestCase, self).__init__(testname)
+        self.input_freq = freq
+        self.list_CD_YOY_input_freq = list_CD_YOY_freq
+    
+    def get_ols_corr_energy(self, rd, input_freq):
         ''' Create input for degradation_ols function, depending on frequency. 
             Allowed frequencies for this degradation function are 'MS', 'M', 'W', 'D'
             'H', 'T' and 'S'.
@@ -61,7 +63,7 @@ class DegradationTestCase(unittest.TestCase):
         corr_energy = pd.Series(data=y, index=x)
         return corr_energy
 
-    def get_test_CD_YOY_corr_energy(self, rd, input_freq):
+    def get_CD_YOY_corr_energy(self, rd, input_freq):
         ''' Create input for degradation_classical_decomposition and degradation_year_on_year
             functions, depending on frequency. Allowed frequencies for both of these degradation 
             functions  are 'MS', 'M', 'W' and 'D'.
@@ -97,10 +99,10 @@ class DegradationTestCase(unittest.TestCase):
 
         self.rd = -0.005
 
-        if input_freq in list_CD_YOY_input_freq:
-            self.test_CD_YOY_corr_energy = self.get_test_CD_YOY_corr_energy(self.rd, input_freq)
+        if self.input_freq in self.list_CD_YOY_input_freq:
+            self.test_CD_YOY_corr_energy = self.get_CD_YOY_corr_energy(self.rd, self.input_freq)
         
-        self.test_ols_corr_energy = self.get_test_ols_corr_energy(self.rd, input_freq)
+        self.test_ols_corr_energy = self.get_ols_corr_energy(self.rd, self.input_freq)
              
 
     def tearDown(self):
@@ -113,8 +115,11 @@ class DegradationTestCase(unittest.TestCase):
         print '\r', 'Running ', funcName
 
         # test ols degradation calc
+        print 'Frequency: ', self.input_freq
         rd_result = degradation_ols(self.test_ols_corr_energy)
         self.assertAlmostEqual(rd_result[0], 100*self.rd, places=1)
+        print 'Actual: ', 100*self.rd
+        print 'Estimated: ', rd_result[0]
 
         # TODO
         # - support for different time series frequencies
@@ -127,8 +132,11 @@ class DegradationTestCase(unittest.TestCase):
         print '\r', 'Running ', funcName
 
         # test classical decomposition degradation calc
+        print 'Frequency: ', self.input_freq
         rd_result = degradation_classical_decomposition(self.test_CD_YOY_corr_energy)
         self.assertAlmostEqual(rd_result[0], 100*self.rd, places=1)
+        print 'Actual: ', 100*self.rd
+        print 'Estimated: ', rd_result[0]
 
         # TODO
         # - support for different time series frequencies
@@ -141,8 +149,11 @@ class DegradationTestCase(unittest.TestCase):
         print '\r', 'Running ', funcName
 
         # test classical decomposition degradation calc
+        print 'Frequency: ', self.input_freq
         rd_result = degradation_year_on_year(self.test_CD_YOY_corr_energy)
         self.assertAlmostEqual(rd_result[0], 100*self.rd, places=1)
+        print 'Actual: ', 100*self.rd
+        print 'Estimated: ', rd_result[0]
 
         # TODO
         # - support for different time series frequencies
@@ -150,13 +161,22 @@ class DegradationTestCase(unittest.TestCase):
 
 
 if __name__ == '__main__':
+
+    # Allowed frequencies for degradation_ols
+    list_ols_input_freq = ['MS','M','W','D','H','T','S']
+    # Allowed frequencies for degradation_classical_decomposition and degradation_year_on_year
+    list_CD_YOY_input_freq = ['MS','M','W','D']
+
     for input_freq in list_ols_input_freq:
         # Depending on frequency, run all tests or only test_degradation_with_ols
-        print input_freq
+        suite = unittest.TestSuite()
+        suite.addTest(DegradationTestCase("test_degradation_with_ols", \
+                      input_freq, list_CD_YOY_input_freq))
         if input_freq in list_CD_YOY_input_freq:
-            unittest.main(exit=False)
-        else:
-            suite = unittest.TestSuite()
-            suite.addTest(DegradationTestCase("test_degradation_with_ols"))
-            runner = unittest.TextTestRunner()
-            runner.run(suite)
+            suite.addTest(DegradationTestCase("test_degradation_year_on_year",\
+                          input_freq, list_CD_YOY_input_freq))
+            suite.addTest(DegradationTestCase("test_degradation_classical_decomposition",\
+                          input_freq, list_CD_YOY_input_freq))
+
+        runner = unittest.TextTestRunner()
+        runner.run(suite)
