@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 
-python -m degradation_test_v1
-python -m degradation_test_v2
+python -m degradation_test
 python -m normalization_pvwatts_test
 python -m normalization_sapm_test

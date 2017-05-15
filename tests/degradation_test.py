@@ -84,9 +84,11 @@ class DegradationTestCase(unittest.TestCase):
         # Allowed frequencies for degradation_ols
         cls.list_ols_input_freq = ['MS', 'M', 'W', 'D', 'H', 'T', 'S', 'Irregular_D']
 
-        # Allowed frequencies for ddegradation_classical_decomposition
-        # in principle CD works on higher frequency data but that makes the
-        # tests painfully slow
+        ''' 
+        Allowed frequencies for degradation_classical_decomposition
+        in principle CD works on higher frequency data but that makes the
+        tests painfully slow
+        '''
         cls.list_CD_input_freq = ['MS', 'M', 'W', 'D']
 
         # Allowed frequencies for degradation_year_on_year
@@ -101,18 +103,6 @@ class DegradationTestCase(unittest.TestCase):
             test_corr_energy[input_freq] = corr_energy
 
         cls.test_corr_energy = test_corr_energy
-
-        # for input_freq in cls.list_ols_input_freq:
-        #     corr_energy = cls.get_ols_corr_energy(cls.rd, input_freq)
-        #     test_ols_corr_energy[input_freq] = corr_energy
-
-        # cls.test_ols_corr_energy = test_ols_corr_energy
-
-        # for input_freq in cls.list_CD_YOY_input_freq:
-        #     corr_energy = cls.get_CD_YOY_corr_energy(cls.rd, input_freq)
-        #     test_CD_YOY_corr_energy[input_freq] = corr_energy
-
-        # cls.test_CD_YOY_corr_energy = test_CD_YOY_corr_energy
 
     def test_degradation_with_ols(cls):
         ''' Test degradation with ols. '''
