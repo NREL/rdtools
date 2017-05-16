@@ -20,5 +20,7 @@ More usage examples to come...
 ## Unit tests
 
 To run tests from the main directory:
+```
 $ chmod -x tests/run_tests
 $ tests/run_tests
+```
