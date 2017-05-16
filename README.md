@@ -19,8 +19,6 @@ More usage examples to come...
 
 ## Unit tests
 
-Run unit tests via nose in the main directory.
-
-```bash
-$ nosetests
-```
+To run tests from the main directory:
+$ chmod -x tests/run_tests
+$ tests/run_tests
