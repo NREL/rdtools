@@ -9,6 +9,7 @@ import pvlib
 import numpy as np
 import datetime
 from datetime import datetime
+import collections
 
 def get_period(times):
     '''
@@ -38,17 +39,20 @@ def get_clearsky_irrad(system_loc, times, correct_bin_labelling=False):
         Whether clearsky values should be taken from times offset by
         half a period from the reported index.
     '''
-    location = pvlib.location.Location(system_loc.latitude,system_loc.longitude)
+    location = pvlib.location.Location(system_loc.latitude,system_loc.longitude, tz=times.tzinfo)
     
     if correct_bin_labelling:
         period = get_period(times)
         times_shifted = times + pd.Timedelta(minutes=period/2.0)
         clearsky = location.get_clearsky(times_shifted)
-        clearsky.index = times
-    
     else:
         clearsky = location.get_clearsky(times)
     
+    if isinstance(clearsky, collections.OrderedDict):
+       clearsky = pd.DataFrame.from_dict(clearsky)
+       
+    clearsky.index = times
+
     return clearsky
 
 def get_clearsky_poa(system_loc, clearsky):
@@ -135,7 +139,7 @@ def remove_cloudy_times(df,irrad,system_loc,viz=False,correct_bin_labelling=Fals
     # Plot the unfiltered and filtered data
     if viz:
         import matplotlib.pyplot as plt
-        fig = plt.figure(figsize=(14,9))
+        fig = plt.figure(figsize=(20,12))
         ax = fig.add_subplot(111)
         ax.plot(clearsky['dni'],label='Simulated DNI',color='g')
         ax.plot(irrad,lw=1,color='gray',label='Measured irradiance')
