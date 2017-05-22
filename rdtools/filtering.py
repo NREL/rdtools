@@ -199,7 +199,12 @@ def remove_cloudy_days(df,is_clear,start_time='8:00',end_time='16:00',thresh=0.8
         inst_for_this_day = is_clear_series[is_clear_series.index.date==date].between_time(start_time,end_time) # instantaneous datapoints during this day
         num_true = len(inst_for_this_day[inst_for_this_day==True]) # how many are clear
         num_false = len(inst_for_this_day[inst_for_this_day==False]) # how many are cloudy
-        clear_days[date] = float(num_true)/float(num_false+num_true) >= thresh
+        
+        # call a day cloudy if there are no valid points to look at between start_time and end_time
+        if (num_false+num_true)==0:
+            clear_days[date] = False
+        else:
+            clear_days[date] = float(num_true)/float(num_false+num_true) >= thresh
 
     # now up-sample this back to the original index
     clear_days.index = pd.to_datetime(clear_days.index).tz_localize(df.index.tz)
@@ -207,3 +212,77 @@ def remove_cloudy_days(df,is_clear,start_time='8:00',end_time='16:00',thresh=0.8
     df_filtered = df[clear_times==True]
     
     return df_filtered
+
+def remove_cloudy_days_from_curve(df,energy,quant=0.90,viz=False,return_when_clear=False):
+    '''
+    Filter out cloudy days just based on the shape of the power curve.
+    
+    This uses the empirical result that all clearsky days fall around the same
+    straight line on a plot of daily max energy vs. energy curve arc length.
+    
+    Parameters
+    ----------
+    df: Pandas DataFrame or Series to be filtered
+    energy: Series
+        Energy or power values with which to filter data 	    
+    quant: float
+        Quantile threshold for splitting clear and cloudy days
+    viz: Boolean
+        Whether the unfiltered and filtered irradiance should be plotted
+    return_when_clear: Boolean
+        Whether the Boolean output of when clearsky is detected should be
+        returned.    
+    '''
+    
+    # df which will store the metrics for each day
+    daily_metrics = pd.DataFrame(index = energy.copy().resample('1D').mean().index)
+    
+    # each daily metric will be some sort of resampling of that day's values
+    resampler = energy.copy().resample('1D')
+
+    # function to compute the arc length for a day's energy curve
+    def line_length(s):
+        x = abs(s.diff()).sum()
+        return x
+        
+    # calculate the daily line length, max, and their ratio
+    daily_metrics['linelength'] = resampler.apply(line_length)
+    daily_metrics['max'] = resampler.max()
+    daily_metrics['ratio'] = (daily_metrics['max']/daily_metrics['linelength']).replace([np.inf,-np.inf],np.nan)
+    
+    # select clear days based on the ratio
+    clear_days = daily_metrics['ratio'] > daily_metrics['ratio'].quantile(quant)
+    
+    # go from clear DAYS to clear TIMES
+    clear_inst = clear_days.reindex(index=energy.index,method='ffill')
+    
+    df_filtered = df.copy()
+    df_filtered = df_filtered[clear_inst==True]
+    
+    # plot the daily points and filtered curves if necessary
+    if viz:
+        
+        import matplotlib.pyplot as plt
+        
+        fig = plt.figure(figsize=(9,5))
+        
+        ax1 = fig.add_subplot(121)
+        ax1.scatter(daily_metrics['linelength'],daily_metrics['max'],color='gray',label='cloudy days')
+        ax1.scatter(daily_metrics['linelength'][clear_days==True],daily_metrics['max'][clear_days==True],color='g',label='clearsky days')
+        ax1.legend()
+        ax1.set_xlabel('daily line length')
+        ax1.set_ylabel('daily max')
+        
+        ax2 = fig.add_subplot(122)
+        ax2.plot(energy,color='gray')
+        ax2.plot(energy[clear_inst==True],'o',color='g')
+
+        plt.show()
+        plt.pause(0.1)
+        plt.show()
+        
+    if return_when_clear:
+        return df_filtered, clear_inst
+        
+    else:
+        return df_filtered
