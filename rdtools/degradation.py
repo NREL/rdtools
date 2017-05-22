@@ -176,16 +176,21 @@ def degradation_year_on_year(normalized_energy, recenter=True):
 
     Parameters
     ----------
-    normalized_energy: Pandas data series (numeric) containing corrected performance ratio
-        timeseries index in monthly format
-    recenter: bool to specify whether data is automaticalys centered to normalized yield
-        of 1 based on first year, default value True
+    normalized_energy:  Pandas data series (numeric)
+        corrected performance ratio timeseries index in monthly format
+    recenter:  bool, default value True
+        specify whether data is centered to normalized yield of 1 based on first year
 
     Returns
     -------
-    (degradation rate, confidence interval, calc_info)
-        calc_info is a dict that contains a pandas series
-        of right-labeled year on year slopes ('YoY_values')
+    tuple of (degradation_rate, confidence interval, calc_info)
+        degradation_rate:  float
+            rate of relative performance change in %/yr
+        confidence_interval:  float
+            one-sigma confidence interval of degradation rate estimate
+        calc_info:  dict
+            ('YoY_values') pandas series of right-labeled year on year slopes
+            ('renormalizing_factor') float of value used to scale data
     '''
 
     # Ensure the data is in order
@@ -199,17 +204,17 @@ def degradation_year_on_year(normalized_energy, recenter=True):
 
     # Detect less than 2 years of data
     if normalized_energy.index[-1] - normalized_energy.index[1] < pd.Timedelta('730h'):
-        raise ValueError('must provide at least two years or normalized energy')
+        raise ValueError('must provide at least two years of normalized energy')
 
     # Auto center
     if recenter:
-        start = normalized_energy.index[0]
-        oneyear = start + pd.Timedelta('364d')
-        renorm = normalized_energy[start:oneyear].median()
+        renorm = normalized_energy.resample('12M').median().max()
     else:
-        renorm = 1
+        renorm = 1.0
 
     normalized_energy = normalized_energy.reset_index()
+    normalized_energy['energy'] = normalized_energy['energy'] / renorm
+
     normalized_energy['dt_shifted'] = normalized_energy.dt + pd.DateOffset(years=1)
 
     # Merge with what happened one year ago, use tolerance of 8 days to allow for
@@ -221,7 +226,7 @@ def degradation_year_on_year(normalized_energy, recenter=True):
                        )
 
     df['time_diff_years'] = (df.dt - df.dt_right).astype('timedelta64[h]') / 8760.0
-    df['yoy'] = 100.0 * (df.energy - df.energy_right) / (renorm * df.time_diff_years)
+    df['yoy'] = 100.0 * (df.energy - df.energy_right) / (df.time_diff_years)
     df.index = df.dt
 
     yoy_result = df.yoy.dropna()
@@ -236,7 +241,8 @@ def degradation_year_on_year(normalized_energy, recenter=True):
     Rd_CI = np.percentile(mb1, [15.9, 84.1])
 
     calc_info = {
-        'YoY_values': yoy_result
+        'YoY_values': yoy_result,
+        'renormalizing_factor': renorm
     }
 
     return (Rd_pct, Rd_CI, calc_info)
