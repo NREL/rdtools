@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+
+python -m tests.degradation_test
+python -m tests.normalization_pvwatts_test
+python -m tests.normalization_sapm_test
