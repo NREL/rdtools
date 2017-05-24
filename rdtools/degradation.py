@@ -190,7 +190,7 @@ def degradation_year_on_year(normalized_energy, recenter=True):
             one-sigma confidence interval of degradation rate estimate
         calc_info:  dict
             ('YoY_values') pandas series of right-labeled year on year slopes
-            ('renormalizing_factor') float of value used to scale data
+            ('renormalizing_factor') float of value used to recenter data
     '''
 
     # Ensure the data is in order
@@ -208,7 +208,9 @@ def degradation_year_on_year(normalized_energy, recenter=True):
 
     # Auto center
     if recenter:
-        renorm = normalized_energy.resample('12M').median().max()
+        start = normalized_energy.index[0]
+        oneyear = start + pd.Timedelta('364d')
+        renorm = normalized_energy[start:oneyear].median()
     else:
         renorm = 1.0
 
