@@ -21,6 +21,5 @@ More usage examples to come...
 
 To run tests from the main directory:
 ```
-$ chmod +x tests/run_tests
 $ tests/run_tests
 ```
