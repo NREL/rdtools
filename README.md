@@ -15,7 +15,7 @@ Python tools for photovoltaic degradation analysis.
 import rdtools
 ```
 
-More usage examples to come...
+For usage examples, look at the notebooks in rdtools/docs.
 
 ## Unit tests
 
@@ -23,3 +23,6 @@ To run tests from the main directory:
 ```
 $ tests/run_tests
 ```
+## Wiki
+
+Check out the [wiki](https://github.com/kwhanalytics/rdtools/wiki) for information on development goals and framework
