@@ -52,6 +52,7 @@ class SapmNormalizationTestCase(unittest.TestCase):
         energy_index = pd.date_range(start='2012-01-01',
                                      periods=energy_periods,
                                      freq=energy_freq)
+
         dummy_energy = np.repeat(a=100, repeats=energy_periods)
         self.energy = pd.Series(dummy_energy, index=energy_index)
         self.energy_periods = 12
@@ -92,7 +93,7 @@ class SapmNormalizationTestCase(unittest.TestCase):
 
         # Test output is same frequency and length as energy
         self.assertEqual(corr_energy.index.freq, self.energy.index.freq)
-        self.assertEqual(len(corr_energy), 13)
+        self.assertEqual(len(corr_energy), len(self.energy))
 
         # TODO, test for:
         #     incorrect data format
