@@ -9,8 +9,7 @@ import pvlib
 import numpy as np
 
 
-def pvwatts_dc_power(poa_global, P_ref, T_cell=None,
-                     G_ref=1000, T_ref=25, gamma_pdc=None):
+def pvwatts_dc_power(poa_global, P_ref, T_cell=None, G_ref=1000, T_ref=25, gamma_pdc=None):
     '''
     PVWatts v5 Module Model: DC power given effective poa poa_global, module
     nameplate power, and cell temperature. This function differs from the PVLIB
@@ -25,7 +24,7 @@ def pvwatts_dc_power(poa_global, P_ref, T_cell=None,
         Total effective plane of array irradiance.
     P_ref: numeric
         Rated DC power of array.
-    T_cell: Pandas Series (numeric)
+        T_cell: Pandas Series (numeric)
         Measured or derived cell temperature [degrees celsius].
         Time series assumed to be same frequency as poa_global.
     G_ref: numeric, default value is 1000
@@ -86,7 +85,9 @@ def normalize_with_pvwatts(energy, pvwatts_kws):
     Returns
     -------
     normalized_energy: Pandas Series (numeric)
-        Energy divided by Sandia Model DC energy.
+        Energy divided by PVWatts DC energy.
+    insolation:: Pandas Series (numeric)
+        Insolation associated with each normalized point
     '''
 
     if energy.index.freq is None:
@@ -95,9 +96,11 @@ def normalize_with_pvwatts(energy, pvwatts_kws):
         freq = energy.index.freq
 
     dc_power = pvwatts_dc_power(**pvwatts_kws)
+    irrad = pvwatts_kws['poa_global']
 
     # Length of each right labeled interval
     model_tds = (dc_power.index - dc_power.index.shift(-1)).astype('int64') / (10.0**9 * 3600.0)
+    irrad_tds = (irrad.index - irrad.index.shift(-1)).astype('int64') / (10.0**9 * 3600.0)
     measure_tds = (energy.index - energy.index.shift(-1)).astype('int64') / (10.0**9 * 3600.0)
 
     mean_model_td = np.mean(model_tds)
@@ -108,15 +111,24 @@ def normalize_with_pvwatts(energy, pvwatts_kws):
         energy_dc = energy_dc.resample(freq).sum()
         energy_dc = energy_dc.reindex(energy.index, method='nearest')
 
+        insolation = irrad * irrad_tds
+        insolation = insolation.resample(freq).sum()
+        insolation = insolation.reindex(energy.index, method='nearest')
+
     elif mean_model_td > mean_measure_td:
         dc_power = dc_power.resample(freq).asfreq()
         dc_power = dc_power.interpolate()
         dc_power = dc_power.reindex(energy.index, method='nearest')
         energy_dc = dc_power * measure_tds  # timedelta is that of measurment due to reindex
 
+        irrad = irrad.resample(freq).asfreq()
+        irrad = irrad.interpolate()
+        irrad = irrad.reindex(energy.index, method='nearest')
+        insolation = irrad * measure_tds  # timedelta is that of measurment due to reindex
+
     normalized_energy = energy / energy_dc
 
-    return normalized_energy
+    return normalized_energy, insolation
 
 
 def sapm_dc_power(pvlib_pvsystem, met_data):
@@ -141,6 +153,8 @@ def sapm_dc_power(pvlib_pvsystem, met_data):
     -------
     dc_power: Pandas Series (numeric)
         DC power derived using Sandia Array Performance Model.
+    effective_poa: Pandas Series (numeric)
+        Effective irradiance calculated with SAPM
     '''
 
     solar_position = pvlib_pvsystem.get_solarposition(met_data.index)
@@ -176,7 +190,8 @@ def sapm_dc_power(pvlib_pvsystem, met_data):
         .pvwatts_dc(g_poa_effective=effective_poa,
                     temp_cell=temp_cell['temp_cell'])
 
-    return dc_power
+
+    return dc_power, effective_poa
 
 
 def normalize_with_sapm(energy, sapm_kws):
@@ -207,6 +222,8 @@ def normalize_with_sapm(energy, sapm_kws):
     -------
     normalized_energy: Pandas Series (numeric)
         Energy divided by Sandia Model DC energy.
+    insolation:: Pandas Series (numeric)
+        Insolation associated with each normalized point
     '''
 
     if energy.index.freq is None:
@@ -214,10 +231,11 @@ def normalize_with_sapm(energy, sapm_kws):
     else:
         freq = energy.index.freq
 
-    dc_power = sapm_dc_power(**sapm_kws)
+    dc_power, irrad = sapm_dc_power(**sapm_kws)
 
     # Length of each right labeled interval
     model_tds = (dc_power.index - dc_power.index.shift(-1)).astype('int64') / (10.0**9 * 3600.0)
+    irrad_tds = (irrad.index - irrad.index.shift(-1)).astype('int64') / (10.0**9 * 3600.0)
     measure_tds = (energy.index - energy.index.shift(-1)).astype('int64') / (10.0**9 * 3600.0)
 
     mean_model_td = np.mean(model_tds)
@@ -228,12 +246,21 @@ def normalize_with_sapm(energy, sapm_kws):
         energy_dc = energy_dc.resample(freq).sum()
         energy_dc = energy_dc.reindex(energy.index, method='nearest')
 
+        insolation = irrad * irrad_tds
+        insolation = insolation.resample(freq).sum()
+        insolation = insolation.reindex(energy.index, method='nearest')
+
     elif mean_model_td > mean_measure_td:
         dc_power = dc_power.resample(freq).asfreq()
         dc_power = dc_power.interpolate()
         dc_power = dc_power.reindex(energy.index, method='nearest')
         energy_dc = dc_power * measure_tds  # timedelta is that of measurment due to reindex
 
+        irrad = irrad.resample(freq).asfreq()
+        irrad = irrad.interpolate()
+        irrad = irrad.reindex(energy.index, method='nearest')
+        insolation = irrad * measure_tds  # timedelta is that of measurment due to reindex
+
     normalized_energy = energy / energy_dc
 
-    return normalized_energy
+    return normalized_energy, insolation

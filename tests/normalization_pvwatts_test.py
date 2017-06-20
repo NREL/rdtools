@@ -74,8 +74,7 @@ class PVWattsNormalizationTestCase(unittest.TestCase):
             'gamma_pdc': self.gamma_pdc,
         }
 
-        corr_energy = normalize_with_pvwatts(self.energy, pvw_kws)
-        print corr_energy
+        corr_energy, insolation = normalize_with_pvwatts(self.energy, pvw_kws)
 
         # Test output is same frequency and length as energy
         self.assertEqual(corr_energy.index.freq, self.energy.index.freq)
