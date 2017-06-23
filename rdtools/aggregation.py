@@ -7,7 +7,7 @@ def aggregation_insol(normalized_energy, insolation, frequency='D'):
 
     Parameters
     ----------
-    normalize_energy: Pandas series (numeric)
+    normalized_energy: Pandas series (numeric)
         Normalized energy time series
     insolation: Pandas series (numeric)
         Time series of insolation associated with each normalize_energy point

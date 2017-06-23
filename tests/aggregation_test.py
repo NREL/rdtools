@@ -15,9 +15,6 @@ class AggregationTestCase(unittest.TestCase):
 
         self.aggregated = aggregation_insol(self.energy, self.insol, frequency='D')
 
-    def tearDown(self):
-        pass
-
     # Test for the expected energy waited result
     def test_aggregation_insol(self):
         self.assertTrue((self.aggregated == 3.0).all())
