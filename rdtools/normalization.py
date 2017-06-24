@@ -23,7 +23,7 @@ def pvwatts_dc_power(poa_global, P_ref, T_cell=None, G_ref=1000, T_ref=25, gamma
     poa_global: Pandas Series (numeric)
         Total effective plane of array irradiance.
     P_ref: numeric
-        Rated DC power of array.
+        Rated DC power of array in watts
     T_cell: Pandas Series (numeric)
         Measured or derived cell temperature [degrees celsius].
         Time series assumed to be same frequency as poa_global.
@@ -40,7 +40,7 @@ def pvwatts_dc_power(poa_global, P_ref, T_cell=None, G_ref=1000, T_ref=25, gamma
     Returns
     -------
     dc_power: Pandas Series (numeric)
-        DC power determined by PVWatts v5 equation.
+        DC power in watts determined by PVWatts v5 equation.
     '''
 
     dc_power = P_ref * poa_global / G_ref
@@ -62,7 +62,7 @@ def normalize_with_pvwatts(energy, pvwatts_kws):
     Parameters
     ----------
     energy: Pandas Series (numeric)
-        Energy time series to be normalized in power * hours.
+        Energy time series to be normalized in watt hours.
     pvwatts_kws: dictionary
         Dictionary of parameters used in the pvwatts_dc_power function.
 
@@ -71,7 +71,7 @@ def normalize_with_pvwatts(energy, pvwatts_kws):
         poa_global: Pandas Series (numeric)
             Total effective plane of array irradiance.
         P_ref: numeric
-            Rated DC power of array.
+            Rated DC power of array in watts.
         T_cell: Pandas Series (numeric)
             Measured or derived cell temperature [degrees celsius].
             Time series assumed to be same frequency as poa_global.
@@ -141,7 +141,7 @@ def sapm_dc_power(pvlib_pvsystem, met_data):
     ----------
     pvlib_pvsystem: pvlib-python LocalizedPVSystem object
         Object contains orientation, geographic coordinates, equipment
-        constants.
+        constants (including DC rated power in watts).
     met_data: Pandas DataFrame (numeric)
         Measured irradiance components, ambient temperature, and wind speed.
         Expected met_data DataFrame column names:
@@ -153,7 +153,7 @@ def sapm_dc_power(pvlib_pvsystem, met_data):
     -------
     tulple (dc_power, effective_poa)
         dc_power: Pandas Series (numeric)
-            DC power derived using Sandia Array Performance Model.
+            DC power in watts derived using Sandia Array Performance Model and PVWatts.
         effective_poa: Pandas Series (numeric)
             Effective irradiance calculated with SAPM
     '''
@@ -207,7 +207,7 @@ def normalize_with_sapm(energy, sapm_kws):
     Parameters
     ----------
     energy: Pandas Series (numeric)
-        Energy time series to be normalized  in power * hours.
+        Energy time series to be normalized  in watt hours.
     sapm_kws: dictionary
         Dictionary of parameters required for sapm_dc_power function.
 
