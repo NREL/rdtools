@@ -6,10 +6,10 @@ poa_global in preparation for calculating PV system degradation.
 
 import pandas as pd
 import pvlib
+import numpy as np
 
 
-def pvwatts_dc_power(poa_global, P_ref, T_cell=None,
-                     G_ref=1000, T_ref=25, gamma_pdc=None):
+def pvwatts_dc_power(poa_global, P_ref, T_cell=None, G_ref=1000, T_ref=25, gamma_pdc=None):
     '''
     PVWatts v5 Module Model: DC power given effective poa poa_global, module
     nameplate power, and cell temperature. This function differs from the PVLIB
@@ -23,7 +23,7 @@ def pvwatts_dc_power(poa_global, P_ref, T_cell=None,
     poa_global: Pandas Series (numeric)
         Total effective plane of array irradiance.
     P_ref: numeric
-        Rated DC power of array.
+        Rated DC power of array in watts
     T_cell: Pandas Series (numeric)
         Measured or derived cell temperature [degrees celsius].
         Time series assumed to be same frequency as poa_global.
@@ -34,16 +34,19 @@ def pvwatts_dc_power(poa_global, P_ref, T_cell=None,
     gamma_pdc: numeric, default is None
         Linear array efficiency temperature coefficient [1 / degree celsius].
 
+    Note: All series are assumed to be right-labeled, meaning that the recorded value
+          at a given timestamp refers ot the previous time interval
+
     Returns
     -------
     dc_power: Pandas Series (numeric)
-        DC power determined by PVWatts v5 equation.
+        DC power in watts determined by PVWatts v5 equation.
     '''
 
     dc_power = P_ref * poa_global / G_ref
 
     if T_cell is not None and gamma_pdc is not None:
-        temperature_factor = 1 + gamma_pdc*(T_cell - T_ref)
+        temperature_factor = 1 + gamma_pdc * (T_cell - T_ref)
         dc_power = dc_power * temperature_factor
 
     return dc_power
@@ -56,14 +59,10 @@ def normalize_with_pvwatts(energy, pvwatts_kws):
 
     Energy timeseries and poa_global timeseries can be different granularities.
 
-    Note: If energy is a higher frequency than the time series provided in
-          pvwatts_kws, there will be NaNs in place of missing values due to
-          mismatch in time series.
-
     Parameters
     ----------
     energy: Pandas Series (numeric)
-        Energy time series to be normalized.
+        Energy time series to be normalized in watt hours.
     pvwatts_kws: dictionary
         Dictionary of parameters used in the pvwatts_dc_power function.
 
@@ -72,7 +71,7 @@ def normalize_with_pvwatts(energy, pvwatts_kws):
         poa_global: Pandas Series (numeric)
             Total effective plane of array irradiance.
         P_ref: numeric
-            Rated DC power of array.
+            Rated DC power of array in watts.
         T_cell: Pandas Series (numeric)
             Measured or derived cell temperature [degrees celsius].
             Time series assumed to be same frequency as poa_global.
@@ -82,11 +81,16 @@ def normalize_with_pvwatts(energy, pvwatts_kws):
             Reference temperature at standard test condition [degrees celsius].
         gamma_pdc: numeric, default is None
             Linear array efficiency temperature coefficient [1 / degree celsius].
+    Note: All series are assumed to be right-labeled, meaning that the recorded value
+          at a given timestamp refers ot the previous time interval
 
     Returns
     -------
-    normalized_energy: Pandas Series (numeric)
-        Energy divided by Sandia Model DC energy.
+    tulple (normalized_energy, insolation)
+        normalized_energy: Pandas Series (numeric)
+            Energy divided by PVWatts DC energy.
+        insolation: Pandas Series (numeric)
+            Insolation associated with each normalized point
     '''
 
     if energy.index.freq is None:
@@ -95,11 +99,35 @@ def normalize_with_pvwatts(energy, pvwatts_kws):
         freq = energy.index.freq
 
     dc_power = pvwatts_dc_power(**pvwatts_kws)
+    irrad = pvwatts_kws['poa_global']
 
-    energy_dc = dc_power.resample(freq).sum()
+    model_tds, mean_model_td = delta_index(dc_power)
+    irrad_tds, mean_irrad_td = delta_index(irrad)
+    measure_tds, mean_measure_td = delta_index(energy)
+
+    if mean_model_td <= mean_measure_td:
+        energy_dc = dc_power * model_tds
+        energy_dc = energy_dc.resample(freq).sum()
+        energy_dc = energy_dc.reindex(energy.index, method='nearest')
+
+        insolation = irrad * irrad_tds
+        insolation = insolation.resample(freq).sum()
+        insolation = insolation.reindex(energy.index, method='nearest')
+
+    elif mean_model_td > mean_measure_td:
+        dc_power = dc_power.resample(freq).asfreq()
+        dc_power = dc_power.interpolate()
+        dc_power = dc_power.reindex(energy.index, method='nearest')
+        energy_dc = dc_power * measure_tds  # timedelta is that of measurment due to reindex
+
+        irrad = irrad.resample(freq).asfreq()
+        irrad = irrad.interpolate()
+        irrad = irrad.reindex(energy.index, method='nearest')
+        insolation = irrad * measure_tds  # timedelta is that of measurment due to reindex
+
     normalized_energy = energy / energy_dc
 
-    return normalized_energy
+    return normalized_energy, insolation
 
 
 def sapm_dc_power(pvlib_pvsystem, met_data):
@@ -113,16 +141,21 @@ def sapm_dc_power(pvlib_pvsystem, met_data):
     ----------
     pvlib_pvsystem: pvlib-python LocalizedPVSystem object
         Object contains orientation, geographic coordinates, equipment
-        constants.
+        constants (including DC rated power in watts).
     met_data: Pandas DataFrame (numeric)
         Measured irradiance components, ambient temperature, and wind speed.
         Expected met_data DataFrame column names:
             ['DNI', 'GHI', 'DHI', 'Temperature', 'Wind Speed']
+    Note: All series are assumed to be right-labeled, meaning that the recorded value
+          at a given timestamp refers ot the previous time interval
 
     Returns
     -------
-    dc_power: Pandas Series (numeric)
-        DC power derived using Sandia Array Performance Model.
+    tulple (dc_power, effective_poa)
+        dc_power: Pandas Series (numeric)
+            DC power in watts derived using Sandia Array Performance Model and PVWatts.
+        effective_poa: Pandas Series (numeric)
+            Effective irradiance calculated with SAPM
     '''
 
     solar_position = pvlib_pvsystem.get_solarposition(met_data.index)
@@ -158,7 +191,8 @@ def sapm_dc_power(pvlib_pvsystem, met_data):
         .pvwatts_dc(g_poa_effective=effective_poa,
                     temp_cell=temp_cell['temp_cell'])
 
-    return dc_power
+
+    return dc_power, effective_poa
 
 
 def normalize_with_sapm(energy, sapm_kws):
@@ -170,14 +204,10 @@ def normalize_with_sapm(energy, sapm_kws):
 
     Energy timeseries and met_data timeseries can be different granularities.
 
-    Note: If energy is a higher frequency than the time series provided in
-          sapm_kws, there will be NaNs in place of missing values due to
-          mismatch in time series.
-
     Parameters
     ----------
     energy: Pandas Series (numeric)
-        Energy time series to be normalized.
+        Energy time series to be normalized  in watt hours.
     sapm_kws: dictionary
         Dictionary of parameters required for sapm_dc_power function.
 
@@ -188,11 +218,15 @@ def normalize_with_sapm(energy, sapm_kws):
             constants.
         met_data: Pandas DataFrame (numeric)
             Measured met_data, ambient temperature, and wind speed.
-
+    Note: All series are assumed to be right-labeled, meaning that the recorded value
+          at a given timestamp refers ot the previous time interval
     Returns
     -------
-    normalized_energy: Pandas Series (numeric)
-        Energy divided by Sandia Model DC energy.
+    tulple (normalized_energy, insolation)
+        normalized_energy: Pandas Series (numeric)
+            Energy divided by Sandia Model DC energy.
+        insolation: Pandas Series (numeric)
+            Insolation associated with each normalized point
     '''
 
     if energy.index.freq is None:
@@ -200,9 +234,40 @@ def normalize_with_sapm(energy, sapm_kws):
     else:
         freq = energy.index.freq
 
-    dc_power = sapm_dc_power(**sapm_kws)
+    dc_power, irrad = sapm_dc_power(**sapm_kws)
 
-    energy_dc = dc_power.resample(freq).sum()
+    model_tds, mean_model_td = delta_index(dc_power)
+    irrad_tds, mean_irrad_td = delta_index(irrad)
+    measure_tds, mean_measure_td = delta_index(energy)
+
+    if mean_model_td <= mean_measure_td:
+        energy_dc = dc_power * model_tds
+        energy_dc = energy_dc.resample(freq).sum()
+        energy_dc = energy_dc.reindex(energy.index, method='nearest')
+
+        insolation = irrad * irrad_tds
+        insolation = insolation.resample(freq).sum()
+        insolation = insolation.reindex(energy.index, method='nearest')
+
+    elif mean_model_td > mean_measure_td:
+        dc_power = dc_power.resample(freq).asfreq()
+        dc_power = dc_power.interpolate()
+        dc_power = dc_power.reindex(energy.index, method='nearest')
+        energy_dc = dc_power * measure_tds  # timedelta is that of measurment due to reindex
+
+        irrad = irrad.resample(freq).asfreq()
+        irrad = irrad.interpolate()
+        irrad = irrad.reindex(energy.index, method='nearest')
+        insolation = irrad * measure_tds  # timedelta is that of measurment due to reindex
+
     normalized_energy = energy / energy_dc
 
-    return normalized_energy
+    return normalized_energy, insolation
+
+
+def delta_index(series):
+    # Takes a panda series as input and returns (time step sizes, average time step size)
+    # Length of each interval calculated by using 'int64' to convert to nanoseconds
+
+    deltas = (series.index - series.index.shift(-1)).astype('int64') / (10.0**9 * 3600.0)
+    return deltas, np.mean(deltas)

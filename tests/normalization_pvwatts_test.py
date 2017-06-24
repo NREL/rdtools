@@ -40,7 +40,9 @@ class PVWattsNormalizationTestCase(unittest.TestCase):
         energy_index = pd.date_range(start='2012-01-01',
                                      periods=12,
                                      freq='MS')
-        dummy_energy = np.repeat(a=19.75, repeats=12)
+        power_meas = 19.75  # power in dummy conditions
+        hours = (energy_index - energy_index.shift(-1)).astype('int64') / (10.0**9 * 3600.0)
+        dummy_energy = hours * power_meas
         self.energy = pd.Series(dummy_energy, index=energy_index)
 
         # define gamma_pdc for pvw temperature factor
@@ -72,7 +74,7 @@ class PVWattsNormalizationTestCase(unittest.TestCase):
             'gamma_pdc': self.gamma_pdc,
         }
 
-        corr_energy = normalize_with_pvwatts(self.energy, pvw_kws)
+        corr_energy, insolation = normalize_with_pvwatts(self.energy, pvw_kws)
 
         # Test output is same frequency and length as energy
         self.assertEqual(corr_energy.index.freq, self.energy.index.freq)

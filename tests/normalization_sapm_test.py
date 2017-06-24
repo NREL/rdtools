@@ -52,6 +52,7 @@ class SapmNormalizationTestCase(unittest.TestCase):
         energy_index = pd.date_range(start='2012-01-01',
                                      periods=energy_periods,
                                      freq=energy_freq)
+
         dummy_energy = np.repeat(a=100, repeats=energy_periods)
         self.energy = pd.Series(dummy_energy, index=energy_index)
         self.energy_periods = 12
@@ -76,7 +77,7 @@ class SapmNormalizationTestCase(unittest.TestCase):
     def test_sapm_dc_power(self):
         ''' Test SAPM DC power. '''
 
-        dc_power = sapm_dc_power(self.pvsystem, self.irrad)
+        dc_power, poa = sapm_dc_power(self.pvsystem, self.irrad)
         self.assertEqual(self.irrad.index.freq, dc_power.index.freq)
         self.assertEqual(len(self.irrad), len(dc_power))
 
@@ -88,11 +89,11 @@ class SapmNormalizationTestCase(unittest.TestCase):
             'met_data': self.irrad,
         }
 
-        corr_energy = normalize_with_sapm(self.energy, sapm_kws)
+        corr_energy, insol = normalize_with_sapm(self.energy, sapm_kws)
 
         # Test output is same frequency and length as energy
         self.assertEqual(corr_energy.index.freq, self.energy.index.freq)
-        self.assertEqual(len(corr_energy), 13)
+        self.assertEqual(len(corr_energy), len(self.energy))
 
         # TODO, test for:
         #     incorrect data format
@@ -100,6 +101,7 @@ class SapmNormalizationTestCase(unittest.TestCase):
         #     missing pvsystem metadata
         #     missing measured irradiance data
         #     met_data freq > energy freq, issue/warining?
+
 
 if __name__ == '__main__':
     unittest.main()
