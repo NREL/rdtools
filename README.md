@@ -1,4 +1,5 @@
-# rdtools
+# RdTools
+
 Degradation Tools
 
 Python tools for photovoltaic degradation analysis.
@@ -25,4 +26,4 @@ $ tests/run_tests
 ```
 ## Wiki
 
-Check out the [wiki](https://github.com/kwhanalytics/rdtools/wiki) for information on development goals and framework
+Check out the [wiki](https://github.com/NREL/rdtools/wiki) for information on development goals and framework.
