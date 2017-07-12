@@ -1,2 +1,3 @@
 include versioneer.py
 include rdtools/_version.py
+include rdtools/data/*
