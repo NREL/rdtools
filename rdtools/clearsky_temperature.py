@@ -12,7 +12,7 @@ import pkg_resources
 
 def get_clearsky_tamb(times, latitude, longitude, utc_offset):
     '''
-    :param times:       DateTimeIndex in local time, naive timezone
+    :param times:       DateTimeIndex in local time
     :param latitude:    float degrees
     :param longitude:   float degrees
     :param utc_offset:  float hours
