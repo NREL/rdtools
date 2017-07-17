@@ -4,6 +4,7 @@ from datetime import timedelta, datetime
 import os
 import math
 import pandas as pd
+import pkg_resources
 
 
 
@@ -18,8 +19,8 @@ def get_clearsky_tamb(times, latitude, longitude, utc_offset):
     :return:            pandas Series of cell sky ambient temperature
     '''
 
-    rdtools_path = os.path.dirname(os.path.abspath(__file__))
-    filepath = os.path.join(rdtools_path, 'data', 'temperature.hdf5')
+
+    filepath = pkg_resources.resource_filename('rdtools', 'data/temperature.hdf5')
 
     buffer = timedelta(days=80)
     interval = times[1] - times[0]
