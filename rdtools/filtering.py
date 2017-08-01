@@ -1,7 +1,7 @@
 import pandas as pd
 
 
-def csi_filter(measured_poa, clearsky_poa, threshold=0.9):
+def csi_filter(measured_poa, clearsky_poa, threshold=0.1):
     '''
     Filtering based on clear sky index (csi)
 
@@ -20,5 +20,6 @@ def csi_filter(measured_poa, clearsky_poa, threshold=0.9):
         mask to exclude points below the threshold
     '''
 
+
     csi = measured_poa / clearsky_poa
-    return csi >= threshold
+    return (csi >= 1.0 - threshold) & (csi <= 1.0 + threshold)

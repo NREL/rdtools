@@ -233,6 +233,14 @@ def degradation_year_on_year(normalized_energy, recenter=True):
 
     yoy_result = df.yoy.dropna()
 
+    calc_info = {
+        'YoY_values': yoy_result,
+        'renormalizing_factor': renorm
+    }
+
+    if not len(yoy_result):
+        raise ValueError('no year-over-year aggregated data pairs found')
+
     Rd_pct = yoy_result.median()
 
     # bootstrap to determine 68% CI
@@ -242,10 +250,7 @@ def degradation_year_on_year(normalized_energy, recenter=True):
     mb1 = np.median(xb1, axis=0)
     Rd_CI = np.percentile(mb1, [15.9, 84.1])
 
-    calc_info = {
-        'YoY_values': yoy_result,
-        'renormalizing_factor': renorm
-    }
+
 
     return (Rd_pct, Rd_CI, calc_info)
 
