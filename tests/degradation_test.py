@@ -55,7 +55,7 @@ class DegradationTestCase(unittest.TestCase):
             y = np.ones(N) * np.power(1 + rd / (365 * 24 * 60), minutes)
             corr_energy = pd.Series(data=y, index=x)
         elif (input_freq == 'S'):
-            x = pd.date_range(start='2012-01-01 00:00:00', end='2015-01-01 00:10:00', freq=input_freq)
+            x = pd.date_range(start='2014-11-01 00:00:00', end='2015-01-01 00:10:00', freq=input_freq)
             N = len(x)
             seconds = np.arange(N)
             y = np.ones(N) * np.power(1 + rd / (365 * 24 * 60 * 60), seconds)
