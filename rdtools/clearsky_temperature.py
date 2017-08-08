@@ -15,7 +15,6 @@ def get_clearsky_tamb(times, latitude, longitude, utc_offset):
     :param times:       DateTimeIndex in local time
     :param latitude:    float degrees
     :param longitude:   float degrees
-    :param utc_offset:  float hours
     :return:            pandas Series of cell sky ambient temperature
     '''
 
@@ -80,14 +79,14 @@ def get_clearsky_tamb(times, latitude, longitude, utc_offset):
     df = df.rolling(window=40 * points_per_day, win_type='gaussian').mean(std=20 * points_per_day)
     df = df[(df.index >= times[0]) & (df.index <= times[-1])]
 
-
-    solar_noon_offset = longitude / 180.0 * 12.0 - utc_offset
-
+    utc_offsets = [y.utcoffset().total_seconds()/3600.0 for y in df.index]
+    solar_noon_offset = lambda utc_offset : longitude / 180.0 * 12.0 - utc_offset
+    df['solar_noon_offset'] = [solar_noon_offset(utc_offset) for utc_offset in utc_offsets]
 
     df['hour_of_day'] = df.index.hour + df.index.minute / 60.0
     df['Clear Sky Temperature (C)'] = df.apply(lambda x:
-                                               _get_temperature(x['hour_of_day'], x['day'],
-                                                                x['night'], solar_noon_offset), axis=1)
+                                               _get_temperature(x['hour_of_day'], x['night'], 
+                                                                x['day'],x['solar_noon_offset']), axis=1)
     return df['Clear Sky Temperature (C)']
 
 
