@@ -10,7 +10,6 @@ class ClearSkyTemperatureTestCase(unittest.TestCase):
 
     def setUp(self):
 
-
         dt = pd.date_range(datetime(2015,1,1), datetime(2015,2,1), freq='15min', tz = 'Asia/Shanghai')
 
         self.china_west = get_clearsky_tamb(dt, 37.951721, 80.609843)
@@ -18,7 +17,6 @@ class ClearSkyTemperatureTestCase(unittest.TestCase):
 
         #self.china_west.to_csv("west.csv")
         #self.china_east.to_csv("east.csv")
-
 
 
     # Test for shifting temperature peak with longitude for same timezone
@@ -34,8 +32,9 @@ class ClearSkyTemperatureTestCase(unittest.TestCase):
 
         #print west_hottest_hour , east_hottest_hour
 
+        self.assertTrue(west_hottest_hour > 12)
+        self.assertTrue(east_hottest_hour > 12)
         self.assertTrue(west_hottest_hour > east_hottest_hour)
-
 
 
 if __name__ == '__main__':

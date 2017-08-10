@@ -112,7 +112,7 @@ def _get_pixel_value(data, i, j, k, radius):
 
 
 def _get_temperature(hour_of_day, night_temp, day_temp, solar_noon_offset):
-    hour_offset = -4.0 + solar_noon_offset
+    hour_offset = 8.0 + solar_noon_offset
     temp_scaler = 0.7
     t_diff = day_temp - night_temp
     t_ave = (day_temp + night_temp) / 2.0
