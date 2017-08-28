@@ -58,6 +58,41 @@ def outage_filter(normalized_energy, window='30D', nom_val=None):
     b = nom_val * 0.3
     return (normalized_energy > v - b) & (normalized_energy < v + b)
 
+def outage_filter2(normalized_energy, window='30D'):
+    '''
+    Filter data points corresponding to outage
+
+    Parameters
+    ----------
+    normalized_energy: Pandas series (numeric)
+        normalized energy
+    window: offset or int
+        size of window for rolling median
+    nom_val: float
+        nominal value of normalized energy
+        default behavior is to infer from the first year median
+
+    Returns
+    -------
+    Pandas Series (boolean)
+        mask to exclude outlier points
+    '''
+    v = normalized_energy.rolling(window=window, min_periods=3).median()
+    
+    start = normalized_energy.index[0]
+    oneyear = start + pd.Timedelta('364d')
+    first_year = normalized_energy[start:oneyear]
+
+    Q1 = first_year.quantile(0.25)
+    Q2 = first_year.quantile(0.50)
+    Q3 = first_year.quantile(0.75)
+    IQR = Q3 - Q1
+
+    high = (Q3 + (1.5 * IQR)) - Q2
+    low = Q2 - (Q1 - (1.5 * IQR))
+
+    return (normalized_energy > v - low) & (normalized_energy < v + high)
+
 def csi_filter(measured_poa, clearsky_poa, threshold=0.1):
     '''
     Filtering based on clear sky index (csi)

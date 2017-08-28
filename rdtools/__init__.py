@@ -10,6 +10,7 @@ from filtering import poa_filter
 from filtering import tcell_filter
 from filtering import clip_filter
 from filtering import outage_filter
+from filtering import outage_filter2
 
 from ._version import get_versions
 __version__ = get_versions()['version']
