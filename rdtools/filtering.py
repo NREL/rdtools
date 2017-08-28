@@ -18,9 +18,9 @@ def tcell_filter(tcell, low_tcell_cutoff=-50, high_tcell_cutoff=110):
     
 def clip_filter(power, quant=0.95, low_power_cutoff=0.01):
     '''
-    Clipping data points with power greater
-    than or equal to 99% of the 95th percentile
-    and less than 0.01 W
+    Filter data points likely to be affected by clipping
+    with power greater than or equal to 99% of the 'quant'
+    quantile and less than 'low_power_cutoff'
 
     Parameters
     ----------
@@ -41,7 +41,7 @@ def clip_filter(power, quant=0.95, low_power_cutoff=0.01):
 
 def outage_filter(prt, ndays=30, nperiods=96):
     '''
-    Clipping data points corresponding to outage
+    Filter data points corresponding to outage
 
     Parameters
     ----------
