@@ -199,7 +199,7 @@ def degradation_year_on_year(normalized_energy, recenter=True):
     normalized_energy.index.name = 'dt'
 
     # Detect sub-daily data:
-    if min(np.diff(normalized_energy.index.values, n=1)) < np.timedelta64(24, 'h'):
+    if min(np.diff(normalized_energy.index.values, n=1)) < np.timedelta64(23, 'h'):
         raise ValueError('normalized_energy must not be more frequent than daily')
 
     # Detect less than 2 years of data
