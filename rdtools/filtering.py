@@ -48,8 +48,7 @@ def outage_filter(normalized_energy, window='30D', nom_val=None):
     Returns
     -------
     Pandas Series (boolean)
-        mask to exclude points equal to and 
-        above 99% of the percentile threshold
+        mask to exclude points affected by outages
     '''
     v = normalized_energy.rolling(window=window, min_periods=3).median()
     if nom_val is None:
