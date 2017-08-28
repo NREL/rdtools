@@ -1,13 +1,5 @@
 import pandas as pd
 
-def get_nominal_value(series, window):
-    v1 = series[:window].median()
-    v2 = series[len(series) - window:].median()
-    v3 = series[int(len(series) * 0.5 - window * 0.5):int(len(series) * 0.5 + window * 0.5)].median()
-    v = max(v1, v2, v3)
-    return v
-
-
 def poa_filter(poa, low_irradiance_cutoff=200, high_irradiance_cutoff=1200):
     # simple filter based on irradiance sensors
     return (poa > low_irradiance_cutoff) & (poa < high_irradiance_cutoff)
@@ -39,18 +31,19 @@ def clip_filter(power, quant=0.95, low_power_cutoff=0.01):
     v = power.quantile(quant)
     return (power < v * 0.99) & (power > low_power_cutoff)
 
-def outage_filter(prt, ndays=30, nperiods=96):
+def outage_filter(normalized_energy, window='30D', nom_val=None):
     '''
     Filter data points corresponding to outage
 
     Parameters
     ----------
-    prt: Pandas series (numeric)
+    normalized_energy: Pandas series (numeric)
         normalized energy
-    ndays: int
-        number of days in the window
-    nperiods: int
-        number of periods in each day
+    window: offset or int
+        size of window for rolling median
+    nom_val: float
+        nominal value of normalized energy
+        default behavior is to infer from the first year median
 
     Returns
     -------
@@ -58,9 +51,13 @@ def outage_filter(prt, ndays=30, nperiods=96):
         mask to exclude points equal to and 
         above 99% of the percentile threshold
     '''
-    v = prt.rolling(window=ndays * nperiods, min_periods=3).median()
-    b = get_nominal_value(prt, 1000) * 0.3
-    return (prt > v - b) & (prt < v + b)
+    v = normalized_energy.rolling(window=window, min_periods=3).median()
+    if nom_val is None:
+        start = normalized_energy.index[0]
+        oneyear = start + pd.Timedelta('364d')
+        nom_val = normalized_energy[start:oneyear].median()
+    b = nom_val * 0.3
+    return (normalized_energy > v - b) & (normalized_energy < v + b)
 
 def csi_filter(measured_poa, clearsky_poa, threshold=0.1):
     '''
