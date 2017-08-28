@@ -24,7 +24,7 @@ def clip_filter(power, quant=0.95, low_power_cutoff=0.01):
 
     Returns
     -------
-    aggregated: Pandas Series (boolean)
+    Pandas Series (boolean)
         mask to exclude points equal to and 
         above 99% of the percentile threshold
     '''    
@@ -47,7 +47,7 @@ def outage_filter(normalized_energy, window='30D', nom_val=None):
 
     Returns
     -------
-    aggregated: Pandas Series (boolean)
+    Pandas Series (boolean)
         mask to exclude points equal to and 
         above 99% of the percentile threshold
     '''
@@ -74,7 +74,7 @@ def csi_filter(measured_poa, clearsky_poa, threshold=0.1):
 
     Returns
     -------
-    aggregated: Pandas Series (boolean)
+    Pandas Series (boolean)
         mask to exclude points below the threshold
     '''
 
