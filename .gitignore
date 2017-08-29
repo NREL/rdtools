@@ -11,18 +11,3 @@
 
 docs/.ipynb_checkpoints/degradation_example-checkpoint.ipynb
 *.ipynb_checkpoints*
-rdtools.egg-info/requires.txt
-rdtools.egg-info/PKG-INFO
-rdtools.egg-info/not-zip-safe
-rdtools.egg-info/dependency_links.txt
-docs/Rd_example_clearsky_OTF_DJ.py
-docs/Rd_example_clearsky_DJ.py
-docs/ASE_yesterday.jmp
-*.jmp
-CS analysis_Ryan/WU_US_PWS_stations.xlsx
-CS analysis_Ryan/WU_US_PWS_Irradiance_stations.xlsx
-docs/degradation_example.ipynb
-docs/degradation_example.ipynb
-Other analyses/CS analysis_RyanYang/WU_US_PWS_Irradiance_stations.xlsx
-*.xlsx
-Other analyses/degradation_example_outage_detection.ipynb
