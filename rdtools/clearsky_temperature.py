@@ -10,7 +10,7 @@ import pkg_resources
 
 
 
-def get_clearsky_tamb(times, latitude, longitude):
+def get_clearsky_tamb(times, latitude, longitude, window_size=60, gauss_std=20):
     '''
     :param times:       DateTimeIndex in local time
     :param latitude:    float degrees
@@ -23,9 +23,7 @@ def get_clearsky_tamb(times, latitude, longitude):
 
     buffer = timedelta(days=80)
     interval = times[1] - times[0]
-    points_per_day = int(timedelta(days=1)/interval)
-    dt_actual = pd.date_range(times[0] - buffer, times[-1] + buffer, freq=interval)
-    freq_actual = pd.infer_freq(dt_actual)	
+    freq_actual = pd.infer_freq(times)	
     dt_daily = pd.date_range(times[0] - buffer, times[-1] + buffer, freq='D')
 
     #print model
@@ -78,14 +76,21 @@ def get_clearsky_tamb(times, latitude, longitude):
     print('Before resampling:')
     print(df.head())
 
-    #df = df.rolling(window=40 * points_per_day, win_type='gaussian').mean(std=20 * points_per_day)
+    df = df.rolling(window=window_size, win_type='gaussian',min_periods=1).mean(std=gauss_std)
+    print('After rolling mean:')
+    print(df.head())
+
     df = df.resample(freq_actual).interpolate(method='linear')
     df['month'] = df.index.month
-
     print('After resampling:')
     print(df.head())
 
-    df = df[(df.index >= times[0]) & (df.index <= times[-1])]
+    df = df.reindex(times, method='nearest')
+
+    #df = df[(df.index >= times[0]) & (df.index <= times[-1])]
+
+    print('After reindexing:')
+    print(df.head())
 
     utc_offsets = [y.utcoffset().total_seconds()/3600.0 for y in df.index]
     solar_noon_offset = lambda utc_offset : longitude / 180.0 * 12.0 - utc_offset
