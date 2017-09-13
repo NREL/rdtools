@@ -24,7 +24,9 @@ def get_clearsky_tamb(times, latitude, longitude):
     buffer = timedelta(days=80)
     interval = times[1] - times[0]
     points_per_day = int(timedelta(days=1)/interval)
-    dt = pd.date_range(times[0] - buffer, times[-1] + buffer, freq=interval)
+    dt_actual = pd.date_range(times[0] - buffer, times[-1] + buffer, freq=interval)
+    freq_actual = pd.infer_freq(dt_actual)	
+    dt_daily = pd.date_range(times[0] - buffer, times[-1] + buffer, freq='D')
 
     #print model
 
@@ -46,7 +48,7 @@ def get_clearsky_tamb(times, latitude, longitude):
     #print lons, lats, lon_index, lat_index
 
 
-    df = pd.DataFrame(index=dt)
+    df = pd.DataFrame(index=dt_daily)
     df['month'] = df.index.month
 
     ave_day = []
@@ -69,14 +71,20 @@ def get_clearsky_tamb(times, latitude, longitude):
 
     #print ave_day, ave_night
 
-
-
     for i in range(12):
         df.loc[df['month']== i+1, 'day'] = ave_day[i]
         df.loc[df['month'] == i+1, 'night'] = ave_night[i]
 
+    print('Before resampling:')
+    print(df.head())
 
-    df = df.rolling(window=40 * points_per_day, win_type='gaussian').mean(std=20 * points_per_day)
+    #df = df.rolling(window=40 * points_per_day, win_type='gaussian').mean(std=20 * points_per_day)
+    df = df.resample(freq_actual).interpolate(method='linear')
+    df['month'] = df.index.month
+
+    print('After resampling:')
+    print(df.head())
+
     df = df[(df.index >= times[0]) & (df.index <= times[-1])]
 
     utc_offsets = [y.utcoffset().total_seconds()/3600.0 for y in df.index]
