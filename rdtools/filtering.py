@@ -1,13 +1,16 @@
 import pandas as pd
 
+
 def poa_filter(poa, low_irradiance_cutoff=200, high_irradiance_cutoff=1200):
     # simple filter based on irradiance sensors
     return (poa > low_irradiance_cutoff) & (poa < high_irradiance_cutoff)
 
+
 def tcell_filter(tcell, low_tcell_cutoff=-50, high_tcell_cutoff=110):
     # simple filter based on temperature sensors
     return (tcell > low_tcell_cutoff) & (tcell < high_tcell_cutoff)
-    
+
+
 def clip_filter(power, quant=0.95, low_power_cutoff=0.01):
     '''
     Filter data points likely to be affected by clipping
@@ -20,16 +23,17 @@ def clip_filter(power, quant=0.95, low_power_cutoff=0.01):
         AC power
     quant: float
         threshold for quantile
-    low_power_cutoff    
+    low_power_cutoff
 
     Returns
     -------
     Pandas Series (boolean)
-        mask to exclude points equal to and 
+        mask to exclude points equal to and
         above 99% of the percentile threshold
-    '''    
+    '''
     v = power.quantile(quant)
     return (power < v * 0.99) & (power > low_power_cutoff)
+
 
 def outage_filter(normalized_energy, window='30D', nom_val=None):
     '''
@@ -58,6 +62,7 @@ def outage_filter(normalized_energy, window='30D', nom_val=None):
     b = nom_val * 0.3
     return (normalized_energy > v - b) & (normalized_energy < v + b)
 
+
 def outage_filter2(normalized_energy, window='30D'):
     '''
     Filter data points corresponding to outage
@@ -78,7 +83,7 @@ def outage_filter2(normalized_energy, window='30D'):
         mask to exclude outlier points
     '''
     v = normalized_energy.rolling(window=window, min_periods=3).median()
-    
+
     start = normalized_energy.index[0]
     oneyear = start + pd.Timedelta('364d')
     first_year = normalized_energy[start:oneyear]
@@ -92,6 +97,7 @@ def outage_filter2(normalized_energy, window='30D'):
     low = Q2 - (Q1 - (1.5 * IQR))
 
     return (normalized_energy > v - low) & (normalized_energy < v + high)
+
 
 def csi_filter(measured_poa, clearsky_poa, threshold=0.1):
     '''
@@ -111,7 +117,6 @@ def csi_filter(measured_poa, clearsky_poa, threshold=0.1):
     Pandas Series (boolean)
         mask to exclude points below the threshold
     '''
-
 
     csi = measured_poa / clearsky_poa
     return (csi >= 1.0 - threshold) & (csi <= 1.0 + threshold)
