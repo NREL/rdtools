@@ -26,7 +26,6 @@ def get_clearsky_tamb(times, latitude, longitude, window_size=40, gauss_std=20):
     freq_actual = pd.infer_freq(times)	
     dt_daily = pd.date_range(times[0] - buffer, times[-1] + buffer, freq='D')
 
-    #print model
 
 
     f = h5py.File(filepath, "r")
@@ -42,8 +41,6 @@ def get_clearsky_tamb(times, latitude, longitude, window_size=40, gauss_std=20):
         lon_temp += 360
     lon_index = round(float(lons) * float(lon_temp) / 360.0)
     lat_index = round(float(lats) * (90.0 - float(latitude)) / 180.0)
-
-    #print lons, lats, lon_index, lat_index
 
 
     df = pd.DataFrame(index=dt_daily)
@@ -66,31 +63,18 @@ def get_clearsky_tamb(times, latitude, longitude, window_size=40, gauss_std=20):
         ave_day.append(day)
         ave_night.append(night)
 
-
-    #print ave_day, ave_night
-
     for i in range(12):
         df.loc[df['month']== i+1, 'day'] = ave_day[i]
         df.loc[df['month'] == i+1, 'night'] = ave_night[i]
 
-    print('Before resampling:')
-    print(df.head())
-
     df = df.rolling(window=window_size, win_type='gaussian', min_periods=1, center=True).mean(std=gauss_std)
-    print('After rolling mean:')
-    print(df.head())
 
     df = df.resample(freq_actual).interpolate(method='linear')
     df['month'] = df.index.month
-    print('After resampling:')
-    print(df.head())
 
     df = df.reindex(times, method='nearest')
 
     #df = df[(df.index >= times[0]) & (df.index <= times[-1])]
-
-    print('After reindexing:')
-    print(df.head())
 
     utc_offsets = [y.utcoffset().total_seconds()/3600.0 for y in df.index]
     solar_noon_offset = lambda utc_offset : longitude / 180.0 * 12.0 - utc_offset
