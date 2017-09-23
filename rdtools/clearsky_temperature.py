@@ -10,7 +10,7 @@ import pkg_resources
 
 
 
-def get_clearsky_tamb(times, latitude, longitude, window_size=60, gauss_std=20):
+def get_clearsky_tamb(times, latitude, longitude, window_size=40, gauss_std=20):
     '''
     :param times:       DateTimeIndex in local time
     :param latitude:    float degrees
@@ -21,7 +21,7 @@ def get_clearsky_tamb(times, latitude, longitude, window_size=60, gauss_std=20):
 
     filepath = pkg_resources.resource_filename('rdtools', 'data/temperature.hdf5')
 
-    buffer = timedelta(days=80)
+    buffer = timedelta(days=window_size)
     interval = times[1] - times[0]
     freq_actual = pd.infer_freq(times)	
     dt_daily = pd.date_range(times[0] - buffer, times[-1] + buffer, freq='D')
@@ -76,7 +76,7 @@ def get_clearsky_tamb(times, latitude, longitude, window_size=60, gauss_std=20):
     print('Before resampling:')
     print(df.head())
 
-    df = df.rolling(window=window_size, win_type='gaussian',min_periods=1).mean(std=gauss_std)
+    df = df.rolling(window=window_size, win_type='gaussian', min_periods=1, center=True).mean(std=gauss_std)
     print('After rolling mean:')
     print(df.head())
 
