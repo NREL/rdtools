@@ -11,7 +11,7 @@ def tcell_filter(tcell, low_tcell_cutoff=-50, high_tcell_cutoff=110):
     return (tcell > low_tcell_cutoff) & (tcell < high_tcell_cutoff)
 
 
-def clip_filter(power, quant=0.95, low_power_cutoff=0.01):
+def clip_filter(power, quant=0.98, low_power_cutoff=0.01):
     '''
     Filter data points likely to be affected by clipping
     with power greater than or equal to 99% of the 'quant'
@@ -33,70 +33,6 @@ def clip_filter(power, quant=0.95, low_power_cutoff=0.01):
     '''
     v = power.quantile(quant)
     return (power < v * 0.99) & (power > low_power_cutoff)
-
-
-def outage_filter(normalized_energy, window='30D', nom_val=None):
-    '''
-    Filter data points corresponding to outage
-
-    Parameters
-    ----------
-    normalized_energy: Pandas series (numeric)
-        normalized energy
-    window: offset or int
-        size of window for rolling median
-    nom_val: float
-        nominal value of normalized energy
-        default behavior is to infer from the first year median
-
-    Returns
-    -------
-    Pandas Series (boolean)
-        mask to exclude points affected by outages
-    '''
-    v = normalized_energy.rolling(window=window, min_periods=3).median()
-    if nom_val is None:
-        start = normalized_energy.index[0]
-        oneyear = start + pd.Timedelta('364d')
-        nom_val = normalized_energy[start:oneyear].median()
-    b = nom_val * 0.3
-    return (normalized_energy > v - b) & (normalized_energy < v + b)
-
-
-def outage_filter2(normalized_energy, window='30D'):
-    '''
-    Filter data points corresponding to outage
-
-    Parameters
-    ----------
-    normalized_energy: Pandas series (numeric)
-        normalized energy
-    window: offset or int
-        size of window for rolling median
-    nom_val: float
-        nominal value of normalized energy
-        default behavior is to infer from the first year median
-
-    Returns
-    -------
-    Pandas Series (boolean)
-        mask to exclude outlier points
-    '''
-    v = normalized_energy.rolling(window=window, min_periods=3).median()
-
-    start = normalized_energy.index[0]
-    oneyear = start + pd.Timedelta('364d')
-    first_year = normalized_energy[start:oneyear]
-
-    Q1 = first_year.quantile(0.25)
-    Q2 = first_year.quantile(0.50)
-    Q3 = first_year.quantile(0.75)
-    IQR = Q3 - Q1
-
-    high = (Q3 + (1.5 * IQR)) - Q2
-    low = Q2 - (Q1 - (1.5 * IQR))
-
-    return (normalized_energy > v - low) & (normalized_energy < v + high)
 
 
 def csi_filter(measured_poa, clearsky_poa, threshold=0.1):
