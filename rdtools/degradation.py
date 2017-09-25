@@ -168,7 +168,7 @@ def degradation_classical_decomposition(normalized_energy):
     return (Rd_pct, Rd_CI, calc_info)
 
 
-def degradation_year_on_year(normalized_energy, recenter=True):
+def degradation_year_on_year(normalized_energy, recenter=True, exceedance_prob=95):
     '''
     Description
     -----------
@@ -180,6 +180,7 @@ def degradation_year_on_year(normalized_energy, recenter=True):
         corrected performance ratio timeseries index in monthly format
     recenter:  bool, default value True
         specify whether data is centered to normalized yield of 1 based on first year
+    exceedance_prob (float): the probability level to use for exceedance value calculation
 
     Returns
     -------
@@ -191,6 +192,8 @@ def degradation_year_on_year(normalized_energy, recenter=True):
         calc_info:  dict
             ('YoY_values') pandas series of right-labeled year on year slopes
             ('renormalizing_factor') float of value used to recenter data
+            ('exceedance_level') the degradation rate that was ouperformed with
+            probability of exceedance_prob
     '''
 
     # Ensure the data is in order
@@ -243,14 +246,16 @@ def degradation_year_on_year(normalized_energy, recenter=True):
 
     Rd_pct = yoy_result.median()
 
-    # bootstrap to determine 68% CI
+    # bootstrap to determine 68% CI and exceedance probability
     n1 = len(yoy_result)
     reps = 10000
     xb1 = np.random.choice(yoy_result, (n1, reps), replace=True)
     mb1 = np.median(xb1, axis=0)
     Rd_CI = np.percentile(mb1, [15.9, 84.1])
 
+    P_level = np.percentile(mb1, 100 - exceedance_prob)
 
+    calc_info['exceedance_level'] = P_level
 
     return (Rd_pct, Rd_CI, calc_info)
 
