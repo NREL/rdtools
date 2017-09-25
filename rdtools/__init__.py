@@ -1,5 +1,6 @@
 from normalization import normalize_with_sapm
 from normalization import normalize_with_pvwatts
+from normalization import irradiance_rescale
 from degradation import degradation_ols
 from degradation import degradation_classical_decomposition
 from degradation import degradation_year_on_year
