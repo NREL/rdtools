@@ -195,7 +195,7 @@ def degradation_year_on_year(normalized_energy, recenter=True):
 
     # Ensure the data is in order
     normalized_energy = normalized_energy.sort_index()
-    normalized_energy.name = 'energy'
+    normalized_energy.name = 'energy' 
     normalized_energy.index.name = 'dt'
 
     # Detect sub-daily data:

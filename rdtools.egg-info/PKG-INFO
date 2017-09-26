@@ -1,0 +1,22 @@
+Metadata-Version: 1.1
+Name: rdtools
+Version: 0+unknown
+Summary: Functions for analytics the degradation of photovoltaic systems.
+Home-page: https://github.com/kwhanalytics/rdtools
+Author: Rdtools Python Developers
+Author-email: adam.b.shinn@gmail.com
+License: MIT
+Description: 
+        Rdtools is a collection of tools for the analysis of photovoltaic degradation.
+        
+        Source code: https://github.com/kwhanalytics/rdtools
+        
+Platform: UNKNOWN
+Classifier: Development Status :: 1 - Beta
+Classifier: License :: MIT License
+Classifier: Operating System :: OS Independent
+Classifier: Intended Audience :: Science/Research
+Classifier: Programming Language :: Python
+Classifier: Programming Language :: Python :: 2
+Classifier: Programming Language :: Python :: 2.7
+Classifier: Topic :: Scientific/Engineering

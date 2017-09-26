@@ -1,0 +1,17 @@
+MANIFEST.in
+setup.cfg
+versioneer.py
+rdtools/__init__.py
+rdtools/_version.py
+rdtools/aggregation.py
+rdtools/clearsky_temperature.py
+rdtools/degradation.py
+rdtools/filtering.py
+rdtools/normalization.py
+rdtools.egg-info/PKG-INFO
+rdtools.egg-info/SOURCES.txt
+rdtools.egg-info/dependency_links.txt
+rdtools.egg-info/not-zip-safe
+rdtools.egg-info/requires.txt
+rdtools.egg-info/top_level.txt
+rdtools/data/temperature.hdf5
