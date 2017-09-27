@@ -1,2 +1,2 @@
-CPU times: user 51.3 s, sys: 444 ms, total: 51.8 s
-Wall time: 51.8 s
+CPU times: user 48.2 s, sys: 457 ms, total: 48.7 s
+Wall time: 48.5 s
