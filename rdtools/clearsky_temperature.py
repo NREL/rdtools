@@ -5,6 +5,7 @@ import os
 import math
 import pandas as pd
 import pkg_resources
+import numpy as np
 
 
 
@@ -92,14 +93,18 @@ def get_clearsky_tamb(times, latitude, longitude, window_size=60, gauss_std=20):
     print('After reindexing:')
     print(df.head())
 
+    #func_utc_offsets = lambda y: y.utcoffset().total_seconds()/3600.0
+    #vfunc = np.vectorize(func_utc_offsets)
+    #utc_offsets = vfunc(np.array(list(df.index)))
+    #df['solar_noon_offset'] = solar_noon_offset(utc_offsets)
+
     utc_offsets = [y.utcoffset().total_seconds()/3600.0 for y in df.index]
     solar_noon_offset = lambda utc_offset : longitude / 180.0 * 12.0 - utc_offset
-    df['solar_noon_offset'] = [solar_noon_offset(utc_offset) for utc_offset in utc_offsets]
+    df['solar_noon_offset'] = solar_noon_offset(np.array(utc_offsets))
 
     df['hour_of_day'] = df.index.hour + df.index.minute / 60.0
-    df['Clear Sky Temperature (C)'] = df.apply(lambda x:
-                                               _get_temperature(x['hour_of_day'], x['night'], 
-                                                                x['day'],x['solar_noon_offset']), axis=1)
+    df['Clear Sky Temperature (C)'] = _get_temperature(df['hour_of_day'].values, df['night'].values,\
+                                                       df['day'].values,df['solar_noon_offset'].values)
     return df['Clear Sky Temperature (C)']
 
 
@@ -129,7 +134,7 @@ def _get_temperature(hour_of_day, night_temp, day_temp, solar_noon_offset):
     temp_scaler = 0.7
     t_diff = day_temp - night_temp
     t_ave = (day_temp + night_temp) / 2.0
-    v = math.cos((hour_of_day + hour_offset) / 24.0 * 2.0 * math.pi)
+    v = np.cos((hour_of_day + hour_offset) / 24.0 * 2.0 * np.pi)
     t = t_diff * 0.5 * v * temp_scaler + t_ave
     return t
 

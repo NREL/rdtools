@@ -1,1 +1,1 @@
-1 loop, best of 3: 49.8 s per loop
+1 loop, best of 3: 3.52 s per loop
