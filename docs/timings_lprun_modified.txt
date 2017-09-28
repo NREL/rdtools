@@ -1,0 +1,78 @@
+Timer unit: 1e-06 s
+
+Total time: 6.26622 s
+File: /Users/anag/anaconda/envs/python2.7/lib/python2.7/site-packages/rdtools/clearsky_temperature.py
+Function: get_clearsky_tamb at line 10
+
+Line #      Hits         Time  Per Hit   % Time  Line Contents
+==============================================================
+    10                                           def get_clearsky_tamb(times, latitude, longitude, window_size=40, gauss_std=20):
+    11                                               '''
+    12                                               :param times:       DateTimeIndex in local time
+    13                                               :param latitude:    float degrees
+    14                                               :param longitude:   float degrees
+    15                                               :return:            pandas Series of cell sky ambient temperature
+    16                                               '''
+    17                                           
+    18         1          104    104.0      0.0      filepath = pkg_resources.resource_filename('rdtools', 'data/temperature.hdf5')
+    19                                           
+    20         1            6      6.0      0.0      buffer = timedelta(days=window_size)
+    21         1        16755  16755.0      0.3      freq_actual = pd.infer_freq(times)
+    22         1          997    997.0      0.0      dt_daily = pd.date_range(times[0] - buffer, times[-1] + buffer, freq='D')
+    23                                           
+    24         1          582    582.0      0.0      f = h5py.File(filepath, "r")
+    25                                           
+    26         1          330    330.0      0.0      a = f['temperature']['day']
+    27         1          117    117.0      0.0      b = f['temperature']['night']
+    28                                           
+    29         1        13122  13122.0      0.2      lons = len(a[:, 0, 0])
+    30         1          273    273.0      0.0      lats = len(a[0, :, 0])
+    31                                           
+    32         1            2      2.0      0.0      lon_temp = longitude - 180
+    33         1            2      2.0      0.0      if lon_temp < 0:
+    34         1            1      1.0      0.0          lon_temp += 360
+    35         1            4      4.0      0.0      lon_index = round(float(lons) * float(lon_temp) / 360.0)
+    36         1            2      2.0      0.0      lat_index = round(float(lats) * (90.0 - float(latitude)) / 180.0)
+    37                                           
+    38         1          508    508.0      0.0      df = pd.DataFrame(index=dt_daily)
+    39         1         1955   1955.0      0.0      df['month'] = df.index.month
+    40                                           
+    41         1            1      1.0      0.0      ave_day = []
+    42         1            1      1.0      0.0      ave_night = []
+    43                                           
+    44         1            1      1.0      0.0      radius = 0
+    45        13           21      1.6      0.0      for k in range(12):
+    46                                           
+    47        12        15300   1275.0      0.2          day = _get_pixel_value(a, lon_index, lat_index, k, radius)
+    48        12        26147   2178.9      0.4          night = _get_pixel_value(b, lon_index, lat_index, k, radius)
+    49                                           
+    50        12           31      2.6      0.0          if day == float("NaN"):
+    51                                                       day = a[:, lat_index, k]
+    52        12           27      2.2      0.0          if night == float("NaN"):
+    53                                                       night = a[:, lat_index, k]
+    54                                           
+    55        12           17      1.4      0.0          ave_day.append(day)
+    56        12           18      1.5      0.0          ave_night.append(night)
+    57                                           
+    58        13           30      2.3      0.0      for i in range(12):
+    59        12        70656   5888.0      1.1          df.loc[df['month'] == i + 1, 'day'] = ave_day[i]
+    60        12        70673   5889.4      1.1          df.loc[df['month'] == i + 1, 'night'] = ave_night[i]
+    61                                           
+    62         1         3057   3057.0      0.0      df = df.rolling(window=window_size, win_type='gaussian', min_periods=1, center=True).mean(std=gauss_std)
+    63                                           
+    64         1       123495 123495.0      2.0      df = df.resample(freq_actual).interpolate(method='linear')
+    65         1        57245  57245.0      0.9      df['month'] = df.index.month
+    66                                           
+    67         1        38388  38388.0      0.6      df = df.reindex(times, method='nearest')
+    68                                           
+    69    934150      5648073      6.0     90.1      utc_offsets = [y.utcoffset().total_seconds() / 3600.0 for y in df.index]
+    70                                           
+    71         1            4      4.0      0.0      def solar_noon_offset(utc_offset):
+    72                                                   return longitude / 180.0 * 12.0 - utc_offset
+    73                                           
+    74         1        28318  28318.0      0.5      df['solar_noon_offset'] = solar_noon_offset(np.array(utc_offsets))
+    75                                           
+    76         1       112107 112107.0      1.8      df['hour_of_day'] = df.index.hour + df.index.minute / 60.0
+    77         1          202    202.0      0.0      df['Clear Sky Temperature (C)'] = _get_temperature(df['hour_of_day'].values, df['night'].values,\
+    78         1        37505  37505.0      0.6                                                         df['day'].values, df['solar_noon_offset'].values)
+    79         1          142    142.0      0.0      return df['Clear Sky Temperature (C)']
