@@ -35,7 +35,7 @@ def clip_filter(power, quant=0.98, low_power_cutoff=0.01):
     return (power < v * 0.99) & (power > low_power_cutoff)
 
 
-def csi_filter(measured_poa, clearsky_poa, threshold=0.1):
+def csi_filter(measured_poa, clearsky_poa, threshold=0.15):
     '''
     Filtering based on clear sky index (csi)
 
