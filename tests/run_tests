@@ -3,3 +3,4 @@
 python -m tests.degradation_test
 python -m tests.normalization_pvwatts_test
 python -m tests.normalization_sapm_test
+python -m tests.clearsky_temperature_test

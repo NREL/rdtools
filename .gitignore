@@ -10,3 +10,4 @@
 .DS_Store
 
 docs/.ipynb_checkpoints/degradation_example-checkpoint.ipynb
+*.ipynb_checkpoints*

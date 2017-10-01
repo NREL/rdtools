@@ -7,6 +7,7 @@ poa_global in preparation for calculating PV system degradation.
 import pandas as pd
 import pvlib
 import numpy as np
+from scipy.optimize import minimize
 
 
 def pvwatts_dc_power(poa_global, P_ref, T_cell=None, G_ref=1000, T_ref=25, gamma_pdc=None):
@@ -191,7 +192,6 @@ def sapm_dc_power(pvlib_pvsystem, met_data):
         .pvwatts_dc(g_poa_effective=effective_poa,
                     temp_cell=temp_cell['temp_cell'])
 
-
     return dc_power, effective_poa
 
 
@@ -271,3 +271,31 @@ def delta_index(series):
 
     deltas = (series.index - series.index.shift(-1)).astype('int64') / (10.0**9 * 3600.0)
     return deltas, np.mean(deltas)
+
+
+def irradiance_rescale(irrad, modeled_irrad):
+    '''
+    Attempts to rescale modeled irradiance to match measured irradiance on clear days
+    Parameters
+    ----------
+    irrad: Pandas Series (numeric)
+        measured irradiance time series
+    modeled_irrad: Pandas Series (numeric)
+        modeled irradiance time series
+    Returns
+    -------
+    Pandas Series (numeric): resacaled modeled irradaince time series
+    '''
+    def _rmse(fact):
+        rescaled_modeled_irrad = fact * modeled_irrad
+        csi = irrad / rescaled_modeled_irrad
+        filt = (csi >= 0.8) & (csi <= 1.2)
+        rmse = np.sqrt(((rescaled_modeled_irrad[filt] - irrad[filt]) ** 2.0).mean())
+        return rmse
+
+    guess = np.percentile(irrad.dropna(), 90) / np.percentile(modeled_irrad.dropna(), 90)
+    min_result = minimize(_rmse, guess, method='Nelder-Mead')
+    factor = min_result['x'][0]
+
+    out_irrad = factor * modeled_irrad
+    return out_irrad
