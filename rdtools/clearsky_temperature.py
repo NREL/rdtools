@@ -1,7 +1,6 @@
 import h5py
 from numpy import arange
 from datetime import timedelta
-import math
 import pandas as pd
 import pkg_resources
 import numpy as np
