@@ -21,20 +21,21 @@ DISTNAME = 'rdtools'
 LICENSE = 'MIT'
 AUTHOR = 'Rdtools Python Developers'
 MAINTAINER_EMAIL = 'adam.b.shinn@gmail.com'
-URL = 'https://github.com/kwhanalytics/rdtools'
+URL = 'https://github.com/NREL/rdtools'
 
 INSTALL_REQUIRES = [
     'numpy >= 1.11.0',
     'pandas >= 0.19.0',
     'pvlib >= 0.5.0',
     'statsmodels >= 0.8.0',
+    'scipy >= 0.19.1',
     'patsy >= 0.4.1',
-    'nose >= 1.3.7',
+    'h5py >= 2.7.1',
     'pytz',
     'six',
 ]
 
-TESTS_REQUIRE = ['nose']
+TESTS_REQUIRE = ['']
 
 CLASSIFIERS = [
     'Development Status :: 1 - Beta',
