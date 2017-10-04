@@ -28,6 +28,7 @@ INSTALL_REQUIRES = [
     'pandas >= 0.19.0',
     'pvlib >= 0.5.0',
     'statsmodels >= 0.8.0',
+    'scipy >= 0.19.1',
     'patsy >= 0.4.1',
     'h5py >= 2.7.1',
     'pytz',
