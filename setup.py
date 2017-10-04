@@ -29,13 +29,12 @@ INSTALL_REQUIRES = [
     'pvlib >= 0.5.0',
     'statsmodels >= 0.8.0',
     'patsy >= 0.4.1',
-    'nose >= 1.3.7',
     'h5py >= 2.7.1',
     'pytz',
     'six',
 ]
 
-TESTS_REQUIRE = ['nose']
+TESTS_REQUIRE = ['']
 
 CLASSIFIERS = [
     'Development Status :: 1 - Beta',
