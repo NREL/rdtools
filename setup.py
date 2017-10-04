@@ -21,7 +21,7 @@ DISTNAME = 'rdtools'
 LICENSE = 'MIT'
 AUTHOR = 'Rdtools Python Developers'
 MAINTAINER_EMAIL = 'adam.b.shinn@gmail.com'
-URL = 'https://github.com/kwhanalytics/rdtools'
+URL = 'https://github.com/NREL/rdtools'
 
 INSTALL_REQUIRES = [
     'numpy >= 1.11.0',
