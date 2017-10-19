@@ -1,8 +1,21 @@
-# RdTools
+#About RdTools
 
-Degradation Tools
+RdTools is a set of Python tools for analysis of photovoltaic data.
+In particular, high frequency (hourly or greater) PV production data is evaluated
+over several years to obtain rates of performance degradation over time.
 
-Python tools for photovoltaic degradation analysis.
+## Workflow
+
+The degradation calculations consist of several steps illustrated here:
+0. Import and preliminary calculations
+1. Normalize data using a performance metric
+2. Filter data that creates bias
+3. Aggregate data
+4. Analyze aggregated data to estimate the degradation rate
+
+<img src="./screenshots/Workflow1.png" width="600" height="300" alt="RdTools Workflow"/>
+
+
 
 ## Install using pip
 
