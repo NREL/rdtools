@@ -53,30 +53,37 @@ The most frequently used functions are:
 ```Python
 normalized, insolation = normalize_with_pvwatts(energy, pvwatts_kws)
   '''
-  Inputs: Pandas time series of raw energy, PVwatts dict for system analysis (poa_global, P_ref, T_cell, G_ref, T_ref, gamma_pdc)
+  Inputs: Pandas time series of raw energy, PVwatts dict for system analysis 
+    (poa_global, P_ref, T_cell, G_ref, T_ref, gamma_pdc)
   Outputs: Pandas time series of normalized energy and POA insolation
-  '''```
+  '''
+```
 
 ```Python
-poa_filter(poa); tcell_filter(Tcell); clip_filter(power); csi_filter(insolation, clearsky_insolation)
+poa_filter(poa); tcell_filter(Tcell); clip_filter(power); 
+csi_filter(insolation, clearsky_insolation)
   '''
   Inputs: Pandas time series of raw data to be filtered.
   Output: Boolean mask where `True` indicates acceptable data
-  '''```
+  '''
+```
 
 ```Python
 aggregation_insol(normalized, insolation, frequency='D')
   '''
   Inputs: Normalized energy and insolation
   Output: Aggregated data, weighted by the insolation.
-  '''```
+  '''
+```
 
 ````Python
 degradataion_year_on_year(aggregated)
   '''
   Inputs: Aggregated, normalized, filtered time series data
-  Outputs: Tuple: `yoy_rd`: Degradation rate `yoy_ci`: Confidence interval `yoy_info`: associated analysis data
-  '''```
+  Outputs: Tuple: `yoy_rd`: Degradation rate 
+    `yoy_ci`: Confidence interval `yoy_info`: associated analysis data
+  '''
+```
 
 For additional usage examples, look at the notebooks in [rdtools/docs](./docs/degradation_example.ipynb).
 
@@ -99,26 +106,3 @@ $ tests/run_tests
 
 Check out the [wiki](https://github.com/NREL/rdtools/wiki) for additional usage documentation, and for information on development goals and framework.
 
-License
-========
-MIT License
-
-Copyright (c) 2016 kwhanalytics and NREL
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
