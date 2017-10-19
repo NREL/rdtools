@@ -51,18 +51,22 @@ import rdtools
 The most frequently used functions are:
 
 `normalized, insolation = normalize_with_pvwatts(energy, pvwatts_kws)`
+
   Inputs: Pandas time series of raw energy, PVwatts dict for system analysis (poa_global, P_ref, T_cell, G_ref, T_ref, gamma_pdc)
   Outputs: Pandas time series of normalized energy and POA insolation
 
 `poa_filter(poa); tcell_filter(Tcell); clip_filter(power); csi_filter(insolation, clearsky_insolation)`
+
   Inputs: Pandas time series of raw data to be filtered.
   Output: Boolean mask where `True` indicates acceptable data
 
 `aggregation_insol(normalized, insolation, frequency='D')`
+
   Inputs: Normalized energy and insolation
   Output: Aggregated data, weighted by the insolation.
 
 `degradataion_year_on_year(aggregated)`
+
   Inputs: Aggregated, normalized, filtered time series data
   Outputs: Tuple: `yoy_rd`: Degradation rate `yoy_ci`: Confidence interval `yoy_info`: associated analysis data
 
@@ -85,4 +89,4 @@ $ tests/run_tests
 ```
 ## Further Instructions and Updates
 
-Check out the [wiki](https://github.com/NREL/rdtools/wiki) for information on development goals and framework.
+Check out the [wiki](https://github.com/NREL/rdtools/wiki) for additional usage documentation, and for information on development goals and framework.
