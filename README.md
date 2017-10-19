@@ -76,7 +76,7 @@ aggregation_insol(normalized, insolation, frequency='D')
   '''
 ```
 
-````Python
+```Python
 degradataion_year_on_year(aggregated)
   '''
   Inputs: Aggregated, normalized, filtered time series data
