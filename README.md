@@ -1,8 +1,13 @@
 # About RdTools
 
 RdTools is a set of Python tools for analysis of photovoltaic data.
-In particular, high frequency (hourly or greater) PV production data is evaluated
-over several years to obtain rates of performance degradation over time.
+In particular, PV production data is evaluated over several years
+to obtain rates of performance degradation over time. Rdtools can
+handle both high frequency (hourly or better) or low frequency (daily, weekly, etc.)
+datasets. Best results are obtained with higher frequency data.
+
+Full examples are worked out in the example notebooks in [rdtools/docs](./docs/degradation_example.ipynb).
+
 
 ## Workflow
 
@@ -26,12 +31,12 @@ about the accuracy of the analysis.
 <img src="./screenshots/Clearsky_result.png" width="600" height="456" alt="RdTools Result"/>
 
 
-Two methods are available for system performance ratio calculation.  The sensor-based
-approach assumes that site irradiance and temperature sensors are calibrated and in good repair.
-Since this is not always the case, a 'Clear-Sky' workflow is provided that is based on
+Two workflows are available for system performance ratio calculation, and illustrated in an example notebook. 
+The sensor-based approach assumes that site irradiance and temperature sensors are calibrated and in good repair.
+Since this is not always the case, a 'clear-sky' workflow is provided that is based on
 modeled temperature and irradiance.  Note that site irradiance data is still required to identify
-clear-sky conditions to be analyzed.  In many cases, the 'Clear-Sky' analysis can identify conditions
-of instrument errors, such as in the above analysis.
+clear-sky conditions to be analyzed.  In many cases, the 'clear-sky' analysis can identify conditions
+of instrument errors or irradiance sensor drift, such as in the above analysis.
 
 
 ## Install RdTools using pip
@@ -44,6 +49,11 @@ RdTools can be installed into Python from the command line.
 
 ## Usage
 
+
+Full workflow examples are found in the notebooks in [rdtools/docs](./docs/degradation_example.ipynb).
+
+The following functions are used for degradation analysis:
+
 ```
 import rdtools
 ```
@@ -51,7 +61,7 @@ import rdtools
 The most frequently used functions are:
 
 ```Python
-normalized, insolation = normalize_with_pvwatts(energy, pvwatts_kws)
+normalized, insolation = normalization.normalize_with_pvwatts(energy, pvwatts_kws)
   '''
   Inputs: Pandas time series of raw energy, PVwatts dict for system analysis 
     (poa_global, P_ref, T_cell, G_ref, T_ref, gamma_pdc)
@@ -60,8 +70,8 @@ normalized, insolation = normalize_with_pvwatts(energy, pvwatts_kws)
 ```
 
 ```Python
-poa_filter(poa); tcell_filter(Tcell); clip_filter(power); 
-csi_filter(insolation, clearsky_insolation)
+filtering.poa_filter(poa); filtering.tcell_filter(Tcell); filtering.clip_filter(power); 
+filtering.csi_filter(insolation, clearsky_insolation)
   '''
   Inputs: Pandas time series of raw data to be filtered.
   Output: Boolean mask where `True` indicates acceptable data
@@ -69,7 +79,7 @@ csi_filter(insolation, clearsky_insolation)
 ```
 
 ```Python
-aggregation_insol(normalized, insolation, frequency='D')
+aggregation.aggregation_insol(normalized, insolation, frequency='D')
   '''
   Inputs: Normalized energy and insolation
   Output: Aggregated data, weighted by the insolation.
@@ -77,7 +87,7 @@ aggregation_insol(normalized, insolation, frequency='D')
 ```
 
 ```Python
-degradataion_year_on_year(aggregated)
+degradation.degradataion_year_on_year(aggregated)
   '''
   Inputs: Aggregated, normalized, filtered time series data
   Outputs: Tuple: `yoy_rd`: Degradation rate 
@@ -85,15 +95,19 @@ degradataion_year_on_year(aggregated)
   '''
 ```
 
-For additional usage examples, look at the notebooks in [rdtools/docs](./docs/degradation_example.ipynb).
-
 ## Citing RdTools
 
-The underlying workflow of RdTools has been published in several places.  If you use RdTools in a published work, please cite the most appropriate of:
+The underlying workflow of RdTools has been published in several places.  If you use RdTools in a published work, please cite the following:
 
   - D. Jordan, C. Deline, S. Kurtz, G. Kimball, M. Anderson, "Robust PV Degradation Methodology and Application",
   IEEE Journal of Photovoltaics, 2017
+
+Other useful references which may also be consulted for degradation rate methodology include:
+
+
   - D. C. Jordan, M. G. Deceglie, S. R. Kurtz, “PV degradation methodology comparison — A basis for a standard”, in 43rd IEEE Photovoltaic Specialists Conference, Portland, OR, USA, 2016, DOI: 10.1109/PVSC.2016.7749593.
+  - Jordan DC, Kurtz SR, VanSant KT, Newmiller J, Compendium of Photovoltaic Degradation Rates, Progress in Photovoltaics: Research and Application, 2016, 24(7), 978 - 989.
+  - D. Jordan, S. Kurtz, PV Degradation Rates – an Analytical Review, Progress in Photovoltaics: Research and Application, 2013, 21(1), 12 - 29.
   - E. Hasselbrink, M. Anderson, Z. Defreitas, M. Mikofski, Y.-C.Shen, S. Caldwell, A. Terao, D. Kavulak, Z. Campeau, D. DeGraaff, “Validation of the PVLife model using 3 million module-years of live site data”, 39th IEEE Photovoltaic Specialists Conference, Tampa, FL, USA, 2013, p. 7 – 13, DOI: 10.1109/PVSC.2013.6744087.
 
 ## Unit tests
