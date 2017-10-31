@@ -26,7 +26,7 @@ The preferred method for degradation rate estimation is the year-on-year (YOY) a
 available in `degradation.degradation_year_on_year`. The YOY calculation yields in a distribution
 of degradation rates, the central tendency of which is the most representative of the true
 degradation. The width of the distribution provides information about the uncertainty in the
-estimate via a bootstrap calculation. The [example notebook](https://github.com/NREL/rdtools/blob/master/docs/degradation_example.ipynb) uses the output of `degradation.degradation_year_on_year`
+estimate via a bootstrap calculation. The [example notebook](https://github.com/NREL/rdtools/blob/master/docs/degradation_example.ipynb) uses the output of `degradation.degradation_year_on_year()`
 to visualize the calculation.
 
 <img src="./screenshots/Clearsky_result.png" width="600" height="456" alt="RdTools Result"/>
@@ -102,14 +102,19 @@ The underlying workflow of RdTools has been published in several places.  If you
 
   - D. Jordan, C. Deline, S. Kurtz, G. Kimball, M. Anderson, "Robust PV Degradation Methodology and Application",
   IEEE Journal of Photovoltaics, 2017
+  
+## References
+The clear sky temperature calculation, `clearsky_temperature.get_clearsky_tamb()`, uses data
+from images created by Jesse Allen, NASA‚Äôs Earth Observatory using data courtesy of the MODIS Land Group.  
+https://neo.sci.gsfc.nasa.gov/view.php?datasetId=MOD_LSTD_CLIM_M  
+https://neo.sci.gsfc.nasa.gov/view.php?datasetId=MOD_LSTN_CLIM_M
 
 Other useful references which may also be consulted for degradation rate methodology include:
 
-
-  - D. C. Jordan, M. G. Deceglie, S. R. Kurtz, ìPV degradation methodology comparison ó A basis for a standardî, in 43rd IEEE Photovoltaic Specialists Conference, Portland, OR, USA, 2016, DOI: 10.1109/PVSC.2016.7749593.
+  - D. C. Jordan, M. G. Deceglie, S. R. Kurtz, ‚ÄúPV degradation methodology comparison ‚Äî A basis for a standard‚Äù, in 43rd IEEE Photovoltaic Specialists Conference, Portland, OR, USA, 2016, DOI: 10.1109/PVSC.2016.7749593.
   - Jordan DC, Kurtz SR, VanSant KT, Newmiller J, Compendium of Photovoltaic Degradation Rates, Progress in Photovoltaics: Research and Application, 2016, 24(7), 978 - 989.
-  - D. Jordan, S. Kurtz, PV Degradation Rates ñ an Analytical Review, Progress in Photovoltaics: Research and Application, 2013, 21(1), 12 - 29.
-  - E. Hasselbrink, M. Anderson, Z. Defreitas, M. Mikofski, Y.-C.Shen, S. Caldwell, A. Terao, D. Kavulak, Z. Campeau, D. DeGraaff, ìValidation of the PVLife model using 3 million module-years of live site dataî, 39th IEEE Photovoltaic Specialists Conference, Tampa, FL, USA, 2013, p. 7 ñ 13, DOI: 10.1109/PVSC.2013.6744087.
+  - D. Jordan, S. Kurtz, PV Degradation Rates ‚Äì an Analytical Review, Progress in Photovoltaics: Research and Application, 2013, 21(1), 12 - 29.
+  - E. Hasselbrink, M. Anderson, Z. Defreitas, M. Mikofski, Y.-C.Shen, S. Caldwell, A. Terao, D. Kavulak, Z. Campeau, D. DeGraaff, ‚ÄúValidation of the PVLife model using 3 million module-years of live site data‚Äù, 39th IEEE Photovoltaic Specialists Conference, Tampa, FL, USA, 2013, p. 7 ‚Äì 13, DOI: 10.1109/PVSC.2013.6744087.
 
 ## Unit tests
 
