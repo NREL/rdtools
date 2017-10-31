@@ -8,10 +8,26 @@ import numpy as np
 
 def get_clearsky_tamb(times, latitude, longitude, window_size=40, gauss_std=20):
     '''
-    :param times:       DateTimeIndex in local time
-    :param latitude:    float degrees
-    :param longitude:   float degrees
-    :return:            pandas Series of cell sky ambient temperature
+    Description
+    -----------
+    Estimates the ambient temperature at latitude and longitude for the given times
+
+    Parameters
+    ----------
+    times:       DateTimeIndex in local time
+    latitude:    float degrees
+    longitude:   float degrees
+
+    Returns
+    -------
+    pandas Series of clear sky ambient temperature
+
+    Reference
+    ---------
+    Uses data from images created by Jesse Allen, NASA’s Earth Observatory
+    using data courtesy of the MODIS Land Group.
+    https://neo.sci.gsfc.nasa.gov/view.php?datasetId=MOD_LSTD_CLIM_M
+    https://neo.sci.gsfc.nasa.gov/view.php?datasetId=MOD_LSTN_CLIM_M
     '''
 
     filepath = pkg_resources.resource_filename('rdtools', 'data/temperature.hdf5')
