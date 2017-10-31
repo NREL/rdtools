@@ -26,7 +26,7 @@ The preferred method for degradation rate estimation is the year-on-year (YOY) a
 available in `degradation.degradation_year_on_year`. The YOY calculation yields in a distribution
 of degradation rates, the central tendency of which is the most representative of the true
 degradation. The width of the distribution provides information about the uncertainty in the
-estimate via a bootstrap calculation. The [example notebook](https://github.com/NREL/rdtools/blob/master/docs/degradation_example.ipynb) uses the output of `degradation.degradation_year_on_year()`
+estimate via a bootstrap calculation. The [example notebook](./docs/degradation_example.ipynb) uses the output of `degradation.degradation_year_on_year()`
 to visualize the calculation.
 
 <img src="./screenshots/Clearsky_result.png" width="600" height="456" alt="RdTools Result"/>
