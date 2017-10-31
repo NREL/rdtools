@@ -14,14 +14,14 @@ DESCRIPTION = 'Functions for analytics the degradation of photovoltaic systems.'
 LONG_DESCRIPTION = """
 Rdtools is a collection of tools for the analysis of photovoltaic degradation.
 
-Source code: https://github.com/kwhanalytics/rdtools
+Source code: https://github.com/NREL/rdtools
 """
 
 DISTNAME = 'rdtools'
 LICENSE = 'MIT'
 AUTHOR = 'Rdtools Python Developers'
-MAINTAINER_EMAIL = 'adam.b.shinn@gmail.com'
-URL = 'https://github.com/kwhanalytics/rdtools'
+MAINTAINER_EMAIL = 'michael.deceglie@nrel.gov'
+URL = 'https://github.com/NREL/rdtools'
 
 INSTALL_REQUIRES = [
     'numpy >= 1.11.0',
