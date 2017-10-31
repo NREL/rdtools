@@ -22,11 +22,12 @@ Full examples are worked out in the example notebooks in [rdtools/docs](./docs/d
 
 ## Degradation Results
 
-RdTools output shows filtered historical data along with a linear trend line.
-However, the most accurate estimate of degradation over the analysis period in question
-is the Year-on-year (YOY) distribution, which is a normal distribution, the central tendancy
-of which is the most representative degradation rate.  Distribution width provides information
-about the accuracy of the analysis.
+The preferred method for degradation rate estimation is the year-on-year (YOY) approach,
+available in `degradation.degradation_year_on_year`. The YOY calculation yields in a distribution
+of degradation rates, the central tendency of which is the most representative of the true
+degradation. The width of the distribution provides information about the uncertainty in the
+estimate via a bootstrap calculation. The [example notebook](https://github.com/NREL/rdtools/blob/master/docs/degradation_example.ipynb) uses the output of `degradation.degradation_year_on_year`
+to visualize the calculation.
 
 <img src="./screenshots/Clearsky_result.png" width="600" height="456" alt="RdTools Result"/>
 
