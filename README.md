@@ -62,7 +62,7 @@ import rdtools
 The most frequently used functions are:
 
 ```Python
-normalized, insolation = normalization.normalize_with_pvwatts(energy, pvwatts_kws)
+normalization.normalize_with_pvwatts(energy, pvwatts_kws)
   '''
   Inputs: Pandas time series of raw energy, PVwatts dict for system analysis 
     (poa_global, P_ref, T_cell, G_ref, T_ref, gamma_pdc)
