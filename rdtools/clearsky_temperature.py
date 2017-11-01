@@ -24,7 +24,7 @@ def get_clearsky_tamb(times, latitude, longitude, window_size=40, gauss_std=20):
 
     Reference
     ---------
-    Uses data from images created by Jesse Allen, NASA’s Earth Observatory
+    Uses data from images created by Jesse Allen, NASA's Earth Observatory
     using data courtesy of the MODIS Land Group.
     https://neo.sci.gsfc.nasa.gov/view.php?datasetId=MOD_LSTD_CLIM_M
     https://neo.sci.gsfc.nasa.gov/view.php?datasetId=MOD_LSTN_CLIM_M
