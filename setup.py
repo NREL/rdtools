@@ -39,8 +39,8 @@ INSTALL_REQUIRES = [
 TESTS_REQUIRE = ['']
 
 CLASSIFIERS = [
-    'Development Status :: 1 - Beta',
-    'License :: MIT License',
+    'Development Status :: 4 - Beta',
+    'License :: OSI Approved :: MIT License',
     'Operating System :: OS Independent',
     'Intended Audience :: Science/Research',
     'Programming Language :: Python',
