@@ -42,9 +42,12 @@ of instrument errors or irradiance sensor drift, such as in the above analysis.
 
 ## Install RdTools using pip
 
-RdTools can be installed into Python from the command line.
+RdTools can be installed automatically into Python from PyPI using the command line:  
+`pip install rdtools`
 
-1. Clone or download the rdtools repository.
+Alternatively it can be installed mannually using the command line:  
+
+1. Download a [release](https://github.com/NREL/rdtools/releases) (Or to work with a development version, clone or download the rdtools repository).
 2. Navigate to the repository: `cd rdtools`
 3. Install via pip: `pip install .`
 

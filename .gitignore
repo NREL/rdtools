@@ -11,3 +11,6 @@
 
 docs/.ipynb_checkpoints/degradation_example-checkpoint.ipynb
 *.ipynb_checkpoints*
+
+# ignore egg-info
+rdtools.egg-info*

@@ -9,7 +9,7 @@ except ImportError:
 import versioneer
 
 
-DESCRIPTION = 'Functions for analytics the degradation of photovoltaic systems.'
+DESCRIPTION = 'Functions for analyzing the degradation of photovoltaic systems.'
 
 LONG_DESCRIPTION = """
 Rdtools is a collection of tools for the analysis of photovoltaic degradation.
@@ -20,7 +20,7 @@ Source code: https://github.com/NREL/rdtools
 DISTNAME = 'rdtools'
 LICENSE = 'MIT'
 AUTHOR = 'Rdtools Python Developers'
-MAINTAINER_EMAIL = 'michael.deceglie@nrel.gov'
+MAINTAINER_EMAIL = 'RdTools@nrel.gov'
 
 URL = 'https://github.com/NREL/rdtools'
 
@@ -39,14 +39,24 @@ INSTALL_REQUIRES = [
 TESTS_REQUIRE = ['']
 
 CLASSIFIERS = [
-    'Development Status :: 1 - Beta',
-    'License :: MIT License',
+    'Development Status :: 4 - Beta',
+    'License :: OSI Approved :: MIT License',
     'Operating System :: OS Independent',
     'Intended Audience :: Science/Research',
     'Programming Language :: Python',
     'Programming Language :: Python :: 2',
     'Programming Language :: Python :: 2.7',
     'Topic :: Scientific/Engineering',
+]
+
+KEYWORDS = [
+    'photovoltaic',
+    'solar',
+    'analytics',
+    'analysis',
+    'performance',
+    'degradation',
+    'PV'
 ]
 
 setuptools_kwargs = {
@@ -58,15 +68,22 @@ setuptools_kwargs = {
 # set up packages to be installed and extensions to be compiled
 PACKAGES = ['rdtools']
 
+PACKAGE_DATA = {
+    'rdtools': 'rdtools/data/temperature.hdf5'
+}
+
 setup(name=DISTNAME,
       version=versioneer.get_version(),
       cmdclass=versioneer.get_cmdclass(),
       packages=PACKAGES,
+      keywords=KEYWORDS,
       install_requires=INSTALL_REQUIRES,
       tests_require=TESTS_REQUIRE,
+      package_data=PACKAGE_DATA,
       description=DESCRIPTION,
       long_description=LONG_DESCRIPTION,
       author=AUTHOR,
+      author_email=AUTHOR,
       maintainer_email=MAINTAINER_EMAIL,
       license=LICENSE,
       url=URL,
