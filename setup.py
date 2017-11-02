@@ -36,8 +36,6 @@ INSTALL_REQUIRES = [
     'six',
 ]
 
-TESTS_REQUIRE = ['']
-
 CLASSIFIERS = [
     'Development Status :: 4 - Beta',
     'License :: OSI Approved :: MIT License',
@@ -78,7 +76,6 @@ setup(name=DISTNAME,
       packages=PACKAGES,
       keywords=KEYWORDS,
       install_requires=INSTALL_REQUIRES,
-      tests_require=TESTS_REQUIRE,
       package_data=PACKAGE_DATA,
       description=DESCRIPTION,
       long_description=LONG_DESCRIPTION,
