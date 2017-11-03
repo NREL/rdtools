@@ -25,8 +25,8 @@ MAINTAINER_EMAIL = 'RdTools@nrel.gov'
 URL = 'https://github.com/NREL/rdtools'
 
 INSTALL_REQUIRES = [
-    'numpy >= 1.11.0',
-    'pandas >= 0.19.0',
+    'numpy >= 1.11.2',
+    'pandas == 0.20.3',
     'pvlib >= 0.5.0',
     'statsmodels >= 0.8.0',
     'scipy >= 0.19.1',
