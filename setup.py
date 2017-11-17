@@ -67,7 +67,7 @@ setuptools_kwargs = {
 PACKAGES = ['rdtools']
 
 PACKAGE_DATA = {
-    'rdtools': 'rdtools/data/temperature.hdf5'
+    'rdtools': ['data/temperature.hdf5']
 }
 
 setup(name=DISTNAME,
