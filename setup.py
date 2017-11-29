@@ -66,9 +66,6 @@ setuptools_kwargs = {
 # set up packages to be installed and extensions to be compiled
 PACKAGES = ['rdtools']
 
-PACKAGE_DATA = {
-    'rdtools': ['data/temperature.hdf5']
-}
 
 setup(name=DISTNAME,
       version=versioneer.get_version(),
@@ -76,7 +73,6 @@ setup(name=DISTNAME,
       packages=PACKAGES,
       keywords=KEYWORDS,
       install_requires=INSTALL_REQUIRES,
-      package_data=PACKAGE_DATA,
       description=DESCRIPTION,
       long_description=LONG_DESCRIPTION,
       author=AUTHOR,
