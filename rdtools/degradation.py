@@ -192,7 +192,7 @@ def degradation_year_on_year(normalized_energy, recenter=True, exceedance_prob=9
         calc_info:  dict
             ('YoY_values') pandas series of right-labeled year on year slopes
             ('renormalizing_factor') float of value used to recenter data
-            ('exceedance_level') the degradation rate that was ouperformed with
+            ('exceedance_level') the degradation rate that was outperformed with
             probability of exceedance_prob
     '''
 
