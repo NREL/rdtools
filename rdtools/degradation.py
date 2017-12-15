@@ -184,7 +184,7 @@ def degradation_year_on_year(normalized_energy, recenter=True, exceedance_prob=9
 
     Returns
     -------
-    tuple of (degradation_rate, confidence interval, calc_info)
+    tuple of (degradation_rate, confidence_interval, calc_info)
         degradation_rate:  float
             rate of relative performance change in %/yr
         confidence_interval:  float
