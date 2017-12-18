@@ -176,15 +176,15 @@ def degradation_year_on_year(normalized_energy, recenter=True, exceedance_prob=9
 
     Parameters
     ----------
-    normalized_energy:  Pandas data series (numeric)
-        corrected performance ratio timeseries index in monthly format
+    normalized_energy: Pandas Time Series (numeric)
+        Daily or lower frequency time series of normalized system ouput.
     recenter:  bool, default value True
         specify whether data is centered to normalized yield of 1 based on first year
     exceedance_prob (float): the probability level to use for exceedance value calculation
 
     Returns
     -------
-    tuple of (degradation_rate, confidence interval, calc_info)
+    tuple of (degradation_rate, confidence_interval, calc_info)
         degradation_rate:  float
             rate of relative performance change in %/yr
         confidence_interval:  float
@@ -192,7 +192,7 @@ def degradation_year_on_year(normalized_energy, recenter=True, exceedance_prob=9
         calc_info:  dict
             ('YoY_values') pandas series of right-labeled year on year slopes
             ('renormalizing_factor') float of value used to recenter data
-            ('exceedance_level') the degradation rate that was ouperformed with
+            ('exceedance_level') the degradation rate that was outperformed with
             probability of exceedance_prob
     '''
 
