@@ -8,6 +8,11 @@ import pandas as pd
 import pvlib
 import numpy as np
 from scipy.optimize import minimize
+import warnings
+
+
+class ConvergenceError(Exception):
+    pass
 
 
 def pvwatts_dc_power(poa_global, P_ref, T_cell=None, G_ref=1000, T_ref=25, gamma_pdc=None):
@@ -273,7 +278,7 @@ def delta_index(series):
     return deltas, np.mean(deltas)
 
 
-def irradiance_rescale(irrad, modeled_irrad):
+def irradiance_rescale(irrad, modeled_irrad, max_iterations=100, method=None):
     '''
     Attempts to rescale modeled irradiance to match measured irradiance on clear days
     Parameters
@@ -282,20 +287,74 @@ def irradiance_rescale(irrad, modeled_irrad):
         measured irradiance time series
     modeled_irrad: Pandas Series (numeric)
         modeled irradiance time series
+    max_iterations: (int)
+        The maximum number of times to attempt rescale optimization, default 100.
+        Ignored if method = 'single_opt'
+    method: (str)
+        The caclulation method to use. 'single_opt' implements the irradiance_rescale of
+        rdtools v1.1.3 and earlier. 'iterative' implements a more stable calculation
+        that may yield different results from the single_opt method. Default None issues
+        a warning then uses the iterative calculation.
+
     Returns
     -------
     Pandas Series (numeric): resacaled modeled irradaince time series
     '''
-    def _rmse(fact):
-        rescaled_modeled_irrad = fact * modeled_irrad
-        csi = irrad / rescaled_modeled_irrad
-        filt = (csi >= 0.8) & (csi <= 1.2)
-        rmse = np.sqrt(((rescaled_modeled_irrad[filt] - irrad[filt]) ** 2.0).mean())
-        return rmse
 
-    guess = np.percentile(irrad.dropna(), 90) / np.percentile(modeled_irrad.dropna(), 90)
-    min_result = minimize(_rmse, guess, method='Nelder-Mead')
-    factor = min_result['x'][0]
+    if method is None:
+        warnings.warn("The underlying calculations for irradiance_rescale have changed "
+                      "which may affect results. To revert to the version of irradiance_rescale "
+                      "from rdtools v1.1.3 or earlier, use method = 'single_opt'. ")
+        method = 'iterative'
 
-    out_irrad = factor * modeled_irrad
-    return out_irrad
+    if method == 'iterative':
+        def _rmse(fact):
+            "Calculates RMSE with a given rescale fact(or) according to global filt(er)"
+            rescaled_modeled_irrad = fact * modeled_irrad
+            rmse = np.sqrt(((rescaled_modeled_irrad[filt] - irrad[filt]) ** 2.0).mean())
+            return rmse
+
+        def _single_rescale(irrad, modeled_irrad, guess):
+            "Optimizes rescale factor once"
+            global filt
+            csi = irrad / (guess * modeled_irrad)  # clear sky index
+            filt = (csi >= 0.8) & (csi <= 1.2) & (irrad > 200)
+            min_result = minimize(_rmse, guess, method='Nelder-Mead')
+
+            factor = min_result['x'][0]
+            return factor
+
+        # Calculate an initial guess for the rescal factor
+        factor = np.percentile(irrad.dropna(), 90) / np.percentile(modeled_irrad.dropna(), 90)
+
+        # Itteretively run the optimization, recalculating the clear sky filter each time
+        convergence_threshold = 10**-6
+        for i in range(max_iterations):
+            prev_factor = factor
+            factor = _single_rescale(irrad, modeled_irrad, factor)
+            delta = abs(factor - prev_factor)
+            if delta < convergence_threshold:
+                break
+
+        if delta >= convergence_threshold:
+            raise ConvergenceError('Rescale did not converge within max_iterations')
+        else:
+            return factor * modeled_irrad
+
+    elif method == 'single_opt':
+        def _rmse(fact):
+            rescaled_modeled_irrad = fact * modeled_irrad
+            csi = irrad / rescaled_modeled_irrad
+            filt = (csi >= 0.8) & (csi <= 1.2)
+            rmse = np.sqrt(((rescaled_modeled_irrad[filt] - irrad[filt]) ** 2.0).mean())
+            return rmse
+
+        guess = np.percentile(irrad.dropna(), 90) / np.percentile(modeled_irrad.dropna(), 90)
+        min_result = minimize(_rmse, guess, method='Nelder-Mead')
+        factor = min_result['x'][0]
+
+        out_irrad = factor * modeled_irrad
+        return out_irrad
+
+    else:
+        raise ValueError('Invalid method')
