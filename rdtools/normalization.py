@@ -324,10 +324,10 @@ def irradiance_rescale(irrad, modeled_irrad, max_iterations=100, method=None):
             factor = min_result['x'][0]
             return factor
 
-        # Calculate an initial guess for the rescal factor
+        # Calculate an initial guess for the rescale factor
         factor = np.percentile(irrad.dropna(), 90) / np.percentile(modeled_irrad.dropna(), 90)
 
-        # Itteretively run the optimization, recalculating the clear sky filter each time
+        # Iteratively run the optimization, recalculating the clear sky filter each time
         convergence_threshold = 10**-6
         for i in range(max_iterations):
             prev_factor = factor
