@@ -146,5 +146,32 @@ class DegradationTestCase(unittest.TestCase):
             print 'Actual: ', 100 * cls.rd
             print 'Estimated: ', rd_result[0]
 
+
+    def test_confidence_intervals(cls):
+
+        input_freq = "W"
+
+        for func in [degradation_ols, degradation_year_on_year]:
+
+            ci1 = 68.2
+            ci2 = 95
+            r1 = func(cls.test_corr_energy[input_freq], confidence_level=ci1)
+            r2 = func(cls.test_corr_energy[input_freq], confidence_level=ci2)
+
+            print "func: {}, ci: {}, ({}) {} ({})".format(str(func).split(' ')[1], ci1, r1[1][0], r1[0], r1[1][1])
+            print "func: {}, ci: {}, ({}) {} ({})".format(str(func).split(' ')[1], ci2, r2[1][0], r2[0], r2[1][1])
+
+            # lower limit is lower than median and upper limit is higher than median
+            assert r1[0] > r1[1][0] and r1[0] < r1[1][1]
+            assert r2[0] > r2[1][0] and r2[0] < r2[1][1]
+
+            # 95% interval is bigger than 68% interval
+            assert abs(r1[0] - r1[1][1]) < abs(r2[0] - r2[1][1])
+            assert abs(r1[0] - r1[1][0]) < abs(r2[0] - r2[1][0])
+
+            # actual rd is within confidence interval
+            assert cls.rd > r2[1][0] and cls.rd < r2[1][1]
+
+
 if __name__ == '__main__':
     unittest.main()
