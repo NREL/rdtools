@@ -170,7 +170,7 @@ class DegradationTestCase(unittest.TestCase):
             assert abs(r1[0] - r1[1][0]) < abs(r2[0] - r2[1][0])
 
             # actual rd is within confidence interval
-            assert cls.rd > r2[1][0] and cls.rd < r2[1][1]
+            assert 100.0 * cls.rd > r2[1][0] and 100.0 * cls.rd < r2[1][1]
 
 
 if __name__ == '__main__':
