@@ -14,6 +14,10 @@ class DegradationTestCase(unittest.TestCase):
 
     @classmethod
     def get_corr_energy(cls, rd, input_freq):
+
+        #lock seed to make test deterministic
+        np.random.seed(0)
+
         daily_rd = rd / 365.0
 
         start = '2012-01-01'
