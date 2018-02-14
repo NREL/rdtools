@@ -120,6 +120,9 @@ class DegradationTestCase(unittest.TestCase):
 
     def test_confidence_intervals(cls):
 
+        funcName = sys._getframe().f_code.co_name
+        print '\r', 'Running ', funcName
+
         input_freq = "W"
 
         for func in [degradation_ols, degradation_year_on_year]:
