@@ -42,19 +42,21 @@ of instrument errors or irradiance sensor drift, such as in the above analysis.
 
 ## Install RdTools using pip
 
+_Note_: RdTools is compatible with Python-2. See [issue #56](../../issues/56) to contribute to Python-3 support.
+
 RdTools can be installed automatically into Python from PyPI using the command line:  
 `pip install rdtools`
 
 Alternatively it can be installed mannually using the command line:  
 
-1. Download a [release](https://github.com/NREL/rdtools/releases) (Or to work with a development version, clone or download the rdtools repository).
+1. Download a [release](../../releases) (Or to work with a development version, clone or download the rdtools repository).
 2. Navigate to the repository: `cd rdtools`
 3. Install via pip: `pip install .`
 
 ## Usage
 
 
-Full workflow examples are found in the notebooks in [rdtools/docs](./docs/degradation_example.ipynb).
+Full workflow examples are found in the notebooks in [`rdtools/docs`](./docs/degradation_example.ipynb).
 
 The following functions are used for degradation analysis:
 
