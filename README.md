@@ -8,7 +8,6 @@ datasets. Best results are obtained with higher frequency data.
 
 Full examples are worked out in the example notebooks in [rdtools/docs](./docs/degradation_example.ipynb).
 
-
 ## Workflow
 
 0. Import and preliminary calculations
@@ -41,6 +40,8 @@ of instrument errors or irradiance sensor drift, such as in the above analysis.
 
 
 ## Install RdTools using pip
+
+RdTools does not yet support Python 3. Please be sure to run in an environment using Python 2.7.
 
 RdTools can be installed automatically into Python from PyPI using the command line:  
 `pip install rdtools`
