@@ -41,7 +41,7 @@ of instrument errors or irradiance sensor drift, such as in the above analysis.
 
 ## Install RdTools using pip
 
-RdTools does not yet support Python 3. Please be sure to run in an environment using Python 2.7.
+RdTools does not yet support Python 3. Please be sure to run in an environment using Python 2.7. However, Python 3 is supported in the [development branch](https://github.com/NREL/rdtools/tree/development).
 
 RdTools can be installed automatically into Python from PyPI using the command line:  
 `pip install rdtools`
