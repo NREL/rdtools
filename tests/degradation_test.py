@@ -82,50 +82,50 @@ class DegradationTestCase(unittest.TestCase):
         ''' Test degradation with ols. '''
 
         funcName = sys._getframe().f_code.co_name
-        print '\r', 'Running ', funcName
+        print('\r', 'Running ', funcName)
 
         # test ols degradation calc
         for input_freq in cls.list_ols_input_freq:
-            print 'Frequency: ', input_freq
+            print('Frequency: ', input_freq)
             rd_result = degradation_ols(cls.test_corr_energy[input_freq])
             cls.assertAlmostEqual(rd_result[0], 100 * cls.rd, places=1)
-            print 'Actual: ', 100 * cls.rd
-            print 'Estimated: ', rd_result[0]
+            print('Actual: ', 100 * cls.rd)
+            print('Estimated: ', rd_result[0])
 
     def test_degradation_classical_decomposition(cls):
         ''' Test degradation with classical decomposition. '''
 
         funcName = sys._getframe().f_code.co_name
-        print '\r', 'Running ', funcName
+        print('\r', 'Running ', funcName)
 
         # test classical decomposition degradation calc
         for input_freq in cls.list_CD_input_freq:
-            print 'Frequency: ', input_freq
+            print('Frequency: ', input_freq)
             rd_result = degradation_classical_decomposition(
                 cls.test_corr_energy[input_freq])
             cls.assertAlmostEqual(rd_result[0], 100 * cls.rd, places=1)
-            print 'Actual: ', 100 * cls.rd
-            print 'Estimated: ', rd_result[0]
+            print('Actual: ', 100 * cls.rd)
+            print('Estimated: ', rd_result[0])
 
     def test_degradation_year_on_year(cls):
         ''' Test degradation with year on year approach. '''
 
         funcName = sys._getframe().f_code.co_name
-        print '\r', 'Running ', funcName
+        print('\r', 'Running ', funcName)
 
         # test YOY degradation calc
         for input_freq in cls.list_YOY_input_freq:
-            print 'Frequency: ', input_freq
+            print('Frequency: ', input_freq)
             rd_result = degradation_year_on_year(
                 cls.test_corr_energy[input_freq])
             cls.assertAlmostEqual(rd_result[0], 100 * cls.rd, places=1)
-            print 'Actual: ', 100 * cls.rd
-            print 'Estimated: ', rd_result[0]
+            print('Actual: ', 100 * cls.rd)
+            print('Estimated: ', rd_result[0])
 
     def test_confidence_intervals(cls):
 
         funcName = sys._getframe().f_code.co_name
-        print '\r', 'Running ', funcName
+        print('\r', 'Running ', funcName)
 
         input_freq = "W"
 
@@ -136,8 +136,8 @@ class DegradationTestCase(unittest.TestCase):
             r1 = func(cls.test_corr_energy[input_freq], confidence_level=ci1)
             r2 = func(cls.test_corr_energy[input_freq], confidence_level=ci2)
 
-            print "func: {}, ci: {}, ({}) {} ({})".format(str(func).split(' ')[1], ci1, r1[1][0], r1[0], r1[1][1])
-            print "func: {}, ci: {}, ({}) {} ({})".format(str(func).split(' ')[1], ci2, r2[1][0], r2[0], r2[1][1])
+            print("func: {}, ci: {}, ({}) {} ({})".format(str(func).split(' ')[1], ci1, r1[1][0], r1[0], r1[1][1]))
+            print("func: {}, ci: {}, ({}) {} ({})".format(str(func).split(' ')[1], ci2, r2[1][0], r2[0], r2[1][1]))
 
             # lower limit is lower than median and upper limit is higher than median
             assert r1[0] > r1[1][0] and r1[0] < r1[1][1]
