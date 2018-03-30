@@ -4,7 +4,7 @@ from datetime import timedelta
 import pandas as pd
 import pkg_resources
 import numpy as np
-
+import warnings
 
 def get_clearsky_tamb(times, latitude, longitude, window_size=40, gauss_std=20):
     '''
@@ -33,8 +33,16 @@ def get_clearsky_tamb(times, latitude, longitude, window_size=40, gauss_std=20):
     filepath = pkg_resources.resource_filename('rdtools', 'data/temperature.hdf5')
 
     buffer = timedelta(days=window_size)
-    freq_actual = pd.infer_freq(times)
-    dt_daily = pd.date_range(times[0] - buffer, times[-1] + buffer, freq='D')
+
+    if times.freq is None:
+        freq_actual = pd.infer_freq(times)
+        if freq_actual is None:
+            freq_actual = pd.infer_freq(times[:10])
+            warnings.warn("Input 'times' has no frequency attribute. Inferring frequency from first 10 timestamps.")
+    else:
+        freq_actual = times.freq
+
+    dt_daily = pd.date_range(times.date[0] - buffer, times.date[-1] + buffer, freq='D', tz=times.tz)
 
     f = h5py.File(filepath, "r")
 

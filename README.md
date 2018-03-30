@@ -52,6 +52,8 @@ Alternatively it can be installed mannually using the command line:
 2. Navigate to the repository: `cd rdtools`
 3. Install via pip: `pip install .`
 
+On some systems installation with `pip` can fail due to problems installing requireiments. If this occurs, the requirements specified in `setup.py` may need to be seperately installed (for example by using `conda`) before installing `rdtools`. 
+
 ## Usage
 
 
