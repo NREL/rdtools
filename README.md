@@ -108,6 +108,10 @@ The underlying workflow of RdTools has been published in several places.  If you
 
   - D. Jordan, C. Deline, S. Kurtz, G. Kimball, M. Anderson, "Robust PV Degradation Methodology and Application",
   IEEE Journal of Photovoltaics, 2017
+  - RdTools, version x.x.x, https://github.com/NREL/rdtools, [DOI:10.5281/zenodo.1210316](https://doi.org/10.5281/zenodo.1210316)  
+  *(be sure to include the version number used in your analysis)*
+
+
   
 ## References
 The clear sky temperature calculation, `clearsky_temperature.get_clearsky_tamb()`, uses data
