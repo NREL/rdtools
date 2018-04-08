@@ -1,0 +1,77 @@
+#!/usr/bin/env python
+'''
+Run script using:
+$ tests/run
+
+Add -v flag for unittests verbosity level 2.
+Add --profile flag to create a cProfile report.
+Add --coverage flag to create a coverage report.
+'''
+
+import sys
+import os
+
+base_dir = os.getcwd()
+sys.path.insert(0, base_dir)
+
+from unittest import TestSuite, TextTestRunner
+from unittest import defaultTestLoader
+
+import cProfile, pstats#, StringIO
+import coverage
+
+import degradation_test
+import aggregation_test
+import normalization_pvwatts_test
+import normalization_sapm_test
+import clearsky_temperature_test
+
+
+if __name__ == "__main__":
+    if '-v' in sys.argv:
+        verbosity = 2
+    else:
+        verbosity = 1
+
+    suite = TestSuite()
+    dtl = defaultTestLoader
+    suite.addTests(dtl.loadTestsFromModule(degradation_test))
+    suite.addTests(dtl.loadTestsFromModule(aggregation_test))
+    suite.addTests(dtl.loadTestsFromModule(normalization_pvwatts_test))
+    suite.addTests(dtl.loadTestsFromModule(normalization_sapm_test))
+    suite.addTests(dtl.loadTestsFromModule(clearsky_temperature_test))
+    runner = TextTestRunner(verbosity=verbosity)
+
+    if '--profile' in sys.argv:
+        profiler = cProfile.Profile()
+        profiler.enable()
+        profiler_report = True
+    else:
+        profiler_report = False
+
+    if '--coverage' in sys.argv:
+        cov = coverage.Coverage()
+        cov.start()
+        coverage_report = True
+    else:
+        coverage_report = False
+
+    result = runner.run(suite)
+
+    if coverage_report:
+        cov.stop()
+        cov.save()
+        include = ['rdtools/*']
+        with open('test_coverage.log', 'w') as f:
+            cov.report(show_missing=True, include=include, file=f)
+
+    if profiler_report:
+        profiler.disable()
+#         s = StringIO.StringIO()
+#         sortby = 'cumulative'
+#         ps = pstats.Stats(profiler, stream=s).sort_stats(sortby)
+#         ps.print_stats()
+#         with open('test_profile.log', 'w') as f:
+#             f.write(s.getvalue())
+
+    sys.exit(len(result.errors) + len(result.failures))
