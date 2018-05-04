@@ -83,50 +83,50 @@ class DegradationTestCase(unittest.TestCase):
         ''' Test degradation with ols. '''
 
         funcName = sys._getframe().f_code.co_name
-        logging.debug('\r', 'Running ', funcName)
+        logging.debug('Running {}'.format(funcName))
 
         # test ols degradation calc
         for input_freq in self.list_ols_input_freq:
-            logging.debug('Frequency: ', input_freq)
+            logging.debug('Frequency: {}'.format(input_freq))
             rd_result = degradation_ols(self.test_corr_energy[input_freq])
             self.assertAlmostEqual(rd_result[0], 100 * self.rd, places=1)
-            logging.debug('Actual: ', 100 * self.rd)
-            logging.debug('Estimated: ', rd_result[0])
+            logging.debug('Actual: {}'.format(100 * self.rd))
+            logging.debug('Estimated: {}'.format(rd_result[0]))
 
     def test_degradation_classical_decomposition(self):
         ''' Test degradation with classical decomposition. '''
 
         funcName = sys._getframe().f_code.co_name
-        logging.debug('\r', 'Running ', funcName)
+        logging.debug('Running {}'.format(funcName))
 
         # test classical decomposition degradation calc
         for input_freq in self.list_CD_input_freq:
-            logging.debug('Frequency: ', input_freq)
+            logging.debug('Frequency: {}'.format(input_freq))
             rd_result = degradation_classical_decomposition(
                 self.test_corr_energy[input_freq])
             self.assertAlmostEqual(rd_result[0], 100 * self.rd, places=1)
-            logging.debug('Actual: ', 100 * self.rd)
-            logging.debug('Estimated: ', rd_result[0])
+            logging.debug('Actual: {}'.format(100 * self.rd))
+            logging.debug('Estimated: {}'.format(rd_result[0]))
 
     def test_degradation_year_on_year(self):
         ''' Test degradation with year on year approach. '''
 
         funcName = sys._getframe().f_code.co_name
-        logging.debug('\r', 'Running ', funcName)
+        logging.debug('Running {}'.format(funcName))
 
         # test YOY degradation calc
         for input_freq in self.list_YOY_input_freq:
-            logging.debug('Frequency: ', input_freq)
+            logging.debug('Frequency: {}'.format(input_freq))
             rd_result = degradation_year_on_year(
                 self.test_corr_energy[input_freq])
             self.assertAlmostEqual(rd_result[0], 100 * self.rd, places=1)
-            logging.debug('Actual: ', 100 * self.rd)
-            logging.debug('Estimated: ', rd_result[0])
+            logging.debug('Actual: {}'.format(100 * self.rd))
+            logging.debug('Estimated: {}'.format(rd_result[0]))
 
     def test_confidence_intervals(self):
 
         funcName = sys._getframe().f_code.co_name
-        logging.debug('\r', 'Running ', funcName)
+        logging.debug('Running {}'.format(funcName))
 
         input_freq = "W"
 
@@ -137,8 +137,10 @@ class DegradationTestCase(unittest.TestCase):
             r1 = func(self.test_corr_energy[input_freq], confidence_level=ci1)
             r2 = func(self.test_corr_energy[input_freq], confidence_level=ci2)
 
-            logging.debug("func: {}, ci: {}, ({}) {} ({})".format(str(func).split(' ')[1], ci1, r1[1][0], r1[0], r1[1][1]))
-            logging.debug("func: {}, ci: {}, ({}) {} ({})".format(str(func).split(' ')[1], ci2, r2[1][0], r2[0], r2[1][1]))
+            logging.debug("func: {}, ci: {}, ({}) {} ({})"\
+                .format(str(func).split(' ')[1], ci1, r1[1][0], r1[0], r1[1][1]))
+            logging.debug("func: {}, ci: {}, ({}) {} ({})"\
+                .format(str(func).split(' ')[1], ci2, r2[1][0], r2[0], r2[1][1]))
 
             # lower limit is lower than median and upper limit is higher than median
             self.assertTrue(r1[0] > r1[1][0] and r1[0] < r1[1][1])
@@ -154,4 +156,8 @@ class DegradationTestCase(unittest.TestCase):
 
 if __name__ == '__main__':
     # init logger when run as a module
+    logging.root.handlers = []
+    logging.basicConfig(format='%(asctime)s|%(name)s|%(levelname)s| %(message)s',
+                        level=logging.DEBUG,
+                        stream=sys.stdout)
     unittest.main()
