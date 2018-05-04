@@ -4,8 +4,8 @@ Run script using:
 $ tests/run
 
 Add -v flag for unittests verbosity level 2.
-Add --profile flag to create a cProfile report.
 Add --coverage flag to create a coverage report.
+Add --profiler flag to create a cProfile report.
 '''
 
 import sys
@@ -17,7 +17,7 @@ sys.path.insert(0, base_dir)
 from unittest import TestSuite, TextTestRunner
 from unittest import defaultTestLoader
 
-import cProfile, pstats#, StringIO
+import cProfile, pstats
 import coverage
 
 import degradation_test
@@ -42,7 +42,7 @@ if __name__ == "__main__":
     suite.addTests(dtl.loadTestsFromModule(clearsky_temperature_test))
     runner = TextTestRunner(verbosity=verbosity)
 
-    if '--profile' in sys.argv:
+    if '--profiler' in sys.argv:
         profiler = cProfile.Profile()
         profiler.enable()
         profiler_report = True
@@ -62,16 +62,14 @@ if __name__ == "__main__":
         cov.stop()
         cov.save()
         include = ['rdtools/*']
-        with open('test_coverage.log', 'w') as f:
-            cov.report(show_missing=True, include=include, file=f)
+        with open('test_coverage.log', 'w') as log:
+            cov.report(show_missing=True, include=include, file=log)
 
     if profiler_report:
         profiler.disable()
-#         s = StringIO.StringIO()
-#         sortby = 'cumulative'
-#         ps = pstats.Stats(profiler, stream=s).sort_stats(sortby)
-#         ps.print_stats()
-#         with open('test_profile.log', 'w') as f:
-#             f.write(s.getvalue())
+        sortby = 'cumulative'
+        with open('test_profiler.log', 'w') as log:
+            ps = pstats.Stats(profiler, stream=log).sort_stats(sortby)
+            ps.print_stats('rdtools/rdtools/')
 
     sys.exit(len(result.errors) + len(result.failures))
