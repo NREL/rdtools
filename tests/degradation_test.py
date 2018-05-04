@@ -155,7 +155,8 @@ class DegradationTestCase(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    # init logger when run as a module
+    # Initialize logger when run as a module:
+    #     python -m tests.degradation_test
     logging.root.handlers = []
     logging.basicConfig(format='%(asctime)s|%(name)s|%(levelname)s| %(message)s',
                         level=logging.DEBUG,
