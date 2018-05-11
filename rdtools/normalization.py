@@ -276,6 +276,7 @@ def delta_index(series):
     '''
     # Length of each interval calculated by using 'int64' to convert to nanoseconds
     hours = pd.Series(series.index.astype('int64') / (10.0**9 * 3600.0))
+    hours.index = series.index
     deltas = hours.diff()
     return deltas, np.mean(deltas.dropna())
 
