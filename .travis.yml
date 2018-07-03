@@ -1,0 +1,20 @@
+sudo: false
+
+language: python
+
+python:
+  - "2.7"
+  - "3.6"
+
+env:
+  - REQ_FILE = "./ci/min_reqs.txt"
+  - REQ_FILE = "./ci/reqs.txt"
+
+before_install:
+  - pip install -r $REQ_FILE
+
+install:
+  - pip install .
+
+script:
+  - pytest
