@@ -2,13 +2,16 @@ sudo: false
 
 language: python
 
-python:
-  - "2.7"
-  - "3.6"
-
-env:
-  - REQ_FILE = "./ci/min_reqs.txt"
-  - REQ_FILE = "./ci/reqs.txt"
+matrix:
+  include:
+    - python: 2.7
+      env: REQ_FILE = "./ci/min_reqs.txt"
+    - python: 2.7
+      env: REQ_FILE = "./ci/reqs.txt"
+    - python: 3.6
+      env: REQ_FILE = "./ci/min_reqs.txt"
+    - python: 3.6
+      env: REQ_FILE = "./ci/reqs.txt"
 
 before_install:
   - pip install -r $REQ_FILE
