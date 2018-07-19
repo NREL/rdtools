@@ -20,6 +20,7 @@ from unittest import defaultTestLoader
 import cProfile, pstats
 import coverage
 
+import filtering_test
 import degradation_test
 import aggregation_test
 import normalization_pvwatts_test
@@ -35,6 +36,7 @@ if __name__ == "__main__":
 
     suite = TestSuite()
     dtl = defaultTestLoader
+    suite.addTests(dtl.loadTestsFromModule(filtering_test))
     suite.addTests(dtl.loadTestsFromModule(degradation_test))
     suite.addTests(dtl.loadTestsFromModule(aggregation_test))
     suite.addTests(dtl.loadTestsFromModule(normalization_pvwatts_test))
