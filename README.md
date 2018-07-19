@@ -8,7 +8,6 @@ datasets. Best results are obtained with higher frequency data.
 
 Full examples are worked out in the example notebooks in [rdtools/docs](./docs/degradation_example.ipynb).
 
-
 ## Workflow
 
 0. Import and preliminary calculations
@@ -45,13 +44,15 @@ of instrument errors or irradiance sensor drift, such as in the above analysis.
 RdTools can be installed automatically into Python from PyPI using the command line:  
 `pip install rdtools`
 
-Alternatively it can be installed mannually using the command line:  
+Alternatively it can be installed manually using the command line:  
 
 1. Download a [release](https://github.com/NREL/rdtools/releases) (Or to work with a development version, clone or download the rdtools repository).
 2. Navigate to the repository: `cd rdtools`
 3. Install via pip: `pip install .`
 
-On some systems installation with `pip` can fail due to problems installing requireiments. If this occurs, the requirements specified in `setup.py` may need to be seperately installed (for example by using `conda`) before installing `rdtools`. 
+On some systems installation with `pip` can fail due to problems installing requireiments. If this occurs, the requirements specified in `setup.py` may need to be seperately installed (for example by using `conda`) before installing `rdtools`.
+
+RdTools currently runs in both Python 2.7 and 3.6.
 
 ## Usage
 
@@ -107,6 +108,10 @@ The underlying workflow of RdTools has been published in several places.  If you
 
   - D. Jordan, C. Deline, S. Kurtz, G. Kimball, M. Anderson, "Robust PV Degradation Methodology and Application",
   IEEE Journal of Photovoltaics, 2017
+  - RdTools, version x.x.x, https://github.com/NREL/rdtools, [DOI:10.5281/zenodo.1210316](https://doi.org/10.5281/zenodo.1210316)  
+  *(be sure to include the version number used in your analysis)*
+
+
   
 ## References
 The clear sky temperature calculation, `clearsky_temperature.get_clearsky_tamb()`, uses data
