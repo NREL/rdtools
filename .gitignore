@@ -10,8 +10,6 @@
 # ignore coveralls yaml, coverge dir
 .coveralls.yml
 .coverage
-test_coverage.log
-test_profiler.log
 
 # ignore test cache
 .pytest_cache
