@@ -7,10 +7,14 @@
 # ignore byte compiled files
 *.py[co]
 
-# Ignore coverage and test logs
+# ignore coveralls yaml, coverge dir
+.coveralls.yml
 .coverage
 test_coverage.log
 test_profiler.log
+
+# ignore test cache
+.pytest_cache
 
 .DS_Store
 
@@ -18,6 +22,7 @@ docs/.ipynb_checkpoints/degradation_example-checkpoint.ipynb
 *.ipynb_checkpoints*
 
 # ignore setup and egg-info
+.eggs/
 build/
 dist/
 rdtools.egg-info*
