@@ -1,7 +1,6 @@
 """ Filtering Module Tests. """
 
 import unittest
-import sys
 
 import pandas as pd
 import numpy as np
@@ -66,26 +65,20 @@ class ClipFilterTestCase(unittest.TestCase):
         # Note: Power is expected to be Series object because clip_filter makes
         #       use of the Series.quantile() method.
 
-    def test_tcell_filter(self):
+    def test_clip_filter_upper(self):
         filtered = clip_filter(self.power, quant=0.98,
-                               low_power_cutoff=0.1)
+                               low_power_cutoff=0)
 
-        # Must not be all True, there should be some filtered values.
-        self.assertFalse(filtered.all())
-
-        # Expect 99% of the 98th quantile to be cut off.
+        # Expect 99% of the 98th quantile to be filtered
         expected_result = self.power < (98 * 0.99)
         self.assertTrue((expected_result == filtered).all())
 
-    def test_tcell_filter_cutoff(self):
+    def test_tcell_filter_low_cutoff(self):
         filtered = clip_filter(self.power, quant=0.98,
                                low_power_cutoff=2)
 
-        # Must not be all True, there should be some filtered values.
-        self.assertFalse(filtered.all())
-
-        # Expect 99% of the 98th quantile to be cut off.
-        expected_result = (self.power > 2) & (self.power < (98 * 0.99))
+        # Expect power <=2 to be filtered
+        expected_result = (self.power < (98 * 0.99)) & (self.power > 2)
         self.assertTrue((expected_result == filtered).all())
 
 
