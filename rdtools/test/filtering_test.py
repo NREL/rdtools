@@ -78,8 +78,8 @@ class ClipFilterTestCase(unittest.TestCase):
                                low_power_cutoff=2)
 
         # Expect power <=2 to be filtered
-        expected_result = (self.power < (98 * 0.99)) & (self.power > 2)
-        self.assertTrue((expected_result == filtered).all())
+        expected_result = (self.power > 2)
+        self.assertTrue((expected_result.iloc[0:5] == filtered.iloc[0:5]).all())
 
 
 if __name__ == '__main__':
