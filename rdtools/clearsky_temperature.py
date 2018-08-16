@@ -70,9 +70,9 @@ def get_clearsky_tamb(times, latitude, longitude, window_size=40, gauss_std=20):
         day = _get_pixel_value(a, lon_index, lat_index, k, radius)
         night = _get_pixel_value(b, lon_index, lat_index, k, radius)
 
-        if day == float("NaN"):
+        if pd.isnull(day):
             day = a[:, lat_index, k]
-        if night == float("NaN"):
+        if pd.isnull(night):
             night = a[:, lat_index, k]
 
         ave_day.append(day)
@@ -112,13 +112,13 @@ def _get_pixel_value(data, i, j, k, radius):
                 continue
 
             value = data[x, y, k]
-            if value == float("NaN"):
+            if pd.isnull(value):
                 continue
 
             list.append(value)
 
     if len(list) == 0:
-        return float("NaN")
+        return np.nan
 
     return pd.Series(list).median()
 
