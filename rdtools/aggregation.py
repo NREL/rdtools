@@ -1,5 +1,6 @@
-import pandas as pd
-
+'''
+Aggregation Helper Functions
+'''
 
 def aggregation_insol(normalized_energy, insolation, frequency='D'):
     '''

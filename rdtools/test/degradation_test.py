@@ -5,6 +5,7 @@ import sys
 
 import pandas as pd
 import numpy as np
+import logging
 
 from rdtools import degradation_ols, degradation_classical_decomposition, degradation_year_on_year
 
@@ -78,54 +79,54 @@ class DegradationTestCase(unittest.TestCase):
 
         cls.test_corr_energy = test_corr_energy
 
-    def test_degradation_with_ols(cls):
+    def test_degradation_with_ols(self):
         ''' Test degradation with ols. '''
 
         funcName = sys._getframe().f_code.co_name
-        print('\r', 'Running ', funcName)
+        logging.debug('Running {}'.format(funcName))
 
         # test ols degradation calc
-        for input_freq in cls.list_ols_input_freq:
-            print('Frequency: ', input_freq)
-            rd_result = degradation_ols(cls.test_corr_energy[input_freq])
-            cls.assertAlmostEqual(rd_result[0], 100 * cls.rd, places=1)
-            print('Actual: ', 100 * cls.rd)
-            print('Estimated: ', rd_result[0])
+        for input_freq in self.list_ols_input_freq:
+            logging.debug('Frequency: {}'.format(input_freq))
+            rd_result = degradation_ols(self.test_corr_energy[input_freq])
+            self.assertAlmostEqual(rd_result[0], 100 * self.rd, places=1)
+            logging.debug('Actual: {}'.format(100 * self.rd))
+            logging.debug('Estimated: {}'.format(rd_result[0]))
 
-    def test_degradation_classical_decomposition(cls):
+    def test_degradation_classical_decomposition(self):
         ''' Test degradation with classical decomposition. '''
 
         funcName = sys._getframe().f_code.co_name
-        print('\r', 'Running ', funcName)
+        logging.debug('Running {}'.format(funcName))
 
         # test classical decomposition degradation calc
-        for input_freq in cls.list_CD_input_freq:
-            print('Frequency: ', input_freq)
+        for input_freq in self.list_CD_input_freq:
+            logging.debug('Frequency: {}'.format(input_freq))
             rd_result = degradation_classical_decomposition(
-                cls.test_corr_energy[input_freq])
-            cls.assertAlmostEqual(rd_result[0], 100 * cls.rd, places=1)
-            print('Actual: ', 100 * cls.rd)
-            print('Estimated: ', rd_result[0])
+                self.test_corr_energy[input_freq])
+            self.assertAlmostEqual(rd_result[0], 100 * self.rd, places=1)
+            logging.debug('Actual: {}'.format(100 * self.rd))
+            logging.debug('Estimated: {}'.format(rd_result[0]))
 
-    def test_degradation_year_on_year(cls):
+    def test_degradation_year_on_year(self):
         ''' Test degradation with year on year approach. '''
 
         funcName = sys._getframe().f_code.co_name
-        print('\r', 'Running ', funcName)
+        logging.debug('Running {}'.format(funcName))
 
         # test YOY degradation calc
-        for input_freq in cls.list_YOY_input_freq:
-            print('Frequency: ', input_freq)
+        for input_freq in self.list_YOY_input_freq:
+            logging.debug('Frequency: {}'.format(input_freq))
             rd_result = degradation_year_on_year(
-                cls.test_corr_energy[input_freq])
-            cls.assertAlmostEqual(rd_result[0], 100 * cls.rd, places=1)
-            print('Actual: ', 100 * cls.rd)
-            print('Estimated: ', rd_result[0])
+                self.test_corr_energy[input_freq])
+            self.assertAlmostEqual(rd_result[0], 100 * self.rd, places=1)
+            logging.debug('Actual: {}'.format(100 * self.rd))
+            logging.debug('Estimated: {}'.format(rd_result[0]))
 
-    def test_confidence_intervals(cls):
+    def test_confidence_intervals(self):
 
         funcName = sys._getframe().f_code.co_name
-        print('\r', 'Running ', funcName)
+        logging.debug('Running {}'.format(funcName))
 
         input_freq = "W"
 
@@ -133,23 +134,31 @@ class DegradationTestCase(unittest.TestCase):
 
             ci1 = 68.2
             ci2 = 95
-            r1 = func(cls.test_corr_energy[input_freq], confidence_level=ci1)
-            r2 = func(cls.test_corr_energy[input_freq], confidence_level=ci2)
+            r1 = func(self.test_corr_energy[input_freq], confidence_level=ci1)
+            r2 = func(self.test_corr_energy[input_freq], confidence_level=ci2)
 
-            print("func: {}, ci: {}, ({}) {} ({})".format(str(func).split(' ')[1], ci1, r1[1][0], r1[0], r1[1][1]))
-            print("func: {}, ci: {}, ({}) {} ({})".format(str(func).split(' ')[1], ci2, r2[1][0], r2[0], r2[1][1]))
+            logging.debug("func: {}, ci: {}, ({}) {} ({})"\
+                .format(str(func).split(' ')[1], ci1, r1[1][0], r1[0], r1[1][1]))
+            logging.debug("func: {}, ci: {}, ({}) {} ({})"\
+                .format(str(func).split(' ')[1], ci2, r2[1][0], r2[0], r2[1][1]))
 
             # lower limit is lower than median and upper limit is higher than median
-            assert r1[0] > r1[1][0] and r1[0] < r1[1][1]
-            assert r2[0] > r2[1][0] and r2[0] < r2[1][1]
+            self.assertTrue(r1[0] > r1[1][0] and r1[0] < r1[1][1])
+            self.assertTrue(r2[0] > r2[1][0] and r2[0] < r2[1][1])
 
             # 95% interval is bigger than 68% interval
-            assert abs(r1[0] - r1[1][1]) < abs(r2[0] - r2[1][1])
-            assert abs(r1[0] - r1[1][0]) < abs(r2[0] - r2[1][0])
+            self.assertTrue(abs(r1[0] - r1[1][1]) < abs(r2[0] - r2[1][1]))
+            self.assertTrue(abs(r1[0] - r1[1][0]) < abs(r2[0] - r2[1][0]))
 
             # actual rd is within confidence interval
-            assert 100.0 * cls.rd > r2[1][0] and 100.0 * cls.rd < r2[1][1]
+            self.assertTrue(100.0 * self.rd > r2[1][0] and 100.0 * self.rd < r2[1][1])
 
 
 if __name__ == '__main__':
+    # Initialize logger when run as a module:
+    #     python -m tests.degradation_test
+    logging.root.handlers = []
+    logging.basicConfig(format='%(asctime)s|%(name)s|%(levelname)s| %(message)s',
+                        level=logging.DEBUG,
+                        stream=sys.stdout)
     unittest.main()
