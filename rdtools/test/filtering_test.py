@@ -73,7 +73,7 @@ class ClipFilterTestCase(unittest.TestCase):
         expected_result = self.power < (98 * 0.99)
         self.assertTrue((expected_result == filtered).all())
 
-    def test_tcell_filter_low_cutoff(self):
+    def test_clip_filter_low_cutoff(self):
         filtered = clip_filter(self.power, quant=0.98,
                                low_power_cutoff=2)
 
