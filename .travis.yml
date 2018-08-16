@@ -18,4 +18,4 @@ install:
   - pip install $REQ_ENV
 
 script:
-  - tests/run_tests
+  - pytest
