@@ -1,10 +1,10 @@
-h5py==2.8.0
+h5py==2.7.1
 numpy==1.11.2
 patsy==0.5.0
 pandas==0.20.3
 pvlib==0.5.0
 python-dateutil==2.7.3
 pytz==2018.5
-scipy==1.1.0
+scipy==0.19.1
 six==1.11.0
 statsmodels==0.8.0
