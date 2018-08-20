@@ -1,5 +1,7 @@
 # About RdTools
 
+[![Build Status](https://travis-ci.org/NREL/rdtools.svg?branch=development)](https://travis-ci.org/NREL/rdtools)
+
 RdTools is a set of Python tools for analysis of photovoltaic data.
 In particular, PV production data is evaluated over several years
 to obtain rates of performance degradation over time. Rdtools can
