@@ -83,6 +83,12 @@ class PVWattsNormalizationTestCase(unittest.TestCase):
         # Test corrected energy is equal to 1.0
         self.assertTrue((corr_energy == 1.0).all())
 
+        # Test expected behavior when energy has no explicit frequency
+        self.energy.index.freq = None
+        corr_energy, insolation = normalize_with_pvwatts(self.energy, pvw_kws)
+        self.assertTrue(np.isnan(corr_energy.iloc[0]))  # first valye should be nan
+        self.assertTrue((corr_energy.iloc[1:] == 1.0).all())  # rest should be 1
+
 
 if __name__ == '__main__':
     unittest.main()
