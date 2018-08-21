@@ -1,5 +1,7 @@
 # About RdTools
 
+[![Build Status](https://travis-ci.org/NREL/rdtools.svg?branch=development)](https://travis-ci.org/NREL/rdtools)
+
 RdTools is a set of Python tools for analysis of photovoltaic data.
 In particular, PV production data is evaluated over several years
 to obtain rates of performance degradation over time. Rdtools can
@@ -126,12 +128,6 @@ Other useful references which may also be consulted for degradation rate methodo
   - D. Jordan, S. Kurtz, PV Degradation Rates – an Analytical Review, Progress in Photovoltaics: Research and Application, 2013, 21(1), 12 - 29.
   - E. Hasselbrink, M. Anderson, Z. Defreitas, M. Mikofski, Y.-C.Shen, S. Caldwell, A. Terao, D. Kavulak, Z. Campeau, D. DeGraaff, “Validation of the PVLife model using 3 million module-years of live site data”, 39th IEEE Photovoltaic Specialists Conference, Tampa, FL, USA, 2013, p. 7 – 13, DOI: 10.1109/PVSC.2013.6744087.
 
-## Unit tests
-
-To run tests from the main directory:
-```
-$ tests/run_tests
-```
 ## Further Instructions and Updates
 
 Check out the [wiki](https://github.com/NREL/rdtools/wiki) for additional usage documentation, and for information on development goals and framework.
