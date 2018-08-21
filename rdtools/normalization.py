@@ -280,10 +280,18 @@ def delta_index(series):
     '''
     Takes a panda series as input and returns (time step sizes, average time step size) in hours
     '''
-    # Length of each interval calculated by using 'int64' to convert to nanoseconds
-    hours = pd.Series(series.index.astype('int64') / (10.0**9 * 3600.0))
-    hours.index = series.index
-    deltas = hours.diff()
+
+    if series.index.freq is None:
+        # If there is no frequency information, explicily calculate interval sizes
+        # Length of each interval calculated by using 'int64' to convert to nanoseconds
+        hours = pd.Series(series.index.astype('int64') / (10.0**9 * 3600.0))
+        hours.index = series.index
+        deltas = hours.diff()
+    else:
+        # If there is frequency information, pandas shift can be used to gain a meaningful
+        # interful for the first element of the timeseries
+        # Length of each interval calculated by using 'int64' to convert to nanoseconds
+        deltas = (series.index - series.index.shift(-1)).astype('int64') / (10.0**9 * 3600.0)
     return deltas, np.mean(deltas.dropna())
 
 
