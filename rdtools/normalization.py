@@ -69,6 +69,7 @@ def normalize_with_pvwatts(energy, pvwatts_kws):
     ----------
     energy: Pandas Series (numeric)
         Energy time series to be normalized in watt hours.
+        Must be a regular time series.
     pvwatts_kws: dictionary
         Dictionary of parameters used in the pvwatts_dc_power function.
 
@@ -215,6 +216,7 @@ def normalize_with_sapm(energy, sapm_kws):
     ----------
     energy: Pandas Series (numeric)
         Energy time series to be normalized  in watt hours.
+        Must be a regular time series.
     sapm_kws: dictionary
         Dictionary of parameters required for sapm_dc_power function.
 
