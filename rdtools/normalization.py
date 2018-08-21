@@ -101,6 +101,8 @@ def normalize_with_pvwatts(energy, pvwatts_kws):
 
     if energy.index.freq is None:
         freq = pd.infer_freq(energy.index)
+        if freq is None:
+            raise ValueError('Could not infer frequency of energy, which must be a regular time series')
     else:
         freq = energy.index.freq
 
@@ -236,6 +238,8 @@ def normalize_with_sapm(energy, sapm_kws):
 
     if energy.index.freq is None:
         freq = pd.infer_freq(energy.index)
+        if freq is None:
+            raise ValueError('Could not infer frequency of energy, which must be a regular time series')
     else:
         freq = energy.index.freq
 
