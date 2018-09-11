@@ -100,12 +100,7 @@ def normalize_with_pvwatts(energy, pvwatts_kws):
             Insolation associated with each normalized point
     '''
 
-    if energy.index.freq is None:
-        freq = pd.infer_freq(energy.index)
-        if freq is None:
-            raise ValueError('Could not infer frequency of energy, which must be a regular time series')
-    else:
-        freq = energy.index.freq
+    freq = check_series_frequency(energy, 'energy')
 
     dc_power = pvwatts_dc_power(**pvwatts_kws)
     irrad = pvwatts_kws['poa_global']
@@ -238,12 +233,7 @@ def normalize_with_sapm(energy, sapm_kws):
             Insolation associated with each normalized point
     '''
 
-    if energy.index.freq is None:
-        freq = pd.infer_freq(energy.index)
-        if freq is None:
-            raise ValueError('Could not infer frequency of energy, which must be a regular time series')
-    else:
-        freq = energy.index.freq
+    freq = check_series_frequency(energy, 'energy')
 
     dc_power, irrad = sapm_dc_power(**sapm_kws)
 
@@ -375,3 +365,18 @@ def irradiance_rescale(irrad, modeled_irrad, max_iterations=100, method=None):
 
     else:
         raise ValueError('Invalid method')
+
+
+def check_series_frequency(series, series_description):
+    '''Returns the inferred frequency of a pandas series, raises ValueError
+    using series_description if it can't. series_description should be a string'''
+
+    if series.index.freq is None:
+        freq = pd.infer_freq(series.index)
+        if freq is None:
+            error_string = ('Could not infer frequency of ' + series_description +
+                            ', which must be a regular time series')
+            raise ValueError(error_string)
+    else:
+        freq = series.index.freq
+    return freq
