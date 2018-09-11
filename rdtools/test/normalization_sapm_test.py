@@ -71,6 +71,12 @@ class SapmNormalizationTestCase(unittest.TestCase):
                                   index=irrad_index,
                                   columns=irrad_columns)
 
+        # define an irregular pandas series
+        times = pd.DatetimeIndex(['2012-01-01 12:00', '2012-01-01 12:05', '2012-01-01 12:06',
+                                 '2012-01-01 12:09'])
+        data = [1, 2, 3, 4]
+        self.irregular_timeseries = pd.Series(data=data, index=times)
+
     def tearDown(self):
         pass
 
@@ -94,6 +100,10 @@ class SapmNormalizationTestCase(unittest.TestCase):
         # Test output is same frequency and length as energy
         self.assertEqual(corr_energy.index.freq, self.energy.index.freq)
         self.assertEqual(len(corr_energy), len(self.energy))
+
+        # Test for valueError when energy frequency can't be inferred
+        with self.assertRaises(ValueError):
+            corr_energy, insolation = normalize_with_sapm(self.irregular_timeseries, sapm_kws)
 
         # TODO, test for:
         #     incorrect data format
