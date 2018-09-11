@@ -268,7 +268,8 @@ def normalize_with_sapm(energy, sapm_kws):
 
 def delta_index(series):
     '''
-    Takes a panda series as input and returns (time step sizes, average time step size) in hours
+    Takes a panda series with a DatetimeIndex as input and
+    returns (time step sizes, average time step size) in hours
     '''
 
     if series.index.freq is None:
