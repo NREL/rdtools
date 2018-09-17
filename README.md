@@ -56,10 +56,10 @@ On some systems installation with `pip` can fail due to problems installing requ
 
 RdTools currently runs in both Python 2.7 and 3.6.
 
-## Usage
+## Usage and examples
 
 
-Full workflow examples are found in the notebooks in [rdtools/docs](./docs/degradation_example.ipynb).
+Full workflow examples are found in the notebooks in [rdtools/docs](./docs/degradation_example.ipynb). For a consistent experience, we reccomend installing the packages and versions documented in `docs/notebook_requirements.txt`. This can be achieved in your environment by running `pip install -r notebook_requirements.txt` from the `rdtools/docs` directory after installing RdTools.
 
 The following functions are used for degradation analysis:
 
