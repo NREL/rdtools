@@ -190,8 +190,9 @@ def degradation_year_on_year(normalized_energy, recenter=True, exceedance_prob=9
     tuple of (degradation_rate, confidence_interval, calc_info)
         degradation_rate:  float
             rate of relative performance change in %/yr
-        confidence_interval:  float
-            one-sigma confidence interval of degradation rate estimate
+        confidence_interval:  numpy ndarray
+            confidence interval (size specified by confidence_level) of degradation
+            rate estimate
         calc_info:  dict
             ('YoY_values') pandas series of right-labeled year on year slopes
             ('renormalizing_factor') float of value used to recenter data
