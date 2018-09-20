@@ -1,10 +1,11 @@
 # About RdTools
 
-[![Build Status](https://travis-ci.org/NREL/rdtools.svg?branch=development)](https://travis-ci.org/NREL/rdtools)
+Master branch: [![Build Status](https://travis-ci.org/NREL/rdtools.svg?branch=master)](https://travis-ci.org/NREL/rdtools)  
+Development branch: [![Build Status](https://travis-ci.org/NREL/rdtools.svg?branch=development)](https://travis-ci.org/NREL/rdtools)
 
 RdTools is a set of Python tools for analysis of photovoltaic data.
 In particular, PV production data is evaluated over several years
-to obtain rates of performance degradation over time. Rdtools can
+to obtain rates of performance degradation over time. RdTools can
 handle both high frequency (hourly or better) or low frequency (daily, weekly, etc.)
 datasets. Best results are obtained with higher frequency data.
 
@@ -52,14 +53,14 @@ Alternatively it can be installed manually using the command line:
 2. Navigate to the repository: `cd rdtools`
 3. Install via pip: `pip install .`
 
-On some systems installation with `pip` can fail due to problems installing requireiments. If this occurs, the requirements specified in `setup.py` may need to be seperately installed (for example by using `conda`) before installing `rdtools`.
+On some systems installation with `pip` can fail due to problems installing requirements. If this occurs, the requirements specified in `setup.py` may need to be separately installed (for example by using `conda`) before installing `rdtools`.
 
 RdTools currently runs in both Python 2.7 and 3.6.
 
-## Usage
+## Usage and examples
 
 
-Full workflow examples are found in the notebooks in [rdtools/docs](./docs/degradation_example.ipynb).
+Full workflow examples are found in the notebooks in [rdtools/docs](./docs/degradation_example.ipynb). For a consistent experience, we recommend installing the packages and versions documented in `docs/notebook_requirements.txt`. This can be achieved in your environment by running `pip install -r docs/notebook_requirements.txt` from the base directory. (RdTools must also be separately installed as described above.)
 
 The following functions are used for degradation analysis:
 
