@@ -40,6 +40,8 @@ INSTALL_REQUIRES = [
     'scipy >= 0.19.1',
     'h5py >= 2.7.1',
     'pvlib >= 0.5.0, <0.6.0',
+    'matplotlib >= 2.2.3',
+
 ]
 
 CLASSIFIERS = [

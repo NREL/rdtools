@@ -10,6 +10,9 @@ from rdtools.filtering import csi_filter
 from rdtools.filtering import poa_filter
 from rdtools.filtering import tcell_filter
 from rdtools.filtering import clip_filter
+from rdtools.plotting import xyplot
+from rdtools.plotting import xy2plot
+from rdtools.plotting import degradation_summary_plots
 
 from ._version import get_versions
 __version__ = get_versions()['version']
