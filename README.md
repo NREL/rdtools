@@ -31,7 +31,7 @@ degradation. The width of the distribution provides information about the uncert
 estimate via a bootstrap calculation. The [example notebook](./docs/degradation_example.ipynb) uses the output of `degradation.degradation_year_on_year()`
 to visualize the calculation.
 
-<img src="./screenshots/Clearsky_result.png" width="600" height="456" alt="RdTools Result"/>
+<img src="./screenshots/Clearsky_result_updated.png" width="600" height="456" alt="RdTools Result"/>
 
 
 Two workflows are available for system performance ratio calculation, and illustrated in an example notebook. 
