@@ -60,7 +60,7 @@ RdTools currently runs in both Python 2.7 and 3.6.
 ## Usage and examples
 
 
-Full workflow examples are found in the notebooks in [rdtools/docs](./docs/degradation_example.ipynb). The examples are designed to work with python 3.6. For a consistent experience, we recommend installing the packages and versions documented in `docs/notebook_requirements.txt`. This can be achieved in your environment by running `pip install -r docs/notebook_requirements.txt` from the base directory. (RdTools must also be separately installed as described above.)
+Full workflow examples are found in the notebooks in [rdtools/docs](./docs/degradation_example.ipynb). The examples are designed to work with python 3.6. For a consistent experience, we recommend installing the packages and versions documented in `docs/notebook_requirements.txt`. This can be achieved in your environment by first installing RdTools as described above, then running `pip install -r docs/notebook_requirements.txt` from the base directory.
 
 The following functions are used for degradation analysis:
 
