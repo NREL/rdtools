@@ -36,6 +36,9 @@ class ClearSkyTemperatureTestCase(unittest.TestCase):
         self.assertTrue(east_hottest_hour > 12)
         self.assertTrue(west_hottest_hour > east_hottest_hour)
 
+# TODO:
+# Test irradiance_rescale
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -69,6 +69,7 @@ def normalize_with_pvwatts(energy, pvwatts_kws):
     ----------
     energy: Pandas Series (numeric)
         Energy time series to be normalized in watt hours.
+        Must be a right-labeled regular time series.
     pvwatts_kws: dictionary
         Dictionary of parameters used in the pvwatts_dc_power function.
 
@@ -99,10 +100,7 @@ def normalize_with_pvwatts(energy, pvwatts_kws):
             Insolation associated with each normalized point
     '''
 
-    if energy.index.freq is None:
-        freq = pd.infer_freq(energy.index)
-    else:
-        freq = energy.index.freq
+    freq = check_series_frequency(energy, 'energy')
 
     dc_power = pvwatts_dc_power(**pvwatts_kws)
     irrad = pvwatts_kws['poa_global']
@@ -213,6 +211,7 @@ def normalize_with_sapm(energy, sapm_kws):
     ----------
     energy: Pandas Series (numeric)
         Energy time series to be normalized  in watt hours.
+        Must be a right-labeled regular time series.
     sapm_kws: dictionary
         Dictionary of parameters required for sapm_dc_power function.
 
@@ -234,10 +233,7 @@ def normalize_with_sapm(energy, sapm_kws):
             Insolation associated with each normalized point
     '''
 
-    if energy.index.freq is None:
-        freq = pd.infer_freq(energy.index)
-    else:
-        freq = energy.index.freq
+    freq = check_series_frequency(energy, 'energy')
 
     dc_power, irrad = sapm_dc_power(**sapm_kws)
 
@@ -271,11 +267,23 @@ def normalize_with_sapm(energy, sapm_kws):
 
 
 def delta_index(series):
-    # Takes a panda series as input and returns (time step sizes, average time step size)
-    # Length of each interval calculated by using 'int64' to convert to nanoseconds
+    '''
+    Takes a panda series with a DatetimeIndex as input and
+    returns (time step sizes, average time step size) in hours
+    '''
 
-    deltas = (series.index - series.index.shift(-1)).astype('int64') / (10.0**9 * 3600.0)
-    return deltas, np.mean(deltas)
+    if series.index.freq is None:
+        # If there is no frequency information, explicily calculate interval sizes
+        # Length of each interval calculated by using 'int64' to convert to nanoseconds
+        hours = pd.Series(series.index.astype('int64') / (10.0**9 * 3600.0))
+        hours.index = series.index
+        deltas = hours.diff()
+    else:
+        # If there is frequency information, pandas shift can be used to gain a meaningful
+        # interful for the first element of the timeseries
+        # Length of each interval calculated by using 'int64' to convert to nanoseconds
+        deltas = (series.index - series.index.shift(-1)).astype('int64') / (10.0**9 * 3600.0)
+    return deltas, np.mean(deltas.dropna())
 
 
 def irradiance_rescale(irrad, modeled_irrad, max_iterations=100, method=None):
@@ -358,3 +366,18 @@ def irradiance_rescale(irrad, modeled_irrad, max_iterations=100, method=None):
 
     else:
         raise ValueError('Invalid method')
+
+
+def check_series_frequency(series, series_description):
+    '''Returns the inferred frequency of a pandas series, raises ValueError
+    using series_description if it can't. series_description should be a string'''
+
+    if series.index.freq is None:
+        freq = pd.infer_freq(series.index)
+        if freq is None:
+            error_string = ('Could not infer frequency of ' + series_description +
+                            ', which must be a regular time series')
+            raise ValueError(error_string)
+    else:
+        freq = series.index.freq
+    return freq

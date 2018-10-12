@@ -1,8 +1,11 @@
 # About RdTools
 
+Master branch: [![Build Status](https://travis-ci.org/NREL/rdtools.svg?branch=master)](https://travis-ci.org/NREL/rdtools)  
+Development branch: [![Build Status](https://travis-ci.org/NREL/rdtools.svg?branch=development)](https://travis-ci.org/NREL/rdtools)
+
 RdTools is a set of Python tools for analysis of photovoltaic data.
 In particular, PV production data is evaluated over several years
-to obtain rates of performance degradation over time. Rdtools can
+to obtain rates of performance degradation over time. RdTools can
 handle both high frequency (hourly or better) or low frequency (daily, weekly, etc.)
 datasets. Best results are obtained with higher frequency data.
 
@@ -28,7 +31,7 @@ degradation. The width of the distribution provides information about the uncert
 estimate via a bootstrap calculation. The [example notebook](./docs/degradation_example.ipynb) uses the output of `degradation.degradation_year_on_year()`
 to visualize the calculation.
 
-<img src="./screenshots/Clearsky_result.png" width="600" height="456" alt="RdTools Result"/>
+<img src="./screenshots/Clearsky_result_updated.png" width="600" height="456" alt="RdTools Result"/>
 
 
 Two workflows are available for system performance ratio calculation, and illustrated in an example notebook. 
@@ -50,14 +53,14 @@ Alternatively it can be installed manually using the command line:
 2. Navigate to the repository: `cd rdtools`
 3. Install via pip: `pip install .`
 
-On some systems installation with `pip` can fail due to problems installing requireiments. If this occurs, the requirements specified in `setup.py` may need to be seperately installed (for example by using `conda`) before installing `rdtools`.
+On some systems installation with `pip` can fail due to problems installing requirements. If this occurs, the requirements specified in `setup.py` may need to be separately installed (for example by using `conda`) before installing `rdtools`.
 
 RdTools currently runs in both Python 2.7 and 3.6.
 
-## Usage
+## Usage and examples
 
 
-Full workflow examples are found in the notebooks in [rdtools/docs](./docs/degradation_example.ipynb).
+Full workflow examples are found in the notebooks in [rdtools/docs](./docs/degradation_example.ipynb). The examples are designed to work with python 3.6. For a consistent experience, we recommend installing the packages and versions documented in `docs/notebook_requirements.txt`. This can be achieved in your environment by first installing RdTools as described above, then running `pip install -r docs/notebook_requirements.txt` from the base directory.
 
 The following functions are used for degradation analysis:
 
@@ -126,12 +129,6 @@ Other useful references which may also be consulted for degradation rate methodo
   - D. Jordan, S. Kurtz, PV Degradation Rates – an Analytical Review, Progress in Photovoltaics: Research and Application, 2013, 21(1), 12 - 29.
   - E. Hasselbrink, M. Anderson, Z. Defreitas, M. Mikofski, Y.-C.Shen, S. Caldwell, A. Terao, D. Kavulak, Z. Campeau, D. DeGraaff, “Validation of the PVLife model using 3 million module-years of live site data”, 39th IEEE Photovoltaic Specialists Conference, Tampa, FL, USA, 2013, p. 7 – 13, DOI: 10.1109/PVSC.2013.6744087.
 
-## Unit tests
-
-To run tests from the main directory:
-```
-$ tests/run_tests
-```
 ## Further Instructions and Updates
 
 Check out the [wiki](https://github.com/NREL/rdtools/wiki) for additional usage documentation, and for information on development goals and framework.

@@ -8,7 +8,6 @@ import numpy as np
 from rdtools.normalization import normalize_with_pvwatts
 from rdtools.normalization import pvwatts_dc_power
 
-
 class PVWattsNormalizationTestCase(unittest.TestCase):
     ''' Unit tests for energy normalization module. '''
 
@@ -48,6 +47,12 @@ class PVWattsNormalizationTestCase(unittest.TestCase):
         # define gamma_pdc for pvw temperature factor
         self.gamma_pdc = -0.0025
 
+        # define an irregular pandas series
+        times = pd.DatetimeIndex(['2012-01-01 12:00', '2012-01-01 12:05', '2012-01-01 12:06',
+                                 '2012-01-01 12:09'])
+        data = [1, 2, 3, 4]
+        self.irregular_timeseries = pd.Series(data=data, index=times)
+
     def tearDown(self):
         pass
 
@@ -82,6 +87,16 @@ class PVWattsNormalizationTestCase(unittest.TestCase):
 
         # Test corrected energy is equal to 1.0
         self.assertTrue((corr_energy == 1.0).all())
+
+        # Test expected behavior when energy has no explicit frequency
+        self.energy.index.freq = None
+        corr_energy, insolation = normalize_with_pvwatts(self.energy, pvw_kws)
+        self.assertTrue(np.isnan(corr_energy.iloc[0]))  # first valye should be nan
+        self.assertTrue((corr_energy.iloc[1:] == 1.0).all())  # rest should be 1
+
+        # Test for valueError when energy frequency can't be inferred
+        with self.assertRaises(ValueError):
+            corr_energy, insolation = normalize_with_pvwatts(self.irregular_timeseries, pvw_kws)
 
 
 if __name__ == '__main__':
