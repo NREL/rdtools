@@ -20,6 +20,8 @@ install:
 script:
   - pytest
 
+# Deploy to pypi on the python 3.6 build with upgraded dependencies when 
+# a new version is tagged on github from the master branch
 deploy:
   provider: pypi
   user: RdTools
@@ -28,5 +30,7 @@ deploy:
   on:
     tags: true
     branch: master
+    python: 3.6
+    condition: $REQ_ENV == '--upgrade --upgrade-strategy=eager .'
   distributions: "sdist bdist_wheel"
   skip_cleanup: true
