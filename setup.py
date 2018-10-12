@@ -20,6 +20,7 @@ Source code: https://github.com/NREL/rdtools
 DISTNAME = 'rdtools'
 LICENSE = 'MIT'
 AUTHOR = 'Rdtools Python Developers'
+AUTHOR_EMAIL = 'RdTools@nrel.gov'
 MAINTAINER_EMAIL = 'RdTools@nrel.gov'
 
 URL = 'https://github.com/NREL/rdtools'
@@ -85,7 +86,7 @@ setup(name=DISTNAME,
       description=DESCRIPTION,
       long_description=LONG_DESCRIPTION,
       author=AUTHOR,
-      author_email=AUTHOR,
+      author_email=AUTHOR_EMAIL,
       maintainer_email=MAINTAINER_EMAIL,
       license=LICENSE,
       url=URL,
