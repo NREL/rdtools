@@ -111,11 +111,11 @@ def normalize_with_pvwatts(energy, pvwatts_kws):
 
     if mean_model_td <= mean_measure_td:
         energy_dc = dc_power * model_tds
-        energy_dc = energy_dc.resample(freq).sum()
+        energy_dc = energy_dc.resample(freq).sum(min_count=1)
         energy_dc = energy_dc.reindex(energy.index, method='nearest')
 
         insolation = irrad * irrad_tds
-        insolation = insolation.resample(freq).sum()
+        insolation = insolation.resample(freq).sum(min_count=1)
         insolation = insolation.reindex(energy.index, method='nearest')
 
     elif mean_model_td > mean_measure_td:
@@ -243,11 +243,11 @@ def normalize_with_sapm(energy, sapm_kws):
 
     if mean_model_td <= mean_measure_td:
         energy_dc = dc_power * model_tds
-        energy_dc = energy_dc.resample(freq).sum()
+        energy_dc = energy_dc.resample(freq).sum(min_count=1)
         energy_dc = energy_dc.reindex(energy.index, method='nearest')
 
         insolation = irrad * irrad_tds
-        insolation = insolation.resample(freq).sum()
+        insolation = insolation.resample(freq).sum(min_count=1)
         insolation = insolation.reindex(energy.index, method='nearest')
 
     elif mean_model_td > mean_measure_td:
