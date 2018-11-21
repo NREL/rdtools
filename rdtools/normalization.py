@@ -385,22 +385,22 @@ def check_series_frequency(series, series_description):
 
 def energy_from_power(power_series, max_interval_hours):
     '''
-    Returns a right-labeled energy time series from an instaneous power time series.
-    Energy is not returned when the gap between data points excees max_interval_hours.
+    Returns a right-labeled energy time series from an Instantaneous power time series.
+    Energy is not returned when the gap between data points exceeds max_interval_hours.
     power_series should be given in Watts, and max_interva_hours in hours.
 
     Parameters
     ----------
     power_series: Pandas Series with DatetimeIndex
-        Instanteneous time series of PV power generation in Watts
+        Instantaneous time series of PV power generation in Watts
     max_interval_hours: float
         The maximum allowed gap between power measurements. If the gap between
-        consecutive power measurments exceeds max_interval_hours, no energy value
+        consecutive power measurements exceeds max_interval_hours, no energy value
         will be returned for that interval
 
     Returns:
     --------
-    right-labeld energy pandas time series in Wh
+    right-labeled energy pandas time series in Wh
 
     '''
 
