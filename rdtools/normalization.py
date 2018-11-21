@@ -407,7 +407,7 @@ def energy_from_power(power_series, max_interval_hours):
         raise ValueError('power_series must be a pandas series with a DatetimeIndex')
     
     times = np.array(power_series.index.astype('int64'))
-    time_deltas = np.diff(times) / 10**9 / 3600
+    time_deltas = np.diff(times) / 10.0**9 / 3600.0
     
     rolling_mean_power = power_series.rolling(2).mean()
     energy_series = (rolling_mean_power.iloc[1:] * time_deltas)[time_deltas <= max_interval_hours]
