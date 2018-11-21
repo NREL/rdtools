@@ -382,12 +382,13 @@ def check_series_frequency(series, series_description):
         freq = series.index.freq
     return freq
 
+
 def energy_from_power(power_series, max_interval_hours):
     '''
     Returns a right-labeled energy time series from an instaneous power time series.
     Energy is not returned when the gap between data points excees max_interval_hours.
     power_series should be given in Watts, and max_interva_hours in hours.
-    
+
     Parameters
     ----------
     power_series: Pandas Series with DatetimeIndex
@@ -396,21 +397,20 @@ def energy_from_power(power_series, max_interval_hours):
         The maximum allowed gap between power measurements. If the gap between
         consecutive power measurments exceeds max_interval_hours, no energy value
         will be returned for that interval
-    
+
     Returns:
     --------
     right-labeld energy pandas time series in Wh
-    
+
     '''
-    
+
     if not isinstance(power_series.index, pd.DatetimeIndex):
         raise ValueError('power_series must be a pandas series with a DatetimeIndex')
-    
+
     times = np.array(power_series.index.astype('int64'))
     time_deltas = np.diff(times) / 10.0**9 / 3600.0
-    
+
     rolling_mean_power = power_series.rolling(2).mean()
     energy_series = (rolling_mean_power.iloc[1:] * time_deltas)[time_deltas <= max_interval_hours]
-    
-    return energy_series
 
+    return energy_series
