@@ -385,9 +385,9 @@ def check_series_frequency(series, series_description):
 
 def energy_from_power(power_series, max_interval_hours):
     '''
-    Returns a right-labeled energy time series from an Instantaneous power time series.
+    Returns a right-labeled energy time series from an instantaneous power time series.
     Energy is not returned when the gap between data points exceeds max_interval_hours.
-    power_series should be given in Watts, and max_interva_hours in hours.
+    power_series should be given in Watts, and max_interval_hours in hours.
 
     Parameters
     ----------
