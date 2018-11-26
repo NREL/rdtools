@@ -412,5 +412,6 @@ def energy_from_power(power_series, max_interval_hours):
 
     rolling_mean_power = power_series.rolling(2).mean()
     energy_series = (rolling_mean_power.iloc[1:] * time_deltas)[time_deltas <= max_interval_hours]
+    energy_series.name = 'energy_Wh'
 
     return energy_series
