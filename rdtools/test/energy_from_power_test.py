@@ -8,6 +8,7 @@ def test_energy_from_power_calculation():
     result_times = power_times[1:]
     power_series = pd.Series(data=4.0, index=power_times)
     expected_energy_series = pd.Series(data=1.0, index=result_times)
+    expected_energy_series.name = 'energy_Wh'
 
     result = energy_from_power(power_series, 0.25)
 
@@ -19,6 +20,7 @@ def test_energy_from_power_max_interval():
     result_times = power_times[1:]
     power_series = pd.Series(data=4.0, index=power_times)
     expected_energy_series = pd.Series(data=1.0, index=result_times)
+    expected_energy_series.name = 'energy_Wh'
 
     result = energy_from_power(power_series, 0.1)
 
