@@ -43,7 +43,9 @@ def test_energy_from_power_single_argument():
     power_series = power_series.drop(to_drop)
 
     expected_energy_series = pd.Series(data=1.0, index=result_times)
-    expected_energy_series = expected_energy_series.drop(to_drop)
+    expected_to_drop = [to_drop]
+    expected_to_drop.append(pd.to_datetime('2018-04-01 13:15:00'))
+    expected_energy_series = expected_energy_series.drop(expected_to_drop)
     expected_energy_series.name = 'energy_Wh'
 
     # Test that a warning is raised when one input is used
