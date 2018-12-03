@@ -412,7 +412,7 @@ def energy_from_power(power_series, max_timedelta=None):
 
     if max_timedelta is None:
         max_seconds = np.median(time_deltas)
-        warnings.warn('No value for max_interval_hours passed into energy_from_power(). Using {} seconds'.format(max_seconds))
+        warnings.warn('No value for max_timedelta passed into energy_from_power(). Using {} seconds'.format(max_seconds))
     else:
         max_seconds = max_timedelta.total_seconds()
 
