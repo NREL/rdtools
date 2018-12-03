@@ -383,20 +383,20 @@ def check_series_frequency(series, series_description):
     return freq
 
 
-def energy_from_power(power_series, max_interval_hours=None):
+def energy_from_power(power_series, max_timedelta=None):
     '''
     Returns a right-labeled energy time series from an instantaneous power time series.
-    Energy is not returned when the gap between data points exceeds max_interval_hours.
-    power_series should be given in Watts, and max_interval_hours in hours.
+    Energy is not returned when the gap between data points exceeds max_timedelta.
+    power_series should be given in Watts.
 
     Parameters
     ----------
     power_series: Pandas Series with DatetimeIndex
         Instantaneous time series of PV power generation in Watts
-    max_interval_hours: float or NoneType (default: None)
+    max_timedelta: Timedelta or NoneType (default: None)
         The maximum allowed gap between power measurements. If the gap between
-        consecutive power measurements exceeds max_interval_hours, no energy value
-        will be returned for that interval. If None, max_interval_hours is set internally
+        consecutive power measurements exceeds max_timedelta, no energy value
+        will be returned for that interval. If None, max_timedelta is set internally
         to the median time delta in power_series and a UserWarning is issued.
 
     Returns:
@@ -408,15 +408,16 @@ def energy_from_power(power_series, max_interval_hours=None):
     if not isinstance(power_series.index, pd.DatetimeIndex):
         raise ValueError('power_series must be a pandas series with a DatetimeIndex')
 
-    times = np.array(power_series.index.astype('int64'))
-    time_deltas = np.diff(times) / 10.0**9 / 3600.0
+    time_deltas = np.diff(power_series.index.values).astype(float) / 10.0**9  # in seconds
 
-    if max_interval_hours is None:
-        max_interval_hours = np.median(time_deltas)
-        warnings.warn('No value for max_interval_hours passed into energy_from_power(). Using {} hours'.format(max_interval_hours))
+    if max_timedelta is None:
+        max_seconds = np.median(time_deltas)
+        warnings.warn('No value for max_interval_hours passed into energy_from_power(). Using {} seconds'.format(max_seconds))
+    else:
+        max_seconds = max_timedelta.total_seconds()
 
     rolling_mean_power = power_series.rolling(2).mean()
-    energy_series = (rolling_mean_power.iloc[1:] * time_deltas)[time_deltas <= max_interval_hours]
+    energy_series = (rolling_mean_power.iloc[1:] * time_deltas / 3600.0)[time_deltas <= max_seconds]
     energy_series.name = 'energy_Wh'
 
     return energy_series
