@@ -460,11 +460,14 @@ def interpolate_series(time_series, target_index, max_timedelta=None):
     time_series.name = 'data'
     df = pd.DataFrame(time_series)
     df = df.dropna()
-    valid_indput_index = df.index.copy()
 
-    # calculate the size of gaps in input
-    df['timestamp'] = df.index.astype('int64')
+    # convert to integer index and calculate the size of gaps in input
+    timestamps = df.index.astype('int64')
+    df['timestamp'] = timestamps
     df['gapsize_ns'] = df['timestamp'].diff()
+    df.index = timestamps
+
+    valid_indput_index = df.index.copy()
 
     if max_timedelta is None:
         max_interval_nanoseconds = df['gapsize_ns'].median()
@@ -476,8 +479,8 @@ def interpolate_series(time_series, target_index, max_timedelta=None):
         max_interval_nanoseconds = max_timedelta.total_seconds() * 10.0**9
 
     # put data on index that includes both original and target indicies
-    union_index = df.index.append(target_index)
-    union_index = pd.to_datetime(union_index, utc=True)  # handles different timezones
+    target_timestamps = target_index.astype('int64')
+    union_index = df.index.append(target_timestamps)
     union_index = union_index.drop_duplicates(keep='first')
     df = df.reindex(union_index)
     df = df.sort_index()
@@ -488,13 +491,14 @@ def interpolate_series(time_series, target_index, max_timedelta=None):
 
     # perform the interpolation when the max gap size criterion is satisfied
     df_valid = df[df['gapsize_ns'] <= max_interval_nanoseconds].copy()
-    df_valid['interpolated_data'] = df_valid['data'].interpolate(method='time')
+    df_valid['interpolated_data'] = df_valid['data'].interpolate(method='index')
 
     df['interpolated_data'] = df_valid['interpolated_data']
 
     out = pd.Series(df['interpolated_data'])
-    out = out.loc[target_index]  # the relative timezones will be handled automatically
+    out = out.loc[target_timestamps]
     out.name = original_name
+    out.index = pd.to_datetime(out.index, utc=True).tz_convert(target_index.tz)
 
     return out
 
