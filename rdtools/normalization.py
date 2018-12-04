@@ -421,3 +421,83 @@ def energy_from_power(power_series, max_timedelta=None):
     energy_series.name = 'energy_Wh'
 
     return energy_series
+
+
+def interpolate_to_index(time_series, target_index, max_timedelta=None):
+    '''
+    Returns an interpolation of time_series onto target_index, excluding times associated
+    with gaps in time_series longer than max_timedelta.
+
+    Parameters
+    ----------
+    time_series: Pandas Series with DatetimeIndex
+        Original values to be used in generating the interpolation
+    target_index: Pandas DatetimeIndex
+        the index onto which the interpolation is to be made
+    max_timedelta: Timedelta or NoneType (default: None)
+        The maximum allowed gap between values in time_series. Times associated
+        with gaps longer than max_timedelta are excluded from the output. If None,
+        max_timedelta is set internally to the median time delta in time_series
+        and a UserWarning is issued.
+
+    Returns:
+    --------
+    Pandas Series with DatetimeIndex
+
+    Note
+    ----
+    Timezone information in the DatetimeIndexes is handled automatically, however
+    both time_series and target_index should be time zone aware or they should both
+    be time zone naive.
+
+    '''
+
+    if (time_series.index.tz is None) ^ (target_index.tz is None):
+        raise ValueError('Either time_series or target_index is time-zone aware but '
+                         'the other is not. Both must be time-zone aware or both must '
+                         'be time-zone naive.')
+
+    # note the name of the input, so we can use it for the output
+    original_name = time_series.name
+
+    # copy, rename, and make df from input
+    time_series = time_series.copy()
+    time_series.name = 'data'
+    df = pd.DataFrame(time_series)
+    df = df.dropna()
+
+    # calculate the size of gaps in input
+    df['timestamp'] = df.index.astype('int64')
+    df['gapsize_ns'] = df['timestamp'].diff()
+
+    if max_timedelta is None:
+        max_interval_nanoseconds = df['gapsize_ns'].median()
+        warning_string = ('No value for max_interval_hours passed into '
+                          'interpolate_to_index(). Using {} seconds')
+        warning_string = warning_string.format(max_interval_nanoseconds / 10.0**9)
+        warnings.warn(warning_string)
+    else:
+        max_interval_nanoseconds = max_timedelta.total_seconds() * 10.0**9
+
+    # put data on index that includes both original and target indicies
+    union_index = df.index.append(target_index)
+    union_index = pd.to_datetime(union_index, utc=True)  # handles different timezones
+    union_index = union_index.drop_duplicates(keep='first')
+    df = df.reindex(union_index)
+    df = df.sort_index()
+
+    # calculate the gap size in the original data (timestamps)
+    df['gapsize_ns'] = df['gapsize_ns'].fillna(method='bfill')
+    df.loc[time_series.index, 'gapsize_ns'] = 0
+
+    # perform the interpolation when the max gap size criterion is satisfied
+    df_valid = df[df['gapsize_ns'] <= max_interval_nanoseconds].copy()
+    df_valid['interpolated_data'] = df_valid['data'].interpolate(method='time')
+
+    df['interpolated_data'] = df_valid['interpolated_data']
+
+    out = pd.Series(df['interpolated_data'])
+    out = out.loc[target_index]  # the relative timezones will be handled automatically
+    out.name = original_name
+
+    return out
