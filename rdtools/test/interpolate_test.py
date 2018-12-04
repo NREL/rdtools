@@ -42,11 +42,14 @@ def df_target_index(target_index):
 
 @pytest.fixture
 def df_expected_result(df_target_index, test_df):
+    col0 = test_df.columns[0]
+    col1 = test_df.columns[1]
     expected_df_result = pd.DataFrame({
-        test_df.columns[0]: [6.0, 3.0, np.nan, 9.0],
-        test_df.columns[1]: [np.nan, 8.0, 4.0, 3.0]
+        col0: [6.0, 3.0, np.nan, 9.0],
+        col1: [np.nan, 8.0, 4.0, 3.0]
     }, index=df_target_index)
 
+    expected_df_result = expected_df_result[test_df.columns]
     return expected_df_result
 
 
