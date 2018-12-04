@@ -2,7 +2,7 @@ from rdtools.normalization import normalize_with_sapm
 from rdtools.normalization import normalize_with_pvwatts
 from rdtools.normalization import irradiance_rescale
 from rdtools.normalization import energy_from_power
-from rdtools.normalization import interpolate_to_index
+from rdtools.normalization import interpolate
 from rdtools.degradation import degradation_ols
 from rdtools.degradation import degradation_classical_decomposition
 from rdtools.degradation import degradation_year_on_year

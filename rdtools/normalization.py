@@ -468,8 +468,8 @@ def interpolate_series(time_series, target_index, max_timedelta=None):
 
     if max_timedelta is None:
         max_interval_nanoseconds = df['gapsize_ns'].median()
-        warning_string = ('No value for max_interval_hours passed into '
-                          'interpolate_to_index(). Using {} seconds')
+        warning_string = ('No value for max_timedelta passed. '
+                          'Using {} seconds')
         warning_string = warning_string.format(max_interval_nanoseconds / 10.0**9)
         warnings.warn(warning_string)
     else:
@@ -499,17 +499,20 @@ def interpolate_series(time_series, target_index, max_timedelta=None):
     return out
 
 
-def interpolate_to_index(time_series, target_index, max_timedelta=None):
+def interpolate(time_series, target, max_timedelta=None):
     '''
-    Returns an interpolation of time_series onto target_index, excluding times associated
-    with gaps in each column of time_series longer than max_timedelta.
+    Returns an interpolation of time_series, excluding times associated with gaps
+    in each column of time_series longer than max_timedelta; NaNs are returned within
+    those gaps.
 
     Parameters
     ----------
     time_series: Pandas Series or DataFrame with DatetimeIndex
         Original values to be used in generating the interpolation
-    target_index: Pandas DatetimeIndex
-        the index onto which the interpolation is to be made
+    target: Pandas DatetimeIndex, DatetimeOffset, or frequency string
+        If datetimeIndex: the index onto which the interpolation is to be made
+        If DatetiOffset or frequency string: the frequency at which to resample
+        and interpolate
     max_timedelta: Timedelta or NoneType (default: None)
         The maximum allowed gap between values in time_series. Times associated
         with gaps longer than max_timedelta are excluded from the output. If None,
@@ -528,8 +531,13 @@ def interpolate_to_index(time_series, target_index, max_timedelta=None):
 
     '''
 
+    if isinstance(target, pd.DatetimeIndex):
+        target_index = target
+    elif isinstance(target, pd.tseries.offsets.DateOffset) or isinstance(target, str):
+        target_index = pd.date_range(time_series.index.min(), time_series.index.max(), freq=target)
+
     if (time_series.index.tz is None) ^ (target_index.tz is None):
-        raise ValueError('Either time_series or target_index is time-zone aware but '
+        raise ValueError('Either time_series or target is time-zone aware but '
                          'the other is not. Both must be time-zone aware or both must '
                          'be time-zone naive.')
 

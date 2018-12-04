@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-from rdtools import interpolate_to_index
+from rdtools import interpolate
 import pytest
 
 
@@ -13,8 +13,8 @@ def time_series():
 
 
 @pytest.fixture
-def target_index():
-    return pd.date_range('2018-04-01 12:00', '2018-04-01 13:15', freq='20T')
+def target_index(time_series):
+    return pd.date_range(time_series.index.min(), time_series.index.max(), freq='20T')
 
 
 @pytest.fixture
@@ -50,32 +50,42 @@ def df_expected_result(df_target_index, test_df):
     return expected_df_result
 
 
-def test_interpolate_to_index_calculation(time_series, target_index, expected_series):
+def test_interpolate_freq_specification(time_series, target_index, expected_series):
+    # test the string specification
+    interpolated = interpolate(time_series, target_index.freq.freqstr, pd.to_timedelta('15 minutes'))
+    pd.testing.assert_series_equal(interpolated, expected_series)
 
-    interpolated = interpolate_to_index(time_series, target_index, pd.to_timedelta('15 minutes'))
+    # test the DateOffset specification
+    interpolated = interpolate(time_series, target_index.freq, pd.to_timedelta('15 minutes'))
     pd.testing.assert_series_equal(interpolated, expected_series)
 
 
-def test_interpolate_to_index_two_argument(time_series, target_index, expected_series):
+def test_interpolate_calculation(time_series, target_index, expected_series):
+
+    interpolated = interpolate(time_series, target_index, pd.to_timedelta('15 minutes'))
+    pd.testing.assert_series_equal(interpolated, expected_series)
+
+
+def test_interpolate_two_argument(time_series, target_index, expected_series):
 
     # Test that a warning is raised when max_timedelta is omitted
     with pytest.warns(UserWarning):
-        interpolated = interpolate_to_index(time_series, target_index)
+        interpolated = interpolate(time_series, target_index)
     pd.testing.assert_series_equal(interpolated, expected_series)
 
 
-def test_interpolate_to_index_tz_validation(time_series, target_index, expected_series):
+def test_interpolate_tz_validation(time_series, target_index, expected_series):
     with pytest.raises(ValueError):
-        interpolate_to_index(time_series, target_index.tz_localize('UTC'), pd.to_timedelta('15 minutes'))
+        interpolate(time_series, target_index.tz_localize('UTC'), pd.to_timedelta('15 minutes'))
 
     time_series = time_series.copy()
     time_series.index = time_series.index.tz_localize('UTC')
 
     with pytest.raises(ValueError):
-        interpolate_to_index(time_series, target_index, pd.to_timedelta('15 minutes'))
+        interpolate(time_series, target_index, pd.to_timedelta('15 minutes'))
 
 
-def test_interpolate_to_index_same_tz(time_series, target_index, expected_series):
+def test_interpolate_same_tz(time_series, target_index, expected_series):
     time_series = time_series.copy()
     expected_series = expected_series.copy()
 
@@ -83,11 +93,11 @@ def test_interpolate_to_index_same_tz(time_series, target_index, expected_series
     target_index = target_index.tz_localize('America/Denver')
     expected_series.index = expected_series.index.tz_localize('America/Denver')
 
-    interpolated = interpolate_to_index(time_series, target_index, pd.to_timedelta('15 minutes'))
+    interpolated = interpolate(time_series, target_index, pd.to_timedelta('15 minutes'))
     pd.testing.assert_series_equal(interpolated, expected_series)
 
 
-def test_interpolate_to_index_different_tz(time_series, target_index, expected_series):
+def test_interpolate_different_tz(time_series, target_index, expected_series):
     time_series = time_series.copy()
     expected_series = expected_series.copy()
 
@@ -95,10 +105,10 @@ def test_interpolate_to_index_different_tz(time_series, target_index, expected_s
     target_index = target_index.tz_localize('America/Denver')
     expected_series.index = expected_series.index.tz_localize('America/Denver')
 
-    interpolated = interpolate_to_index(time_series, target_index, pd.to_timedelta('15 minutes'))
+    interpolated = interpolate(time_series, target_index, pd.to_timedelta('15 minutes'))
     pd.testing.assert_series_equal(interpolated, expected_series)
 
 
-def test_interpolate_to_index_dataframe(test_df, df_target_index, df_expected_result):
-    interpolated = interpolate_to_index(test_df, df_target_index, pd.to_timedelta('15 minutes'))
+def test_interpolate_dataframe(test_df, df_target_index, df_expected_result):
+    interpolated = interpolate(test_df, df_target_index, pd.to_timedelta('15 minutes'))
     pd.testing.assert_frame_equal(interpolated, df_expected_result)
