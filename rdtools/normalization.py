@@ -106,28 +106,22 @@ def normalize_with_pvwatts(energy, pvwatts_kws):
     irrad = pvwatts_kws['poa_global']
 
     model_tds, mean_model_td = delta_index(dc_power)
-    irrad_tds, mean_irrad_td = delta_index(irrad)
     measure_tds, mean_measure_td = delta_index(energy)
 
+    # Case in which the model is as or more frequent than the measurments
     if mean_model_td <= mean_measure_td:
-        energy_dc = dc_power * model_tds
-        energy_dc = energy_dc.resample(freq).sum(min_count=1)
-        energy_dc = energy_dc.reindex(energy.index, method='nearest')
 
-        insolation = irrad * irrad_tds
-        insolation = insolation.resample(freq).sum(min_count=1)
-        insolation = insolation.reindex(energy.index, method='nearest')
+        energy_dc = energy_from_power(dc_power, freq)
+        insolation = energy_from_power(irrad, freq)
 
+    # Case in which the model less frequent than the measurments
     elif mean_model_td > mean_measure_td:
-        dc_power = dc_power.resample(freq).asfreq()
-        dc_power = dc_power.interpolate()
-        dc_power = dc_power.reindex(energy.index, method='nearest')
-        energy_dc = dc_power * measure_tds  # timedelta is that of measurment due to reindex
 
-        irrad = irrad.resample(freq).asfreq()
-        irrad = irrad.interpolate()
-        irrad = irrad.reindex(energy.index, method='nearest')
-        insolation = irrad * measure_tds  # timedelta is that of measurment due to reindex
+        dc_power = interpolate(dc_power, energy.index)
+        energy_dc = energy_from_power(dc_power, freq)
+
+        irrad = interpolate(irrad, energy.index)
+        insolation = energy_from_power(irrad, freq)
 
     normalized_energy = energy / energy_dc
 
@@ -241,25 +235,23 @@ def normalize_with_sapm(energy, sapm_kws):
     irrad_tds, mean_irrad_td = delta_index(irrad)
     measure_tds, mean_measure_td = delta_index(energy)
 
+    model_tds, mean_model_td = delta_index(dc_power)
+    measure_tds, mean_measure_td = delta_index(energy)
+
+    # Case in which the model is as or more frequent than the measurments
     if mean_model_td <= mean_measure_td:
-        energy_dc = dc_power * model_tds
-        energy_dc = energy_dc.resample(freq).sum(min_count=1)
-        energy_dc = energy_dc.reindex(energy.index, method='nearest')
 
-        insolation = irrad * irrad_tds
-        insolation = insolation.resample(freq).sum(min_count=1)
-        insolation = insolation.reindex(energy.index, method='nearest')
+        energy_dc = energy_from_power(dc_power, freq)
+        insolation = energy_from_power(irrad, freq)
 
+    # Case in which the model less frequent than the measurments
     elif mean_model_td > mean_measure_td:
-        dc_power = dc_power.resample(freq).asfreq()
-        dc_power = dc_power.interpolate()
-        dc_power = dc_power.reindex(energy.index, method='nearest')
-        energy_dc = dc_power * measure_tds  # timedelta is that of measurment due to reindex
 
-        irrad = irrad.resample(freq).asfreq()
-        irrad = irrad.interpolate()
-        irrad = irrad.reindex(energy.index, method='nearest')
-        insolation = irrad * measure_tds  # timedelta is that of measurment due to reindex
+        dc_power = interpolate(dc_power, energy.index)
+        energy_dc = energy_from_power(dc_power, freq)
+
+        irrad = interpolate(irrad, energy.index)
+        insolation = energy_from_power(irrad, freq)
 
     normalized_energy = energy / energy_dc
 
@@ -383,44 +375,136 @@ def check_series_frequency(series, series_description):
     return freq
 
 
-def energy_from_power(power_series, max_timedelta=None):
+def t_step_nanoseconds(time_series):
+    '''return a series of right labeled differences in the index of time_series in nanoseconds'''
+    t_steps = np.diff(time_series.index.astype('int64')).astype('float')
+    t_steps = np.insert(t_steps, 0, np.nan)
+    t_steps = pd.Series(index=time_series.index, data=t_steps)
+    return t_steps
+
+
+def energy_from_power(time_series, target_frequency=None, max_timedelta=None):
     '''
-    Returns a right-labeled energy time series from an instantaneous power time series.
-    Energy is not returned when the gap between data points exceeds max_timedelta.
-    power_series should be given in Watts.
+    Returns a regular right-labeled energy time series in units of Wh per interval from an
+    instantaneous power time series. NaN is filled where the gap between input data points
+    exceeds max_timedelta. Power_series should be given in Watts.
 
     Parameters
     ----------
-    power_series: Pandas Series with DatetimeIndex
-        Instantaneous time series of PV power generation in Watts
+    time_series: Pandas Series with DatetimeIndex
+        Instantaneous time series of power in Watts
+    target_frequency: DatetimeOffset, or frequency string
+        The frequency of the energy time series to be returned. If None(default),
+        the fequency is set to the median time step in time_series
+    max_timedelta: Timedelta or NoneType (default: None)
+        The maximum allowed gap between power measurements. If the gap between
+        consecutive power measurements exceeds max_timedelta, NaN
+        will be returned for that interval. If None, max_timedelta is set internally
+        to the median time delta in time_series.
+
+    Returns:
+    --------
+    right-labeled energy pandas time series in Wh per interval
+    '''
+
+    if not isinstance(time_series.index, pd.DatetimeIndex):
+        raise ValueError('power_series must be a pandas series with a DatetimeIndex')
+
+    t_steps = t_step_nanoseconds(time_series)
+    median_step_ns = t_steps.median()
+
+    if target_frequency is None:
+        target_frequency = str(median_step_ns) + 'N'  # Pandas offset allias in ns
+
+    if max_timedelta is None:
+        max_interval_nanoseconds = median_step_ns
+    else:
+        max_interval_nanoseconds = max_timedelta.total_seconds() * 10.0**9
+
+    try:
+        freq_interval_size_ns = pd.tseries.frequencies.to_offset(target_frequency).nanos
+    except ValueError as e:
+        if 'is a non-fixed frequency' in str(e):
+            temp_ind = pd.date_range(time_series.index[0], time_series.index[-1], freq=target_frequency)
+            temp_series = pd.Series(data=1, index=temp_ind)
+            temp_diffs = t_step_nanoseconds(temp_series)
+            freq_interval_size_ns = temp_diffs.median()
+        else:
+            raise
+
+    # Upsampling case
+    if freq_interval_size_ns <= median_step_ns:
+        resampled = interpolate(time_series, target_frequency, max_timedelta)
+        # Ensure a regular time series
+        resampled = resampled.resample(target_frequency).asfreq()
+
+        moving_average = (resampled + resampled.shift()) / 2.0
+
+        energy = moving_average * t_step_nanoseconds(moving_average) / 10.0**9 / 3600.0
+
+        energy = energy.drop(energy.index[0])
+
+    # Downsampling case
+    elif freq_interval_size_ns > median_step_ns:
+        energy = trapz_aggregate(time_series, target_frequency, max_timedelta)
+
+    # Set the frequency if we can
+    try:
+        energy.index.freq = pd.infer_freq(energy.index)
+    except ValueError:
+        pass
+
+    # enforce max_timedelta
+    t_steps = t_steps.reindex(energy.index, method='backfill')
+    energy.loc[t_steps > max_interval_nanoseconds] = np.nan
+
+    energy.name = 'energy_Wh'
+
+    return energy
+
+
+def trapz_aggregate(time_series, target_frequency, max_timedelta=None):
+    '''
+    Returns a right-labeled series with frequency target_frequency generated by aggregating
+    time_series with the trapazoidal rule (in units of hours). If any interval in time_series
+    is greater than max_timedelta, it is ommitted from the sum.
+
+    Parameters
+    ----------
+    time_series: Pandas Series with DatetimeIndex
+    target_frequency: DatetimeOffset, or frequency string
+        The frequency of the accumulated series to be returned.
     max_timedelta: Timedelta or NoneType (default: None)
         The maximum allowed gap between power measurements. If the gap between
         consecutive power measurements exceeds max_timedelta, no energy value
         will be returned for that interval. If None, max_timedelta is set internally
-        to the median time delta in power_series and a UserWarning is issued.
+        to the median time delta in time_series.
 
     Returns:
     --------
-    right-labeled energy pandas time series in Wh
-
+    right-labeled energy pandas time series in Wh per interval
     '''
 
-    if not isinstance(power_series.index, pd.DatetimeIndex):
-        raise ValueError('power_series must be a pandas series with a DatetimeIndex')
+    values = time_series.values
+    timestamps = time_series.index.astype('int64').values
 
-    time_deltas = np.diff(power_series.index.values).astype(float) / 10.0**9  # in seconds
+    t_diffs = np.diff(timestamps)
 
     if max_timedelta is None:
-        max_seconds = np.median(time_deltas)
-        warnings.warn('No value for max_timedelta passed into energy_from_power(). Using {} seconds'.format(max_seconds))
+        max_interval_nanoseconds = np.median(t_diffs)
     else:
-        max_seconds = max_timedelta.total_seconds()
+        max_interval_nanoseconds = max_timedelta.total_seconds() * 10.0**9
 
-    rolling_mean_power = power_series.rolling(2).mean()
-    energy_series = (rolling_mean_power.iloc[1:] * time_deltas / 3600.0)[time_deltas <= max_seconds]
-    energy_series.name = 'energy_Wh'
+    # in x*hours
+    trap_sum = (values[1:] + values[:-1]) / 2 * t_diffs / 10**9 / 3600.0
 
-    return energy_series
+    trap_sum[t_diffs > max_interval_nanoseconds] = np.nan
+
+    trap_sum = pd.Series(data=trap_sum, index=time_series.index[1:])
+
+    aggregated = trap_sum.resample(target_frequency, closed='right', label='right').sum(min_count=1)
+
+    return aggregated
 
 
 def interpolate_series(time_series, target_index, max_timedelta=None):
