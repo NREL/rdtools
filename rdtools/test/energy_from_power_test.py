@@ -3,6 +3,7 @@ import numpy as np
 from rdtools import energy_from_power
 import pytest
 
+
 # Tests for resampling at same frequency
 def test_energy_from_power_calculation():
     power_times = pd.date_range('2018-04-01 12:00', '2018-04-01 13:00', freq='15T')
@@ -61,7 +62,7 @@ def test_energy_from_power_single_argument():
 # Tests for downsampling
 def test_energy_from_power_downsample():
     times = pd.date_range('2018-04-01 12:00', '2018-04-01 13:00', freq='15T')
-    time_series = pd.Series(data=[1, 2, 3, 4, 5], index=times)
+    time_series = pd.Series(data=[1.0, 2.0, 3.0, 4.0, 5.0], index=times)
 
     expected_energy_series = pd.Series(index=[pd.to_datetime('2018-04-01 13:00:00')],
                                        data=3.0, name='energy_Wh')
@@ -71,7 +72,7 @@ def test_energy_from_power_downsample():
 
 def test_energy_from_power_downsample_max_timedelta_exceeded():
     times = pd.date_range('2018-04-01 12:00', '2018-04-01 13:00', freq='15T')
-    time_series = pd.Series(data=[1, 2, 3, 4, 5], index=times)
+    time_series = pd.Series(data=[1.0, 2.0, 3.0, 4.0, 5.0], index=times)
 
     expected_energy_series = pd.Series(index=[pd.to_datetime('2018-04-01 13:00:00')],
                                        data=1.5, name='energy_Wh')
@@ -81,7 +82,7 @@ def test_energy_from_power_downsample_max_timedelta_exceeded():
 
 def test_energy_from_power_downsample_max_timedelta_not_exceeded():
     times = pd.date_range('2018-04-01 12:00', '2018-04-01 13:00', freq='15T')
-    time_series = pd.Series(data=[1, 2, 3, 4, 5], index=times)
+    time_series = pd.Series(data=[1.0, 2.0, 3.0, 4.0, 5.0], index=times)
 
     expected_energy_series = pd.Series(index=[pd.to_datetime('2018-04-01 13:00:00')],
                                        data=3.0, name='energy_Wh')
@@ -91,7 +92,7 @@ def test_energy_from_power_downsample_max_timedelta_not_exceeded():
 
 def test_energy_from_power_for_issue_107():
     times = pd.date_range('2018-04-01 12:00', '2018-04-01 16:00', freq='15T')
-    dc_power = pd.Series(index=times, data=1)
+    dc_power = pd.Series(index=times, data=1.0)
     dc_power = dc_power.drop(dc_power.index[5:12])
 
     expected_times = pd.date_range('2018-04-01 13:00', '2018-04-01 16:00', freq='60T')
@@ -105,7 +106,7 @@ def test_energy_from_power_for_issue_107():
 # Tests for upsampling
 def test_energy_from_power_upsample():
     times = pd.date_range('2018-04-01 12:00', '2018-04-01 13:30', freq='30T')
-    time_series = pd.Series(data=[1, 3, 5, 6], index=times)
+    time_series = pd.Series(data=[1.0, 3.0, 5.0, 6.0], index=times)
 
     expected_result_times = pd.date_range('2018-04-01 12:15', '2018-04-01 13:30', freq='15T')
     expected_energy_series = pd.Series(index=expected_result_times,
@@ -118,7 +119,7 @@ def test_energy_from_power_upsample():
 
 def test_energy_from_power_upsample_maxtimedelta_not_exceeded():
     times = pd.date_range('2018-04-01 12:00', '2018-04-01 13:30', freq='30T')
-    time_series = pd.Series(data=[1, 3, 5, 6], index=times)
+    time_series = pd.Series(data=[1.0, 3.0, 5.0, 6.0], index=times)
 
     expected_result_times = pd.date_range('2018-04-01 12:15', '2018-04-01 13:30', freq='15T')
     expected_energy_series = pd.Series(index=expected_result_times,
@@ -131,7 +132,7 @@ def test_energy_from_power_upsample_maxtimedelta_not_exceeded():
 
 def test_energy_from_power_upsample_maxtimedelta_exceeded():
     times = pd.date_range('2018-04-01 12:00', '2018-04-01 13:30', freq='30T')
-    time_series = pd.Series(data=[1, 3, 5, 6], index=times)
+    time_series = pd.Series(data=[1.0, 3.0, 5.0, 6.0], index=times)
 
     expected_result_times = pd.date_range('2018-04-01 12:15', '2018-04-01 13:30', freq='15T')
     expected_energy_series = pd.Series(index=expected_result_times,
