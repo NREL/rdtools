@@ -50,10 +50,6 @@ def test_energy_from_power_single_argument():
     expected_energy_series.loc[expected_nan] = np.nan
     expected_energy_series.name = 'energy_Wh'
 
-    # Test that a warning is raised when one input is used
-    # with pytest.warns(UserWarning):
-    #     result = energy_from_power(power_series)
-
     # Test that the result has the expected missing timestamp based on median timestep
     result = energy_from_power(power_series)
     pd.testing.assert_series_equal(result, expected_energy_series)

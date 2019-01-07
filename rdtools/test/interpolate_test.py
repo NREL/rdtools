@@ -72,8 +72,7 @@ def test_interpolate_calculation(time_series, target_index, expected_series):
 def test_interpolate_two_argument(time_series, target_index, expected_series):
 
     # Test that a warning is raised when max_timedelta is omitted
-    with pytest.warns(UserWarning):
-        interpolated = interpolate(time_series, target_index)
+    interpolated = interpolate(time_series, target_index)
     pd.testing.assert_series_equal(interpolated, expected_series)
 
 

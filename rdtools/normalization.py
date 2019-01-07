@@ -521,8 +521,7 @@ def interpolate_series(time_series, target_index, max_timedelta=None):
     max_timedelta: Timedelta or NoneType (default: None)
         The maximum allowed gap between values in time_series. Times associated
         with gaps longer than max_timedelta are excluded from the output. If None,
-        max_timedelta is set internally to the median time delta in time_series
-        and a UserWarning is issued.
+        max_timedelta is set internally to the median time delta in time_series.
 
     Returns:
     --------
@@ -555,10 +554,6 @@ def interpolate_series(time_series, target_index, max_timedelta=None):
 
     if max_timedelta is None:
         max_interval_nanoseconds = df['gapsize_ns'].median()
-        warning_string = ('No value for max_timedelta passed. '
-                          'Using {} seconds')
-        warning_string = warning_string.format(max_interval_nanoseconds / 10.0**9)
-        warnings.warn(warning_string)
     else:
         max_interval_nanoseconds = max_timedelta.total_seconds() * 10.0**9
 
@@ -604,8 +599,7 @@ def interpolate(time_series, target, max_timedelta=None):
     max_timedelta: Timedelta or NoneType (default: None)
         The maximum allowed gap between values in time_series. Times associated
         with gaps longer than max_timedelta are excluded from the output. If None,
-        max_timedelta is set internally to the median time delta in time_series
-        and a UserWarning is issued.
+        max_timedelta is set internally to the median time delta in time_series.
 
     Returns:
     --------
