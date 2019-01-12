@@ -442,7 +442,12 @@ def energy_from_power(time_series, target_frequency=None, max_timedelta=None):
 
         energy = moving_average * t_step_nanoseconds(moving_average) / 10.0**9 / 3600.0
 
+        # Drop first row with work around for pandas issue #18031
+        tz = str(energy.index.tz)
+        energy.index = energy.index.tz_convert('UTC')
         energy = energy.drop(energy.index[0])
+        energy.index = energy.index.tz_convert(tz)
+        
 
     # Downsampling case
     elif freq_interval_size_ns > median_step_ns:
