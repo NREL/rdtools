@@ -435,8 +435,6 @@ def energy_from_power(time_series, target_frequency=None, max_timedelta=None):
     # Upsampling case
     if freq_interval_size_ns <= median_step_ns:
         resampled = interpolate(time_series, target_frequency, max_timedelta)
-        # Ensure a regular time series
-        resampled = resampled.resample(target_frequency).asfreq()
 
         moving_average = (resampled + resampled.shift()) / 2.0
 
@@ -516,8 +514,8 @@ def trapz_aggregate(time_series, target_frequency, max_timedelta=None):
 
 def interpolate_series(time_series, target_index, max_timedelta=None):
     '''
-    Returns an interpolation of time_series onto target_index, excluding times associated
-    with gaps in time_series longer than max_timedelta.
+    Returns an interpolation of time_series onto target_index, NaN is returned
+    for  times associated with gaps in time_series longer than max_timedelta.
 
     Parameters
     ----------
@@ -585,6 +583,7 @@ def interpolate_series(time_series, target_index, max_timedelta=None):
     out = out.loc[target_timestamps]
     out.name = original_name
     out.index = pd.to_datetime(out.index, utc=True).tz_convert(target_index.tz)
+    out = out.reindex(target_index)
 
     return out
 
