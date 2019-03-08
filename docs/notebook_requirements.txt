@@ -33,7 +33,7 @@ pickleshare==0.7.4
 prometheus-client==0.3.0
 prompt-toolkit==1.0.15
 ptyprocess==0.6.0
-pvlib==0.5.2
+pvlib==0.6.1
 Pygments==2.2.0
 pyparsing==2.2.0
 pyzmq==17.1.0
