@@ -40,6 +40,7 @@ def xyplot(x, y, set_xlimits=False, set_ylimits=False,\
 
     Returns
     -------
+    (fig, ax):  figure and axes handles from subplots
     Displays a figure
     '''
 
@@ -72,6 +73,7 @@ def xyplot(x, y, set_xlimits=False, set_ylimits=False,\
     plt.title(plot_title)
     
     plt.show()
+    return fig,ax
     
 def xy2plot(x, y1, y2,\
             set_xlimits=False, set_ylimits=False,\
@@ -158,6 +160,7 @@ def xy2plot(x, y1, y2,\
                   shadow=legend_shadow, ncol=legend_ncol) 
 
     plt.show()
+    return fig,ax
 
 def degradation_summary_plots(x, y, yoy_info, yoy_rd, yoy_ci, daily,\
                               set_hist_xlimits=False, set_scatter_ylimits=False,\
@@ -226,3 +229,5 @@ def degradation_summary_plots(x, y, yoy_info, yoy_rd, yoy_ci, daily,\
 
     fig.suptitle(summary_title);
     plt.show()
+    
+    #return fig, (ax1, ax2)  # possibly return figure and axes handles for further plot tweaks?
