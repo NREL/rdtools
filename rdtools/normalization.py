@@ -414,7 +414,7 @@ def energy_from_power(time_series, target_frequency=None, max_timedelta=None):
     median_step_ns = t_steps.median()
 
     if target_frequency is None:
-        target_frequency = str(median_step_ns) + 'N'  # Pandas offset allias in ns
+        target_frequency = str(int(median_step_ns)) + 'N'  # Pandas offset allias in ns
 
     if max_timedelta is None:
         max_interval_nanoseconds = median_step_ns
