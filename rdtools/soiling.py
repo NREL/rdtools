@@ -394,7 +394,7 @@ def soiling_srr(daily_normalized_energy, daily_insolation, reps=1000,
     results = pm_frame.calc_result_frame(trim=trim)
 
     # perform the monte carlo simulations
-    soiling_ratio_realizations = results.calc_monte(reps, method='infer_clean', precip_clean_only=False)
+    soiling_ratio_realizations = results.calc_monte(reps, method=method, precip_clean_only=precip_clean_only)
 
     # Calculate the P50 and confidence interval
     half_ci = confidence_level / 2.0
