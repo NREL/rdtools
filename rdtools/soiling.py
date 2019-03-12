@@ -314,8 +314,8 @@ def create_pm_frame(pm, insol, precip=None, day_scale=14, clean_threshold='infer
     df = df.join(df_insol)
 
     if precip is not None:
-        precip.name = 'precip'
         df_precip = precip.to_frame()
+        df_precip.columns = ['precip']
         df = df.join(df_precip)
     else:
         df['precip'] = 0
@@ -329,12 +329,12 @@ def create_pm_frame(pm, insol, precip=None, day_scale=14, clean_threshold='infer
     df['day'] = range(len(df))
 
     # Normalize pi to 95th percentile
-    pi = df[df.pi > 0]['pi']
-    df['pi_norm'] = df.pi / np.percentile(pi, 95)
+    pi = df[df['pi'] > 0]['pi']
+    df['pi_norm'] = df['pi'] / np.percentile(pi, 95)
 
     # Find the beginning and ends of outtages longer than dayscale
-    out_start = (~df.pi_norm.isnull() & df.pi_norm.fillna(method='bfill', limit=day_scale).shift(-1).isnull())
-    out_end = (~df.pi_norm.isnull() & df.pi_norm.fillna(method='ffill', limit=day_scale).shift(1).isnull())
+    out_start = (~df['pi_norm'].isnull() & df['pi_norm'].fillna(method='bfill', limit=day_scale).shift(-1).isnull())
+    out_end = (~df['pi_norm'].isnull() & df['pi_norm'].fillna(method='ffill', limit=day_scale).shift(1).isnull())
 
     # clean up the first and last elements
     out_start.iloc[-1] = False
