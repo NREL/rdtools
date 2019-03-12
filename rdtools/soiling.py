@@ -136,7 +136,7 @@ class result_frame(pd.DataFrame):
     def _constructor(self):
         return result_frame
 
-    def calc_monte(self, monte, method='infer_clean', precip_clean_only=False):
+    def calc_monte(self, monte, method='half_norm_clean', precip_clean_only=False):
         '''Return monte carlo sample of losses
 
         Parameters
@@ -146,7 +146,7 @@ class result_frame(pd.DataFrame):
         method (str): how to treat the recovery of each cleaning event
                         'random_clean' - a random recovery between 0-100%
                         'perfect_clean' - each cleaning event returns the performance metric to 1
-                        'infer_clean' (default) - The three-sigma lower bound of recovery is inferred from the fit
+                        'half_norm_clean' (default) - The three-sigma lower bound of recovery is inferred from the fit
                         of the following interval, the upper bound is 1 with the magnitude drawn from a half normal centered at 1
 
         precip_clean_only(bool): If True, only consider cleaning events valid if they coincide with precipitation events
@@ -179,7 +179,7 @@ class result_frame(pd.DataFrame):
             results_rand['group'] = group_list
 
             # randomize the extent of the cleaning
-            if method == 'infer_clean':
+            if method == 'half_norm_clean':
                 # Randomize recovery of valid intervals only
                 valid_intervals = results_rand[results_rand.valid].copy()
                 valid_intervals['inferred_recovery'] = valid_intervals.inferred_recovery.fillna(1.0)
@@ -253,7 +253,7 @@ class result_frame(pd.DataFrame):
                             inter_start = end  # don't allow recovery if there was no precipitation
                         else:
                             inter_start = 1
-                    elif method == 'infer_clean':
+                    elif method == 'half_norm_clean':
                         if row.clean_wo_precip and precip_clean_only:
                             inter_start = end  # don't allow recovery if there was no precipitation
                         else:
@@ -380,7 +380,7 @@ def create_pm_frame(pm, insol, precip=None, day_scale=14, clean_threshold='infer
 
 def soiling_srr(daily_normalized_energy, daily_insolation, reps=1000,
                 precip=None, day_scale=14, clean_threshold='infer',
-                trim=False, method='infer_clean', precip_clean_only=False,
+                trim=False, method='half_norm_clean', precip_clean_only=False,
                 exceedance_prob=95.0, confidence_level=68.2):
     '''
 
