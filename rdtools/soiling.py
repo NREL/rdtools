@@ -381,7 +381,8 @@ def create_pm_frame(pm, insol, precip=None, day_scale=14, clean_threshold='infer
 
 def soiling_srr(daily_normalized_energy, daily_insolation, reps=1000,
                 precip=None, day_scale=14, clean_threshold='infer',
-                trim=False, method='infer_clean', precip_clean_only=False):
+                trim=False, method='infer_clean', precip_clean_only=False,
+                exceedance_prob=95.0, confidence_level=68.2):
     '''
 
     '''
@@ -397,6 +398,12 @@ def soiling_srr(daily_normalized_energy, daily_insolation, reps=1000,
     soiling_ratio_realizations = results.calc_monte(reps, method='infer_clean', precip_clean_only=False)
 
     # Calculate the P50 and confidence interval
-    result = np.percentile(soiling_ratio_realizations, [50, 2.5, 97.5])
+    half_ci = confidence_level / 2.0
+    result = np.percentile(soiling_ratio_realizations, [50, 50.0 - half_ci, 50.0 + half_ci, 100 - exceedance_prob])
+    P_level = result[3]
 
-    return (result[0], result[1:3])
+    # Construct calc_info output
+    calc_info = {}
+    calc_info['exceedance_level'] = P_level
+
+    return (result[0], result[1:3], calc_info)
