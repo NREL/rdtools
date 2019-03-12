@@ -306,11 +306,10 @@ def create_pm_frame(pm, insol, precip=None, day_scale=14, clean_threshold='infer
         if pm.index.freq != 'D':
             raise ValueError('Precipitation series must have daily frequency')
 
-    pm.name = 'pi'
-    insol.name = 'insol'
-
     df = pm.to_frame()
+    df.columns = ['pi']
     df_insol = insol.to_frame()
+    df_insol.columns = ['insol']
 
     df = df.join(df_insol)
 
