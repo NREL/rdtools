@@ -18,6 +18,8 @@ class NoValidIntervalError(Exception):
 class pm_frame(pd.DataFrame):
     '''Class consisting of dataframe for analysis constructed from system data, usually created with create_pm_frame'''
 
+    _metadata = ['renorm_factor']
+
     def calc_result_frame(self, trim=True):
         '''Return a result_frame
 
@@ -275,7 +277,7 @@ class result_frame(pd.DataFrame):
         return monte_losses
 
 
-def create_pm_frame(pm, insol, precip=None, day_scale=14, clean_threshold='infer'):
+def create_pm_frame(pm, insol, precip=None, day_scale=14, clean_threshold='infer', recenter=True):
     '''Return a pm_frame based on supplied perfromance metric and insolation
 
     Parameters
@@ -328,9 +330,14 @@ def create_pm_frame(pm, insol, precip=None, day_scale=14, clean_threshold='infer
     # create a day count column
     df['day'] = range(len(df))
 
-    # Normalize pi to 95th percentile
-    pi = df[df['pi'] > 0]['pi']
-    df['pi_norm'] = df['pi'] / np.percentile(pi, 95)
+    # Recenter to median of first year, as in YoY degradation
+    if recenter:
+        oneyear = start + pd.Timedelta('364d')
+        renorm = df.loc[start:oneyear, 'pi'].median()
+    else:
+        renorm = 1
+
+    df['pi_norm'] = df['pi'] / renorm
 
     # Find the beginning and ends of outtages longer than dayscale
     out_start = (~df['pi_norm'].isnull() & df['pi_norm'].fillna(method='bfill', limit=day_scale).shift(-1).isnull())
@@ -373,21 +380,23 @@ def create_pm_frame(pm, insol, precip=None, day_scale=14, clean_threshold='infer
     df['run'] = run_list
 
     df.index.name = 'date'  # this gets used by name in calc_result_frame
+    out = pm_frame(df)
+    out.renorm_factor = renorm
 
-    return pm_frame(df)
+    return out
 
 
 def soiling_srr(daily_normalized_energy, daily_insolation, reps=1000,
                 precip=None, day_scale=14, clean_threshold='infer',
                 trim=False, method='half_norm_clean', precip_clean_only=False,
-                exceedance_prob=95.0, confidence_level=68.2):
+                exceedance_prob=95.0, confidence_level=68.2, recenter=True):
     '''
 
     '''
 
     # create the performance metric dataframe
     pm_frame = create_pm_frame(daily_normalized_energy, daily_insolation, precip=precip,
-                               day_scale=day_scale, clean_threshold=clean_threshold)
+                               day_scale=day_scale, clean_threshold=clean_threshold, recenter=recenter)
 
     # Then calculate a results frame summarizing the soiling intervals
     results = pm_frame.calc_result_frame(trim=trim)
@@ -401,7 +410,9 @@ def soiling_srr(daily_normalized_energy, daily_insolation, reps=1000,
     P_level = result[3]
 
     # Construct calc_info output
-    calc_info = {}
-    calc_info['exceedance_level'] = P_level
+    calc_info = {
+        'exceedance_level': P_level,
+        'renormalizing_factor': pm_frame.renorm_factor
+    }
 
     return (result[0], result[1:3], calc_info)
