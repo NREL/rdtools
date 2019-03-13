@@ -132,7 +132,7 @@ class result_frame(pd.DataFrame):
     '''Class consisting of dataframe for calculaitng losses, typically created from pm_frame.calc_result_frame()'''
 
     # Add  normal properties
-    _metadata = ['pm_frame', 'randomized_loss']
+    _metadata = ['pm_frame', 'randomized_loss', 'random_profiles']
 
     @property
     def _constructor(self):
@@ -159,6 +159,7 @@ class result_frame(pd.DataFrame):
         '''
 
         monte_losses = []
+        random_profiles = []
         for _ in range(monte):
             results_rand = self.copy()
             df_rand = self.pm_frame.copy()
@@ -272,8 +273,12 @@ class result_frame(pd.DataFrame):
             df_rand['soil_insol'] = df_rand.loss * df_rand.insol
 
             monte_losses.append(df_rand.soil_insol.sum() / df_rand.insol.sum())
+            random_profile = df_rand['loss'].copy()
+            random_profile.name = 'stochastic_soiling_profile'
+            random_profiles.append(random_profile)
 
         self.randomized_loss = df_rand  # Keep the last random loss frame
+        self.random_profiles = random_profiles
         return monte_losses
 
 
@@ -412,7 +417,8 @@ def soiling_srr(daily_normalized_energy, daily_insolation, reps=1000,
     # Construct calc_info output
     calc_info = {
         'exceedance_level': P_level,
-        'renormalizing_factor': pm_frame.renorm_factor
+        'renormalizing_factor': pm_frame.renorm_factor,
+        'stochastic_soiling_profiles': results.random_profiles
     }
 
     return (result[0], result[1:3], calc_info)
