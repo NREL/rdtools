@@ -373,7 +373,6 @@ def create_pm_frame(pm, insol, precip=None, day_scale=14, clean_threshold='infer
     df['run'] = run_list
 
     df.index.name = 'date'  # this gets used by name in calc_result_frame
-    df.index = df.index.tz_localize(None)
 
     return pm_frame(df)
 
