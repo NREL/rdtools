@@ -398,7 +398,8 @@ def create_pm_frame(pm, insol, precip=None, day_scale=14, clean_threshold='infer
 def soiling_srr(daily_normalized_energy, daily_insolation, reps=1000,
                 precip=None, day_scale=14, clean_threshold='infer',
                 trim=False, method='half_norm_clean', precip_clean_only=False,
-                exceedance_prob=95.0, confidence_level=68.2, recenter=True):
+                exceedance_prob=95.0, confidence_level=68.2, recenter=True,
+                max_relative_slope_error=500.0, max_negative_step=0.05):
     '''
 
     '''
@@ -408,7 +409,8 @@ def soiling_srr(daily_normalized_energy, daily_insolation, reps=1000,
                                day_scale=day_scale, clean_threshold=clean_threshold, recenter=recenter)
 
     # Then calculate a results frame summarizing the soiling intervals
-    results = pm_frame.calc_result_frame(trim=trim)
+    results = pm_frame.calc_result_frame(trim=trim, max_relative_slope_error=max_relative_slope_error,
+                                         max_negative_step=max_negative_step)
 
     # perform the monte carlo simulations
     soiling_ratio_realizations = results.calc_monte(reps, method=method, precip_clean_only=precip_clean_only)
