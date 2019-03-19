@@ -28,7 +28,7 @@ class pm_frame(pd.DataFrame):
 
         Parameters
         ----------
-        trim (bolean): whether to trim (remove) the first and last soiling intervals to avoid inclusion of partial intervals
+        trim (bool): whether to trim (remove) the first and last soiling intervals to avoid inclusion of partial intervals
         max_relative_slope_error (numeric): the maximum relative size of the slope confidence interval for an interval to be
                                             considered valid (percentage).
         max_negative_step (numeric): The maximum magnitude of negative descrete steps allowed in an interval for the interval
@@ -401,7 +401,52 @@ def soiling_srr(daily_normalized_energy, daily_insolation, reps=1000,
                 exceedance_prob=95.0, confidence_level=68.2, recenter=True,
                 max_relative_slope_error=500.0, max_negative_step=0.05):
     '''
+    Perform the stochastic rate and recovery soiling loss calculation. Based on the methods presented
+    in Deceglie et al. JPV 8(2) p547 2018.
 
+    Parameters
+    ----------
+    daily_normalized_energy (pandas timeseries): Daily performance metric (i.e. performance index, yield, etc.)
+    daily_insolation (pandas timeseries): Daily plane-of-array insolation corresponding to daily_normalized_energy
+    reps (int): number of Monte Carlo realizations to calculate
+    precip (pandas timeseries): Daily total precipitation. (Only used if precip_clean_only=True)
+    day_scale (int): The number of days to use in rolling median for cleaning detection, and the maximum number of
+                     days of missing data to tolerate in a valid interval
+    clean_threshold (float or str): The fractional positive shift in rolling median for cleaning detection.
+                                    Or specify 'infer' to automatically use outliers in the shift as the threshold.
+    trim (bool): Whether to trim (remove) the first and last soiling intervals to avoid inclusion of partial intervals
+    method (str): how to treat the recovery of each cleaning event
+                  'random_clean' - a random recovery between 0-100%
+                  'perfect_clean' - each cleaning event returns the performance metric to 1
+                  'half_norm_clean' (default) - The three-sigma lower bound of recovery is inferred from the fit
+                                                of the following interval, the upper bound is 1 with the magnitude
+                                                drawn from a half normal centered at 1
+    precip_clean_only (bool): If True, only consider cleaning events valid if they coincide with precipitation events
+    exceedance_prob (float): the probability level to use for exceedance value calculation in percent
+    confidence_level (float): the size of the confidence interval to return, in percent
+    recenter (bool): specify whether data is centered to normalized yield of 1 based on first year median
+    max_relative_slope_error (numeric): the maximum relative size of the slope confidence interval for an interval to be
+                                            considered valid (percentage).
+    max_negative_step (numeric): The maximum magnitude of negative discrete steps allowed in an interval for the interval
+                                     to be considered valid (units of normalized performance metric).
+
+    Returns
+    -------
+    tuple of (insolation_weighted_soiling_ratio, confidence_interval, calc_info)
+        insolation_weighted_soiling_ratio:  float
+            P50 insolation weighted soiling ratio based on stochastic rate and recovery analysis
+        confidence_interval:  numpy ndarray
+            confidence interval (size specified by confidence_level) of degradation
+            rate estimate
+        calc_info:  dict
+            ('renormalizing_factor'): value used to recenter data
+            ('exceedance_level'): the insolation-weighted soiling ratio that was outperformed with
+                                  probability of exceedance_prob
+            ('stochastic_soiling_profiles'): List of Pandas series corresponding to the Monte Carlo
+                                             realizations of soiling ratio profiles
+            ('soiling_interval_summary'): Pandas dataframe summarizing the soiling intervals identified
+            ('soiling_ratio_perfect_clean'): Pandas series of the soiling ratio during valid soiling intervals assuming
+                                             perfect cleaning and P50 slopes.
     '''
 
     # create the performance metric dataframe
