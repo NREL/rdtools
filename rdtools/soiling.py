@@ -415,10 +415,21 @@ def soiling_srr(daily_normalized_energy, daily_insolation, reps=1000,
     P_level = result[3]
 
     # Construct calc_info output
+
+    intervals_out = results[['start', 'end', 'run_slope', 'run_slope_low', 'run_slope_high',
+                             'inferred_start_loss', 'inferred_end_loss', 'length', 'valid'
+                             ]].copy()
+    intervals_out.rename(columns={'run_slope': 'slope',
+                                  'run_slope_high': 'slope_high',
+                                  'run_slope_low': 'slope_low',
+                                  }, inplace=True)
+
     calc_info = {
         'exceedance_level': P_level,
         'renormalizing_factor': pm_frame.renorm_factor,
-        'stochastic_soiling_profiles': results.random_profiles
+        'stochastic_soiling_profiles': results.random_profiles,
+        'soiling_interval_summary': intervals_out,
+        'soiling_ratio_perfect_clean': results.pm_frame[results.pm_frame['valid']]['loss_perfect_clean']
     }
 
     return (result[0], result[1:3], calc_info)
