@@ -20,7 +20,7 @@ class pm_frame(pd.DataFrame):
 
     _metadata = ['renorm_factor']
 
-    def calc_result_frame(self, trim=True):
+    def calc_result_frame(self, trim=True, max_relative_slope_error=500.0, max_negative_step=0.05):
         '''Return a result_frame
 
         Returns a result_frame which contains the charecteristics of each soiling interval.soiling.
@@ -29,6 +29,10 @@ class pm_frame(pd.DataFrame):
         Parameters
         ----------
         trim (bolean): whether to trim (remove) the first and last soiling intervals to avoid inclusion of partial intervals
+        max_relative_slope_error (numeric): the maximum relative size of the slope confidence interval for an interval to be
+                                            considered valid (percentage).
+        max_negative_step (numeric): The maximum magnitude of negative descrete steps allowed in an interval for the interval
+                                     to be considered valid (units of normalized performance metric).
 
         '''
 
@@ -90,8 +94,8 @@ class pm_frame(pd.DataFrame):
         # critera for exclusions
         filt = (
             (results.run_slope > 0) |
-            (results.slope_err > 5) |
-            (results.max_neg_step <= -0.05)
+            (results.slope_err >= max_relative_slope_error / 100.0) |
+            (results.max_neg_step <= -1.0 * max_negative_step)
         )
 
         results.loc[filt, 'run_slope'] = 0
