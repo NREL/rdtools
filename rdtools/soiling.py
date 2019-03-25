@@ -142,7 +142,7 @@ class result_frame(pd.DataFrame):
     def _constructor(self):
         return result_frame
 
-    def calc_monte(self, monte, method='half_norm_clean', precip_clean_only=False):
+    def calc_monte(self, monte, method='half_norm_clean', precip_clean_only=False, random_seed=None):
         '''Return monte carlo sample of losses
 
         Parameters
@@ -157,6 +157,9 @@ class result_frame(pd.DataFrame):
 
         precip_clean_only(bool): If True, only consider cleaning events valid if they coincide with precipitation events
 
+        random_seed (int): Seed for random number generation in the Monte Carlo simulation. Use to ensure identical results on
+                           subsequent runs. Not a subsitute for doing a sufficient number of Mote Carlo repititions.
+
         Returns
         -------
         (list): Monte Carlo sample, of length monte, of expected irradiance-weighted soiling ratio
@@ -164,6 +167,8 @@ class result_frame(pd.DataFrame):
 
         monte_losses = []
         random_profiles = []
+        if random_seed is not None:
+            np.random.seed(random_seed)
         for _ in range(monte):
             results_rand = self.copy()
             df_rand = self.pm_frame.copy()
@@ -399,7 +404,7 @@ def soiling_srr(daily_normalized_energy, daily_insolation, reps=1000,
                 precip=None, day_scale=14, clean_threshold='infer',
                 trim=False, method='half_norm_clean', precip_clean_only=False,
                 exceedance_prob=95.0, confidence_level=68.2, recenter=True,
-                max_relative_slope_error=500.0, max_negative_step=0.05):
+                max_relative_slope_error=500.0, max_negative_step=0.05, random_seed=None):
     '''
     Perform the stochastic rate and recovery soiling loss calculation. Based on the methods presented
     in Deceglie et al. JPV 8(2) p547 2018.
@@ -429,6 +434,8 @@ def soiling_srr(daily_normalized_energy, daily_insolation, reps=1000,
                                             considered valid (percentage).
     max_negative_step (numeric): The maximum magnitude of negative discrete steps allowed in an interval for the interval
                                      to be considered valid (units of normalized performance metric).
+    random_seed (int): Seed for random number generation in the Monte Carlo simulation. Use to ensure identical results on
+                       subsequent runs. Not a subsitute for doing a sufficient number of Mote Carlo repititions.
 
     Returns
     -------
@@ -458,7 +465,8 @@ def soiling_srr(daily_normalized_energy, daily_insolation, reps=1000,
                                          max_negative_step=max_negative_step)
 
     # perform the monte carlo simulations
-    soiling_ratio_realizations = results.calc_monte(reps, method=method, precip_clean_only=precip_clean_only)
+    soiling_ratio_realizations = results.calc_monte(reps, method=method, precip_clean_only=precip_clean_only,
+                                                    random_seed=random_seed)
 
     # Calculate the P50 and confidence interval
     half_ci = confidence_level / 2.0
