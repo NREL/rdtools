@@ -1,5 +1,5 @@
 h5py==2.7.1
-numpy==1.11.2
+numpy==1.12
 patsy==0.5.0
 pandas==0.23.0
 pvlib==0.6.1
