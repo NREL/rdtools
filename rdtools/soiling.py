@@ -7,6 +7,7 @@ metrics from photovoltaic system data.
 import pandas as pd
 import numpy as np
 from scipy.stats.mstats import theilslopes
+from __future__ import division
 
 
 # Custom exception
