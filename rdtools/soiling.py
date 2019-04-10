@@ -68,7 +68,6 @@ class pm_frame(pd.DataFrame):
                     'valid': True
                 })
             else:
-                run = self[self.run == r]
                 result_list.append({
                     'start': run.index[0],
                     'end': run.index[-1],
