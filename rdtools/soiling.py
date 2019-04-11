@@ -254,11 +254,6 @@ class result_frame(pd.DataFrame):
                             inter_start = end  # don't allow recovery if there was no precipitation
                         else:
                             inter_start = 1
-                    elif method == 'half_norm_clean':
-                        if row.clean_wo_precip and precip_clean_only:
-                            inter_start = end  # don't allow recovery if there was no precipitation
-                        else:
-                            inter_start = np.random.uniform(np.clip(end + row.inferred_recovery, 0, 1), 1)
                     else:
                         raise(ValueError("Invalid method specification"))
                 results_rand['start_loss'] = start_list
