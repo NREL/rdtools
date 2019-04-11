@@ -49,40 +49,32 @@ class pm_frame(pd.DataFrame):
             start_day = run.day[0]
             end_day = run.day[-1]
             run = run[run.pi_norm > 0]
+            result_dict = {
+                'start': run.index[0],
+                'end': run.index[-1],
+                'length': length,
+                'run': r,
+                'run_slope': 0,
+                'run_slope_low': 0,
+                'run_slope_high': 0,
+                'max_neg_step': min(run.delta),
+                'start_loss': 1,
+                'clean_wo_precip': run.clean_wo_precip[0],
+                'inferred_start_loss': run.pi_norm.mean(),
+                'inferred_end_loss': run.pi_norm.mean(),
+                'valid': False
+            }
             if len(run) > 2 and run.pi_norm.sum() > 0:
                 fit = theilslopes(run.pi_norm, run.day)
                 fit_poly = np.poly1d(fit[0:2])
-                result_list.append({
-                    'start': run.index[0],
-                    'end': run.index[-1],
-                    'length': length,
-                    'run': r,
-                    'run_slope': fit[0],
-                    'run_slope_low': fit[2],
-                    'run_slope_high': min([0.0, fit[3]]),
-                    'max_neg_step': min(run.delta),
-                    'start_loss': 1,
-                    'clean_wo_precip': run.clean_wo_precip[0],
-                    'inferred_start_loss': fit_poly(start_day),
-                    'inferred_end_loss': fit_poly(end_day),
-                    'valid': True
-                })
-            else:
-                result_list.append({
-                    'start': run.index[0],
-                    'end': run.index[-1],
-                    'length': length,
-                    'run': r,
-                    'run_slope': 0,
-                    'run_slope_low': 0,
-                    'run_slope_high': 0,
-                    'max_neg_step': min(run.delta),
-                    'start_loss': 1,
-                    'clean_wo_precip': run.clean_wo_precip[0],
-                    'inferred_start_loss': run.pi_norm.mean(),
-                    'inferred_end_loss': run.pi_norm.mean(),
-                    'valid': False
-                })
+                result_dict['run_slope'] = fit[0]
+                result_dict['run_slope_low'] = fit[2]
+                result_dict['run_slope_high'] = min([0.0, fit[3]])
+                result_dict['inferred_start_loss'] = fit_poly(start_day)
+                result_dict['inferred_end_loss'] = fit_poly(end_day)
+                result_dict['valid'] = True
+            result_list.append(result_dict)
+
         results = pd.DataFrame(result_list)
 
         if results.empty:
