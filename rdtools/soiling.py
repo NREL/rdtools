@@ -222,8 +222,6 @@ class result_frame(pd.DataFrame):
                 groups = set(invalid_intervals.group)
                 replace_levels = []
 
-                results_rand.to_csv('temp.csv')
-
                 if len(groups) > 0:
                     for g in groups:
                         rows = invalid_intervals[invalid_intervals.group == g]
