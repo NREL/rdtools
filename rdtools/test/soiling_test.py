@@ -76,6 +76,9 @@ def test_soiling_srr(normalized_daily, insolation, times):
                                 'inferred_end_loss': 0.9572880,
                                 'length': 24.0,
                                 'valid': 1.0})
+    expected_means = expected_means[['slope', 'slope_low', 'slope_high',
+                                  'inferred_start_loss', 'inferred_end_loss',
+                                  'length', 'valid']]
     pd.testing.assert_series_equal(expected_means, soiling_info['soiling_interval_summary'].mean(),
                                    check_exact=False, check_less_precise=6)
 
