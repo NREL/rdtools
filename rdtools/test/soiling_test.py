@@ -38,7 +38,7 @@ def insolation(times):
     return insolation
 
 
-def test_soiling_srr(normalized_daily, insolation):
+def test_soiling_srr(normalized_daily, insolation, times):
 
     reps = 10
     sr, sr_ci, soiling_info = soiling_srr(normalized_daily, insolation, reps=reps,
@@ -55,14 +55,34 @@ def test_soiling_srr(normalized_daily, insolation):
         'Length of soiling_info["stochastic_soiling_profiles"] different than expected'
     assert isinstance(soiling_info['stochastic_soiling_profiles'], list),\
         'soiling_info["stochastic_soiling_profiles"] is not a list'
-    assert pd.util.hash_pandas_object(soiling_info['soiling_interval_summary']).sum() == 1745346452421226150,\
-        'soiling_info["soiling_interval_summary"] hash different than expected'
+
+    # Check soiling_info['soiling_interval_summary']
+    expected_summary_columns = ['start', 'end', 'slope', 'slope_low', 'slope_high',
+                                'inferred_start_loss', 'inferred_end_loss', 'length', 'valid']
+    actual_summary_columns = soiling_info['soiling_interval_summary'].columns.values
+
+    for x in actual_summary_columns:
+        assert x in expected_summary_columns,\
+            "'{}' not an expected column in soiling_info['soiling_interval_summary']".format(x)
+    for x in expected_summary_columns:
+        assert x in actual_summary_columns,\
+            "'{}' was expected as a column, but not in soiling_info['soiling_interval_summary']".format(x)
     assert isinstance(soiling_info['soiling_interval_summary'], pd.DataFrame),\
         'soiling_info["soiling_interval_summary"] not a dataframe'
-    assert pd.util.hash_pandas_object(soiling_info['soiling_ratio_perfect_clean']).sum() == 1117927115348738879,\
-        'soiling_info["soiling_ratio_perfect_clean"] hash different than expected'
-    assert pd.util.hash_pandas_object(soiling_info['soiling_ratio_perfect_clean'].index).sum() == -3505232987748180461,\
-        'soiling_info["soiling_ratio_perfect_clean"].index hash different than expected'
+    expected_means = pd.Series({'slope': -0.002617290,
+                                'slope_low': -0.002828525,
+                                'slope_high': -0.002396639,
+                                'inferred_start_loss': 1.021514,
+                                'inferred_end_loss': 0.9572880,
+                                'length': 24.0,
+                                'valid': 1.0})
+    pd.testing.assert_series_equal(expected_means, soiling_info['soiling_interval_summary'].mean(),
+                                   check_exact=False, check_less_precise=6)
+
+    # Check soiling_info['soiling_ratio_perfect_clean']
+    pd.testing.assert_index_equal(soiling_info['soiling_ratio_perfect_clean'].index, times, check_names=False)
+    assert 0.967170 == pytest.approx(soiling_info['soiling_ratio_perfect_clean'].mean(), abs=1e-6),\
+        "The mean of soiling_info['soiling_ratio_perfect_clean'] differs from expected"
     assert isinstance(soiling_info['soiling_ratio_perfect_clean'], pd.Series),\
         'soiling_info["soiling_ratio_perfect_clean"] not a pandas series'
 
