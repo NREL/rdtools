@@ -182,12 +182,13 @@ class result_frame(pd.DataFrame):
             results_rand['group'] = group_list
 
             # randomize the extent of the cleaning
+            inter_start = 1.0
+            start_list = []
             if method == 'half_norm_clean':
                 # Randomize recovery of valid intervals only
                 valid_intervals = results_rand[results_rand.valid].copy()
                 valid_intervals['inferred_recovery'] = valid_intervals.inferred_recovery.fillna(1.0)
-                inter_start = 1.0
-                start_list = []
+
                 end_list = []
                 for i, row in valid_intervals.iterrows():
                     start_list.append(inter_start)
@@ -238,25 +239,28 @@ class result_frame(pd.DataFrame):
                     invalid_update.index = invalid_intervals.index
                     results_rand.update(invalid_update)
 
-            else:
-                inter_start = 1
-                start_list = []
+            elif method == 'random_clean':
                 for i, row in results_rand.iterrows():
                     start_list.append(inter_start)
                     end = inter_start + row.run_loss
-                    if method == 'random_clean':
-                        if row.clean_wo_precip and precip_clean_only:
-                            inter_start = end  # don't allow recovery if there was no precipitation
-                        else:
-                            inter_start = np.random.uniform(end, 1)
-                    elif method == 'perfect_clean':
-                        if row.clean_wo_precip and precip_clean_only:
-                            inter_start = end  # don't allow recovery if there was no precipitation
-                        else:
-                            inter_start = 1
+                    if row.clean_wo_precip and precip_clean_only:
+                        inter_start = end  # don't allow recovery if there was no precipitation
                     else:
-                        raise(ValueError("Invalid method specification"))
+                        inter_start = np.random.uniform(end, 1)
                 results_rand['start_loss'] = start_list
+
+            elif method == 'perfect_clean':
+                for i, row in results_rand.iterrows():
+                    start_list.append(inter_start)
+                    end = inter_start + row.run_loss
+                    if row.clean_wo_precip and precip_clean_only:
+                        inter_start = end  # don't allow recovery if there was no precipitation
+                    else:
+                        inter_start = 1
+                results_rand['start_loss'] = start_list
+
+            else:
+                raise(ValueError("Invalid method specification"))
 
             df_rand = df_rand.reset_index().merge(results_rand, how='left', on='run').set_index('date')
             df_rand['loss'] = np.nan
