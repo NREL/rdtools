@@ -5,22 +5,25 @@ Development branch: [![Build Status](https://travis-ci.org/NREL/rdtools.svg?bran
 
 RdTools is a set of Python tools for analysis of photovoltaic data.
 In particular, PV production data is evaluated over several years
-to obtain rates of performance degradation over time. RdTools can
+to obtain rates of performance degradation and soiling loss. RdTools can
 handle both high frequency (hourly or better) or low frequency (daily, weekly, etc.)
 datasets. Best results are obtained with higher frequency data.
 
 Full examples are worked out in the example notebooks in [rdtools/docs](./docs/degradation_example.ipynb).
 
 ## Workflow
+RdTools supports a number of workflows, but a typical analysis follows the following: 
 
 0. Import and preliminary calculations
 1. Normalize data using a performance metric
 2. Filter data that creates bias
 3. Aggregate data
-4. Analyze aggregated data to estimate the degradation rate
+4. Analyze aggregated data to estimate the degradation rate and/or soiling loss  
 
+Steps 1 and 2 may be accomplished with the clearsky workflow ([see example](./docs/degradation_example.ipynb))
+which can help elliminate problems from irradiance sensor drift.  
 
-<img src="./screenshots/Workflow1.png" width="600" height="331" alt="RdTools Workflow"/>
+<img src="./screenshots/RdTools_workflows.png" width="400" height="247" alt="RdTools Workflow"/>
 
 ## Degradation Results
 
@@ -41,6 +44,11 @@ modeled temperature and irradiance.  Note that site irradiance data is still req
 clear-sky conditions to be analyzed.  In many cases, the 'clear-sky' analysis can identify conditions
 of instrument errors or irradiance sensor drift, such as in the above analysis.
 
+
+## Soiling Results
+Soiling can be estimated with the stochastic rate and recovery (SRR) method (Deceglie 2018). This method works well when soiling patterns follow a "sawtooth" pattern, a linear decline followed by a sharp recovery associated with natural or mannual cleaning. `rdtools.soiling_srr()` performs the calculation and returns the P50 insolation-weighted soiling ratio, confidence interval, and additional information (`soiling_info`) which includes a summary of the soiling intervals identified, `soiling_info['soiling_interval_summary']`. This summary table can, for example, be used to plot a histogram of the identified soiling rates for the dataset.  
+
+<img src="./screenshots/soiling_histogram.png" width="320" height="216" alt="RdTools Result"/>
 
 ## Install RdTools using pip
 
@@ -105,12 +113,22 @@ degradation.degradataion_year_on_year(aggregated)
   '''
 ```
 
+```Python
+soiling.soiling_srr(aggregated, aggregated_insolation)
+  '''
+  Inputs: Daily aggregated, normalized, filtered time series data for normalized performance and insolation
+  Outputs: Tuple: `sr`: Insolation-weighted soiling ratio 
+    `sr_ci`: Confidence interval `soiling_info`: associated analysis data
+  '''
+```
+
 ## Citing RdTools
 
-The underlying workflow of RdTools has been published in several places.  If you use RdTools in a published work, please cite the following:
+The underlying workflow of RdTools has been published in several places.  If you use RdTools in a published work, please cite the following as appropriate:
 
   - D. Jordan, C. Deline, S. Kurtz, G. Kimball, M. Anderson, "Robust PV Degradation Methodology and Application",
-  IEEE Journal of Photovoltaics, 2017
+  IEEE Journal of Photovoltaics, 8(2) pp. 525-531, 2018  
+  - M. G. Deceglie, L. Micheli and M. Muller, "Quantifying Soiling Loss Directly From PV Yield," in IEEE Journal of Photovoltaics, 8(2), pp. 547-551, 2018  
   - RdTools, version x.x.x, https://github.com/NREL/rdtools, [DOI:10.5281/zenodo.1210316](https://doi.org/10.5281/zenodo.1210316)  
   *(be sure to include the version number used in your analysis)*
 
