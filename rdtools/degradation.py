@@ -180,10 +180,10 @@ def degradation_year_on_year(normalized_energy, recenter=True, exceedance_prob=9
     ----------
     normalized_energy: Pandas Time Series (numeric)
         Daily or lower frequency time series of normalized system ouput.
-    recenter:  bool, default value True
+    recenter (bool): default value True
         specify whether data is centered to normalized yield of 1 based on first year
-    exceedance_prob (float): the probability level to use for exceedance value calculation
-    confidence_level: the size of the confidence interval to return, in percent
+    exceedance_prob (float): the probability level to use for exceedance value calculation in percent
+    confidence_level (float): the size of the confidence interval to return, in percent
 
     Returns
     -------
