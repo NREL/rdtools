@@ -31,6 +31,8 @@ class srr_analysis():
         self.pm = daily_normalized_energy  # daily performance metric
         self.insol = daily_insolation
         self.precip = precip  # daily precipitation
+        self.random_profiles = [] #random soiling profiles in _calc_monte
+        self.monte_losses = [] #insolation-weighted soiling ratios in _calc_monte
 
         if self.pm.index.freq != 'D':
             raise ValueError('Daily performance metric series must have daily frequency')
@@ -357,7 +359,7 @@ class srr_analysis():
                 results_rand['start_loss'] = start_list
 
             else:
-                raise(ValueError("Invalid method specification"))
+                raise ValueError("Invalid method specification")
 
             df_rand = df_rand.reset_index().merge(results_rand, how='left', on='run').set_index('date')
             df_rand['loss'] = np.nan
