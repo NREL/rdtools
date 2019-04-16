@@ -22,6 +22,12 @@ class srr_analysis():
     analysis presented in Deceglie et al. JPV 8(2) p547 2018
     '''
     def __init__(self, daily_normalized_energy, daily_insolation, precip=None):
+        '''
+        daily_normalized_energy (pandas timeseries): Daily performance metric (i.e. performance index, yield, etc.)
+        daily_insolation (pandas timeseries): Daily plane-of-array insolation corresponding to daily_normalized_energy
+        precip (pandas timeseries): Daily total precipitation. (Only used if precip_clean_only=True in subsequent calculations)
+        '''
+
         self.pm = daily_normalized_energy  # daily performance metric
         self.insol = daily_insolation
         self.precip = precip  # daily precipitation
