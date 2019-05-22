@@ -5,7 +5,7 @@ import unittest
 import pandas as pd
 import numpy as np
 
-from rdtools import csi_filter, poa_filter, tcell_filter, clip_filter
+from rdtools import csi_filter, poa_filter, tcell_filter, clip_filter, normalized_filter
 
 
 class CSIFilterTestCase(unittest.TestCase):
@@ -80,6 +80,12 @@ class ClipFilterTestCase(unittest.TestCase):
         # Expect power <=2 to be filtered
         expected_result = (self.power > 2)
         self.assertTrue((expected_result.iloc[0:5] == filtered.iloc[0:5]).all())
+
+
+def test_normalized_filter_default():
+    pd.testing.assert_series_equal(normalized_filter(pd.Series([-5, 5])), pd.Series([False, True]))
+    pd.testing.assert_series_equal(normalized_filter(pd.Series([-1e6, 1e6]), low_cutoff=None, high_cutoff=None), pd.Series([True, True]))
+    pd.testing.assert_series_equal(normalized_filter(pd.Series([-2, 2]), low_cutoff=-1, high_cutoff=1), pd.Series([False, False]))
 
 
 if __name__ == '__main__':
