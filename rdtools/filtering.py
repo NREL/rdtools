@@ -1,4 +1,16 @@
 import pandas as pd
+import numpy as np
+
+
+def normalized_filter(normalized, low_cutoff=0, high_cutoff=None):
+    '''Return a boolean pandas filter that selects normalized yield between low_cutoff and high_cutoff'''
+
+    if low_cutoff is None:
+        low_cutoff = -np.inf
+    if high_cutoff is None:
+        high_cutoff = np.inf
+
+    return (normalized > low_cutoff) & (normalized < high_cutoff)
 
 
 def poa_filter(poa, low_irradiance_cutoff=200, high_irradiance_cutoff=1200):
