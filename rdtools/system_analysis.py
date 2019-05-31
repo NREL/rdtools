@@ -35,7 +35,7 @@ class system_analysis():
 
         if pv_input == 'power':
             self.pv_power = pv
-            self.pv_energy = normalization.energy_from_power(pv, max_timedelta=max_timedelta)  # consider change this to a separate argument
+            self.pv_energy = normalization.energy_from_power(pv, max_timedelta=max_timedelta)
         elif pv_input == 'energy':
             self.pv_power = None
             self.pv_energy = pv
@@ -87,7 +87,7 @@ class system_analysis():
         sun = loc.get_solarposition(times)
         clearsky = loc.get_clearsky(times, solar_position=sun)
 
-        clearsky_poa = pvlib.irradiance.get_total_irradiance(self.pv_tilt, self.pv_azimuth, sun['zenith'],
+        clearsky_poa = pvlib.irradiance.get_total_irradiance(self.pv_tilt, self.pv_azimuth, sun['apparent_zenith'],
                                                              sun['azimuth'], clearsky['dni'], clearsky['ghi'],
                                                              clearsky['dhi'], albedo=self.albedo, model=model, **kwargs)
         clearsky_poa = clearsky_poa['poa_global']
@@ -139,7 +139,7 @@ class system_analysis():
 
         return normalized, insolation
 
-    def filter(self, normalized, case):  # Consider making self.sensor_normalized and self.clearsky_normalized
+    def filter(self, normalized, case):
         bool_filter = True
 
         if case == 'sensor':
@@ -168,7 +168,7 @@ class system_analysis():
             if self.filter_params['ad_hoc_filter'] is not None:
                 bool_filter = bool_filter & self.filter_params['ad_hoc_filter']
         if case == 'clearsky':
-            f = filtering.csi_filter(self.insolation, self.cs_insolation, **self.filter_params['csi_filter'])
+            f = filtering.csi_filter(self.poa, self.clearsky_poa, **self.filter_params['csi_filter'])
             bool_filter = bool_filter & f
 
         if case == 'sensor':
@@ -212,7 +212,6 @@ class system_analysis():
         if self.cell_temperature is None:
             self.cell_temperature = self.calc_cell_temperature(self.poa, self.windspeed, self.ambient_temperature)
         normalized, insolation = self.pvwatts_norm(self.poa, self.cell_temperature)
-        self.insolation = insolation
         self.filter(normalized, 'sensor')
         aggregated, aggregated_insolation = self.aggregate(normalized[self.sensor_filter], insolation[self.sensor_filter])
         self.sensor_aggregated_performance = aggregated
@@ -227,7 +226,6 @@ class system_analysis():
             self.clearsky_cell_temperature = self.calc_cell_temperature(self.clearsky_poa, 0, self.clearsky_ambient_temperature)
             # Note example notebook uses windspeed=0 in the clearskybranch
         cs_normalized, cs_insolation = self.pvwatts_norm(self.clearsky_poa, self.clearsky_cell_temperature)
-        self.cs_insolation = cs_insolation
         self.filter(cs_normalized, 'clearsky')
         cs_aggregated, cs_aggregated_insolation = self.aggregate(cs_normalized[self.clearsky_filter], cs_insolation[self.clearsky_filter])
         self.clearsky_aggregated_performance = cs_aggregated
