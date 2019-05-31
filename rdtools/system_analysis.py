@@ -15,38 +15,52 @@ class system_analysis():
     '''
     Class for end-to-end analysis
     '''
-    def __init__(self, pv, poa, cell_temperature, temperature_coefficient,
-                 aggregation_freq='D', pv_input='power', pvlib_location=None, clearsky_poa=None,
-                 clearsky_cell_temperature=None, temperature_model=None, pv_azimuth=None,
-                 pv_tilt=None, pv_nameplate=None, interp_freq=None, max_interp_timedelta=None):
+    def __init__(self, pv, poa, temperature, temperature_coefficient,
+                 aggregation_freq='D', pv_input='power', temperature_input='cell', pvlib_location=None,
+                 clearsky_poa=None, clearsky_temperature=None, clearsky_temperature_input='cell', windspeed=0, albedo=0.25,
+                 temperature_model=None, pv_azimuth=None, pv_tilt=None, pv_nameplate=None, interp_freq=None, max_timedelta=None):
 
         if interp_freq is not None:
-            pv = normalization.interpolate(pv, interp_freq, max_interp_timedelta)
-            poa = normalization.interpolate(poa, interp_freq, max_interp_timedelta)
-            cell_temperature = normalization.interpolate(cell_temperature, interp_freq, max_interp_timedelta)
+            pv = normalization.interpolate(pv, interp_freq, max_timedelta)
+            poa = normalization.interpolate(poa, interp_freq, max_timedelta)
+            temperature = normalization.interpolate(temperature, interp_freq, max_timedelta)
             if clearsky_poa is not None:
-                clearsky_poa = normalization.interpolate(clearsky_poa, interp_freq, max_interp_timedelta)
-            if clearsky_cell_temperature is not None:
-                clearsky_cell_temperature = normalization.interpolate(clearsky_cell_temperature, interp_freq, max_interp_timedelta)
+                clearsky_poa = normalization.interpolate(clearsky_poa, interp_freq, max_timedelta)
+            if clearsky_temperature is not None:
+                clearsky_temperature = normalization.interpolate(clearsky_temperature, interp_freq, max_timedelta)
             if isinstance(pv_azimuth, (pd.Series, pd.DataFrame)):
-                pv_azimuth = normalization.interpolate(pv_azimuth, interp_freq, max_interp_timedelta)
+                pv_azimuth = normalization.interpolate(pv_azimuth, interp_freq, max_timedelta)
             if isinstance(pv_tilt, (pd.Series, pd.DataFrame)):
-                pv_tilt = normalization.interpolate(pv_tilt, interp_freq, max_interp_timedelta)
+                pv_tilt = normalization.interpolate(pv_tilt, interp_freq, max_timedelta)
 
         if pv_input == 'power':
             self.pv_power = pv
-            self.pv_energy = normalization.energy_from_power(pv)
+            self.pv_energy = normalization.energy_from_power(pv, max_timedelta=max_timedelta)  # consider change this to a separate argument
         elif pv_input == 'energy':
             self.pv_power = None
             self.pv_energy = pv
 
+        if temperature_input == 'cell':
+            self.cell_temperature = temperature
+            self.ambient_temperature = None
+        elif temperature_input == 'ambient':
+            self.cell_temperature = None
+            self.ambient_temperature = temperature
+
+        if clearsky_temperature_input == 'cell':
+            self.clearsky_cell_temperature = clearsky_temperature
+            self.clearsky_ambient_temperature = None
+        elif clearsky_temperature_input == 'ambient':
+            self.clearsky_cell_temperature = None
+            self.clearsky_ambient_temperature = clearsky_temperature
+
         self.poa = poa
-        self.cell_temperature = cell_temperature
         self.temperature_coefficient = temperature_coefficient
         self.aggregation_freq = aggregation_freq
         self.pvlib_location = pvlib_location
-        self.clearsky_cell_temepratur = clearsky_cell_temperature
         self.clearsky_poa = clearsky_poa
+        self.windspeed = windspeed
+        self.albedo = albedo
         self.temperature_model = temperature_model
         self.pv_azimuth = pv_azimuth
         self.pv_tilt = pv_tilt
@@ -59,8 +73,48 @@ class system_analysis():
             'poa_filter': {},
             'tcell_filter': {},
             'clip_filter': {},
+            'csi_filter': {},
             'ad_hoc_filter': None  # use this to include an explict filter
         }
+
+    def calc_clearsky_poa(self, rescale=True, model='isotropic', **kwargs):
+        if self.pvlib_location is None:
+            raise ValueError('pvlib location must be provided')
+        if self.pv_tilt is None or self.pv_azimuth is None:
+            raise ValueError('pv_tilt and pv_azimuth must be provded')
+        times = self.poa.index
+        loc = self.pvlib_location
+        sun = loc.get_solarposition(times)
+        clearsky = loc.get_clearsky(times, solar_position=sun)
+
+        clearsky_poa = pvlib.irradiance.get_total_irradiance(self.pv_tilt, self.pv_azimuth, sun['zenith'],
+                                                             sun['azimuth'], clearsky['dni'], clearsky['ghi'],
+                                                             clearsky['dhi'], albedo=self.albedo, model=model, **kwargs)
+        clearsky_poa = clearsky_poa['poa_global']
+
+        if rescale is True:
+            clearsky_poa = normalization.irradiance_rescale(self.poa, clearsky_poa, method='iterative')
+
+        self.clearsky_poa = clearsky_poa
+
+    def calc_cell_temperature(self, poa, windspeed, ambient_temperature):
+        if self.temperature_model is None:
+            cell_temp = pvlib.pvsystem.sapm_celltemp(poa, windspeed, ambient_temperature)
+        else:
+            cell_temp = pvlib.pvsystem.sapm_celltemp(poa, windspeed, ambient_temperature, model=self.temperature_model)
+        cell_temp = cell_temp['temp_cell']
+
+        return cell_temp
+
+    def calc_clearsky_tamb(self):
+        times = self.clearsky_poa.index
+        if self.pvlib_location is None:
+            raise ValueError('pvlib location must be provided')
+        loc = self.pvlib_location
+
+        cs_amb_temp = clearsky_temperature.get_clearsky_tamb(times, loc.latitude, loc.longitude)
+
+        self.clearsky_ambient_temperature = cs_amb_temp
 
     def pvwatts_norm(self, poa, cell_temperature):
         if self.pv_nameplate is None:
@@ -113,6 +167,9 @@ class system_analysis():
         if 'ad_hoc_filter' in self.filter_params.keys():
             if self.filter_params['ad_hoc_filter'] is not None:
                 bool_filter = bool_filter & self.filter_params['ad_hoc_filter']
+        if case == 'clearsky':
+            f = filtering.csi_filter(self.insolation, self.cs_insolation, **self.filter_params['csi_filter'])
+            bool_filter = bool_filter & f
 
         if case == 'sensor':
             self.sensor_filter = bool_filter
@@ -152,11 +209,29 @@ class system_analysis():
         return srr_results
 
     def sensor_preprocess(self):
+        if self.cell_temperature is None:
+            self.cell_temperature = self.calc_cell_temperature(self.poa, self.windspeed, self.ambient_temperature)
         normalized, insolation = self.pvwatts_norm(self.poa, self.cell_temperature)
+        self.insolation = insolation
         self.filter(normalized, 'sensor')
         aggregated, aggregated_insolation = self.aggregate(normalized[self.sensor_filter], insolation[self.sensor_filter])
         self.sensor_aggregated_performance = aggregated
         self.sensor_aggregated_insolation = aggregated_insolation
+
+    def clearsky_preprocess(self):
+        if self.clearsky_poa is None:
+            self.calc_clearsky_poa()  # kwargs?
+        if self.clearsky_cell_temperature is None:
+            if self.clearsky_ambient_temperature is None:
+                self.calc_clearsky_tamb()
+            self.clearsky_cell_temperature = self.calc_cell_temperature(self.clearsky_poa, 0, self.clearsky_ambient_temperature)
+            # Note example notebook uses windspeed=0 in the clearskybranch
+        cs_normalized, cs_insolation = self.pvwatts_norm(self.clearsky_poa, self.clearsky_cell_temperature)
+        self.cs_insolation = cs_insolation
+        self.filter(cs_normalized, 'clearsky')
+        cs_aggregated, cs_aggregated_insolation = self.aggregate(cs_normalized[self.clearsky_filter], cs_insolation[self.clearsky_filter])
+        self.clearsky_aggregated_performance = cs_aggregated
+        self.clearsky_aggregated_insolation = cs_aggregated_insolation
 
     def sensor_analysis(self, analyses=['yoy_degradation'], yoy_kwargs={}, srr_kwargs={}):
         self.sensor_preprocess()
@@ -173,6 +248,45 @@ class system_analysis():
             sensor_results['srr_soiling'] = srr_results
 
         self.results['sensor'] = sensor_results
+
+    def clearsky_analysis(self, analyses=['yoy_degradation'], yoy_kwargs={}, srr_kwargs={}):
+        self.clearsky_preprocess()
+        clearsky_results = {}
+
+        if 'yoy_degradation' in analyses:
+            yoy_results = self.yoy_degradation(self.clearsky_aggregated_performance, **yoy_kwargs)
+            clearsky_results['yoy_degradation'] = yoy_results
+
+        if 'srr_soiling' in analyses:
+            srr_results = self.srr_soiling(self.clearsky_aggregated_performance,
+                                           self.clearsky_aggregated_insolation,
+                                           **srr_kwargs)
+            clearsky_results['srr_soiling'] = srr_results
+
+        self.results['clearsky'] = clearsky_results
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
