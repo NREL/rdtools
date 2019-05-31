@@ -15,15 +15,17 @@ class system_analysis():
     '''
     Class for end-to-end analysis
     '''
-    def __init__(self, pv, poa, temperature, temperature_coefficient,
+    def __init__(self, pv, poa=None, temperature=None, temperature_coefficient=None,
                  aggregation_freq='D', pv_input='power', temperature_input='cell', pvlib_location=None,
                  clearsky_poa=None, clearsky_temperature=None, clearsky_temperature_input='cell', windspeed=0, albedo=0.25,
                  temperature_model=None, pv_azimuth=None, pv_tilt=None, pv_nameplate=None, interp_freq=None, max_timedelta=None):
 
         if interp_freq is not None:
             pv = normalization.interpolate(pv, interp_freq, max_timedelta)
-            poa = normalization.interpolate(poa, interp_freq, max_timedelta)
-            temperature = normalization.interpolate(temperature, interp_freq, max_timedelta)
+            if poa is not None:
+                poa = normalization.interpolate(poa, interp_freq, max_timedelta)
+            if temperature is not None:
+                temperature = normalization.interpolate(temperature, interp_freq, max_timedelta)
             if clearsky_poa is not None:
                 clearsky_poa = normalization.interpolate(clearsky_poa, interp_freq, max_timedelta)
             if clearsky_temperature is not None:
@@ -77,12 +79,16 @@ class system_analysis():
             'ad_hoc_filter': None  # use this to include an explict filter
         }
 
-    def calc_clearsky_poa(self, rescale=True, model='isotropic', **kwargs):
+    def calc_clearsky_poa(self, times=None, rescale=True, model='isotropic', **kwargs):
+        if times is None:
+            times = self.poa.index
         if self.pvlib_location is None:
             raise ValueError('pvlib location must be provided')
         if self.pv_tilt is None or self.pv_azimuth is None:
             raise ValueError('pv_tilt and pv_azimuth must be provded')
-        times = self.poa.index
+        if times is not self.poa.index and rescale is True:
+            raise ValueError('rescale=True can only be used when clearsky poa is on same index as poa')
+
         loc = self.pvlib_location
         sun = loc.get_solarposition(times)
         clearsky = loc.get_clearsky(times, solar_position=sun)
@@ -123,6 +129,9 @@ class system_analysis():
         else:
             renorm = False
 
+        if self.temperature_coefficient is None:
+            raise ValueError('Temperature coeffcient must be available to perform pvwatts_norm')
+
         pvwatts_kws = {"poa_global": poa,
                        "P_ref": pv_nameplate,
                        "T_cell": cell_temperature,
@@ -153,9 +162,13 @@ class system_analysis():
             f = filtering.normalized_filter(normalized, **self.filter_params['normalized_filter'])
             bool_filter = bool_filter & f
         if 'poa_filter' in self.filter_params.keys():
+            if poa is None:
+                raise ValueError('poa must be available to use poa_filter')
             f = filtering.poa_filter(poa, **self.filter_params['poa_filter'])
             bool_filter = bool_filter & f
         if 'tcell_filter' in self.filter_params.keys():
+            if cell_temp is None:
+                raise ValueError('Cell temperature must be available to use tcell_filter')
             f = filtering.tcell_filter(cell_temp, **self.filter_params['tcell_filter'])
             bool_filter = bool_filter & f
         if 'clip_filter' in self.filter_params.keys():
@@ -168,6 +181,8 @@ class system_analysis():
             if self.filter_params['ad_hoc_filter'] is not None:
                 bool_filter = bool_filter & self.filter_params['ad_hoc_filter']
         if case == 'clearsky':
+            if self.poa is None or self.clearsky_poa is None:
+                raise ValueError('Both poa and clearsky_poa must be available to do clearsky filtering with csi_filter')
             f = filtering.csi_filter(self.poa, self.clearsky_poa, **self.filter_params['csi_filter'])
             bool_filter = bool_filter & f
 
@@ -209,6 +224,10 @@ class system_analysis():
         return srr_results
 
     def sensor_preprocess(self):
+        if self.poa is None:
+            raise ValueError('poa must be available to perform sensor_preprocess')
+        if self.cell_temperature is None and self.ambient_temperature is None:
+            raise ValueError('either cell or ambient temperature must be available to perform sensor_preprocess')
         if self.cell_temperature is None:
             self.cell_temperature = self.calc_cell_temperature(self.poa, self.windspeed, self.ambient_temperature)
         normalized, insolation = self.pvwatts_norm(self.poa, self.cell_temperature)
