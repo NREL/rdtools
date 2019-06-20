@@ -16,10 +16,6 @@ def get_timezone(latitude, longitude):
     """
     returns (str) timezone
     """
-    if not TimezoneFinder:
-        logging.info("Could not lookup timezone for location {}, {}".format(latitude, longitude))
-        return None
-
     tf = TimezoneFinder()
     tz = tf.timezone_at(lat=latitude, lng=longitude)
     logging.info("timezone for location {}, {} is {}".format(latitude, longitude, tz))
