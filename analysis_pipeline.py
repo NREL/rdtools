@@ -14,7 +14,7 @@ logging.basicConfig(format='%(asctime)s|%(name)s|%(levelname)s| %(message)s',
     
 def get_timezone(latitude, longitude):
     """
-    returns (str) timezone
+    returns: timezone (str)
     """
     tf = TimezoneFinder()
     tz = tf.timezone_at(lat=latitude, lng=longitude)
@@ -24,7 +24,7 @@ def get_timezone(latitude, longitude):
 
 def rename_columns(df):
     """
-    Best guess at renaming columns
+    Best guess at renaming columns. Ignores units.
     """
     try:
         df.columns = [col.decode('utf-8') for col in df.columns]
@@ -55,6 +55,7 @@ def rename_columns(df):
     return df
 
 class AnalysisPipeline(object):
+
     def __init__(self, input_filename, system_metadata, clearsky = True):
         '''
         input_filename: csv with power time-series
@@ -65,6 +66,11 @@ class AnalysisPipeline(object):
                         - tilt       (degrees)
                         - azimuth    (degrees)
                         - pdc        (DC capacity in Watts)
+                        - tempco     (temperature coefficient)
+                        - temp_model (temperature model to calculate cell temperature)
+
+        clearsky (bool): if True, use clearsky methodology to calculate degradation rate 
+                         in addition to using weather data.
         '''
 
         self.system_metadata = system_metadata
@@ -73,16 +79,18 @@ class AnalysisPipeline(object):
 
     def _process_data(self):
 
-        self.timezone = get_timezone( self.system_metadata['latitude'], 
-                                      self.system_metadata['longitude'] )
+        self.timezone = self.system_metadata.get('timezone')
+        if not self.timezone:
+            self.timezone = get_timezone( self.system_metadata['latitude'], 
+                                          self.system_metadata['longitude'] )
 
         self.df.index = pd.to_datetime(self.df.timestamp)
         self.df.index = self.df.index.tz_localize(self.timezone, ambiguous='infer')
 
         # There is some missing data, but we can infer the frequency from the first several data points
-        # And then set the frequency of the dataframe
         freq = pd.infer_freq(self.df.index[:10])
         logging.info('Inferred frequency = {}'.format(freq))
+        # Set the frequency of the dataframe
         self.df = self.df.resample(freq).median()
 
         # Convert power from kilowatts to watts
@@ -92,7 +100,7 @@ class AnalysisPipeline(object):
         self.df['energy'] = self.df.power * pd.to_timedelta(self.df.power.index.freq).total_seconds()/(3600.0)
 
         logging.info("setting poa and cell temperature from pvlib")
-        poa, cell_temperature = self._get_variables_from_pvlib(self.df, clearsky_variables = False)
+        poa, cell_temperature = self._get_variables_from_pvlib(clearsky_variables = False)
 
         self.df['poa'] = poa.values
 
@@ -106,9 +114,10 @@ class AnalysisPipeline(object):
 
         clearsky_df = None
         if self.clearsky:
-            logging.info("setting clearsky poa and cell temperature from pvlib")
-            clearsky_poa, clearsky_cell_temperature = self._get_variables_from_pvlib(self.df, clearsky_variables = True)
-            clearsky_normalized_energy, clearsky_insolation = self._normalize(self.df.energy, clearsky_poa, clearsky_cell_temperature)
+            logging.info("Calculating clearsky poa and cell temperature from pvlib")
+            clearsky_poa, clearsky_cell_temperature = self._get_variables_from_pvlib(clearsky_variables = True)
+            self.df['clearsky_poa'] = clearsky_poa.values
+            clearsky_normalized_energy, clearsky_insolation = self._normalize(self.df.energy, self.df.clearsky_poa, clearsky_cell_temperature)
 
             self.df['clearsky_normalized_energy'] = clearsky_normalized_energy
             self.df['clearsky_insolation'] = clearsky_insolation
@@ -127,7 +136,7 @@ class AnalysisPipeline(object):
         
         poa = beam + sky
         if 'poa' in self.df.columns:
-            poa = rdtools.irradiance_rescale(poa, self.df.poa, method='iterative')
+            poa = rdtools.irradiance_rescale(self.df.poa, poa, method='iterative')
 
         df_temp = pvlib.pvsystem.sapm_celltemp(poa, wind_speed, Tamb, 
                                                model = self.system_metadata['temp_model'])
@@ -135,13 +144,13 @@ class AnalysisPipeline(object):
 
         return poa, cell_temperature
 
-    def _get_variables_from_pvlib(self, df, clearsky_variables):
+    def _get_variables_from_pvlib(self, clearsky_variables):
 
         loc = pvlib.location.Location(self.system_metadata['latitude'], 
                                       self.system_metadata['longitude'], 
                                       tz = self.timezone)
 
-        solar_position = loc.get_solarposition(df.index)
+        solar_position = loc.get_solarposition(self.df.index)
         solar_zenith = solar_position.zenith
         solar_azimuth = solar_position.azimuth
 
@@ -149,14 +158,14 @@ class AnalysisPipeline(object):
             dhi = self.df.dhi
             ghi = self.df.ghi
             dni = (ghi - dhi)/np.cos(np.deg2rad(solar_zenith))
-            return self._get_poa_and_Tcell(dhi, dni, ghi, 
-                                           df.Tamb, df.wind_speed,
+            return self._get_poa_and_Tcell(self.df.dhi, dni, self.df.ghi, 
+                                           self.df.Tamb, self.df.wind_speed,
                                            solar_zenith, solar_azimuth)
 
         else: 
-            clearsky_irradiance = loc.get_clearsky(df.index, solar_position=solar_position)
+            clearsky_irradiance = loc.get_clearsky(self.df.index, solar_position=solar_position)
 
-            clearsky_Tamb = rdtools.get_clearsky_tamb(df.index, 
+            clearsky_Tamb = rdtools.get_clearsky_tamb(self.df.index, 
                                                       self.system_metadata['latitude'], 
                                                       self.system_metadata['longitude'])
 
@@ -189,15 +198,17 @@ class AnalysisPipeline(object):
         tcell_mask = rdtools.tcell_filter(cell_temperature)
         clip_mask = rdtools.clip_filter(power)
 
-        csi_mask = nz_mask.copy()
+        final_mask = nz_mask & poa_mask & tcell_mask & clip_mask
+
         if 'clearsky_insolation' in self.df.columns:
             csi_mask = rdtools.csi_filter(self.df.insolation, self.df.clearsky_insolation)
+            final_mask = final_mask & csi_mask
 
-        df = self.df[nz_mask & poa_mask & tcell_mask & clip_mask & csi_mask]
+        df = self.df[final_mask]
 
         return df
 
-    def yoy_degradation(self, normalized_energy, insolation, confidence_level):
+    def _yoy_degradation(self, normalized_energy, insolation, confidence_level):
 
         daily = rdtools.aggregation_insol(normalized_energy, 
                                           insolation, 
@@ -212,16 +223,16 @@ class AnalysisPipeline(object):
         df, clearsky_df = self._process_data() 
 
         logging.info('calculating year on year degradation from weather data')
-        yoy_rd, yoy_confidence_interval = self.yoy_degradation(df.normalized_energy, 
-                                                               df.insolation, 
-                                                               confidence_level)
+        yoy_rd, yoy_confidence_interval = self._yoy_degradation(df.normalized_energy, 
+                                                                df.insolation, 
+                                                                confidence_level)
 
         clearsky_yoy_rd = None
         clearsky_yoy_confidence_interval = None
         if self.clearsky:
             logging.info('calculating year on year degradation using clearsky variables')
-            clearsky_yoy_rd, clearsky_yoy_confidence_interval = self.yoy_degradation(clearsky_df.clearsky_normalized_energy, 
-                                                                                     clearsky_df.clearsky_insolation, 
-                                                                                     confidence_level)
+            clearsky_yoy_rd, clearsky_yoy_confidence_interval = self._yoy_degradation(clearsky_df.clearsky_normalized_energy,
+                                                                                      clearsky_df.clearsky_insolation,
+                                                                                      confidence_level)
 
         return {self.system_metadata['systemid']: (yoy_rd, yoy_confidence_interval, clearsky_yoy_rd, clearsky_yoy_confidence_interval)}
