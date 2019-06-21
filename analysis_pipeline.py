@@ -3,14 +3,11 @@ import pandas as pd
 import numpy as np
 import pvlib
 import rdtools
+import logging
 from timezonefinder import TimezoneFinder
 
-import logging
-import sys
-logging.root.handlers = []
-logging.basicConfig(format='%(asctime)s|%(name)s|%(levelname)s| %(message)s',
-                        level=logging.INFO,
-                        stream=sys.stdout)
+import logger
+logger.init()
     
 def get_timezone(latitude, longitude):
     """
