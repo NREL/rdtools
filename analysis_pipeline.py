@@ -74,10 +74,18 @@ class AnalysisPipeline(object):
         self.df = rename_columns(pd.read_csv(input_filename))
         self.clearsky = clearsky
 
-    def _process_data(self):
+    def process_data(self):
+        """
+        This function does the following: 
+            - if timezone not present in metadata, gets timezone
+            - calculates energy if power is provided instead of energy
+            - normalizes and filters data
+        Returns dataframes for weather/sensor based calculation as well as clearky calculation
+        """
 
         self.timezone = self.system_metadata.get('timezone')
         if not self.timezone:
+            logging.info("timezone not present in metadata. Estimating timezone from lat/lon")
             self.timezone = get_timezone( self.system_metadata['latitude'], 
                                           self.system_metadata['longitude'] )
 
@@ -101,6 +109,7 @@ class AnalysisPipeline(object):
 
         self.df['poa'] = poa.values
 
+        logging.info("Normalizing energy using PVWatts")
         normalized_energy, insolation = self._normalize(self.df.energy, self.df.poa, cell_temperature)
         self.df['normalized_energy'] = normalized_energy.values
         self.df['insolation'] = insolation.values
@@ -125,6 +134,9 @@ class AnalysisPipeline(object):
 
 
     def _get_poa_and_Tcell(self, dhi, dni, ghi, Tamb, wind_speed, solar_zenith, solar_azimuth):
+        """
+        Calculates plane-of-array irradiance and cell temperature
+        """
 
         sky = pvlib.irradiance.isotropic(self.system_metadata['tilt'], dhi)
         beam = pvlib.irradiance.beam_component(self.system_metadata['tilt'], 
@@ -143,6 +155,11 @@ class AnalysisPipeline(object):
 
     def _get_variables_from_pvlib(self, clearsky_variables):
 
+        """
+        Returns: poa, cell temperature using irradiance values and pvlib 
+        If clearsky_variables=True, then returns clearky poa and cell temperature using 
+        clearsky ambient temperature 
+        """
         loc = pvlib.location.Location(self.system_metadata['latitude'], 
                                       self.system_metadata['longitude'], 
                                       tz = self.timezone)
@@ -172,6 +189,9 @@ class AnalysisPipeline(object):
 
 
     def _normalize(self, energy, poa, cell_temperature):
+        """
+        Helper function to normalize energy using pvwatts estimated energy
+        """
         pvwatts_kws = {
                 "poa_global" : poa,
                 "P_ref" : self.system_metadata['pdc'],
@@ -181,14 +201,16 @@ class AnalysisPipeline(object):
                 "gamma_pdc" : self.system_metadata['tempco']
                 }
 
-        # Calculate the normaliztion, the function also returns the relevant insolation for
+        # the function also returns the relevant insolation for
         # each point in the normalized PV energy timeseries
         normalized_energy, insolation = rdtools.normalize_with_pvwatts(energy, pvwatts_kws)
 
         return normalized_energy, insolation
 
     def _remove_outliers(self, normalized_energy, power, poa, cell_temperature):
-        logging.info('removing outliers')
+        """
+        Removes outliers 
+        """
 
         nz_mask = (normalized_energy > 0)
         poa_mask = rdtools.poa_filter(poa)
@@ -206,7 +228,10 @@ class AnalysisPipeline(object):
         return df
 
     def _yoy_degradation(self, normalized_energy, insolation, confidence_level):
-
+        """
+        Helper function to calculate year on year degradation
+        Aggregates values to daily, and calculates degradation
+        """
         daily = rdtools.aggregation_insol(normalized_energy, 
                                           insolation, 
                                           frequency = 'D')
@@ -216,8 +241,17 @@ class AnalysisPipeline(object):
         return yoy_rd, yoy_confidence_interval
 
     def calculate_yoy_degradation(self, confidence_level=68.2):
+        """
+        Returns a dictionary {systemid: tuple} 
+        The tuple consists of four values:
+            - year on year degradation as calculated using actual weather data
+            - associated confidence interval
+            - year on year degradation as calculated from clearsky values
+            - confidence interval for clearsky degradation value
+        """
+
         logging.info('processing data')
-        df, clearsky_df = self._process_data() 
+        df, clearsky_df = self.process_data() 
 
         logging.info('calculating year on year degradation from weather data')
         yoy_rd, yoy_confidence_interval = self._yoy_degradation(df.normalized_energy, 
