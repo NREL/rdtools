@@ -98,11 +98,12 @@ class AnalysisPipeline(object):
         # Set the frequency of the dataframe
         self.df = self.df.resample(freq).median()
 
-        # Convert power from kilowatts to watts
-        self.df['power'] = self.df.power * 1000.0 
+        if 'energy' not in self.df.columns:
+            # Convert power from kilowatts to watts
+            self.df['power'] = self.df.power * 1000.0 
 
-        # Calculate energy yield in Wh
-        self.df['energy'] = self.df.power * pd.to_timedelta(self.df.power.index.freq).total_seconds()/(3600.0)
+            # Calculate energy yield in Wh
+            self.df['energy'] = self.df.power * pd.to_timedelta(self.df.power.index.freq).total_seconds()/(3600.0)
 
         logging.info("setting poa and cell temperature from pvlib")
         poa, cell_temperature = self._get_variables_from_pvlib(clearsky_variables = False)
