@@ -8,7 +8,7 @@ from timezonefinder import TimezoneFinder
 
 import logger
 logger.init()
-    
+
 def get_timezone(latitude, longitude):
     """
     returns: timezone (str)
@@ -16,7 +16,7 @@ def get_timezone(latitude, longitude):
     tf = TimezoneFinder()
     tz = tf.timezone_at(lat=latitude, lng=longitude)
     logging.info("timezone for location {}, {} is {}".format(latitude, longitude, tz))
-    
+
     return tz
 
 def join(dataframe, series, name):
@@ -38,7 +38,7 @@ def rename_columns(df):
 
     rename_dictionary = {}
     for name in columns:
-        if 'power' in name: 
+        if 'power' in name:
             rename_dictionary[name] = 'power'
         elif 'temperature' in name or 'tamb' in name:
             rename_dictionary[name] = 'Tamb'
@@ -62,8 +62,8 @@ class AnalysisPipeline(object):
     def __init__(self, input_filename, system_metadata, clearsky = True):
         '''
         input_filename: csv with power time-series
-        system_metdata: dictionary with the following keys: 
-                        - systemid   (string. unique identifier) 
+        system_metdata: dictionary with the following keys:
+                        - systemid   (string. unique identifier)
                         - latitude
                         - longitude
                         - tilt       (degrees)
@@ -72,7 +72,7 @@ class AnalysisPipeline(object):
                         - tempco     (temperature coefficient)
                         - temp_model (temperature model to calculate cell temperature)
 
-        clearsky (bool): if True, use clearsky methodology to calculate degradation rate 
+        clearsky (bool): if True, use clearsky methodology to calculate degradation rate
                          in addition to using weather data.
         '''
 
@@ -82,7 +82,7 @@ class AnalysisPipeline(object):
 
     def process_data(self):
         """
-        This function does the following: 
+        This function does the following:
             - if timezone not present in metadata, gets timezone
             - calculates energy if power is provided instead of energy
             - normalizes and filters data
@@ -92,7 +92,7 @@ class AnalysisPipeline(object):
         self.timezone = self.system_metadata.get('timezone')
         if not self.timezone:
             logging.info("timezone not present in metadata. Estimating timezone from lat/lon")
-            self.timezone = get_timezone( self.system_metadata['latitude'], 
+            self.timezone = get_timezone( self.system_metadata['latitude'],
                                           self.system_metadata['longitude'] )
 
         self.df.index = pd.to_datetime(self.df.timestamp)
@@ -100,44 +100,48 @@ class AnalysisPipeline(object):
 
         # There is some missing data, but we can infer the frequency from the first several data points
         freq = pd.infer_freq(self.df.index[:10])
-        logging.info('Inferred frequency = {}'.format(freq))
+        logging.info('inferred frequency = {}'.format(freq))
         # Set the frequency of the dataframe
         self.df = self.df.resample(freq).median()
 
-        # Convert power from kilowatts to watts
-        self.df['power'] = self.df.power * 1000.0 
+        if 'power' in self.df:
+            # Convert power from kilowatts to watts
+            self.df['power'] = self.df.power * 1000.0
 
-        # Calculate energy yield in Wh
-        self.df['energy'] = self.df.power * pd.to_timedelta(self.df.power.index.freq).total_seconds()/(3600.0)
+            # Calculate energy yield in Wh
+            self.df['energy'] = self.df.power * pd.to_timedelta(self.df.power.index.freq).total_seconds()/(3600.0)
+
+        elif 'energy' not in self.df:
+            raise Exception("At least one of power or energy is required to proceed")
 
         logging.info("setting poa and cell temperature from pvlib")
         poa, cell_temperature = self._get_variables_from_pvlib(clearsky_variables = False)
         self.df = join(self.df, poa, 'poa')
 
-        logging.info("Normalizing energy using PVWatts")
+        logging.info("normalizing energy using PVWatts")
         normalized_energy, insolation = self._normalize(self.df.energy, self.df.poa, cell_temperature)
 
         self.df = join(self.df, normalized_energy, 'normalized_energy')
         self.df = join(self.df, insolation, 'insolation')
-        
+
         logging.info('removing outliers')
         df = self._remove_outliers(normalized_energy, self.df.power, self.df.poa, cell_temperature)
 
         clearsky_df = None
         if self.clearsky:
-            logging.info("Calculating clearsky poa and cell temperature from pvlib")
-            
+            logging.info("calculating clearsky poa and cell temperature from pvlib")
+
             clearsky_poa, clearsky_cell_temperature = self._get_variables_from_pvlib(clearsky_variables = True)
             self.df = join(self.df, clearsky_poa, 'clearsky_poa')
 
-            clearsky_normalized_energy, clearsky_insolation = self._normalize(self.df.energy, 
+            clearsky_normalized_energy, clearsky_insolation = self._normalize(self.df.energy,
                                                                               self.df.clearsky_poa,
                                                                               clearsky_cell_temperature)
 
             self.df = join(self.df, clearsky_normalized_energy, 'clearsky_normalized_energy')
             self.df = join(self.df, clearsky_insolation, 'clearsky_insolation')
 
-            clearsky_df = self._remove_outliers(clearsky_normalized_energy, self.df.power, 
+            clearsky_df = self._remove_outliers(clearsky_normalized_energy, self.df.power,
                                                 clearsky_poa, clearsky_cell_temperature)
 
         return df, clearsky_df
@@ -148,15 +152,15 @@ class AnalysisPipeline(object):
         """
 
         sky = pvlib.irradiance.isotropic(self.system_metadata['tilt'], dhi)
-        beam = pvlib.irradiance.beam_component(self.system_metadata['tilt'], 
-                                               self.system_metadata['azimuth'], 
+        beam = pvlib.irradiance.beam_component(self.system_metadata['tilt'],
+                                               self.system_metadata['azimuth'],
                                                solar_zenith, solar_azimuth, dni)
-        
+
         poa = beam + sky
         if 'poa' in self.df.columns:
             poa = rdtools.irradiance_rescale(self.df.poa, poa, method='iterative')
 
-        df_temp = pvlib.pvsystem.sapm_celltemp(poa, wind_speed, Tamb, 
+        df_temp = pvlib.pvsystem.sapm_celltemp(poa, wind_speed, Tamb,
                                                model = self.system_metadata['temp_model'])
         cell_temperature = df_temp.temp_cell
 
@@ -165,12 +169,12 @@ class AnalysisPipeline(object):
     def _get_variables_from_pvlib(self, clearsky_variables):
 
         """
-        Returns: poa, cell temperature using irradiance values and pvlib 
-        If clearsky_variables=True, then returns clearky poa and cell temperature using 
-        clearsky ambient temperature 
+        Returns: poa, cell temperature using irradiance values and pvlib
+        If clearsky_variables=True, then returns clearky poa and cell temperature using
+        clearsky ambient temperature
         """
-        loc = pvlib.location.Location(self.system_metadata['latitude'], 
-                                      self.system_metadata['longitude'], 
+        loc = pvlib.location.Location(self.system_metadata['latitude'],
+                                      self.system_metadata['longitude'],
                                       tz = self.timezone)
 
         solar_position = loc.get_solarposition(self.df.index)
@@ -181,18 +185,18 @@ class AnalysisPipeline(object):
             dhi = self.df.dhi
             ghi = self.df.ghi
             dni = (ghi - dhi)/np.cos(np.deg2rad(solar_zenith))
-            return self._get_poa_and_Tcell(self.df.dhi, dni, self.df.ghi, 
+            return self._get_poa_and_Tcell(self.df.dhi, dni, self.df.ghi,
                                            self.df.Tamb, self.df.wind_speed,
                                            solar_zenith, solar_azimuth)
 
-        else: 
+        else:
             clearsky_irradiance = loc.get_clearsky(self.df.index, solar_position=solar_position)
 
-            clearsky_Tamb = rdtools.get_clearsky_tamb(self.df.index, 
-                                                      self.system_metadata['latitude'], 
+            clearsky_Tamb = rdtools.get_clearsky_tamb(self.df.index,
+                                                      self.system_metadata['latitude'],
                                                       self.system_metadata['longitude'])
 
-            return self._get_poa_and_Tcell(clearsky_irradiance.dhi, clearsky_irradiance.dni, 
+            return self._get_poa_and_Tcell(clearsky_irradiance.dhi, clearsky_irradiance.dni,
                                            clearsky_irradiance.ghi, clearsky_Tamb, 0,
                                            solar_zenith, solar_azimuth)
 
@@ -218,7 +222,7 @@ class AnalysisPipeline(object):
 
     def _remove_outliers(self, normalized_energy, power, poa, cell_temperature):
         """
-        Removes outliers 
+        Removes outliers
         """
 
         nz_mask = (normalized_energy > 0)
@@ -241,8 +245,8 @@ class AnalysisPipeline(object):
         Helper function to calculate year on year degradation
         Aggregates values to daily, and calculates degradation
         """
-        daily = rdtools.aggregation_insol(normalized_energy, 
-                                          insolation, 
+        daily = rdtools.aggregation_insol(normalized_energy,
+                                          insolation,
                                           frequency = 'D')
 
         yoy_rd, yoy_confidence_interval, yoy_info = rdtools.degradation_year_on_year(daily, confidence_level)
@@ -251,7 +255,7 @@ class AnalysisPipeline(object):
 
     def calculate_yoy_degradation(self, confidence_level=68.2):
         """
-        Returns a dictionary {systemid: tuple} 
+        Returns a dictionary {systemid: tuple}
         The tuple consists of four values:
             - year on year degradation as calculated using actual weather data
             - associated confidence interval
@@ -260,11 +264,11 @@ class AnalysisPipeline(object):
         """
 
         logging.info('processing data')
-        df, clearsky_df = self.process_data() 
+        df, clearsky_df = self.process_data()
 
         logging.info('calculating year on year degradation from weather data')
-        yoy_rd, yoy_confidence_interval = self._yoy_degradation(df.normalized_energy, 
-                                                                df.insolation, 
+        yoy_rd, yoy_confidence_interval = self._yoy_degradation(df.normalized_energy,
+                                                                df.insolation,
                                                                 confidence_level)
 
         clearsky_yoy_rd = None
