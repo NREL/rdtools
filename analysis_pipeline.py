@@ -106,35 +106,35 @@ class AnalysisPipeline(object):
 
         logging.info("setting poa and cell temperature from pvlib")
         poa, cell_temperature = self._get_variables_from_pvlib(clearsky_variables = False)
-
-        self.df['poa'] = poa.values
+        self.df = self.join(self.df, poa, 'poa')
 
         logging.info("Normalizing energy using PVWatts")
         normalized_energy, insolation = self._normalize(self.df.energy, self.df.poa, cell_temperature)
 
-        normalized_energy = normalized_energy.rename('normalized_energy')
-        self.df = self.df.join(normalized_energy)
+        self.df = self.join(self.df, normalized_energy, 'normalized_energy')
+        self.df = self.join(self.df, insolation, 'insolation')
         
-        insolation = insolation.rename('insolation')
-        self.df = self.df.join(insolation)
-
         logging.info('removing outliers')
         df = self._remove_outliers(normalized_energy, self.df.power, self.df.poa, cell_temperature)
 
         clearsky_df = None
         if self.clearsky:
             logging.info("Calculating clearsky poa and cell temperature from pvlib")
+            
             clearsky_poa, clearsky_cell_temperature = self._get_variables_from_pvlib(clearsky_variables = True)
-            self.df['clearsky_poa'] = clearsky_poa.values
-            clearsky_normalized_energy, clearsky_insolation = self._normalize(self.df.energy, self.df.clearsky_poa, clearsky_cell_temperature)
+            self.df = self.join(self.df, clearsky_poa, 'clearsky_poa')
 
-            self.df['clearsky_normalized_energy'] = clearsky_normalized_energy
-            self.df['clearsky_insolation'] = clearsky_insolation
+            clearsky_normalized_energy, clearsky_insolation = self._normalize(self.df.energy, 
+                                                                              self.df.clearsky_poa,
+                                                                              clearsky_cell_temperature)
 
-            clearsky_df = self._remove_outliers(clearsky_normalized_energy, self.df.power, clearsky_poa, clearsky_cell_temperature)
+            self.df = self.join(self.df, clearsky_normalized_energy, 'clearsky_normalized_energy')
+            self.df = self.join(self.df, clearsky_insolation, 'clearsky_insolation')
+
+            clearsky_df = self._remove_outliers(clearsky_normalized_energy, self.df.power, 
+                                                clearsky_poa, clearsky_cell_temperature)
 
         return df, clearsky_df
-
 
     def _get_poa_and_Tcell(self, dhi, dni, ghi, Tamb, wind_speed, solar_zenith, solar_azimuth):
         """
@@ -270,3 +270,10 @@ class AnalysisPipeline(object):
                                                                                       confidence_level)
 
         return {self.system_metadata['systemid']: (yoy_rd, yoy_confidence_interval, clearsky_yoy_rd, clearsky_yoy_confidence_interval)}
+
+    def join(self, dataframe, series, name):
+        "Helper function to rename series and join to dataframe"
+        series = series.rename(name)
+        dataframe = dataframe.join(series)
+        return dataframe
+
