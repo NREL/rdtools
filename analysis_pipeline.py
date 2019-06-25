@@ -19,6 +19,12 @@ def get_timezone(latitude, longitude):
     
     return tz
 
+def join(dataframe, series, name):
+    "Helper function to rename series and join to dataframe"
+    series = series.rename(name)
+    dataframe = dataframe.join(series)
+    return dataframe
+
 def rename_columns(df):
     """
     Best guess at renaming columns. Ignores units.
@@ -106,13 +112,13 @@ class AnalysisPipeline(object):
 
         logging.info("setting poa and cell temperature from pvlib")
         poa, cell_temperature = self._get_variables_from_pvlib(clearsky_variables = False)
-        self.df = self.join(self.df, poa, 'poa')
+        self.df = join(self.df, poa, 'poa')
 
         logging.info("Normalizing energy using PVWatts")
         normalized_energy, insolation = self._normalize(self.df.energy, self.df.poa, cell_temperature)
 
-        self.df = self.join(self.df, normalized_energy, 'normalized_energy')
-        self.df = self.join(self.df, insolation, 'insolation')
+        self.df = join(self.df, normalized_energy, 'normalized_energy')
+        self.df = join(self.df, insolation, 'insolation')
         
         logging.info('removing outliers')
         df = self._remove_outliers(normalized_energy, self.df.power, self.df.poa, cell_temperature)
@@ -122,14 +128,14 @@ class AnalysisPipeline(object):
             logging.info("Calculating clearsky poa and cell temperature from pvlib")
             
             clearsky_poa, clearsky_cell_temperature = self._get_variables_from_pvlib(clearsky_variables = True)
-            self.df = self.join(self.df, clearsky_poa, 'clearsky_poa')
+            self.df = join(self.df, clearsky_poa, 'clearsky_poa')
 
             clearsky_normalized_energy, clearsky_insolation = self._normalize(self.df.energy, 
                                                                               self.df.clearsky_poa,
                                                                               clearsky_cell_temperature)
 
-            self.df = self.join(self.df, clearsky_normalized_energy, 'clearsky_normalized_energy')
-            self.df = self.join(self.df, clearsky_insolation, 'clearsky_insolation')
+            self.df = join(self.df, clearsky_normalized_energy, 'clearsky_normalized_energy')
+            self.df = join(self.df, clearsky_insolation, 'clearsky_insolation')
 
             clearsky_df = self._remove_outliers(clearsky_normalized_energy, self.df.power, 
                                                 clearsky_poa, clearsky_cell_temperature)
@@ -270,10 +276,4 @@ class AnalysisPipeline(object):
                                                                                       confidence_level)
 
         return {self.system_metadata['systemid']: (yoy_rd, yoy_confidence_interval, clearsky_yoy_rd, clearsky_yoy_confidence_interval)}
-
-    def join(self, dataframe, series, name):
-        "Helper function to rename series and join to dataframe"
-        series = series.rename(name)
-        dataframe = dataframe.join(series)
-        return dataframe
 
