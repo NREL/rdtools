@@ -98,12 +98,11 @@ class AnalysisPipeline(object):
         # Set the frequency of the dataframe
         self.df = self.df.resample(freq).median()
 
-        if 'energy' not in self.df.columns:
-            # Convert power from kilowatts to watts
-            self.df['power'] = self.df.power * 1000.0 
+        # Convert power from kilowatts to watts
+        self.df['power'] = self.df.power * 1000.0 
 
-            # Calculate energy yield in Wh
-            self.df['energy'] = self.df.power * pd.to_timedelta(self.df.power.index.freq).total_seconds()/(3600.0)
+        # Calculate energy yield in Wh
+        self.df['energy'] = self.df.power * pd.to_timedelta(self.df.power.index.freq).total_seconds()/(3600.0)
 
         logging.info("setting poa and cell temperature from pvlib")
         poa, cell_temperature = self._get_variables_from_pvlib(clearsky_variables = False)
@@ -112,12 +111,15 @@ class AnalysisPipeline(object):
 
         logging.info("Normalizing energy using PVWatts")
         normalized_energy, insolation = self._normalize(self.df.energy, self.df.poa, cell_temperature)
-        self.df['normalized_energy'] = normalized_energy.values
-        self.df['insolation'] = insolation.values
 
+        normalized_energy = normalized_energy.rename('normalized_energy')
+        self.df = self.df.join(normalized_energy)
+        
+        insolation = insolation.rename('insolation')
+        self.df = self.df.join(insolation)
+
+        logging.info('removing outliers')
         df = self._remove_outliers(normalized_energy, self.df.power, self.df.poa, cell_temperature)
-
-        logging.info('removed outliers')
 
         clearsky_df = None
         if self.clearsky:
