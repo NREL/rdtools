@@ -18,10 +18,38 @@ class system_analysis():
     Class for end-to-end analysis
     '''
     def __init__(self, pv, poa=None, temperature=None, temperature_coefficient=None,
-        aggregation_freq='D', pv_input='power', temperature_input='cell', pvlib_location=None,
-        clearsky_poa=None, clearsky_temperature=None, clearsky_temperature_input='cell', windspeed=0, albedo=0.25,
-        temperature_model=None, pv_azimuth=None, pv_tilt=None, pv_nameplate=None, interp_freq=None, max_timedelta=None):
+                 aggregation_freq='D', pv_input='power', temperature_input='cell', pvlib_location=None,
+                 clearsky_poa=None, clearsky_temperature=None, clearsky_temperature_input='cell', windspeed=0, albedo=0.25,
+                 temperature_model=None, pv_azimuth=None, pv_tilt=None, pv_nameplate=None, interp_freq=None, max_timedelta=None):
+        '''
+        Parameters
+        ----------
+        pv: Right-labeled Pandas Time Series of PV energy or power. If energy, should *not* be cumulative, but only for preceding time step.
+        poa: Right-labeled Pandas Time Series of measured plane of array irradiance in W/m^2
+        temperature: Right-label Pandas Time Series of either cell or ambient temperature in Celsius
+        temperature_coefficient: The fractional PV power temperature coefficient (numeric)
+        aggregation_freq: The frequency with which to aggregate normalized PV data for analysis (Pandas frequency specification)
+        pv_input: 'power' or 'energy' to specify type of input used for pv parameter
+        temeprature_input: 'cell' or 'ambient' to specify type of input used for temperature parameter
+        pvlib_location: pvlib location object used for calculating clearsky temperature and irradiance
+        clearsky_poa: Right-labeled Pandas Time Series of clear-sky plane of array irradiance
+        clearsky_temperature: Right-labeled Pandas Time Series of clear-sky cell or ambient temperature in Celsius
+        clearsky_temperature_input: 'cell' or 'ambient' to specify type of input used for clearsky_temperature parameter
+        windspeed: Right-labeled Pandas Time Series or numeric indicating wind speed in m/s for use in calculating cell temperature from ambient
+                   default value of 0 neglects the wind in this calculation
+        albedo: Albedo to be used in irradiance transposition calculations (numeric)
+        temperature_model: model parameter pvsystem.sapm_celltemp() used in calculating cell temperature from ambient
+        pv_azimuth: Azimuth of PV array in degrees from north (numeric)
+        pv_tilt: Tilt of PV array in degrees from horizontal
+        pv_nameplate: Nameplate DC rating of PV array in Watts (numeric)
+        interp_freq: The frequency to which to interpolate all Pandas Time Series passed at instantiation. We recommend using the natural
+                     frequency of the data, rather than up or down sampling. Analysis requires regular time series.
+        max_timedelta: The maximum gap in the data to be interpolated/integrated across when interpolating or calculating energy from power (Timedelta)
 
+        Returns
+        -------
+        None
+        '''
         if interp_freq is not None:
             pv = normalization.interpolate(pv, interp_freq, max_timedelta)
             if poa is not None:
@@ -82,6 +110,20 @@ class system_analysis():
         }
 
     def calc_clearsky_poa(self, times=None, rescale=True, model='isotropic', **kwargs):
+        '''
+        Calculate clearsky plane-of-array irradiance and store in self.clearsky_poa
+
+        Parameters
+        ----------
+        times: Pandas DateTimeIndex for which to calculate clearsky poa
+        rescale: Whether to attempt to rescale clearsky irradiance to measured (bool)
+        model: Model for pvlib.irradiance.get_total_irradiance() (str)
+        kwargs: key word arguments passed to pvlib.irradiance.get_total_irradiance()
+
+        Returns
+        -------
+        None
+        '''
         if times is None:
             times = self.poa.index
         if self.pvlib_location is None:
@@ -106,6 +148,19 @@ class system_analysis():
         self.clearsky_poa = clearsky_poa
 
     def calc_cell_temperature(self, poa, windspeed, ambient_temperature):
+        '''
+        Return cell temperature calculated from ambient conditions.
+
+        Parameters
+        ----------
+        poa = plane of array irradiance in W/m^2 (numeric)
+        windspeed = wind speed in m/s (numeric)
+        ambient_temperature = ambient temperature in Celsius (numeric)
+
+        Returns
+        -------
+        calculated cell temperature (numeric)
+        '''
         if self.temperature_model is None:
             cell_temp = pvlib.pvsystem.sapm_celltemp(poa, windspeed, ambient_temperature)
         else:
@@ -115,6 +170,9 @@ class system_analysis():
         return cell_temp
 
     def calc_clearsky_tamb(self):
+        '''
+        Calculate clear-sky ambient temperature and store in self.clearsky_ambient_temperature
+        '''
         times = self.clearsky_poa.index
         if self.pvlib_location is None:
             raise ValueError('pvlib location must be provided')
@@ -125,6 +183,18 @@ class system_analysis():
         self.clearsky_ambient_temperature = cs_amb_temp
 
     def pvwatts_norm(self, poa, cell_temperature):
+        '''
+        Normalize PV energy to that expected from a PVWatts model.
+
+        Parameters
+        ---------
+        poa: plane of array irradiance in W/m^2 (numeric)
+        cell_temperature: cell temperature in Celsius (numeric)
+
+        Returns
+        -------
+        (Normalized pv energy, associated insolation)
+        '''
         if self.pv_nameplate is None:
             renorm = True
             pv_nameplate = 1.0
@@ -144,13 +214,29 @@ class system_analysis():
         normalized, insolation = normalization.normalize_with_pvwatts(self.pv_energy, pvwatts_kws)
 
         if renorm:
-            # Normalize to the 95th percentile for convienience, this is renomalized out
+            # Normalize to the 95th percentile for convenience, this is renormalized out
             # in the calculations but is relevant to normalized_filter()
             normalized = normalized / normalized.quantile(0.95)
 
         return normalized, insolation
 
     def filter(self, normalized, case):
+        '''
+        Calculate filters based on those in rdtools.filtering. Uses self.filter_params, which is a dict,
+        the keys of which are names of functions in rdtools.filtering, and the values of which are dicts
+        containing the associated parameters with which to run the filtering functions. See examples for
+        details on how to modify filter parameters.
+
+        Parameters
+        ----------
+        normalized: normalized PV energy (Pandas Time Series)
+        case: 'sensor' or 'clearsky' which filtering protocol to apply. Affects whether filtering.csi_filter()
+               is used and whether result is stored in self.sensor_filter or self.clearsky_filter)
+
+        Returns
+        -------
+        None
+        '''
         bool_filter = True
 
         if case == 'sensor':
@@ -194,12 +280,43 @@ class system_analysis():
             self.clearsky_filter = bool_filter
 
     def aggregate(self, normalized, insolation):
+        '''
+        Returns insolation-weighted normalized PV energy and the associated aggregated insolation
+
+        Parameters
+        ----------
+        normalized: Pandas Times Series (numeric), normalized pv energy time series
+        insolation: Pandas Time Series (numeric), Time series of insolation associated
+                    with each normalize_energy point
+
+        Returns
+        -------
+        (aggregated, aggregated_insolation)
+        Tuple of Pandas Time Series consisting of insolation-weighted aggregated normalized PV energy
+        and the associated aggregated insolation.
+        '''
         aggregated = aggregation.aggregation_insol(normalized, insolation, self.aggregation_freq)
         aggregated_insolation = insolation.resample(self.aggregation_freq).sum()
 
         return aggregated, aggregated_insolation
 
     def yoy_degradation(self, aggregated, **kwargs):
+        '''
+        Perform year-on-year degradation analysis on insolation-weighted aggregated energy yield.
+
+        Parameters
+        ----------
+        aggregated: Pandas Time Series of insolation-weighted aggregated normalized PV energy
+        kwargs: passed to degradation.degradation_year_on_year()
+
+        Returns
+        -------
+        dict or year-on-year results with keys:
+            'p50_rd': The median year-on-year degradation rate (numeric)
+            'rd_confidence_interval': lower and upper bounds of degradation rate
+                                      confidence interval(list)
+            'calc_info': Dict of detailed results (see degradation.degradation_year_on_year() docs)
+        '''
 
         yoy_rd, yoy_ci, yoy_info = degradation.degradation_year_on_year(aggregated, **kwargs)
 
@@ -212,8 +329,25 @@ class system_analysis():
         return yoy_results
 
     def srr_soiling(self, aggregated, aggregated_insolation, **kwargs):
+        '''
+        Performs stochastic rate and recovery soiling analysis.
+
+        Parameters
+        ---------
+        aggregated: Pandas Time Series of insolation-weighted aggregated normalized PV energy
+        aggregated_insolation: Pandas Time Series of insolation aggregated at same level as aggregated
+        kwargs: passed to soiling.soiling_srr()
+
+        Returns
+        -------
+        dict or year-on-year results with keys:
+            'p50_sratio': The median year-on-year insolation-weighted soiling ratio (numeric)
+            'sratio_confidence_interval': lower and upper bounds of insolation-weighted soiling ratio
+                                          confidence interval(list)
+            'calc_info': Dict of detailed results (see soiling.soiling_srr() docs)
+        '''
         if aggregated.index.freq != 'D' or aggregated_insolation.index.freq != 'D':
-            raise ValueError('Soiling SRR analysis requires daily aggregatation.')
+            raise ValueError('Soiling SRR analysis requires daily aggregation.')
 
         sr, sr_ci, soiling_info = soiling.soiling_srr(aggregated, aggregated_insolation, **kwargs)
 
@@ -226,6 +360,9 @@ class system_analysis():
         return srr_results
 
     def sensor_preprocess(self):
+        '''
+        Perform sensor-based normalization, filtering, and aggregation work flow.
+        '''
         if self.poa is None:
             raise ValueError('poa must be available to perform sensor_preprocess')
         if self.cell_temperature is None and self.ambient_temperature is None:
@@ -239,6 +376,9 @@ class system_analysis():
         self.sensor_aggregated_insolation = aggregated_insolation
 
     def clearsky_preprocess(self):
+        '''
+        Perform clear-sky-based normalization, filtering, and aggregation work flow
+        '''
         if self.clearsky_poa is None:
             self.calc_clearsky_poa()  # kwargs?
         if self.clearsky_cell_temperature is None:
@@ -253,6 +393,20 @@ class system_analysis():
         self.clearsky_aggregated_insolation = cs_aggregated_insolation
 
     def sensor_analysis(self, analyses=['yoy_degradation'], yoy_kwargs={}, srr_kwargs={}):
+        '''
+        Perform entire sensor-based analysis workflow. Results are stored in self.results['sensor']
+
+        Parameters
+        ---------
+        analyses: list of analyses to perform, valid entries are 'yoy_degradation' and 'srr_soiling'
+        yoy_kwargs: dict of kwargs to pass to degradation.degradation_year_on_year()
+        srr_kwargs: dict of kwargs to pass to soiling.soiling_srr()
+
+        Returns
+        -------
+        None
+        '''
+
         self.sensor_preprocess()
         sensor_results = {}
 
@@ -269,6 +423,20 @@ class system_analysis():
         self.results['sensor'] = sensor_results
 
     def clearsky_analysis(self, analyses=['yoy_degradation'], yoy_kwargs={}, srr_kwargs={}):
+        '''
+        Perform entire clear-sky-based analysis workflow. Results are stored in self.results['clearsky']
+
+        Parameters
+        ---------
+        analyses: list of analyses to perform, valid entries are 'yoy_degradation' and 'srr_soiling'
+        yoy_kwargs: dict of kwargs to pass to degradation.degradation_year_on_year()
+        srr_kwargs: dict of kwargs to pass to soiling.soiling_srr()
+
+        Returns
+        -------
+        None
+        '''
+
         self.clearsky_preprocess()
         clearsky_results = {}
 
@@ -285,6 +453,19 @@ class system_analysis():
         self.results['clearsky'] = clearsky_results
 
     def plot_degradation_summary(self, result_to_plot, **kwargs):
+        '''
+        Returns a figure of a scatter plot and a histogram summarizing degradation rate analysis.
+
+        Parameters
+        ----------
+        result_to_plot: The workflow result to plot, allowed values are 'sensor' and 'clearsky' (str)
+        kwargs: passed to plotting.degradation_summary_plots()
+
+        Returns
+        -------
+        matplotlib figure containing two axes
+
+        '''
 
         if result_to_plot == 'sensor':
             results_dict = self.results['sensor']['yoy_degradation']
@@ -298,6 +479,19 @@ class system_analysis():
         return fig
 
     def plot_soiling_monte_carlo(self, result_to_plot, **kwargs):
+        '''
+        Returns a figure visualizing the Monte Carlo of soiling profiles used in
+        stochastic rate and recovery soiling analysis.
+
+        Parameters
+        ----------
+        result_to_plot: The workflow result to plot, allowed values are 'sensor' and 'clearsky' (str)
+        kwargs: passed to plotting.soiling_monte_carlo_plot()
+
+        Returns
+        -------
+        matplotlib figure
+        '''
 
         if result_to_plot == 'sensor':
             results_dict = self.results['sensor']['srr_soiling']
@@ -311,6 +505,19 @@ class system_analysis():
         return fig
 
     def plot_soiling_interval(self, result_to_plot, **kwargs):
+        '''
+        Returns a figure visualizing the valid soiling intervals used in
+        stochastic rate and recovery soiling analysis.
+
+        Parameters
+        ----------
+        result_to_plot: The workflow result to plot, allowed values are 'sensor' and 'clearsky' (str)
+        kwargs: passed to plotting.soiling_interval_plot()
+
+        Returns
+        -------
+        matplotlib figure
+        '''
 
         if result_to_plot == 'sensor':
             results_dict = self.results['sensor']['srr_soiling']
@@ -324,6 +531,19 @@ class system_analysis():
         return fig
 
     def plot_soiling_rate_histogram(self, result_to_plot, **kwargs):
+        '''
+        Returns a histogram of soiling rates found in the stochastic rate and recovery
+        soiling analysis
+
+        Parameters
+        ----------
+        result_to_plot: The workflow result to plot, allowed values are 'sensor' and 'clearsky' (str)
+        kwargs: passed to plotting.soiling_rate_histogram()
+
+        Returns
+        -------
+        matplotlib figure
+        '''
 
         if result_to_plot == 'sensor':
             results_dict = self.results['sensor']['srr_soiling']
@@ -335,7 +555,21 @@ class system_analysis():
         return fig
 
     def plot_pv_vs_irradiance(self, poa_type, alpha=0.01, **kwargs):
-        
+        '''
+        Plot PV energy vs irradiance, useful in diagnosing things like timezone problems or
+        transposition errors.
+
+        Parameters
+        ----------
+        poa_type: The plane of array irradiance type to plot, allowed values are 'sensor' and 'clearsky' (str)
+        alpha: transparency of the scatter plot (numeric)
+        kwargs: passed to matplotlib.pyplot.axis.plot()
+
+        Returns
+        -------
+        matplotlib figure
+        '''
+
         if poa_type == 'sensor':
             poa = self.poa
         elif poa_type == 'clearsky':
@@ -344,37 +578,9 @@ class system_analysis():
         to_plot = pd.merge(poa, self.pv_energy, left_index=True, right_index=True)
 
         fig, ax = plt.subplots()
-        ax.plot(to_plot.iloc[:,0], to_plot.iloc[:,1], 'o', alpha=alpha, **kwargs)
-        ax.set_xlim(0,1500)
+        ax.plot(to_plot.iloc[:, 0], to_plot.iloc[:, 1], 'o', alpha=alpha, **kwargs)
+        ax.set_xlim(0, 1500)
         ax.set_xlabel('Irradiance (W/m$^2$)')
-        ax.set_ylabel('PV Energy (Wh/timestep)')    
+        ax.set_ylabel('PV Energy (Wh/timestep)')
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+        return fig
