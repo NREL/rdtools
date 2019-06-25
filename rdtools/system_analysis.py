@@ -3,12 +3,14 @@ This module contains functions and classes for object-oriented end-to-end analys
 '''
 import pvlib
 import pandas as pd
+import matplotlib.pyplot as plt
 from . import normalization
 from . import filtering
 from . import aggregation
 from . import degradation
 from . import soiling
 from . import clearsky_temperature
+from . import plotting
 
 
 class system_analysis():
@@ -16,9 +18,9 @@ class system_analysis():
     Class for end-to-end analysis
     '''
     def __init__(self, pv, poa=None, temperature=None, temperature_coefficient=None,
-                 aggregation_freq='D', pv_input='power', temperature_input='cell', pvlib_location=None,
-                 clearsky_poa=None, clearsky_temperature=None, clearsky_temperature_input='cell', windspeed=0, albedo=0.25,
-                 temperature_model=None, pv_azimuth=None, pv_tilt=None, pv_nameplate=None, interp_freq=None, max_timedelta=None):
+        aggregation_freq='D', pv_input='power', temperature_input='cell', pvlib_location=None,
+        clearsky_poa=None, clearsky_temperature=None, clearsky_temperature_input='cell', windspeed=0, albedo=0.25,
+        temperature_model=None, pv_azimuth=None, pv_tilt=None, pv_nameplate=None, interp_freq=None, max_timedelta=None):
 
         if interp_freq is not None:
             pv = normalization.interpolate(pv, interp_freq, max_timedelta)
@@ -282,15 +284,70 @@ class system_analysis():
 
         self.results['clearsky'] = clearsky_results
 
+    def plot_degradation_summary(self, result_to_plot, **kwargs):
 
+        if result_to_plot == 'sensor':
+            results_dict = self.results['sensor']['yoy_degradation']
+            aggregated = self.sensor_aggregated_performance
+        elif result_to_plot == 'clearsky':
+            results_dict = self.results['clearsky']['yoy_degradation']
+            aggregated = self.clearsky_aggregated_performance
 
+        fig = plotting.degradation_summary_plots(results_dict['p50_rd'], results_dict['rd_confidence_interval'],
+                                                 results_dict['calc_info'], aggregated, **kwargs)
+        return fig
 
+    def plot_soiling_monte_carlo(self, result_to_plot, **kwargs):
 
+        if result_to_plot == 'sensor':
+            results_dict = self.results['sensor']['srr_soiling']
+            aggregated = self.sensor_aggregated_performance
+        elif result_to_plot == 'clearsky':
+            results_dict = self.results['clearsky']['srr_soiling']
+            aggregated = self.clearsky_aggregated_performance
 
+        fig = plotting.soiling_monte_carlo_plot(results_dict['calc_info'], aggregated, **kwargs)
 
+        return fig
 
+    def plot_soiling_interval(self, result_to_plot, **kwargs):
 
+        if result_to_plot == 'sensor':
+            results_dict = self.results['sensor']['srr_soiling']
+            aggregated = self.sensor_aggregated_performance
+        elif result_to_plot == 'clearsky':
+            results_dict = self.results['clearsky']['srr_soiling']
+            aggregated = self.clearsky_aggregated_performance
 
+        fig = plotting.soiling_interval_plot(results_dict['calc_info'], aggregated, **kwargs)
+
+        return fig
+
+    def plot_soiling_rate_histogram(self, result_to_plot, **kwargs):
+
+        if result_to_plot == 'sensor':
+            results_dict = self.results['sensor']['srr_soiling']
+        elif result_to_plot == 'clearsky':
+            results_dict = self.results['clearsky']['srr_soiling']
+
+        fig = plotting.soiling_rate_histogram(results_dict['calc_info'], **kwargs)
+
+        return fig
+
+    def plot_pv_vs_irradiance(self, poa_type, alpha=0.01, **kwargs):
+        
+        if poa_type == 'sensor':
+            poa = self.poa
+        elif poa_type == 'clearsky':
+            poa = self.clearsky_poa
+
+        to_plot = pd.merge(poa, self.pv_energy, left_index=True, right_index=True)
+
+        fig, ax = plt.subplots()
+        ax.plot(to_plot.iloc[:,0], to_plot.iloc[:,1], 'o', alpha=alpha, **kwargs)
+        ax.set_xlim(0,1500)
+        ax.set_xlabel('Irradiance (W/m$^2$)')
+        ax.set_ylabel('PV Energy (Wh/timestep)')    
 
 
 
