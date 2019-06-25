@@ -15,6 +15,10 @@ from rdtools.filtering import clip_filter
 from rdtools.filtering import normalized_filter
 from rdtools.soiling import soiling_srr
 from rdtools.system_analysis import system_analysis
+from rdtools.plotting import degradation_summary_plots
+from rdtools.plotting import soiling_monte_carlo_plot
+from rdtools.plotting import soiling_interval_plot
+from rdtools.plotting import soiling_rate_histogram
 
 from ._version import get_versions
 __version__ = get_versions()['version']
