@@ -8,3 +8,4 @@ pytz==2018.5
 scipy==0.19.1
 six==1.11.0
 statsmodels==0.8.0
+timezonefinder==4.0.2
