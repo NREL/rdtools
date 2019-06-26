@@ -5,6 +5,7 @@ import pvlib
 import rdtools
 import logging
 from timezonefinder import TimezoneFinder
+import pytz
 
 import logger
 logger.init()
@@ -50,6 +51,8 @@ def rename_columns(df):
             rename_dictionary[name] = 'dhi'
         elif 'datatime' in name or 'timestamp' in name:
             rename_dictionary[name] = 'timestamp'
+        elif 'energy' in name or 'energy_kwh' in name:
+            rename_dictionary[name] = 'energy'
 
     df.columns = columns
     df.rename(columns = rename_dictionary, inplace=True)
@@ -57,11 +60,18 @@ def rename_columns(df):
 
     return df
 
+def is_tz_naive(time_series):
+    return time_series.tzinfo is None or time_series.tzinfo.utcoffset(time_series) is None
+
 class AnalysisPipeline(object):
 
     def __init__(self, input_filename, system_metadata, clearsky = True):
         '''
-        input_filename: csv with power time-series
+        input_filename: (string) containing energy/power time series 
+        Units/conventions:
+                - power (kW)
+                - energy(kWh)
+                - timestamp (UTC and tz-naive pandas series
         system_metdata: dictionary with the following keys:
                         - systemid   (string. unique identifier)
                         - latitude
@@ -80,13 +90,10 @@ class AnalysisPipeline(object):
         self.df = rename_columns(pd.read_csv(input_filename))
         self.clearsky = clearsky
 
-    def process_data(self):
+    def _set_index_and_frequency(self):
         """
-        This function does the following:
-            - if timezone not present in metadata, gets timezone
-            - calculates energy if power is provided instead of energy
-            - normalizes and filters data
-        Returns dataframes for weather/sensor based calculation as well as clearky calculation
+        Helper function to convert UTC timestamps to local time and set frequency
+        Sets the timestamp as dataframe index
         """
 
         self.timezone = self.system_metadata.get('timezone')
@@ -95,14 +102,30 @@ class AnalysisPipeline(object):
             self.timezone = get_timezone( self.system_metadata['latitude'],
                                           self.system_metadata['longitude'] )
 
-        self.df.index = pd.to_datetime(self.df.timestamp)
-        self.df.index = self.df.index.tz_localize(self.timezone, ambiguous='infer')
+        self.timezone = pytz.timezone(self.timezone)
 
-        # There is some missing data, but we can infer the frequency from the first several data points
+        self.df.index = pd.to_datetime(self.df.timestamp)
+        if not is_tz_naive(self.df.index):
+            raise Exception("time series must be tz-naive, and UTC")
+
+        self.df.index = self.df.index.tz_localize(pytz.utc)
+        self.df.index = self.df.index.tz_convert(self.timezone)
+
+        # infer the frequency from the first ten data points
         freq = pd.infer_freq(self.df.index[:10])
         logging.info('inferred frequency = {}'.format(freq))
         # Set the frequency of the dataframe
         self.df = self.df.resample(freq).median()
+
+    def process_data(self):
+        """
+        This function does the following:
+            - calculates energy if power is provided instead of energy
+            - normalizes and filters data
+        Returns dataframes for weather/sensor based calculation as well as clearky calculation
+        """
+
+        self._set_index_and_frequency()
 
         if 'power' in self.df:
             # Convert power from kilowatts to watts
