@@ -79,7 +79,7 @@ class AnalysisPipeline(object):
                         - tilt       (degrees)
                         - azimuth    (degrees)
                         - pdc        (DC capacity in Watts)
-                        - tempco     (temperature coefficient)
+                        - gamma_pmp  (temperature coefficient)
                         - temp_model (temperature model to calculate cell temperature)
 
         clearsky (bool): if True, use clearsky methodology to calculate degradation rate
@@ -234,7 +234,7 @@ class AnalysisPipeline(object):
                 "T_cell" : cell_temperature,
                 "G_ref" : 1000,
                 "T_ref": 25,
-                "gamma_pdc" : self.system_metadata['tempco']
+                "gamma_pdc" : self.system_metadata['gamma_pmp']
                 }
 
         # the function also returns the relevant insolation for
