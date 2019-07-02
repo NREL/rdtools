@@ -1,5 +1,5 @@
 h5py==2.7.1
-matplotlib == 3.0.3
+matplotlib == 2.2.2
 numpy==1.12
 patsy==0.5.0
 pandas==0.23.0
