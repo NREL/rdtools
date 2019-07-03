@@ -16,39 +16,38 @@ from . import plotting
 class system_analysis():
     '''
     Class for end-to-end analysis
+
+    Instantiation parameters
+    ----------
+    pv: Right-labeled Pandas Time Series of PV energy or power. If energy, should *not* be cumulative, but only for preceding time step.
+    poa: Right-labeled Pandas Time Series of measured plane of array irradiance in W/m^2
+    temperature: Right-label Pandas Time Series of either cell or ambient temperature in Celsius
+    temperature_coefficient: The fractional PV power temperature coefficient (numeric)
+    aggregation_freq: The frequency with which to aggregate normalized PV data for analysis (Pandas frequency specification)
+    pv_input: 'power' or 'energy' to specify type of input used for pv parameter
+    temeprature_input: 'cell' or 'ambient' to specify type of input used for temperature parameter
+    pvlib_location: pvlib location object used for calculating clearsky temperature and irradiance
+    clearsky_poa: Right-labeled Pandas Time Series of clear-sky plane of array irradiance
+    clearsky_temperature: Right-labeled Pandas Time Series of clear-sky cell or ambient temperature in Celsius
+    clearsky_temperature_input: 'cell' or 'ambient' to specify type of input used for clearsky_temperature parameter
+    windspeed: Right-labeled Pandas Time Series or numeric indicating wind speed in m/s for use in calculating cell temperature from ambient
+               default value of 0 neglects the wind in this calculation
+    albedo: Albedo to be used in irradiance transposition calculations (numeric)
+    temperature_model: model parameter pvsystem.sapm_celltemp() used in calculating cell temperature from ambient
+    pv_azimuth: Azimuth of PV array in degrees from north (numeric)
+    pv_tilt: Tilt of PV array in degrees from horizontal
+    pv_nameplate: Nameplate DC rating of PV array in Watts (numeric)
+    interp_freq: The frequency to which to interpolate all Pandas Time Series passed at instantiation. We recommend using the natural
+                 frequency of the data, rather than up or down sampling. Analysis requires regular time series.
+    max_timedelta: The maximum gap in the data to be interpolated/integrated across when interpolating or calculating energy from power (Timedelta)
     '''
+    
     def __init__(self, pv, poa=None, temperature=None, temperature_coefficient=None,
                  aggregation_freq='D', pv_input='power', temperature_input='cell', pvlib_location=None,
                  clearsky_poa=None, clearsky_temperature=None, clearsky_temperature_input='cell', windspeed=0, albedo=0.25,
                  temperature_model=None, pv_azimuth=None, pv_tilt=None, pv_nameplate=None, interp_freq=None, max_timedelta=None):
         '''
-        Parameters
-        ----------
-        pv: Right-labeled Pandas Time Series of PV energy or power. If energy, should *not* be cumulative, but only for preceding time step.
-        poa: Right-labeled Pandas Time Series of measured plane of array irradiance in W/m^2
-        temperature: Right-label Pandas Time Series of either cell or ambient temperature in Celsius
-        temperature_coefficient: The fractional PV power temperature coefficient (numeric)
-        aggregation_freq: The frequency with which to aggregate normalized PV data for analysis (Pandas frequency specification)
-        pv_input: 'power' or 'energy' to specify type of input used for pv parameter
-        temeprature_input: 'cell' or 'ambient' to specify type of input used for temperature parameter
-        pvlib_location: pvlib location object used for calculating clearsky temperature and irradiance
-        clearsky_poa: Right-labeled Pandas Time Series of clear-sky plane of array irradiance
-        clearsky_temperature: Right-labeled Pandas Time Series of clear-sky cell or ambient temperature in Celsius
-        clearsky_temperature_input: 'cell' or 'ambient' to specify type of input used for clearsky_temperature parameter
-        windspeed: Right-labeled Pandas Time Series or numeric indicating wind speed in m/s for use in calculating cell temperature from ambient
-                   default value of 0 neglects the wind in this calculation
-        albedo: Albedo to be used in irradiance transposition calculations (numeric)
-        temperature_model: model parameter pvsystem.sapm_celltemp() used in calculating cell temperature from ambient
-        pv_azimuth: Azimuth of PV array in degrees from north (numeric)
-        pv_tilt: Tilt of PV array in degrees from horizontal
-        pv_nameplate: Nameplate DC rating of PV array in Watts (numeric)
-        interp_freq: The frequency to which to interpolate all Pandas Time Series passed at instantiation. We recommend using the natural
-                     frequency of the data, rather than up or down sampling. Analysis requires regular time series.
-        max_timedelta: The maximum gap in the data to be interpolated/integrated across when interpolating or calculating energy from power (Timedelta)
-
-        Returns
-        -------
-        None
+        Instantiates a system_analysis object
         '''
         if interp_freq is not None:
             pv = normalization.interpolate(pv, interp_freq, max_timedelta)
