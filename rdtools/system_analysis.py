@@ -3,6 +3,7 @@ This module contains functions and classes for object-oriented end-to-end analys
 '''
 import pvlib
 import pandas as pd
+import numpy as np
 import matplotlib.pyplot as plt
 from . import normalization
 from . import filtering
@@ -41,7 +42,7 @@ class system_analysis():
                  frequency of the data, rather than up or down sampling. Analysis requires regular time series.
     max_timedelta: The maximum gap in the data to be interpolated/integrated across when interpolating or calculating energy from power (Timedelta)
     '''
-    
+
     def __init__(self, pv, poa=None, temperature=None, temperature_coefficient=None,
                  aggregation_freq='D', pv_input='power', temperature_input='cell', pvlib_location=None,
                  clearsky_poa=None, clearsky_temperature=None, clearsky_temperature_input='cell', windspeed=0, albedo=0.25,
@@ -215,7 +216,8 @@ class system_analysis():
         if renorm:
             # Normalize to the 95th percentile for convenience, this is renormalized out
             # in the calculations but is relevant to normalized_filter()
-            normalized = normalized / normalized.quantile(0.95)
+            x = normalized[np.isfinite(normalized)]
+            normalized = normalized / x.quantile(0.95)
 
         return normalized, insolation
 
