@@ -43,10 +43,11 @@ class system_analysis():
     max_timedelta: The maximum gap in the data to be interpolated/integrated across when interpolating or calculating energy from power (Timedelta)
     '''
 
-    def __init__(self, pv, poa=None, temperature=None, temperature_coefficient=None,
-                 aggregation_freq='D', pv_input='power', temperature_input='cell', pvlib_location=None,
-                 clearsky_poa=None, clearsky_temperature=None, clearsky_temperature_input='cell', windspeed=0, albedo=0.25,
-                 temperature_model=None, pv_azimuth=None, pv_tilt=None, pv_nameplate=None, interp_freq=None, max_timedelta=None):
+    def __init__(self, pv, poa=None, cell_temperature=None, ambient_temperature=None,
+                 temperature_coefficient=None, aggregation_freq='D', pv_input='power', pvlib_location=None,
+                 clearsky_poa=None, clearsky_cell_temperature=None, clearsky_ambient_temperature=None,
+                 windspeed=0, albedo=0.25, temperature_model=None, pv_azimuth=None, pv_tilt=None,
+                 pv_nameplate=None, interp_freq=None, max_timedelta=None):
         '''
         Instantiates a system_analysis object
         '''
@@ -54,12 +55,16 @@ class system_analysis():
             pv = normalization.interpolate(pv, interp_freq, max_timedelta)
             if poa is not None:
                 poa = normalization.interpolate(poa, interp_freq, max_timedelta)
-            if temperature is not None:
-                temperature = normalization.interpolate(temperature, interp_freq, max_timedelta)
+            if cell_temperature is not None:
+                cell_temperature = normalization.interpolate(cell_temperature, interp_freq, max_timedelta)
+            if ambient_temperature is not None:
+                ambient_temperature = normalization.interpolate(ambient_temperature, interp_freq, max_timedelta)
             if clearsky_poa is not None:
                 clearsky_poa = normalization.interpolate(clearsky_poa, interp_freq, max_timedelta)
-            if clearsky_temperature is not None:
-                clearsky_temperature = normalization.interpolate(clearsky_temperature, interp_freq, max_timedelta)
+            if clearsky_cell_temperature is not None:
+                clearsky_cell_temperature = normalization.interpolate(clearsky_cell_temperature, interp_freq, max_timedelta)
+            if clearsky_ambient_temperature is not None:
+                clearsky_ambient_temperature = normalization.interpolate(clearsky_ambient_temperature, interp_freq, max_timedelta)
             if isinstance(pv_azimuth, (pd.Series, pd.DataFrame)):
                 pv_azimuth = normalization.interpolate(pv_azimuth, interp_freq, max_timedelta)
             if isinstance(pv_tilt, (pd.Series, pd.DataFrame)):
@@ -72,19 +77,10 @@ class system_analysis():
             self.pv_power = None
             self.pv_energy = pv
 
-        if temperature_input == 'cell':
-            self.cell_temperature = temperature
-            self.ambient_temperature = None
-        elif temperature_input == 'ambient':
-            self.cell_temperature = None
-            self.ambient_temperature = temperature
-
-        if clearsky_temperature_input == 'cell':
-            self.clearsky_cell_temperature = clearsky_temperature
-            self.clearsky_ambient_temperature = None
-        elif clearsky_temperature_input == 'ambient':
-            self.clearsky_cell_temperature = None
-            self.clearsky_ambient_temperature = clearsky_temperature
+        self.cell_temperature = cell_temperature
+        self.ambient_temperature = ambient_temperature
+        self.clearsky_cell_temperature = clearsky_cell_temperature
+        self.clearsky_ambient_temperature = clearsky_ambient_temperature
 
         self.poa = poa
         self.temperature_coefficient = temperature_coefficient
@@ -576,7 +572,7 @@ class system_analysis():
         elif poa_type == 'clearsky':
             poa = self.clearsky_poa
 
-        to_plot = pd.merge(poa, self.pv_energy, left_index=True, right_index=True)
+        to_plot = pd.merge(pd.DataFrame(poa), pd.DataFrame(self.pv_energy), left_index=True, right_index=True)
 
         fig, ax = plt.subplots()
         ax.plot(to_plot.iloc[:, 0], to_plot.iloc[:, 1], 'o', alpha=alpha, **kwargs)
