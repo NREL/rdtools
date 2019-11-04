@@ -22,15 +22,17 @@ class system_analysis():
     ----------
     pv: Right-labeled Pandas Time Series of PV energy or power. If energy, should *not* be cumulative, but only for preceding time step.
     poa: Right-labeled Pandas Time Series of measured plane of array irradiance in W/m^2
-    temperature: Right-label Pandas Time Series of either cell or ambient temperature in Celsius
+    cell_temperature: Right-label Pandas Time Series of cell temperature in Celsius. In practice, back of
+                      module temperature works as a good approximation.
+    ambient_temperature: Right-label Pandas Time Series of ambient temperature in Celsius
     temperature_coefficient: The fractional PV power temperature coefficient (numeric)
     aggregation_freq: The frequency with which to aggregate normalized PV data for analysis (Pandas frequency specification)
     pv_input: 'power' or 'energy' to specify type of input used for pv parameter
-    temeprature_input: 'cell' or 'ambient' to specify type of input used for temperature parameter
     pvlib_location: pvlib location object used for calculating clearsky temperature and irradiance
     clearsky_poa: Right-labeled Pandas Time Series of clear-sky plane of array irradiance
-    clearsky_temperature: Right-labeled Pandas Time Series of clear-sky cell or ambient temperature in Celsius
-    clearsky_temperature_input: 'cell' or 'ambient' to specify type of input used for clearsky_temperature parameter
+    clearsky_cell_temperature: Right-label Pandas Time Series of cell temperature in clear sky condistions in Celsius.
+                               In practice, back of module temperature works as a good approximation.
+    clearsky_ambient_temperature: Right-label Pandas Time Series of ambient temperature in clear sky condistions in Celsius
     windspeed: Right-labeled Pandas Time Series or numeric indicating wind speed in m/s for use in calculating cell temperature from ambient
                default value of 0 neglects the wind in this calculation
     albedo: Albedo to be used in irradiance transposition calculations (numeric)
