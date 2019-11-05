@@ -50,9 +50,7 @@ class system_analysis():
                  clearsky_poa=None, clearsky_cell_temperature=None, clearsky_ambient_temperature=None,
                  windspeed=0, albedo=0.25, temperature_model=None, pv_azimuth=None, pv_tilt=None,
                  pv_nameplate=None, interp_freq=None, max_timedelta=None):
-        '''
-        Instantiates a system_analysis object
-        '''
+
         if interp_freq is not None:
             pv = normalization.interpolate(pv, interp_freq, max_timedelta)
             if poa is not None:
