@@ -14,7 +14,7 @@ from . import clearsky_temperature
 from . import plotting
 
 
-class system_analysis():
+class SystemAnalysis():
     '''
     Class for end-to-end analysis
 
