@@ -19,17 +19,18 @@ def clip_filter(power, quant=0.98, low_power_cutoff=0.01):
 
     Parameters
     ----------
-    power: Pandas series (numeric)
-        AC power
-    quant: float
-        threshold for quantile
-    low_power_cutoff
+    power : pd.Series
+        AC power in Watts
+    quant : float, default 0.98
+        Value for upper threshold quantile
+    low_power_cutoff : float, default 0.01
+        Value for low-power cutoff (in Watts)
 
     Returns
     -------
-    Pandas Series (boolean)
-        mask to exclude points equal to and
-        above 99% of the percentile threshold
+    pd.Series
+        Boolean Series of whether the given measurement is below 99% of the
+        quantile filter and above the low-power cutoff.
     '''
     v = power.quantile(quant)
     return (power < v * 0.99) & (power > low_power_cutoff)
@@ -41,17 +42,18 @@ def csi_filter(measured_poa, clearsky_poa, threshold=0.15):
 
     Parameters
     ----------
-    measured_poa: Pandas series (numeric)
+    measured_poa : pd.Series
         Plane of array irradiance based on measurments
-    clearsky_poa: Pandas series (numeric)
+    clearsky_poa : pd.Series
         Plane of array irradiance based on a clear sky model
-    threshold: float
+    threshold : float, default 0.15
         threshold for filter
 
     Returns
     -------
-    Pandas Series (boolean)
-        mask to exclude points below the threshold
+    pd.Series
+        Boolean Series of whether the clear-sky index is within the threshold
+        around 1.
     '''
 
     csi = measured_poa / clearsky_poa
