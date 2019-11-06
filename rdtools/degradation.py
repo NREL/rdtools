@@ -34,7 +34,7 @@ def degradation_ols(normalized_energy, confidence_level=68.2):
     normalized_energy.name = 'normalized_energy'
     df = normalized_energy.to_frame()
 
-    # calculate a years column as x value for regression, ignoreing leap years
+    # calculate a years column as x value for regression, ignoring leap years
     day_diffs = (df.index - df.index[0])
     df['days'] = day_diffs.astype('timedelta64[s]') / (60 * 60 * 24)
     df['years'] = df.days / 365.0
@@ -112,7 +112,7 @@ def degradation_classical_decomposition(normalized_energy, confidence_level=68.2
         raise ValueError('Classical decomposition requires a regular time series with'
                          ' defined frequency and no missing data.')
 
-    # calculate a years column as x value for regression, ignoreing leap years
+    # calculate a years column as x value for regression, ignoring leap years
     day_diffs = (df.index - df.index[0])
     df['days'] = day_diffs.astype('timedelta64[s]') / (60 * 60 * 24)
     df['years'] = df.days / 365.0
@@ -280,7 +280,7 @@ def _mk_test(x, alpha=0.05):
     Returns
     -------
     trend: string, tells the trend (increasing, decreasing or no trend)
-    h: boolean, True (if trend is present) or False (if trend is absence)
+    h: boolean, True (if trend is present) or False (if trend is absent)
     p: float, p value of the significance test
     z: float, normalized test statistics
     '''
