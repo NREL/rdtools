@@ -114,7 +114,7 @@ class SystemAnalysis():
         times: Pandas DateTimeIndex for which to calculate clearsky poa
         rescale: Whether to attempt to rescale clearsky irradiance to measured (bool)
         model: Model for pvlib.irradiance.get_total_irradiance() (str)
-        kwargs: key word arguments passed to pvlib.irradiance.get_total_irradiance()
+        kwargs: Extra parameters passed to pvlib.irradiance.get_total_irradiance()
 
         Returns
         -------
@@ -304,7 +304,7 @@ class SystemAnalysis():
         Parameters
         ----------
         aggregated: Pandas Time Series of insolation-weighted aggregated normalized PV energy
-        kwargs: passed to degradation.degradation_year_on_year()
+        kwargs: Extra parameters passed to degradation.degradation_year_on_year()
 
         Returns
         -------
@@ -333,7 +333,7 @@ class SystemAnalysis():
         ---------
         aggregated: Pandas Time Series of insolation-weighted aggregated normalized PV energy
         aggregated_insolation: Pandas Time Series of insolation aggregated at same level as aggregated
-        kwargs: passed to soiling.soiling_srr()
+        kwargs: Extra parameters passed to soiling.soiling_srr()
 
         Returns
         -------
@@ -456,7 +456,7 @@ class SystemAnalysis():
         Parameters
         ----------
         result_to_plot: The workflow result to plot, allowed values are 'sensor' and 'clearsky' (str)
-        kwargs: passed to plotting.degradation_summary_plots()
+        kwargs: Extra parameters passed to plotting.degradation_summary_plots()
 
         Returns
         -------
@@ -483,7 +483,7 @@ class SystemAnalysis():
         Parameters
         ----------
         result_to_plot: The workflow result to plot, allowed values are 'sensor' and 'clearsky' (str)
-        kwargs: passed to plotting.soiling_monte_carlo_plot()
+        kwargs: Extra parameters passed to plotting.soiling_monte_carlo_plot()
 
         Returns
         -------
@@ -509,7 +509,7 @@ class SystemAnalysis():
         Parameters
         ----------
         result_to_plot: The workflow result to plot, allowed values are 'sensor' and 'clearsky' (str)
-        kwargs: passed to plotting.soiling_interval_plot()
+        kwargs: Extra parameters passed to plotting.soiling_interval_plot()
 
         Returns
         -------
@@ -535,7 +535,7 @@ class SystemAnalysis():
         Parameters
         ----------
         result_to_plot: The workflow result to plot, allowed values are 'sensor' and 'clearsky' (str)
-        kwargs: passed to plotting.soiling_rate_histogram()
+        kwargs: Extra parameters passed to plotting.soiling_rate_histogram()
 
         Returns
         -------
@@ -560,7 +560,7 @@ class SystemAnalysis():
         ----------
         poa_type: The plane of array irradiance type to plot, allowed values are 'sensor' and 'clearsky' (str)
         alpha: transparency of the scatter plot (numeric)
-        kwargs: passed to matplotlib.pyplot.axis.plot()
+        kwargs: Extra parameters passed to matplotlib.pyplot.axis.plot()
 
         Returns
         -------
