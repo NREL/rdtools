@@ -93,7 +93,7 @@ def normalize_with_pvwatts(energy, pvwatts_kws):
 
     Returns
     -------
-    tulple (normalized_energy, insolation)
+    tuple (normalized_energy, insolation)
         normalized_energy: Pandas Series (numeric)
             Energy divided by PVWatts DC energy.
         insolation: Pandas Series (numeric)
@@ -122,12 +122,12 @@ def normalize_with_pvwatts(energy, pvwatts_kws):
         dc_power = dc_power.resample(freq).asfreq()
         dc_power = dc_power.interpolate()
         dc_power = dc_power.reindex(energy.index, method='nearest')
-        energy_dc = dc_power * measure_tds  # timedelta is that of measurment due to reindex
+        energy_dc = dc_power * measure_tds  # timedelta is that of measurement due to reindex
 
         irrad = irrad.resample(freq).asfreq()
         irrad = irrad.interpolate()
         irrad = irrad.reindex(energy.index, method='nearest')
-        insolation = irrad * measure_tds  # timedelta is that of measurment due to reindex
+        insolation = irrad * measure_tds  # timedelta is that of measurement due to reindex
 
     normalized_energy = energy / energy_dc
 
@@ -155,7 +155,7 @@ def sapm_dc_power(pvlib_pvsystem, met_data):
 
     Returns
     -------
-    tulple (dc_power, effective_poa)
+    tuple (dc_power, effective_poa)
         dc_power: Pandas Series (numeric)
             DC power in watts derived using Sandia Array Performance Model and PVWatts.
         effective_poa: Pandas Series (numeric)
@@ -226,7 +226,7 @@ def normalize_with_sapm(energy, sapm_kws):
           at a given timestamp refers ot the previous time interval
     Returns
     -------
-    tulple (normalized_energy, insolation)
+    tuple (normalized_energy, insolation)
         normalized_energy: Pandas Series (numeric)
             Energy divided by Sandia Model DC energy.
         insolation: Pandas Series (numeric)
@@ -306,7 +306,7 @@ def irradiance_rescale(irrad, modeled_irrad, max_iterations=100, method=None):
 
     Returns
     -------
-    Pandas Series (numeric): resacaled modeled irradaince time series
+    Pandas Series (numeric): resacaled modeled irradiance time series
     '''
 
     if method is None:
