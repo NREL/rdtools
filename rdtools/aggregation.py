@@ -8,18 +8,20 @@ def aggregation_insol(normalized_energy, insolation, frequency='D'):
 
     Parameters
     ----------
-    normalized_energy: Pandas series (numeric)
+    normalized_energy : pd.Series
         Normalized energy time series
-    insolation: Pandas series (numeric)
-        Time series of insolation associated with each normalize_energy point
-    frequency: Pandas offset string
+    insolation : pd.Series
+        Time series of insolation associated with each `normalized_energy` 
+        point
+    frequency : Pandas offset string, default 'D'
         Target frequency at which to aggregate
 
     Returns
     -------
-    aggregated: Pandas Series (numeric)
+    aggregated : pd.Series
         Insolation weighted average, aggregated at frequency
     '''
-    aggregated = (insolation * normalized_energy).resample(frequency).sum() / insolation.resample(frequency).sum()
+    aggregated = (insolation * normalized_energy).resample(frequency).sum() / \
+        insolation.resample(frequency).sum()
 
     return aggregated
