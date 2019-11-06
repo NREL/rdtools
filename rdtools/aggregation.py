@@ -11,7 +11,7 @@ def aggregation_insol(normalized_energy, insolation, frequency='D'):
     normalized_energy : pd.Series
         Normalized energy time series
     insolation : pd.Series
-        Time series of insolation associated with each `normalized_energy` 
+        Time series of insolation associated with each `normalized_energy`
         point
     frequency : Pandas offset string, default 'D'
         Target frequency at which to aggregate
