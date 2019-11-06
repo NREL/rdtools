@@ -12,20 +12,23 @@ import statsmodels.api as sm
 
 def degradation_ols(normalized_energy, confidence_level=68.2):
     '''
-    Description
-    -----------
     OLS routine
 
     Parameters
     ----------
-    normalized_energy: Pandas Time Series (numeric)
+    normalized_energy: pd.Series
         Daily or lower frequency time series of normalized system ouput.
-    confidence_level: the size of the confidence interval to return, in percent
+    confidence_level: float, default 68.2
+        The size of the confidence interval to return, in .
 
     Returns
     -------
-    (degradation rate, confidence interval, calc_info)
-        calc_info is a dict that contains slope, intercept,
+    Rd_pct : float
+        Estimated degradation rate in units percent/year.
+    Rd_CI : np.array
+        The calculated confidence interval bounds.
+    calc_info : dict
+        A dict that contains slope, intercept,
         root mean square error of regression ('rmse'), standard error
         of the slope ('slope_stderr'), intercept ('intercept_stderr'),
         and least squares RegressionResults object ('ols_results')
@@ -43,7 +46,8 @@ def degradation_ols(normalized_energy, confidence_level=68.2):
     df = sm.add_constant(df)
 
     # perform regression
-    ols_model = sm.OLS(endog=df.normalized_energy, exog=df.loc[:, ['const', 'years']],
+    ols_model = sm.OLS(endog=df.normalized_energy,
+                       exog=df.loc[:, ['const', 'years']],
                        hasconst=True, missing='drop')
 
     results = ols_model.fit()
@@ -75,26 +79,30 @@ def degradation_ols(normalized_energy, confidence_level=68.2):
     return (Rd_pct, Rd_CI, calc_info)
 
 
-def degradation_classical_decomposition(normalized_energy, confidence_level=68.2):
+def degradation_classical_decomposition(normalized_energy,
+                                        confidence_level=68.2):
     '''
-    Description
-    -----------
     Classical decomposition routine
 
     Parameters
     ----------
-    normalized_energy: Pandas Time Series (numeric)
+    normalized_energy: pd.Series
         Daily or lower frequency time series of normalized system ouput.
         Must be regular time series.
-    confidence_level: the size of the confidence interval to return, in percent
+    confidence_level: float, default 68.2
+        The size of the confidence interval to return, in percent.
 
     Returns
     -------
-    (degradation rate, confidence interval, calc_info)
-    calc_info is a dict that contains values for
-        slope, intercept, root mean square error of regression ('rmse'),
-        standard error of the slope ('slope_stderr') and intercept ('intercept_stderr'),
-        least squares RegressionResults object ('ols_results'),
+    Rd_pct : float
+        Estimated degradation rate in units percent/year.
+    Rd_CI : np.array
+        The calculated confidence interval bounds.
+    calc_info : dict
+        A dict that contains slope, intercept,
+        root mean square error of regression ('rmse'), standard error
+        of the slope ('slope_stderr'), intercept ('intercept_stderr'),
+        and least squares RegressionResults object ('ols_results'),
         pandas series for the annual rolling mean ('series'), and
         Mann-Kendall test trend ('mk_test_trend')
     '''
@@ -109,20 +117,23 @@ def degradation_classical_decomposition(normalized_energy, confidence_level=68.2
     df_check_freq = df_check_freq.dropna()
 
     if df_check_freq.index.freq is None:
-        raise ValueError('Classical decomposition requires a regular time series with'
-                         ' defined frequency and no missing data.')
+        raise ValueError('Classical decomposition requires a regular time '
+                         'series with defined frequency and no missing data.')
 
     # calculate a years column as x value for regression, ignoreing leap years
     day_diffs = (df.index - df.index[0])
     df['days'] = day_diffs.astype('timedelta64[s]') / (60 * 60 * 24)
     df['years'] = df.days / 365.0
 
-    # Compute yearly rolling mean to isolate trend component using moving average
+    # Compute yearly rolling mean to isolate trend component using
+    # moving average
     it = df.iterrows()
     energy_ma = []
     for i, row in it:
-        if row.years - 0.5 >= min(df.years) and row.years + 0.5 <= max(df.years):
-            roll = df[(df.years <= row.years + 0.5) & (df.years >= row.years - 0.5)]
+        if row.years - 0.5 >= min(df.years) and \
+           row.years + 0.5 <= max(df.years):
+            roll = df[(df.years <= row.years + 0.5) &
+                      (df.years >= row.years - 0.5)]
             energy_ma.append(roll.normalized_energy.mean())
         else:
             energy_ma.append(np.nan)
@@ -170,34 +181,36 @@ def degradation_classical_decomposition(normalized_energy, confidence_level=68.2
     return (Rd_pct, Rd_CI, calc_info)
 
 
-def degradation_year_on_year(normalized_energy, recenter=True, exceedance_prob=95, confidence_level=68.2):
+def degradation_year_on_year(normalized_energy, recenter=True, 
+                             exceedance_prob=95, confidence_level=68.2):
     '''
-    Description
-    -----------
     Year-on-year decomposition method
 
     Parameters
     ----------
-    normalized_energy: Pandas Time Series (numeric)
+    normalized_energy: pd.Series
         Daily or lower frequency time series of normalized system ouput.
-    recenter (bool): default value True
-        specify whether data is centered to normalized yield of 1 based on first year
-    exceedance_prob (float): the probability level to use for exceedance value calculation in percent
-    confidence_level (float): the size of the confidence interval to return, in percent
+    recenter : bool, default True
+        Specify whether data is centered to normalized yield of 1 based on
+        first year.
+    exceedance_prob : float, default 95
+        The probability level to use for exceedance value calculation,
+        in percent.
+    confidence_level : float, default 68.2
+        The size of the confidence interval to return, in percent.
 
     Returns
     -------
-    tuple of (degradation_rate, confidence_interval, calc_info)
-        degradation_rate:  float
-            rate of relative performance change in %/yr
-        confidence_interval:  numpy ndarray
-            confidence interval (size specified by confidence_level) of degradation
-            rate estimate
-        calc_info:  dict
-            ('YoY_values') pandas series of right-labeled year on year slopes
-            ('renormalizing_factor') float of value used to recenter data
-            ('exceedance_level') the degradation rate that was outperformed with
-            probability of exceedance_prob
+    degradation_rate : float
+        rate of relative performance change in %/yr
+    confidence_interval : np.array
+        confidence interval (size specified by confidence_level) of degradation
+        rate estimate
+    calc_info : dict
+        ('YoY_values') pandas series of right-labeled year on year slopes
+        ('renormalizing_factor') float of value used to recenter data
+        ('exceedance_level') the degradation rate that was outperformed with
+        probability of exceedance_prob
     '''
 
     # Ensure the data is in order
@@ -206,12 +219,16 @@ def degradation_year_on_year(normalized_energy, recenter=True, exceedance_prob=9
     normalized_energy.index.name = 'dt'
 
     # Detect sub-daily data:
-    if min(np.diff(normalized_energy.index.values, n=1)) < np.timedelta64(23, 'h'):
-        raise ValueError('normalized_energy must not be more frequent than daily')
+    if min(np.diff(normalized_energy.index.values, n=1)) < \
+            np.timedelta64(23, 'h'):
+        raise ValueError('normalized_energy must not be '
+                         'more frequent than daily')
 
     # Detect less than 2 years of data
-    if normalized_energy.index[-1] - normalized_energy.index[0] < pd.Timedelta('730d'):
-        raise ValueError('must provide at least two years of normalized energy')
+    if normalized_energy.index[-1] - normalized_energy.index[0] < \
+            pd.Timedelta('730d'):
+        raise ValueError('must provide at least two years of '
+                         'normalized energy')
 
     # Auto center
     if recenter:
@@ -224,17 +241,19 @@ def degradation_year_on_year(normalized_energy, recenter=True, exceedance_prob=9
     normalized_energy = normalized_energy.reset_index()
     normalized_energy['energy'] = normalized_energy['energy'] / renorm
 
-    normalized_energy['dt_shifted'] = normalized_energy.dt + pd.DateOffset(years=1)
+    normalized_energy['dt_shifted'] = normalized_energy.dt + \
+                                      pd.DateOffset(years=1)
 
-    # Merge with what happened one year ago, use tolerance of 8 days to allow for
-    # weekly aggregated data
+    # Merge with what happened one year ago, use tolerance of 8 days to allow
+    # for weekly aggregated data
     df = pd.merge_asof(normalized_energy[['dt', 'energy']], normalized_energy,
                        left_on='dt', right_on='dt_shifted',
                        suffixes=['', '_right'],
                        tolerance=pd.Timedelta('8D')
                        )
 
-    df['time_diff_years'] = (df.dt - df.dt_right).astype('timedelta64[h]') / 8760.0
+    df['time_diff_years'] = (df.dt - df.dt_right).astype('timedelta64[h]') / \
+                            8760.0
     df['yoy'] = 100.0 * (df.energy - df.energy_right) / (df.time_diff_years)
     df.index = df.dt
 
@@ -268,21 +287,26 @@ def degradation_year_on_year(normalized_energy, recenter=True, exceedance_prob=9
 
 def _mk_test(x, alpha=0.05):
     '''
-    Description
-    -----------
-    Mann-Kendall test of significance for trend (used in classical decomposition function)
+    Mann-Kendall test of significance for trend (used in classical
+    decomposition function)
 
     Parameters
     ----------
-    x: a vector of data type float
-    alpha: float, significance level (0.05 default)
+    x : numeric
+        A data vector to test for trend.
+    alpha: float, default 0.05
+        The test significance level.
 
     Returns
     -------
-    trend: string, tells the trend (increasing, decreasing or no trend)
-    h: boolean, True (if trend is present) or False (if trend is absence)
-    p: float, p value of the significance test
-    z: float, normalized test statistics
+    trend : str
+        Tells the trend ('increasing', 'decreasing', or 'no trend')
+    h : bool
+        True (if trend is present) or False (if trend is absence)
+    p : float
+        p value of the significance test
+    z : float
+        normalized test statistic
     '''
 
     from scipy.stats import norm
@@ -314,7 +338,7 @@ def _mk_test(x, alpha=0.05):
     if s > 0:
         z = (s - 1) / np.sqrt(var_s)
     elif s == 0:
-            z = 0
+        z = 0
     elif s < 0:
         z = (s + 1) / np.sqrt(var_s)
 
@@ -334,14 +358,13 @@ def _mk_test(x, alpha=0.05):
 
 def _degradation_CI(results, confidence_level):
     '''
-    Description
-    -----------
     Monte Carlo estimation of uncertainty in degradation rate from OLS results
 
     Parameters
     ----------
     results: OLSResults object from fitting a model of the form:
-        results = sm.OLS(endog = df.energy_ma, exog = df.loc[:,['const','years']]).fit()
+        results = sm.OLS(endog = df.energy_ma,
+                         exog = df.loc[:,['const','years']]).fit()
     confidence_level: the size of the confidence interval to return, in percent
 
     Returns
@@ -350,7 +373,9 @@ def _degradation_CI(results, confidence_level):
 
     '''
 
-    sampled_normal = np.random.multivariate_normal(results.params, results.cov_params(), 10000)
+    sampled_normal = np.random.multivariate_normal(results.params,
+                                                   results.cov_params(),
+                                                   10000)
     dist = sampled_normal[:, 1] / sampled_normal[:, 0]
     half_ci = confidence_level / 2.0
     Rd_CI = np.percentile(dist, [50.0 - half_ci, 50.0 + half_ci]) * 100.0
