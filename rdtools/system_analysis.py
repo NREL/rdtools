@@ -105,7 +105,7 @@ class SystemAnalysis():
             'ad_hoc_filter': None  # use this to include an explict filter
         }
 
-    def calc_clearsky_poa(self, times=None, rescale=True, model='isotropic', **kwargs):
+    def calc_clearsky_poa(self, times=None, rescale=True, **kwargs):
         '''
         Calculate clearsky plane-of-array irradiance and store in self.clearsky_poa
 
@@ -135,7 +135,7 @@ class SystemAnalysis():
 
         clearsky_poa = pvlib.irradiance.get_total_irradiance(self.pv_tilt, self.pv_azimuth, sun['apparent_zenith'],
                                                              sun['azimuth'], clearsky['dni'], clearsky['ghi'],
-                                                             clearsky['dhi'], albedo=self.albedo, model=model, **kwargs)
+                                                             clearsky['dhi'], albedo=self.albedo, **kwargs)
         clearsky_poa = clearsky_poa['poa_global']
 
         if rescale is True:
@@ -377,7 +377,7 @@ class SystemAnalysis():
         Perform clear-sky-based normalization, filtering, and aggregation work flow
         '''
         if self.clearsky_poa is None:
-            self.calc_clearsky_poa()  # kwargs?
+            self.calc_clearsky_poa(model='isotropic')
         if self.clearsky_cell_temperature is None:
             if self.clearsky_ambient_temperature is None:
                 self.calc_clearsky_tamb()
