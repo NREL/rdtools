@@ -19,7 +19,7 @@ def degradation_ols(normalized_energy, confidence_level=68.2):
     normalized_energy: pd.Series
         Daily or lower frequency time series of normalized system ouput.
     confidence_level: float, default 68.2
-        The size of the confidence interval to return, in .
+        The size of the confidence interval to return, in percent.
 
     Returns
     -------
@@ -37,7 +37,7 @@ def degradation_ols(normalized_energy, confidence_level=68.2):
     normalized_energy.name = 'normalized_energy'
     df = normalized_energy.to_frame()
 
-    # calculate a years column as x value for regression, ignoreing leap years
+    # calculate a years column as x value for regression, ignoring leap years
     day_diffs = (df.index - df.index[0])
     df['days'] = day_diffs.astype('timedelta64[s]') / (60 * 60 * 24)
     df['years'] = df.days / 365.0
@@ -120,7 +120,7 @@ def degradation_classical_decomposition(normalized_energy,
         raise ValueError('Classical decomposition requires a regular time '
                          'series with defined frequency and no missing data.')
 
-    # calculate a years column as x value for regression, ignoreing leap years
+    # calculate a years column as x value for regression, ignoring leap years
     day_diffs = (df.index - df.index[0])
     df['days'] = day_diffs.astype('timedelta64[s]') / (60 * 60 * 24)
     df['years'] = df.days / 365.0
@@ -181,7 +181,7 @@ def degradation_classical_decomposition(normalized_energy,
     return (Rd_pct, Rd_CI, calc_info)
 
 
-def degradation_year_on_year(normalized_energy, recenter=True, 
+def degradation_year_on_year(normalized_energy, recenter=True,
                              exceedance_prob=95, confidence_level=68.2):
     '''
     Year-on-year decomposition method
@@ -302,7 +302,7 @@ def _mk_test(x, alpha=0.05):
     trend : str
         Tells the trend ('increasing', 'decreasing', or 'no trend')
     h : bool
-        True (if trend is present) or False (if trend is absence)
+        True (if trend is present) or False (if trend is absent)
     p : float
         p value of the significance test
     z : float

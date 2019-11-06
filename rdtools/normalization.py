@@ -113,13 +113,13 @@ def normalize_with_pvwatts(energy, pvwatts_kws):
     model_tds, mean_model_td = delta_index(dc_power)
     measure_tds, mean_measure_td = delta_index(energy)
 
-    # Case in which the model is as or more frequent than the measurments
+    # Case in which the model is as or more frequent than the measurements
     if mean_model_td <= mean_measure_td:
 
         energy_dc = energy_from_power(dc_power, freq)
         insolation = energy_from_power(irrad, freq)
 
-    # Case in which the model less frequent than the measurments
+    # Case in which the model less frequent than the measurements
     elif mean_model_td > mean_measure_td:
 
         dc_power = interpolate(dc_power, energy.index)
@@ -313,7 +313,7 @@ def irradiance_rescale(irrad, modeled_irrad, max_iterations=100, method=None):
     Returns
     -------
     pd.Series
-        Resacaled modeled irradiance time series
+        Rescaled modeled irradiance time series
     '''
 
     if method is None:
