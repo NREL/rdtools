@@ -43,7 +43,7 @@ def pvwatts_dc_power(poa_global, P_ref, T_cell=None, G_ref=1000, T_ref=25,
     Note
     ----
     All series are assumed to be right-labeled, meaning that the recorded
-    value at a given timestamp refers ot the previous time interval
+    value at a given timestamp refers to the previous time interval
 
     Returns
     -------
@@ -97,7 +97,7 @@ def normalize_with_pvwatts(energy, pvwatts_kws):
     Note
     ----
     All series are assumed to be right-labeled, meaning that the recorded
-    value at a given timestamp refers ot the previous time interval
+    value at a given timestamp refers to the previous time interval
 
     Returns
     -------
@@ -155,7 +155,7 @@ def sapm_dc_power(pvlib_pvsystem, met_data):
     Note
     ----
     All series are assumed to be right-labeled, meaning that the recorded
-    value at a given timestamp refers ot the previous time interval
+    value at a given timestamp refers to the previous time interval
 
     Returns
     -------
@@ -232,7 +232,7 @@ def normalize_with_sapm(energy, sapm_kws):
     Note
     ----
     All series are assumed to be right-labeled, meaning that the recorded
-    value at a given timestamp refers ot the previous time interval
+    value at a given timestamp refers to the previous time interval
 
     Returns
     -------
@@ -311,7 +311,7 @@ def irradiance_rescale(irrad, modeled_irrad, max_iterations=100, method=None):
         The maximum number of times to attempt rescale optimization.
         Ignored if `method` = 'single_opt'
     method: str, default None
-        The caclulation method to use. 'single_opt' implements the
+        The calculation method to use. 'single_opt' implements the
         irradiance_rescale of rdtools v1.1.3 and earlier. 'iterative'
         implements a more stable calculation that may yield different results
         from the single_opt method.
