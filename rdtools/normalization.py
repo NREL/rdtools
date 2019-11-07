@@ -22,9 +22,6 @@ def pvwatts_dc_power(poa_global, P_ref, T_cell=None, G_ref=1000, T_ref=25,
     nameplate power, and cell temperature. This function differs from the PVLIB
     implementation by allowing cell temperature to be an optional parameter.
 
-    Note: If T_cell or gamma_pdc are omitted, the temperature term will be
-          ignored.
-
     Parameters
     ----------
     poa_global : pd.Series
@@ -33,7 +30,7 @@ def pvwatts_dc_power(poa_global, P_ref, T_cell=None, G_ref=1000, T_ref=25,
         Rated DC power of array in watts
     T_cell : pd.Series, optional
         Measured or derived cell temperature [degrees celsius].
-        Time series assumed to be same frequency as poa_global.
+        Time series assumed to be same frequency as `poa_global`.
         If omitted, the temperature term will be ignored.
     G_ref : float, default 1000
         Reference irradiance at standard test condition [W/m**2].
@@ -43,8 +40,10 @@ def pvwatts_dc_power(poa_global, P_ref, T_cell=None, G_ref=1000, T_ref=25,
         Linear array efficiency temperature coefficient [1 / degree celsius].
         If omitted, the temperature term will be ignored.
 
-    Note: All series are assumed to be right-labeled, meaning that the recorded
-          value at a given timestamp refers ot the previous time interval
+    Note
+    ----
+    All series are assumed to be right-labeled, meaning that the recorded
+    value at a given timestamp refers ot the previous time interval
 
     Returns
     -------
@@ -74,28 +73,31 @@ def normalize_with_pvwatts(energy, pvwatts_kws):
         Energy time series to be normalized in watt hours.
         Must be a right-labeled regular time series.
     pvwatts_kws : dict
-        Dictionary of parameters used in the pvwatts_dc_power function.
+        Dictionary of parameters used in the pvwatts_dc_power function.  See
+        `Other Parameters`.
 
-        PVWatts Parameters
-        ------------------
-        poa_global : pd.Series
-            Total effective plane of array irradiance.
-        P_ref : float
-            Rated DC power of array in watts
-        T_cell : pd.Series, optional
-            Measured or derived cell temperature [degrees celsius].
-            Time series assumed to be same frequency as poa_global.
-            If omitted, the temperature term will be ignored.
-        G_ref : float, default 1000
-            Reference irradiance at standard test condition [W/m**2].
-        T_ref : float, default 25
-            Reference temperature at standard test condition [degrees celsius].
-        gamma_pdc : float, default None
-            Linear array efficiency temperature coefficient [1/degree celsius].
-            If omitted, the temperature term will be ignored.
+    Other Parameters
+    ------------------
+    poa_global : pd.Series
+        Total effective plane of array irradiance.
+    P_ref : float
+        Rated DC power of array in watts
+    T_cell : pd.Series, optional
+        Measured or derived cell temperature [degrees celsius].
+        Time series assumed to be same frequency as `poa_global`.
+        If omitted, the temperature term will be ignored.
+    G_ref : float, default 1000
+        Reference irradiance at standard test condition [W/m**2].
+    T_ref : float, default 25
+        Reference temperature at standard test condition [degrees celsius].
+    gamma_pdc : float, default None
+        Linear array efficiency temperature coefficient [1/degree celsius].
+        If omitted, the temperature term will be ignored.
 
-    Note: All series are assumed to be right-labeled, meaning that the recorded
-          value at a given timestamp refers ot the previous time interval
+    Note
+    ----
+    All series are assumed to be right-labeled, meaning that the recorded
+    value at a given timestamp refers ot the previous time interval
 
     Returns
     -------
@@ -148,10 +150,12 @@ def sapm_dc_power(pvlib_pvsystem, met_data):
     met_data : pd.DataFrame
         Measured irradiance components, ambient temperature, and wind speed.
         Expected met_data DataFrame column names:
-            ['DNI', 'GHI', 'DHI', 'Temperature', 'Wind Speed']
+        ['DNI', 'GHI', 'DHI', 'Temperature', 'Wind Speed']
 
-    Note: All series are assumed to be right-labeled, meaning that the recorded
-          value at a given timestamp refers ot the previous time interval
+    Note
+    ----
+    All series are assumed to be right-labeled, meaning that the recorded
+    value at a given timestamp refers ot the previous time interval
 
     Returns
     -------
@@ -213,19 +217,22 @@ def normalize_with_sapm(energy, sapm_kws):
         Energy time series to be normalized  in watt hours.
         Must be a right-labeled regular time series.
     sapm_kws : dict
-        Dictionary of parameters required for sapm_dc_power function.
+        Dictionary of parameters required for sapm_dc_power function. See
+        `Other Parameters`.
 
-        SAPM Parameters
-        ---------------
-        pvlib_pvsystem : pvlib-python LocalizedPVSystem object
-            Object contains orientation, geographic coordinates, equipment
-            constants.
-        met_data : pd.DataFrame
-            Measured met_data, ambient temperature, and wind speed.  Expected
-            column names are ['DNI', 'GHI', 'DHI', 'Temperature', 'Wind Speed']
+    Other Parameters
+    ---------------
+    pvlib_pvsystem : pvlib-python LocalizedPVSystem object
+        Object contains orientation, geographic coordinates, equipment
+        constants.
+    met_data : pd.DataFrame
+        Measured met_data, ambient temperature, and wind speed.  Expected
+        column names are ['DNI', 'GHI', 'DHI', 'Temperature', 'Wind Speed']
 
-    Note: All series are assumed to be right-labeled, meaning that the recorded
-          value at a given timestamp refers ot the previous time interval
+    Note
+    ----
+    All series are assumed to be right-labeled, meaning that the recorded
+    value at a given timestamp refers ot the previous time interval
 
     Returns
     -------
@@ -302,7 +309,7 @@ def irradiance_rescale(irrad, modeled_irrad, max_iterations=100, method=None):
         modeled irradiance time series
     max_iterations : int, default 100
         The maximum number of times to attempt rescale optimization.
-        Ignored if method = 'single_opt'
+        Ignored if `method` = 'single_opt'
     method: str, default None
         The caclulation method to use. 'single_opt' implements the
         irradiance_rescale of rdtools v1.1.3 and earlier. 'iterative'
@@ -388,7 +395,8 @@ def irradiance_rescale(irrad, modeled_irrad, max_iterations=100, method=None):
 def check_series_frequency(series, series_description):
     '''
     Returns the inferred frequency of a pandas series, raises ValueError
-    using series_description if it can't. series_description should be a string
+    using series_description if it can't. `series_description` should be a 
+    string
     '''
 
     if series.index.freq is None:
@@ -434,8 +442,8 @@ def energy_from_power(time_series, target_frequency=None, max_timedelta=None):
         returned for that interval. If omitted, `max_timedelta` is set
         internally to the median time delta in `time_series`.
 
-    Returns:
-    --------
+    Returns
+    -------
     pd.Series
         right-labeled energy in Wh per interval
     '''
@@ -511,7 +519,7 @@ def trapz_aggregate(time_series, target_frequency, max_timedelta=None):
     '''
     Returns a right-labeled series with frequency target_frequency generated by
     aggregating `time_series` with the trapezoidal rule (in units of hours).
-    If any interval in time_series is greater than `max_timedelta`, it is
+    If any interval in `time_series` is greater than `max_timedelta`, it is
     ommitted from the sum.
 
     Parameters
@@ -525,8 +533,8 @@ def trapz_aggregate(time_series, target_frequency, max_timedelta=None):
         will be returned for that interval. If omitted, `max_timedelta` is set
         internally to the median time delta in `time_series`.
 
-    Returns:
-    --------
+    Returns
+    -------
     pd.Series
         right-labeled energy in Wh per interval
     '''
@@ -572,8 +580,8 @@ def interpolate_series(time_series, target_index, max_timedelta=None):
         omitted, `max_timedelta` is set internally to the median time delta
         in `time_series`.
 
-    Returns:
-    --------
+    Returns
+    -------
     pd.Series
 
     Note
@@ -644,17 +652,19 @@ def interpolate(time_series, target, max_timedelta=None):
     time_series : pd.Series, pd.DataFrame
         Original values to be used in generating the interpolation
     target : pd.DatetimeIndex, DatetimeOffset, or frequency string
-        If DatetimeIndex: the index onto which the interpolation is to be made
-        If DatetimeOffset or frequency string: the frequency at which to
-        resample and interpolate
+
+        * If DatetimeIndex: the index onto which the interpolation is to be
+          made
+        * If DatetimeOffset or frequency string: the frequency at which to
+          resample and interpolate
     max_timedelta : pd.Timedelta, default None
         The maximum allowed gap between values in `time_series`. Times
         associated with gaps longer than `max_timedelta` are excluded from the
         output. If omitted, `max_timedelta` is set internally to the median
         time delta in `time_series.`
 
-    Returns:
-    --------
+    Returns
+    -------
     pd.Series or pd.DataFrame (matching type of time_series) with DatetimeIndex
 
     Note

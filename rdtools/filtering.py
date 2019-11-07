@@ -14,8 +14,8 @@ def tcell_filter(tcell, low_tcell_cutoff=-50, high_tcell_cutoff=110):
 def clip_filter(power, quant=0.98, low_power_cutoff=0.01):
     '''
     Filter data points likely to be affected by clipping
-    with power greater than or equal to 99% of the 'quant'
-    quantile and less than 'low_power_cutoff'
+    with power greater than or equal to 99% of the `quant`
+    quantile and less than `low_power_cutoff`
 
     Parameters
     ----------
@@ -38,7 +38,7 @@ def clip_filter(power, quant=0.98, low_power_cutoff=0.01):
 
 def csi_filter(measured_poa, clearsky_poa, threshold=0.15):
     '''
-    Filtering based on clear sky index (csi)
+    Filtering based on clear-sky index (csi)
 
     Parameters
     ----------

@@ -21,13 +21,15 @@ class srr_analysis():
     Class for running the stochastic rate and recovery (SRR) photovoltaic
     soiling loss analysis presented in Deceglie et al. JPV 8(2) p547 2018
 
+    Parameters
+    ----------
     daily_normalized_energy : pd.Series
         Daily performance metric (i.e. performance index, yield, etc.)
     daily_insolation : pd.Series
         Daily plane-of-array insolation corresponding to
         `daily_normalized_energy`
     precip : pd.Series, default None
-        Daily total precipitation. (Only used if `precip_clean_only`=True in
+        Daily total precipitation. (Only used if `precip_clean_only` is True in
         subsequent calculations)
     '''
     def __init__(self, daily_normalized_energy, daily_insolation, precip=None):
@@ -473,13 +475,15 @@ class srr_analysis():
             avoid inclusion of partial intervals
         method : str, default 'half_norm_clean'
             How to treat the recovery of each cleaning event:
-            * 'random_clean' - a random recovery between 0-100%
-            * 'perfect_clean' - each cleaning event returns the performance
+
+            * `random_clean` - a random recovery between 0-100%
+            * `perfect_clean` - each cleaning event returns the performance
               metric to 1
-            * 'half_norm_clean' (default) - The three-sigma lower bound of
+            * `half_norm_clean` (default) - The three-sigma lower bound of
               recovery is inferred from the fit of the following interval, the
               upper bound is 1 with the magnitude drawn from a half normal
               centered at 1
+
         precip_clean_only : bool, default False
             If True, only consider cleaning events valid if they coincide with
             precipitation events
@@ -512,17 +516,17 @@ class srr_analysis():
             confidence interval (size specified by confidence_level) of
             degradation rate estimate
         calc_info : dict
-            ('renormalizing_factor'): value used to recenter data
-            ('exceedance_level'): the insolation-weighted soiling ratio that
-                was outperformed with probability of exceedance_prob
-            ('stochastic_soiling_profiles'): List of Pandas series
-                corresponding to the Monte Carlo realizations of soiling ratio
-                profiles
-            ('soiling_interval_summary'): Pandas dataframe summarizing the
-                soiling intervals identified
-            ('soiling_ratio_perfect_clean'): Pandas series of the soiling ratio
-                during valid soiling intervals assuming perfect cleaning and
-                P50 slopes.
+            * `renormalizing_factor` - value used to recenter data
+            * `exceedance_level` - the insolation-weighted soiling ratio that
+              was outperformed with probability of exceedance_prob
+            * `stochastic_soiling_profiles` - List of Pandas series
+              corresponding to the Monte Carlo realizations of soiling ratio
+              profiles
+            * `soiling_interval_summary` - Pandas dataframe summarizing the
+              soiling intervals identified
+            * `soiling_ratio_perfect_clean` - Pandas series of the soiling
+              ratio during valid soiling intervals assuming perfect cleaning
+              and P50 slopes.
         '''
         self._calc_daily_df(day_scale=day_scale,
                             clean_threshold=clean_threshold,
@@ -602,10 +606,11 @@ def soiling_srr(daily_normalized_energy, daily_insolation, reps=1000,
         inclusion of partial intervals
     method : str, default 'half_norm_clean'
         how to treat the recovery of each cleaning event
-        * 'random_clean' - a random recovery between 0-100%
-        * 'perfect_clean' - each cleaning event returns the performance metric
+
+        * `random_clean` - a random recovery between 0-100%
+        * `perfect_clean` - each cleaning event returns the performance metric
           to 1
-        * 'half_norm_clean' (default) - The three-sigma lower bound of recovery
+        * `half_norm_clean` (default) - The three-sigma lower bound of recovery
           is inferred from the fit of the following interval, the upper bound
           is 1 with the magnitude drawn from a half normal centered at 1
     precip_clean_only : bool, default False
@@ -633,24 +638,26 @@ def soiling_srr(daily_normalized_energy, daily_insolation, reps=1000,
 
     Returns
     -------
-        insolation_weighted_soiling_ratio : float
-            P50 insolation weighted soiling ratio based on stochastic rate and
-            recovery analysis
-        confidence_interval : np.array
-            confidence interval (size specified by confidence_level) of
-            degradation rate estimate
-        calc_info : dict
-            ('renormalizing_factor'): value used to recenter data
-            ('exceedance_level'): the insolation-weighted soiling ratio that
-                was outperformed with probability of exceedance_prob
-            ('stochastic_soiling_profiles'): List of Pandas series
-                corresponding to the Monte Carlo realizations of soiling
-                ratio profiles
-            ('soiling_interval_summary'): Pandas dataframe summarizing the
-                soiling intervals identified
-            ('soiling_ratio_perfect_clean'): Pandas series of the soiling ratio
-                during valid soiling intervals assuming perfect cleaning and
-                P50 slopes.
+    insolation_weighted_soiling_ratio : float
+        P50 insolation weighted soiling ratio based on stochastic rate and
+        recovery analysis
+    confidence_interval : np.array
+        confidence interval (size specified by `confidence_level`) of
+        degradation rate estimate
+    calc_info : dict
+        Calculation information from the SRR process.
+
+        * `renormalizing_factor` - value used to recenter data
+        * `exceedance_level` - the insolation-weighted soiling ratio that
+          was outperformed with probability of exceedance_prob
+        * `stochastic_soiling_profiles` - List of Pandas series
+          corresponding to the Monte Carlo realizations of soiling
+          ratio profiles
+        * `soiling_interval_summary` - Pandas dataframe summarizing the
+          soiling intervals identified
+        * `soiling_ratio_perfect_clean` - Pandas series of the soiling
+          ratio during valid soiling intervals assuming perfect cleaning
+          and P50 slopes.
     '''
 
     srr = srr_analysis(daily_normalized_energy,

@@ -16,7 +16,9 @@ def get_clearsky_tamb(times, latitude, longitude, window_size=40,
     ----------
     times : pd.DatetimeIndex
         A pandas DatetimeIndex, localized to local time
-    latitude, longitude: float
+    latitude : float
+        Coordinates in decimal degrees.
+    longitude : float
         Coordinates in decimal degrees.
 
     Returns
@@ -28,8 +30,9 @@ def get_clearsky_tamb(times, latitude, longitude, window_size=40,
     -----
     Uses data from images created by Jesse Allen, NASA's Earth Observatory
     using data courtesy of the MODIS Land Group.
-    https://neo.sci.gsfc.nasa.gov/view.php?datasetId=MOD_LSTD_CLIM_M
-    https://neo.sci.gsfc.nasa.gov/view.php?datasetId=MOD_LSTN_CLIM_M
+
+    * https://neo.sci.gsfc.nasa.gov/view.php?datasetId=MOD_LSTD_CLIM_M
+    * https://neo.sci.gsfc.nasa.gov/view.php?datasetId=MOD_LSTN_CLIM_M
     '''
 
     filepath = pkg_resources.resource_filename('rdtools',
