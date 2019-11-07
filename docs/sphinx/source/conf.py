@@ -21,8 +21,8 @@ sys.path.insert(0, os.path.abspath('../../..'))
 # -- Project information -----------------------------------------------------
 
 project = 'RdTools'
-copyright = '2019, National Renewable Energy Laboratory, kWh Analytics, Github contributors'
-author = 'National Renewable Energy Laboratory, kWh Analytics, Github contributors'
+copyright = '2016–2019 kwhanalytics, Alliance for Sustainable Energy, LLC, and SunPower'
+author = 'kwhanalytics, Alliance for Sustainable Energy, LLC, and SunPower'
 
 # The full version, including alpha/beta/rc tags
 import rdtools
