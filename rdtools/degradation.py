@@ -12,7 +12,9 @@ import statsmodels.api as sm
 
 def degradation_ols(normalized_energy, confidence_level=68.2):
     '''
-    OLS routine
+    Estimate the trend of a timeseries using ordinary least-squares regression
+    and calculate various statistics including a Monte Carlo-derived confidence
+    interval of slope.
 
     Parameters
     ----------
@@ -82,7 +84,9 @@ def degradation_ols(normalized_energy, confidence_level=68.2):
 def degradation_classical_decomposition(normalized_energy,
                                         confidence_level=68.2):
     '''
-    Classical decomposition routine
+    Estimate the trend of a timeseries using a classical decomposition approach
+    (moving average) and calculate various statistics, including the result of
+    a Mann-Kendall test and a Monte Carlo-derived confidence interval of slope.
 
     Parameters
     ----------
@@ -184,7 +188,8 @@ def degradation_classical_decomposition(normalized_energy,
 def degradation_year_on_year(normalized_energy, recenter=True,
                              exceedance_prob=95, confidence_level=68.2):
     '''
-    Year-on-year decomposition method
+    Estimate the trend of a timeseries using the year-on-year decomposition
+    approach and calculate a Monte Carlo-derived confidence interval of slope.
 
     Parameters
     ----------
