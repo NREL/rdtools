@@ -12,6 +12,7 @@ import warnings
 
 
 class ConvergenceError(Exception):
+    '''Rescale optimization did not converge'''
     pass
 
 
@@ -275,12 +276,24 @@ def normalize_with_sapm(energy, sapm_kws):
 
 def delta_index(series):
     '''
-    Takes a panda series with a DatetimeIndex as input and
+    Takes a pandas series with a DatetimeIndex as input and
     returns (time step sizes, average time step size) in hours
+
+    Parameters
+    ----------
+    series : pd.Series
+        A pandas timeseries
+
+    Returns
+    -------
+    deltas : pd.Series
+        A timeseries representing the timestep sizes of `series`
+    mean : float
+        The average timestep
     '''
 
     if series.index.freq is None:
-        # If there is no frequency information, explicily calculate interval
+        # If there is no frequency information, explicitly calculate interval
         # sizes. Length of each interval calculated by using 'int64' to convert
         # to nanoseconds.
         hours = pd.Series(series.index.astype('int64') / (10.0**9 * 3600.0))
@@ -395,8 +408,19 @@ def irradiance_rescale(irrad, modeled_irrad, max_iterations=100, method=None):
 def check_series_frequency(series, series_description):
     '''
     Returns the inferred frequency of a pandas series, raises ValueError
-    using series_description if it can't. `series_description` should be a 
-    string
+    using `series_description` if it can't.
+
+    Parameters
+    ----------
+    series : pd.Series
+        The timeseries to infer the frequency of.
+    series_description : str
+        The description to use when raising an error.
+
+    Returns
+    -------
+    freq : pandas Offsets string
+        The inferred index frequency
     '''
 
     if series.index.freq is None:

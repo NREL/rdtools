@@ -2,12 +2,46 @@ import pandas as pd
 
 
 def poa_filter(poa, low_irradiance_cutoff=200, high_irradiance_cutoff=1200):
-    # simple filter based on irradiance sensors
+    '''
+    Filter POA irradiance readings outside acceptable measurement bounds.
+
+    Parameters
+    ----------
+    poa : pd.Series
+        POA irradiance measurements.
+    low_irradiance_cutoff : float, default 200
+        The lower bound of acceptable values.
+    high_irradiance_cutoff : float, default 1200
+        The upper bound of acceptable values.
+
+    Returns
+    -------
+    pd.Series
+        Boolean Series of whether the given measurement is within acceptable
+        bounds.
+    '''
     return (poa > low_irradiance_cutoff) & (poa < high_irradiance_cutoff)
 
 
 def tcell_filter(tcell, low_tcell_cutoff=-50, high_tcell_cutoff=110):
-    # simple filter based on temperature sensors
+    '''
+    Filter temperature readings outside acceptable measurement bounds.
+
+    Parameters
+    ----------
+    tcell : pd.Series
+        Cell temperature measurements.
+    low_tcell_cutoff : float, default -50
+        The lower bound of acceptable values.
+    high_tcell_cutoff : float, default 110
+        The upper bound of acceptable values.
+
+    Returns
+    -------
+    pd.Series
+        Boolean Series of whether the given measurement is within acceptable
+        bounds.
+    '''
     return (tcell > low_tcell_cutoff) & (tcell < high_tcell_cutoff)
 
 
