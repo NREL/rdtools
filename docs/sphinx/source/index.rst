@@ -12,7 +12,8 @@ RdTools is a set of Python tools for analysis of photovoltaic data. In
 particular, PV production data is evaluated over several years to obtain rates
 of performance degradation over time. RdTools can handle both high frequency
 (hourly or better) or low frequency (daily, weekly, etc.) datasets.
-Best results are obtained with higher frequency data.
+Best results are obtained with higher frequency data. See 
+https://www.nrel.gov/pv/rdtools.html
 
 .. toctree::
    :maxdepth: 2
