@@ -10,7 +10,7 @@ def get_clearsky_tamb(times, latitude, longitude, window_size=40,
                       gauss_std=20):
     '''
     Estimates the ambient temperature at latitude and longitude for the given
-    times
+    times using a Gaussian rolling window.
 
     Parameters
     ----------
@@ -20,6 +20,10 @@ def get_clearsky_tamb(times, latitude, longitude, window_size=40,
         Coordinates in decimal degrees.
     longitude : float
         Coordinates in decimal degrees.
+    window_size : int, default 40
+        The window size in days to use when calculating rolling averages.
+    gauss_std : int, default 20
+        The standard deviation in days to use for the Gaussian rolling window.
 
     Returns
     -------
