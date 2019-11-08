@@ -36,7 +36,8 @@ release = version = rdtools.__version__
 # ones.
 extensions = [
     'sphinx.ext.napoleon',
-    'sphinx_rtd_theme'
+    'sphinx_rtd_theme',
+    'm2r',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -49,6 +50,7 @@ templates_path = ['_templates']
 # ignore modules.rst since we only have one module
 exclude_patterns = ['modules.rst']
 
+source_suffix = ['.rst', '.md']
 
 # -- Options for HTML output -------------------------------------------------
 
