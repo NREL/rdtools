@@ -39,6 +39,8 @@ extensions = [
     'sphinx_rtd_theme',
     'sphinx.ext.autosummary',
     'm2r',
+    'nbsphinx',
+    'nbsphinx_link',
 ]
 
 autosummary_generate = True
