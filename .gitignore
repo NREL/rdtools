@@ -20,8 +20,7 @@ docs/.ipynb_checkpoints/degradation_example-checkpoint.ipynb
 *.ipynb_checkpoints*
 
 # sphinx docs build
-docs/sphinx/source/modules.rst
-docs/sphinx/source/rdtools.rst
+docs/sphinx/source/generated
 
 # ignore setup and egg-info
 .eggs/

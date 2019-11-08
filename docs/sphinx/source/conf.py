@@ -37,8 +37,11 @@ release = version = rdtools.__version__
 extensions = [
     'sphinx.ext.napoleon',
     'sphinx_rtd_theme',
+    'sphinx.ext.autosummary',
     'm2r',
 ]
+
+autosummary_generate = True
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -47,8 +50,7 @@ templates_path = ['_templates']
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
 
-# ignore modules.rst since we only have one module
-exclude_patterns = ['modules.rst']
+exclude_patterns = []
 
 source_suffix = ['.rst', '.md']
 
@@ -59,7 +61,17 @@ source_suffix = ['.rst', '.md']
 #
 html_theme = 'sphinx_rtd_theme'
 
+# toctree sidebar depth
+html_theme_options = {
+    'navigation_depth': 4,
+    'collapse_navigation': False
+}
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-#html_static_path = ['_static']
+html_static_path = ['_static']
+
+
+# A workaround for the responsive tables always having annoying scrollbars.
+def setup(app):
+    app.add_stylesheet("no_scrollbars.css")
