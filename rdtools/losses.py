@@ -49,7 +49,7 @@ def calculate_pr(power, expected_power, freq=None, filt=None, filter_na=True):
         df = df.fillna(0)
 
     if filt is not None:
-        df.loc[filt, :] = np.nan
+        df.loc[~filt, :] = np.nan
 
     if freq is not None:
         df = df.resample(freq)
@@ -89,8 +89,9 @@ def performance_ratio(system_size, gamma_pdc, power, poa, tamb=None,
         `freq='m'` to return a monthly PR series.  If omitted, a single value
         is returned that represents the PR for the entire dataset.
     clip_limit : float, default None
-        If specified, filter out times when expected power is above the
-        system's clipping limit.  Note that this filter is not included in [1].
+        If specified, filter out times when *expected* power (not actual power)
+        is above the system's clipping limit.  Note that this filter is not
+        included in [1].
     low_light_limit : float, default 0.0
         If specified, filter out times when POA irradiance is below the
         low-light limit.  Note that this filter is not included in [1].
@@ -107,7 +108,7 @@ def performance_ratio(system_size, gamma_pdc, power, poa, tamb=None,
     -------
     PR : float or pd.Series
         The calculated performance ratio as a single float (`freq is None`) or
-        a pd.Series (otherwise).
+        a pd.Series (otherwise).  Values are a ratio [0-1], not a percentage.
 
     Reference
     ---------
