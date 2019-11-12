@@ -1,4 +1,5 @@
 h5py==2.10.0
+ipython==5.8.0
 m2r==0.2.1
 nbsphinx==0.4.3
 nbsphinx-link==1.3.0
