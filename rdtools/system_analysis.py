@@ -337,7 +337,7 @@ class SystemAnalysis():
 
     def aggregate(self, normalized, insolation):
         '''
-        Returns insolation-weighted normalized PV energy and the associated aggregated insolation
+        Return insolation-weighted normalized PV energy and the associated aggregated insolation
 
         Parameters
         ----------
@@ -393,7 +393,7 @@ class SystemAnalysis():
 
     def srr_soiling(self, aggregated, aggregated_insolation, **kwargs):
         '''
-        Performs stochastic rate and recovery soiling analysis.
+        Perform stochastic rate and recovery soiling analysis.
 
         Parameters
         ---------
@@ -528,7 +528,7 @@ class SystemAnalysis():
 
     def plot_degradation_summary(self, result_to_plot, **kwargs):
         '''
-        Returns a figure of a scatter plot and a histogram summarizing degradation rate analysis.
+        Return a figure of a scatter plot and a histogram summarizing degradation rate analysis.
 
         Parameters
         ----------
@@ -556,7 +556,7 @@ class SystemAnalysis():
 
     def plot_soiling_monte_carlo(self, result_to_plot, **kwargs):
         '''
-        Returns a figure visualizing the Monte Carlo of soiling profiles used in
+        Return a figure visualizing the Monte Carlo of soiling profiles used in
         stochastic rate and recovery soiling analysis.
 
         Parameters
@@ -584,7 +584,7 @@ class SystemAnalysis():
 
     def plot_soiling_interval(self, result_to_plot, **kwargs):
         '''
-        Returns a figure visualizing the valid soiling intervals used in
+        Return a figure visualizing the valid soiling intervals used in
         stochastic rate and recovery soiling analysis.
 
         Parameters
@@ -612,7 +612,7 @@ class SystemAnalysis():
 
     def plot_soiling_rate_histogram(self, result_to_plot, **kwargs):
         '''
-        Returns a histogram of soiling rates found in the stochastic rate and recovery
+        Return a histogram of soiling rates found in the stochastic rate and recovery
         soiling analysis
 
         Parameters
