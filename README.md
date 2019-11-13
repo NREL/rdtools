@@ -12,7 +12,7 @@ to obtain rates of performance degradation and soiling loss. RdTools can
 handle both high frequency (hourly or better) or low frequency (daily, weekly, etc.)
 datasets. Best results are obtained with higher frequency data.
 
-Full examples are worked out in the example notebooks in [rdtools/docs](./docs/degradation_example.ipynb).
+Full examples are worked out in the example notebooks in the [documentation](https://rdtools.readthedocs.io/en/latest/example.html).
 
 ## Workflow
 RdTools supports a number of workflows, but a typical analysis follows the following: 
@@ -23,10 +23,10 @@ RdTools supports a number of workflows, but a typical analysis follows the follo
 3. Aggregate data
 4. Analyze aggregated data to estimate the degradation rate and/or soiling loss  
 
-Steps 1 and 2 may be accomplished with the clearsky workflow ([see example](./docs/degradation_example.ipynb))
+Steps 1 and 2 may be accomplished with the clearsky workflow ([see example](https://rdtools.readthedocs.io/en/latest/example.html))
 which can help elliminate problems from irradiance sensor drift.  
 
-<img src="./screenshots/RdTools_workflows.png" width="400" height="247" alt="RdTools Workflow"/>
+<img src="./_static/RdTools_workflows.png" width="400" height="247" alt="RdTools Workflow"/>
 
 ## Degradation Results
 
@@ -34,10 +34,10 @@ The preferred method for degradation rate estimation is the year-on-year (YOY) a
 available in `degradation.degradation_year_on_year`. The YOY calculation yields in a distribution
 of degradation rates, the central tendency of which is the most representative of the true
 degradation. The width of the distribution provides information about the uncertainty in the
-estimate via a bootstrap calculation. The [example notebook](./docs/degradation_example.ipynb) uses the output of `degradation.degradation_year_on_year()`
+estimate via a bootstrap calculation. The [example notebook](https://rdtools.readthedocs.io/en/latest/example.html) uses the output of `degradation.degradation_year_on_year()`
 to visualize the calculation.
 
-<img src="./screenshots/Clearsky_result_updated.png" width="600" height="456" alt="RdTools Result"/>
+<img src="./_static/Clearsky_result_updated.png" width="600" height="456" alt="RdTools Result"/>
 
 
 Two workflows are available for system performance ratio calculation, and illustrated in an example notebook. 
@@ -51,7 +51,7 @@ of instrument errors or irradiance sensor drift, such as in the above analysis.
 ## Soiling Results
 Soiling can be estimated with the stochastic rate and recovery (SRR) method (Deceglie 2018). This method works well when soiling patterns follow a "sawtooth" pattern, a linear decline followed by a sharp recovery associated with natural or mannual cleaning. `rdtools.soiling_srr()` performs the calculation and returns the P50 insolation-weighted soiling ratio, confidence interval, and additional information (`soiling_info`) which includes a summary of the soiling intervals identified, `soiling_info['soiling_interval_summary']`. This summary table can, for example, be used to plot a histogram of the identified soiling rates for the dataset.  
 
-<img src="./screenshots/soiling_histogram.png" width="320" height="216" alt="RdTools Result"/>
+<img src="./_static/soiling_histogram.png" width="320" height="216" alt="RdTools Result"/>
 
 ## Install RdTools using pip
 
@@ -71,7 +71,7 @@ RdTools currently runs in both Python 2.7 and 3.6.
 ## Usage and examples
 
 
-Full workflow examples are found in the notebooks in [rdtools/docs](./docs/degradation_example.ipynb). The examples are designed to work with python 3.6. For a consistent experience, we recommend installing the packages and versions documented in `docs/notebook_requirements.txt`. This can be achieved in your environment by first installing RdTools as described above, then running `pip install -r docs/notebook_requirements.txt` from the base directory.
+Full workflow examples are found in the notebooks in [rdtools/docs](https://rdtools.readthedocs.io/en/latest/example.html). The examples are designed to work with python 3.6. For a consistent experience, we recommend installing the packages and versions documented in `docs/notebook_requirements.txt`. This can be achieved in your environment by first installing RdTools as described above, then running `pip install -r docs/notebook_requirements.txt` from the base directory.
 
 The following functions are used for degradation analysis:
 
