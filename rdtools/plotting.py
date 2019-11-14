@@ -37,8 +37,6 @@ def degradation_summary_plots(yoy_rd, yoy_ci, yoy_info, normalized_yield,
     Figure with two axes
     '''
 
-    yoy_values = yoy_info['YoY_values']
-
     # Calculate the degradation line
     start = normalized_yield.index[0]
     end = normalized_yield.index[-1]
