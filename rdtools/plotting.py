@@ -8,33 +8,46 @@ def degradation_summary_plots(yoy_rd, yoy_ci, yoy_info, normalized_yield,
     '''
     Description
     -----------
-    Function to create plots (scatter plot and histogram) that summarize degradation analysis results
+    Return a figure containing plots (scatter plot and histogram) that summarize
+    degradation analysis results
 
     Parameters
     ----------
-    yoy_rd: rate of relative performance change in %/yr (float)
-    yoy_ci: one-sigma confidence interval of degradation rate estimate (float)
-    yoy_info: dict
-        ('YoY_values') pandas series of right-labeled year on year slopes
-        ('renormalizing_factor') float of value used to recenter data
-        ('exceedance_level') the degradation rate that was outperformed with
-        a probability given by the exceedance_prob parameter in
-        the degradation_year_on_year function of the degradation module
-    normalized_yield: Pandas Time Series (numeric)
-         cotaining PV yield data that is normalized, filtered and aggregated.
-    hist_xmin: lower limit of x-axis for the histogram (numeric)
-    hist_xmax: upper limit of x-axis for the histogram (numeric)
-    scatter_ymin: lower limit of y-axis for the scatter plot (numeric)
-    scatter_ymax: upper limit of y-axis for the scatter plot (numeric)
-    plot_color: color of the summary plots
-    summary_title: overall title for summary plots (string)
-    scatter_alpha: Transparency of the scatter plot (numeric)
-    It should be noted that the yoy_rd, yoy_ci and yoy_info are the outputs from
-    the degradation_year_on_year function of the degradation module
+    yoy_rd : numeric
+        Rate of relative performance change in %/yr
+    yoy_ci : numeric
+        Confidence interval of degradation rate estimate
+    yoy_info : dict
+        Information from year on year degradation rate calculation. Usually
+        obtained from degradation_year_on_year(). Items must include
+        'YoY_values' : pd.Series of right-labeled year on year slopes
+        'renormalizing_factor' : numeric of value used to recenter data
+    normalized_yield : pandas.Series
+        Time series of PV yield data that is normalized, filtered and aggregated.
+    hist_xmin : numeric
+        Lower limit of x-axis for the histogram
+    hist_xmax : numeric
+        Upper limit of x-axis for the histogram
+    scatter_ymin : numeric
+        Lower limit of y-axis for the scatter plot
+    scatter_ymax : numeric
+        Upper limit of y-axis for the scatter plot
+    plot_color : Matplotlib color specification
+        Color to use for plots
+    summary_title : str
+        Overall title for summary plots
+    scatter_alpha : numeric
+        Transparency of the scatter plot, must be between 0 and 1
 
     Returns
     -------
-    Figure with two axes
+    matplotlib.Figure.figure
+
+    Notes
+    -----
+    The yoy_rd, yoy_ci and yoy_info are the outputs from
+    the degradation_year_on_year() function of the degradation module
+
     '''
 
     # Calculate the degradation line
@@ -80,24 +93,32 @@ def soiling_monte_carlo_plot(soiling_info, normalized_yield, point_alpha=0.5, pr
     '''
     Description
     -----------
-    Creates figure to visualize Monte Carlo of soiling profiles used in the SRR analysis.
+    Return a figure to visualize Monte Carlo of soiling profiles used in the SRR analysis.
 
     Parameters
     ----------
-    soiling_info: soiling_info returned by srr_analysis.run() or soiling_srr() (dict)
-    normalized_yield: Pandas Time Series (numeric) cotaining PV yield data that is normalized,
-                      filtered and aggregated.
-    point_alpha: tranparency of the normalized_yield points (numeric)
-    profile_alpha: transparency of each profile (numeric)
-    ymin: minimum y coordinate (numeric)
-    ymax: maximum y coordinate (numeric)
-    profiles: the number of stochasitc profiles to plot (int)
-    point_color: color of the normalized_yield points
-    profile_color: color of the stochastic profiles
+    soiling_info : dict
+        soiling_info returned by srr_analysis.run() or soiling_srr()
+    normalized_yield : pandas.Series
+        Time series of PV yield data that is normalized, filtered and aggregated.
+    point_alpha : numeric
+        Tranparency of the normalized_yield points, must be between 0 and 1
+    profile_alpha : numeric
+        Transparency of each profile, must be between 0 and 1
+    ymin : numeric
+        Minimum y coordinate
+    ymax : numeric
+        Maximum y coordinate
+    profiles : int
+        Number of stochasitc profiles to plot
+    point_color : Matplotlib color specification
+        Color of the normalized_yield points
+    profile_color : Matplotlib color specification
+        Color of the stochastic profiles
 
     Returns
     -------
-    Figure
+    matplotlib.Figure.figure
     '''
 
     fig, ax = plt.subplots()
@@ -122,23 +143,32 @@ def soiling_interval_plot(soiling_info, normalized_yield, point_alpha=0.5, profi
     '''
     Description
     -----------
-    Creates figure to visualize valid soiling profiles used in the SRR analysis.
+    Return figure to visualize valid soiling profiles used in the SRR analysis.
 
     Parameters
     ----------
-    soiling_info: soiling_info returned by srr_analysis.run() or soiling_srr() (dict)
-    normalized_yield: Pandas Time Series (numeric) cotaining PV yield data that is normalized,
-                      filtered and aggregated.
-    point_alpha: tranparency of the normalized_yield points (numeric)
-    profile_alpha: transparency of soiling profile (numeric)
-    ymin: minimum y coordinate (numeric)
-    ymax: maximum y coordinate (numeric)
-    point_color: color of the normalized_yield points
-    profile_color: color of the soiling intervals
+    soiling_info : dict
+        soiling_info returned by srr_analysis.run() or soiling_srr()
+    normalized_yield : pandas.Series
+        Time series of PV yield data that is normalized, filtered and aggregated.
+    point_alpha : numeric
+        Tranparency of the normalized_yield points, must be between 0 and 1
+    profile_alpha : numeric
+        Transparency of each profile, must be between 0 and 1
+    ymin : numeric
+        Minimum y coordinate
+    ymax : numeric
+        Maximum y coordinate
+    profiles : int
+        Number of stochasitc profiles to plot
+    point_color : Matplotlib color specification
+        Color of the normalized_yield points
+    profile_color : Matplotlib color specification
+        Color of the stochastic profiles
 
     Returns
     -------
-    Figure
+    matplotlib.figure.Figure
     '''
 
     sratio = soiling_info['soiling_ratio_perfect_clean']
@@ -157,16 +187,18 @@ def soiling_rate_histogram(soiling_info, bins=None):
     '''
     Description
     -----------
-    Creates histogram of soiling rates found in the SRR analysis.
+    Return a figure containing a histogram of soiling rates found in the SRR analysis.
 
     Parameters
     ----------
-    soiling_info: soiling_info returned by srr_analysis.run() or soiling_srr() (dict)
-    bins: number of histogram bins to use (int)
+    soiling_info : dict
+        soiling_info returned by srr_analysis.run() or soiling_srr()
+    bins : int
+        number of histogram bins to use
 
     Returns
     -------
-    Figure
+    matplotlib.figure.Figure
     '''
 
     soiling_summary = soiling_info['soiling_interval_summary']
