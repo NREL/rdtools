@@ -3,7 +3,24 @@ import numpy as np
 
 
 def normalized_filter(normalized, low_cutoff=0, high_cutoff=None):
-    '''Return a boolean pandas filter that selects normalized yield between low_cutoff and high_cutoff'''
+    '''
+    Filter to retain normalized yield between low_cutoff and high_cutoff
+    
+    Parameters
+    ----------
+    normalized : pandas.Series
+        Time series of normalized energy yield
+    low_cutoff : numeric
+        Low value for normalized, below which to filter out points
+    high_cutoff : numeric
+        High value for normalized, above which to filter out points
+
+    Returns
+    -------
+    pd.Series
+        Boolean series of whether the given point is between the high
+        and low cutoff
+    '''
 
     if low_cutoff is None:
         low_cutoff = -np.inf
