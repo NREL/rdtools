@@ -19,6 +19,9 @@
 docs/.ipynb_checkpoints/degradation_example-checkpoint.ipynb
 *.ipynb_checkpoints*
 
+# sphinx docs build
+docs/sphinx/source/generated
+
 # ignore setup and egg-info
 .eggs/
 build/
