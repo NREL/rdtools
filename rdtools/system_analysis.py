@@ -8,7 +8,8 @@ import functools
 import pvlib
 import warnings
 from rdtools import (
-    normalization, clearsky_temperature, filtering
+    normalization, clearsky_temperature, filtering, aggregation,
+    soiling, degradation
 )
 
 
@@ -23,7 +24,7 @@ def initialize_rdtools_plugins(sa):
 
     @sa.plugin(requires=['poa', 'windspeed', 'ambient_temperature'],
                provides=['cell_temperature'])
-    def calc_cell_temperature(poa, windspeed, ambient_temperature):
+    def sensor_cell_temperature(poa, windspeed, ambient_temperature):
         tcell = pvlib.pvsystem.sapm_celltemp(
             poa_global=poa,
             wind_speed=windspeed,
@@ -65,8 +66,9 @@ def initialize_rdtools_plugins(sa):
 
     @sa.plugin(requires=['dc_model'],
                optional=['pvwatts_expected_power', 'sapm_expected_power'],
-               provides=['expected_power'])
-    def expected_power(dc_model, pvwatts_expected_power, sapm_expected_power):
+               provides=['sensor_expected_power'])
+    def sensor_expected_power(dc_model, pvwatts_expected_power,
+                              sapm_expected_power):
         if dc_model == 'pvwatts':
             return pvwatts_expected_power()
         elif dc_model == 'sapm':
@@ -74,10 +76,10 @@ def initialize_rdtools_plugins(sa):
         raise ValueError(f"invalid dc_model value '{dc_model}', "
                          "must be either 'pvwatts' or 'sapm'")
 
-    @sa.plugin(requires=['pv', 'expected_power'],
-               provides=['normalized'])
-    def normalize(pv, expected_power):
-        return pv.div(expected_power)
+    @sa.plugin(requires=['pv', 'sensor_expected_power'],
+               provides=['sensor_normalized'])
+    def sensor_normalize(pv, sensor_expected_power):
+        return pv.div(sensor_expected_power)
 
     @sa.plugin(requires=['pv'], provides=['times'])
     def get_times(pv):
@@ -110,7 +112,7 @@ def initialize_rdtools_plugins(sa):
 
     @sa.plugin(requires=['clearsky_poa_unscaled', 'poa'],
                provides=['clearsky_poa'])
-    def rescale_poa(clearsky_poa_raw, poa):
+    def rescale_clearsky_poa(clearsky_poa_raw, poa):
         clearsky_poa = normalization.irradiance_rescale(poa, clearsky_poa_raw,
                                                         method='iterative')
         return clearsky_poa
@@ -123,66 +125,132 @@ def initialize_rdtools_plugins(sa):
         )
         return cs_tamb
 
-    @sa.plugin(requires=['normalized',
+    @sa.plugin(requires=['sensor_normalized',
                          'normalized_low_cutoff',
                          'normalized_high_cutoff'],
-               provides=['normalized_filter'])
-    def normalized_filter(normalized, normalized_low_cutoff,
+               provides=['sensor_normalized_filter'])
+    def normalized_filter(sensor_normalized, normalized_low_cutoff,
                           normalized_high_cutoff):
         filt = filtering.normalized_filter(
-                normalized, normalized_low_cutoff, normalized_high_cutoff
+            sensor_normalized, normalized_low_cutoff, normalized_high_cutoff
         )
         return filt
 
     @sa.plugin(requires=['poa', 'poa_low_cutoff', 'poa_high_cutoff'],
-               provides=['poa_filter'])
-    def poa_filter(poa, poa_low_cutoff, poa_high_cutoff):
+               provides=['sensor_poa_filter'])
+    def sensor_poa_filter(poa, poa_low_cutoff, poa_high_cutoff):
         filt = filtering.poa_filter(poa, poa_low_cutoff, poa_high_cutoff)
         return filt
 
     @sa.plugin(requires=['pv', 'clip_quantile'],
                provides=['clip_filter'])
-    def clip_filter(pv, clip_quantile):
+    def sensor_clip_filter(pv, clip_quantile):
         filt = filtering.clip_filter(pv, clip_quantile)
         return filt
 
     @sa.plugin(requires=['poa', 'clearsky_poa', 'clearsky_index_threshold'],
-               provides=['csi_filter'])
-    def csi_filter(poa, clearsky_poa, clearsky_index_threshold):
+               provides=['sensor_csi_filter'])
+    def sensor_csi_filter(poa, clearsky_poa, clearsky_index_threshold):
         filt = filtering.csi_filter(poa, clearsky_poa,
                                     clearsky_index_threshold)
         return filt
 
+    @sa.plugin(requires=['sensor_normalized_filter', 'sensor_poa_filter',
+                         'clip_filter', 'sensor_csi_filter'],
+               provides=['sensor_overall_filter'])
+    def sensor_filter(sensor_normalized_filter, sensor_poa_filter, clip_filter,
+                      sensor_csi_filter):
+        filt = sensor_normalized_filter \
+             & sensor_poa_filter \
+             & clip_filter \
+             & sensor_csi_filter
+        return filt
+
+    @sa.plugin(requires=['sensor_normalized', 'sensor_poa_insolation',
+                         'sensor_overall_filter', 'aggregation_frequency'],
+               provides=['sensor_aggregated', 'sensor_aggregated_insolation'])
+    def sensor_aggregate(sensor_normalized, poa_insolation,
+                         sensor_overall_filter, aggregation_frequency):
+        norm = sensor_normalized[sensor_overall_filter]
+        insol = poa_insolation[sensor_overall_filter]
+        aggregated = aggregation.aggregation_insol(norm, insol,
+                                                   aggregation_frequency)
+        aggregated_insolation = insol.resample(aggregation_frequency).sum()
+
+        return aggregated, aggregated_insolation
+
+    @sa.plugin(requires=['sensor_aggregated', 'sensor_aggregated_insolation'],
+               provides=['sensor_soiling_results'])
+    def sensor_srr_soiling(aggregated, aggregated_insolation, **kwargs):
+        if aggregated.index.freq != 'D' or \
+           aggregated_insolation.index.freq != 'D':
+            raise ValueError(
+                'Soiling SRR analysis requires daily aggregation.'
+            )
+
+        sr, sr_ci, soiling_info = soiling.soiling_srr(
+                aggregated, aggregated_insolation, **kwargs
+        )
+        srr_results = {
+            'p50_sratio': sr,
+            'sratio_confidence_interval': sr_ci,
+            'calc_info': soiling_info
+        }
+        return srr_results
+
+    @sa.plugin(requires=['sensor_aggregated'],
+               provides=['sensor_degradation_results'])
+    def sensor_yoy_degradation(aggregated, **kwargs):
+        yoy_rd, yoy_ci, yoy_info = \
+            degradation.degradation_year_on_year(aggregated, **kwargs)
+
+        yoy_results = {
+            'p50_rd': yoy_rd,
+            'rd_confidence_interval': yoy_ci,
+            'calc_info': yoy_info
+        }
+        return yoy_results
+
 
 class SystemAnalysis:
 
-    def __init__(self, pv, poa=None, ghi=None, ambient_temperature=None,
-                 windspeed=None, albedo=0.25, system_size=None,
-                 dc_model='pvwatts', g_ref=1000, t_ref=25, gamma_pdc=None,
+    def __init__(self, pv, poa=None, ghi=None, dni=None, dhi=None, albedo=0.25,
+                 ambient_temperature=None, windspeed=None, gamma_pdc=None,
+                 system_size=None, dc_model='pvwatts', g_ref=1000, t_ref=25,
                  normalized_low_cutoff=0, normalized_high_cutoff=np.inf,
                  poa_low_cutoff=200, poa_high_cutoff=1200,
                  cell_temperature_low_cutoff=-50,
                  cell_temperature_high_cutoff=110,
-                 clip_quantile=0.98,
-                 clearsky_index_threshold=0.15
-                 ):
+                 clip_quantile=0.98, clearsky_index_threshold=0.15,
+                 aggregation_frequency=None, pv_tilt=None, pv_azimuth=None,
+                 pvlib_location=None, pvlib_localized_pvsystem=None):
 
         # It's desirable to use explicit parameters for documentation and
         # autocomplete purposes, but we still want to collect them all into
         # a dictionary for the modeling namespace.  Use locals() to grab them:
+        # Important!  Don't create any variables before this line, or else
+        # they'll be included in the modeling namespace
         self.dataset = locals()
         self.dataset.pop('self')
-        self.primary_inputs = self.dataset.keys() # used for diagram colors
+        self.primary_inputs = self.dataset.keys()  # used for diagram colors
         self.PROVIDES_REGISTRY = {}  # map keys to models
         self.REQUIRES_REGISTRY = {}  # map models to required keys
         self.OPTIONAL_REGISTRY = {}  # map models to optional keys
         initialize_rdtools_plugins(self)
 
-    def trace(self, key):
+    def trace(self, key, collapse_tree=False):
         provider = self.PROVIDES_REGISTRY.get(key, None)
         requires = self.REQUIRES_REGISTRY.get(provider, [])
         optional = self.OPTIONAL_REGISTRY.get(provider, [])
-        return {key: self.trace(key) for key in requires + optional}
+        tree = {key: self.trace(key) for key in requires + optional}
+
+        if collapse_tree:
+            def collapse(tree):
+                subtrees = [collapse(branch) for _, branch in tree.items()]
+                collapsed_subtrees = sum(subtrees, [])
+                return list(tree.keys()) + collapsed_subtrees
+            tree = set(collapse(tree))
+        return tree
 
     def model_inputs(self):
         return list(sorted(set(sum(self.REQUIRES_REGISTRY.values(), []))))
@@ -194,8 +262,10 @@ class SystemAnalysis:
         provider = self.PROVIDES_REGISTRY[key]
         return provider(self.dataset, **kwargs)
 
-    def diagram(self):
+    def diagram(self, target=None):
         import networkx as nx
+        import matplotlib.pyplot as plt
+
         G = nx.DiGraph()
         all_nodes = set(self.model_inputs() + self.model_outputs())
         G.add_nodes_from(all_nodes)
@@ -209,17 +279,27 @@ class SystemAnalysis:
         for row, data in nx.shortest_path_length(G):
             for col, dist in data.items():
                 df.loc[row, col] = dist
-        df = df.fillna(df.max().max())
+        df = df.fillna(df.max().max()/2)
         pos = nx.kamada_kawai_layout(G, dist=df.to_dict())
 
         colors = ['cyan' if key in self.primary_inputs else 'yellow'
                   for key in G.nodes]
 
+        if target is not None:
+            path_nodes = self.trace(target, collapse_tree=True)
+            path_nodes.add(target)
+            edges = G.edges()
+            width = [3.0 if edge[1] in path_nodes else 1.0 for edge in edges]
+        else:
+            width = 1.0
+
         nx.draw_networkx_nodes(G, pos, node_size=1000, node_shape='H',
                                node_color=colors)
         nx.draw_networkx_labels(G, pos, font_weight='bold')
         nx.draw_networkx_edges(G, pos, arrows=True, arrowsize=40,
-                               edge_color='grey')
+                               edge_color='grey', width=width)
+        if target is not None:
+            plt.title(target)
 
     def plugin(self, requires, provides, optional=[]):
         """
@@ -245,8 +325,8 @@ class SystemAnalysis:
                     # determine what plugin can calculate it
                     provider = self.PROVIDES_REGISTRY.get(key, None)
                     if provider is None:
-                        raise KeyError(
-                            f"'{key}' not specified and no provider registered"
+                        raise ValueError(
+                            f'"{key}" not specified and no provider registered'
                         )
                     _debug(f'calculating requirement {key} '
                            f'with provider {provider.__name__}')
@@ -258,24 +338,33 @@ class SystemAnalysis:
                 return value
 
             @functools.wraps(func)
-            def model(ds, **kwargs):
+            def model(ds, **user_kwargs):
                 _debug(
                     f'checking prerequisites for {func.__name__}: {requires}')
-                # calculate any necessary params
-                required_args = {key: evaluate(key, ds) for key in requires}
-                # generate deferred evals for the optional params
-                optional_args = {key: evaluate(
-                    key, ds, True) for key in optional}
+                try:
+                    # calculate any necessary params
+                    required_args = {
+                        key: evaluate(key, ds) for key in requires
+                    }
+                    # generate deferred evals for the optional params
+                    optional_args = {
+                        key: evaluate(key, ds, True) for key in optional
+                    }
+                except ValueError as e:
+                    msg = str(e)
+                    raise ValueError(
+                        f'Could not run plugin "{func.__name__}": {msg}'
+                    )
                 args = {**required_args, **optional_args}
                 _debug(f'calling {func.__name__} with '
                        f'requires={list(required_args.keys())}, '
                        f'optional={list(optional_args.keys())}, '
-                       f'and kwargs={list(kwargs.keys())}')
+                       f'and kwargs={list(user_kwargs.keys())}')
                 # TODO: this is a future bug -- if a model returns 2 things but
                 # should only provide one (because eg it used to provide both
                 # and one got replaced by another model) this will grab the
                 # wrong value.  need to match up return values to provides
-                value = func(**args, **kwargs)
+                value = func(**args, **user_kwargs)
                 if len(provides) > 1:
                     for key, val in zip(provides, value):
                         ds[key] = val
