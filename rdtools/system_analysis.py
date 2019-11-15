@@ -3,19 +3,22 @@ TODO: write this module description
 '''
 
 import pandas as pd
+import numpy as np
 import functools
 import pvlib
 import warnings
-from rdtools import normalization
+from rdtools import (
+    normalization, clearsky_temperature, filtering
+)
 
 
 def _debug(msg):
     print("DEBUG:", msg)
 
 
-def initialize_plugins(sa):
+def initialize_rdtools_plugins(sa):
     """
-    Initialize a SystemAnalysis object with the default set of RdTools plugins
+    Populate a SystemAnalysis object with the default set of RdTools plugins
     """
 
     @sa.plugin(requires=['poa', 'windspeed', 'ambient_temperature'],
@@ -92,7 +95,7 @@ def initialize_plugins(sa):
 
     @sa.plugin(requires=['pv_tilt', 'pv_azimuth', 'albedo', 'solar_position',
                          'clearsky_irradiance'],
-               provides=['clearsky_poa_raw'])
+               provides=['clearsky_poa_unscaled'])
     def get_clearsky_poa(pv_tilt, pv_azimuth, albedo, solar_position,
                          clearsky_irradiance, **kwargs):
         poa = pvlib.irradiance.get_total_irradiance(
@@ -105,29 +108,74 @@ def initialize_plugins(sa):
                 albedo=albedo, **kwargs)
         return poa['poa_global']
 
-    @sa.plugin(requires=['clearsky_poa_raw', 'poa'], provides=['clearsky_poa'])
+    @sa.plugin(requires=['clearsky_poa_unscaled', 'poa'],
+               provides=['clearsky_poa'])
     def rescale_poa(clearsky_poa_raw, poa):
         clearsky_poa = normalization.irradiance_rescale(poa, clearsky_poa_raw,
                                                         method='iterative')
         return clearsky_poa
 
+    @sa.plugin(requires=['pvlib_location', 'times'],
+               provides=['clearsky_ambient_temperature'])
+    def clearsky_ambient_temperature(pvlib_location, times):
+        cs_tamb = clearsky_temperature.get_clearsky_tamb(
+            times, pvlib_location.latitude, pvlib_location.longitude
+        )
+        return cs_tamb
+
+    @sa.plugin(requires=['normalized',
+                         'normalized_low_cutoff',
+                         'normalized_high_cutoff'],
+               provides=['normalized_filter'])
+    def normalized_filter(normalized, normalized_low_cutoff,
+                          normalized_high_cutoff):
+        filt = filtering.normalized_filter(
+                normalized, normalized_low_cutoff, normalized_high_cutoff
+        )
+        return filt
+
+    @sa.plugin(requires=['poa', 'poa_low_cutoff', 'poa_high_cutoff'],
+               provides=['poa_filter'])
+    def poa_filter(poa, poa_low_cutoff, poa_high_cutoff):
+        filt = filtering.poa_filter(poa, poa_low_cutoff, poa_high_cutoff)
+        return filt
+
+    @sa.plugin(requires=['pv', 'clip_quantile'],
+               provides=['clip_filter'])
+    def clip_filter(pv, clip_quantile):
+        filt = filtering.clip_filter(pv, clip_quantile)
+        return filt
+
+    @sa.plugin(requires=['poa', 'clearsky_poa', 'clearsky_index_threshold'],
+               provides=['csi_filter'])
+    def csi_filter(poa, clearsky_poa, clearsky_index_threshold):
+        filt = filtering.csi_filter(poa, clearsky_poa,
+                                    clearsky_index_threshold)
+        return filt
+
 
 class SystemAnalysis:
 
-    DEFAULTS = {
-        'temperature_model': None,
-        'dc_model': 'pvwatts',
-        'g_ref': 1000,
-        't_ref': 25,
-        'albedo': 0.25
-    }
+    def __init__(self, pv, poa=None, ghi=None, ambient_temperature=None,
+                 windspeed=None, albedo=0.25, system_size=None,
+                 dc_model='pvwatts', g_ref=1000, t_ref=25, gamma_pdc=None,
+                 normalized_low_cutoff=0, normalized_high_cutoff=np.inf,
+                 poa_low_cutoff=200, poa_high_cutoff=1200,
+                 cell_temperature_low_cutoff=-50,
+                 cell_temperature_high_cutoff=110,
+                 clip_quantile=0.98,
+                 clearsky_index_threshold=0.15
+                 ):
 
-    def __init__(self, **kwargs):
+        # It's desirable to use explicit parameters for documentation and
+        # autocomplete purposes, but we still want to collect them all into
+        # a dictionary for the modeling namespace.  Use locals() to grab them:
+        self.dataset = locals()
+        self.dataset.pop('self')
         self.PROVIDES_REGISTRY = {}  # map keys to models
         self.REQUIRES_REGISTRY = {}  # map models to required keys
         self.OPTIONAL_REGISTRY = {}  # map models to optional keys
-        self.dataset = kwargs
-        initialize_plugins(self)
+        initialize_rdtools_plugins(self)
 
     def trace(self, key):
         provider = self.PROVIDES_REGISTRY.get(key, None)
