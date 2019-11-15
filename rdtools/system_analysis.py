@@ -7,6 +7,10 @@ import numpy as np
 import functools
 import pvlib
 import warnings
+
+import sys
+sys.path.insert(0, r'C:\Users\KANDERSO\projects\rdtools')
+
 from rdtools import (
     normalization, clearsky_temperature, filtering, aggregation,
     soiling, degradation
