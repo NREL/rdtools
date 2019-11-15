@@ -22,25 +22,17 @@ def initialize_rdtools_plugins(sa):
     Populate a SystemAnalysis object with the default set of RdTools plugins
     """
 
-    @sa.plugin(requires=['poa', 'windspeed', 'ambient_temperature'],
-               provides=['cell_temperature'])
-    def sensor_cell_temperature(poa, windspeed, ambient_temperature):
-        tcell = pvlib.pvsystem.sapm_celltemp(
-            poa_global=poa,
-            wind_speed=windspeed,
-            temp_air=ambient_temperature
-        )
-        return tcell['temp_cell']
-
-    @sa.plugin(requires=['poa', 'cell_temperature', 'gamma_pdc', 'system_size',
-                         'g_ref', 't_ref'],
+    @sa.plugin(requires=['poa', 'sensor_cell_temperature', 'gamma_pdc',
+                         'g_ref', 't_ref', 'system_size'],
                provides=['pvwatts_expected_power'])
-    def pvwatts(poa, cell_temperature, gamma_pdc, system_size, g_ref,
-                t_ref):
+    def pvwatts(poa, sensor_cell_temperature, gamma_pdc, g_ref, t_ref,
+                system_size):
+        if system_size is None:
+            system_size = 1.0
         pvwatts_kwargs = {
             "poa_global": poa,
             "P_ref": system_size,
-            "T_cell": cell_temperature,
+            "T_cell": sensor_cell_temperature,
             "G_ref": g_ref,
             "T_ref": t_ref,
             "gamma_pdc": gamma_pdc
@@ -76,10 +68,15 @@ def initialize_rdtools_plugins(sa):
         raise ValueError(f"invalid dc_model value '{dc_model}', "
                          "must be either 'pvwatts' or 'sapm'")
 
-    @sa.plugin(requires=['pv', 'sensor_expected_power'],
+    @sa.plugin(requires=['pv', 'sensor_expected_power', 'system_size'],
                provides=['sensor_normalized'])
-    def sensor_normalize(pv, sensor_expected_power):
-        return pv.div(sensor_expected_power)
+    def sensor_normalize(pv, sensor_expected_power, system_size):
+        normalized = pv.div(sensor_expected_power)
+
+        if system_size is None:
+            x = normalized[np.isfinite(normalized)]
+            normalized = normalized / x.quantile(0.95)
+        return normalized
 
     @sa.plugin(requires=['pv'], provides=['times'])
     def get_times(pv):
@@ -112,9 +109,10 @@ def initialize_rdtools_plugins(sa):
 
     @sa.plugin(requires=['clearsky_poa_unscaled', 'poa'],
                provides=['clearsky_poa'])
-    def rescale_clearsky_poa(clearsky_poa_raw, poa):
-        clearsky_poa = normalization.irradiance_rescale(poa, clearsky_poa_raw,
-                                                        method='iterative')
+    def rescale_clearsky_poa(clearsky_poa_unscaled, poa):
+        clearsky_poa = normalization.irradiance_rescale(
+                poa, clearsky_poa_unscaled, method='iterative'
+        )
         return clearsky_poa
 
     @sa.plugin(requires=['pvlib_location', 'times'],
@@ -124,6 +122,16 @@ def initialize_rdtools_plugins(sa):
             times, pvlib_location.latitude, pvlib_location.longitude
         )
         return cs_tamb
+
+    @sa.plugin(requires=['poa', 'windspeed', 'ambient_temperature'],
+               provides=['sensor_cell_temperature'])
+    def sensor_cell_temperature(poa, windspeed, ambient_temperature):
+        tcell = pvlib.pvsystem.sapm_celltemp(
+            poa_global=poa,
+            wind_speed=windspeed,
+            temp_air=ambient_temperature
+        )
+        return tcell['temp_cell']
 
     @sa.plugin(requires=['sensor_normalized',
                          'normalized_low_cutoff',
@@ -166,13 +174,13 @@ def initialize_rdtools_plugins(sa):
              & sensor_csi_filter
         return filt
 
-    @sa.plugin(requires=['sensor_normalized', 'sensor_poa_insolation',
+    @sa.plugin(requires=['sensor_normalized', 'poa',
                          'sensor_overall_filter', 'aggregation_frequency'],
                provides=['sensor_aggregated', 'sensor_aggregated_insolation'])
-    def sensor_aggregate(sensor_normalized, poa_insolation,
+    def sensor_aggregate(sensor_normalized, poa,
                          sensor_overall_filter, aggregation_frequency):
         norm = sensor_normalized[sensor_overall_filter]
-        insol = poa_insolation[sensor_overall_filter]
+        insol = poa[sensor_overall_filter]
         aggregated = aggregation.aggregation_insol(norm, insol,
                                                    aggregation_frequency)
         aggregated_insolation = insol.resample(aggregation_frequency).sum()
@@ -181,15 +189,17 @@ def initialize_rdtools_plugins(sa):
 
     @sa.plugin(requires=['sensor_aggregated', 'sensor_aggregated_insolation'],
                provides=['sensor_soiling_results'])
-    def sensor_srr_soiling(aggregated, aggregated_insolation, **kwargs):
-        if aggregated.index.freq != 'D' or \
-           aggregated_insolation.index.freq != 'D':
+    def sensor_srr_soiling(sensor_aggregated, sensor_aggregated_insolation,
+                           **kwargs):
+        if sensor_aggregated_insolation.index.freq != 'D' or \
+           sensor_aggregated_insolation.index.freq != 'D':
             raise ValueError(
                 'Soiling SRR analysis requires daily aggregation.'
             )
 
         sr, sr_ci, soiling_info = soiling.soiling_srr(
-                aggregated, aggregated_insolation, **kwargs
+                sensor_aggregated_insolation, sensor_aggregated_insolation,
+                **kwargs
         )
         srr_results = {
             'p50_sratio': sr,
@@ -200,9 +210,9 @@ def initialize_rdtools_plugins(sa):
 
     @sa.plugin(requires=['sensor_aggregated'],
                provides=['sensor_degradation_results'])
-    def sensor_yoy_degradation(aggregated, **kwargs):
+    def sensor_yoy_degradation(sensor_aggregated, **kwargs):
         yoy_rd, yoy_ci, yoy_info = \
-            degradation.degradation_year_on_year(aggregated, **kwargs)
+            degradation.degradation_year_on_year(sensor_aggregated, **kwargs)
 
         yoy_results = {
             'p50_rd': yoy_rd,
@@ -222,7 +232,7 @@ class SystemAnalysis:
                  cell_temperature_low_cutoff=-50,
                  cell_temperature_high_cutoff=110,
                  clip_quantile=0.98, clearsky_index_threshold=0.15,
-                 aggregation_frequency=None, pv_tilt=None, pv_azimuth=None,
+                 aggregation_frequency='D', pv_tilt=None, pv_azimuth=None,
                  pvlib_location=None, pvlib_localized_pvsystem=None):
 
         # It's desirable to use explicit parameters for documentation and
@@ -233,6 +243,9 @@ class SystemAnalysis:
         self.dataset = locals()
         self.dataset.pop('self')
         self.primary_inputs = self.dataset.keys()  # used for diagram colors
+        self.dataset = {k: v for k, v in self.dataset.items() if v is not None}
+        if 'system_size' not in self.dataset:
+            self.dataset['system_size'] = None
         self.PROVIDES_REGISTRY = {}  # map keys to models
         self.REQUIRES_REGISTRY = {}  # map models to required keys
         self.OPTIONAL_REGISTRY = {}  # map models to optional keys
@@ -279,7 +292,7 @@ class SystemAnalysis:
         for row, data in nx.shortest_path_length(G):
             for col, dist in data.items():
                 df.loc[row, col] = dist
-        df = df.fillna(df.max().max()/2)
+        df = df.fillna(df.max().max()/3)
         pos = nx.kamada_kawai_layout(G, dist=df.to_dict())
 
         colors = ['cyan' if key in self.primary_inputs else 'yellow'
@@ -332,9 +345,16 @@ class SystemAnalysis:
                            f'with provider {provider.__name__}')
                     # run the plugin
                     if defer:
+                        # TODO: future bug, providers that return multiple
+                        # values should be wrapped to pick out the right one.
+                        # Might be easier to run the function, ignore the
+                        # return values, and fetch result from the dataset
                         value = functools.partial(provider, ds)
                     else:
-                        value = provider(ds)
+                        # ignore the return value since it might be a tuple
+                        # and all models put results into ds as singlets
+                        _ = provider(ds)
+                        value = ds[key]
                 return value
 
             @functools.wraps(func)
@@ -353,7 +373,7 @@ class SystemAnalysis:
                 except ValueError as e:
                     msg = str(e)
                     raise ValueError(
-                        f'Could not run plugin "{func.__name__}": {msg}'
+                        f'{func.__name__} -> {msg}'
                     )
                 args = {**required_args, **optional_args}
                 _debug(f'calling {func.__name__} with '
