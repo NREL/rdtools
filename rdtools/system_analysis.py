@@ -172,6 +172,7 @@ class SystemAnalysis:
         # a dictionary for the modeling namespace.  Use locals() to grab them:
         self.dataset = locals()
         self.dataset.pop('self')
+        self.primary_inputs = self.dataset.keys() # used for diagram colors
         self.PROVIDES_REGISTRY = {}  # map keys to models
         self.REQUIRES_REGISTRY = {}  # map models to required keys
         self.OPTIONAL_REGISTRY = {}  # map models to optional keys
@@ -211,7 +212,11 @@ class SystemAnalysis:
         df = df.fillna(df.max().max())
         pos = nx.kamada_kawai_layout(G, dist=df.to_dict())
 
-        nx.draw_networkx_nodes(G, pos, node_size=1000, node_shape='H')
+        colors = ['cyan' if key in self.primary_inputs else 'yellow'
+                  for key in G.nodes]
+
+        nx.draw_networkx_nodes(G, pos, node_size=1000, node_shape='H',
+                               node_color=colors)
         nx.draw_networkx_labels(G, pos, font_weight='bold')
         nx.draw_networkx_edges(G, pos, arrows=True, arrowsize=40,
                                edge_color='grey')
