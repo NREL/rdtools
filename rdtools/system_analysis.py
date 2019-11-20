@@ -1,5 +1,5 @@
 '''
-TODO: write this module description
+A high-level but customizable wrapper around the low-level RdTools functions.
 '''
 
 import pandas as pd
@@ -24,72 +24,31 @@ def _debug(msg):
 
 def initialize_rdtools_plugins(sa):
     """
-    Populate a SystemAnalysis object with the default set of RdTools plugins
+    Populate a SystemAnalysis object with the default set of RdTools plugins.
     """
 
-    @sa.plugin(requires=['poa', 'sensor_cell_temperature', 'gamma_pdc',
-                         'g_ref', 't_ref', 'system_size'],
-               provides=['pvwatts_expected_power'])
-    def pvwatts(poa, sensor_cell_temperature, gamma_pdc, g_ref, t_ref,
-                system_size):
-        if system_size is None:
-            system_size = 1.0
-        pvwatts_kwargs = {
-            "poa_global": poa,
-            "P_ref": system_size,
-            "T_cell": sensor_cell_temperature,
-            "G_ref": g_ref,
-            "T_ref": t_ref,
-            "gamma_pdc": gamma_pdc
-        }
-        p_exp = normalization.pvwatts_dc_power(**pvwatts_kwargs)
-        return p_exp
-
-    @sa.plugin(requires=['pvlib_localized_pvsystem', 'dni', 'ghi', 'dhi',
-                         'ambient_temperature', 'windspeed'],
-               provides=['sapm_expected_power'])
-    def sapm(pvlib_localized_pvsystem, dni, ghi, dhi, ambient_temperature,
-             windspeed):
-        sapm_kwargs = {
-            "DNI": dni,
-            "GHI": ghi,
-            "DHI": dhi,
-            "Temperature": ambient_temperature,
-            "Wind Speed": windspeed,
-        }
-        df = pd.DataFrame(sapm_kwargs)
-        p_exp = normalization.sapm_dc_power(pvlib_localized_pvsystem, df)
-        return p_exp
-
+    #%% plugins for the sensor-based analysis
     @sa.plugin(requires=['pv', 'max_timedelta'], provides=['pv_energy'])
     def power_to_energy(pv, max_timedelta):
         energy = normalization.energy_from_power(pv,
                                                  max_timedelta=max_timedelta)
         return energy
 
-    @sa.plugin(requires=['dc_model'],
-               optional=['pvwatts_expected_power', 'sapm_expected_power'],
-               provides=['sensor_expected_power'])
-    def sensor_expected_power(dc_model, pvwatts_expected_power,
-                              sapm_expected_power):
-        if dc_model == 'pvwatts':
-            return pvwatts_expected_power()
-        elif dc_model == 'sapm':
-            return sapm_expected_power()
-        raise ValueError(f"invalid dc_model value '{dc_model}', "
-                         "must be either 'pvwatts' or 'sapm'")
-
-    '''
-    @sa.plugin(requires=['pv', 'sensor_expected_power', 'system_size'],
-               provides=['sensor_normalized'])
-    def sensor_normalize(pv, sensor_expected_power, system_size):
-        normalized = pv.div(sensor_expected_power)
-        if system_size is None:
-            print('renormalizing')
-            x = normalized[np.isfinite(normalized)]
-            normalized = normalized / x.quantile(0.95)
-        return normalized
-    '''
+    @sa.plugin(requires=['poa', 'windspeed', 'ambient_temperature'],
+               optional=['temperature_model'],
+               provides=['sensor_cell_temperature'])
+    def sensor_cell_temperature(poa, windspeed, ambient_temperature,
+                                temperature_model):
+        kwargs = dict(
+            poa_global=poa,
+            wind_speed=windspeed,
+            temp_air=ambient_temperature
+        )
+        temperature_model = temperature_model()
+        if temperature_model is not None:
+            kwargs['model'] = temperature_model
+        tcell = pvlib.pvsystem.sapm_celltemp(**kwargs)
+        return tcell['temp_cell']
 
     @sa.plugin(requires=['pv_energy', 'poa', 'sensor_cell_temperature',
                          'gamma_pdc', 'g_ref', 't_ref', 'system_size'],
@@ -123,73 +82,12 @@ def initialize_rdtools_plugins(sa):
             normalized = normalized / x.quantile(0.95)
         return normalized, insolation
 
-    @sa.plugin(requires=['pv'], provides=['times'])
-    def get_times(pv):
-        return pv.index
-
-    @sa.plugin(requires=['pvlib_location', 'times'],
-               provides=['solar_position'])
-    def get_solarposition(pvlib_location, times):
-        return pvlib_location.get_solarposition(times)
-
-    @sa.plugin(requires=['pvlib_location', 'times'],
-               provides=['clearsky_irradiance'])
-    def get_clearsky_irradiance(pvlib_location, times):
-        return pvlib_location.get_clearsky(times)
-
-    @sa.plugin(requires=['pv_tilt', 'pv_azimuth', 'albedo', 'solar_position',
-                         'clearsky_irradiance'],
-               provides=['clearsky_poa_unscaled'])
-    def get_clearsky_poa(pv_tilt, pv_azimuth, albedo, solar_position,
-                         clearsky_irradiance, **kwargs):
-        poa = pvlib.irradiance.get_total_irradiance(
-                pv_tilt, pv_azimuth,
-                solar_position['apparent_zenith'],
-                solar_position['azimuth'],
-                clearsky_irradiance['dni'],
-                clearsky_irradiance['ghi'],
-                clearsky_irradiance['dhi'],
-                albedo=albedo, **kwargs)
-        return poa['poa_global']
-
-    @sa.plugin(requires=['clearsky_poa_unscaled', 'poa'],
-               provides=['clearsky_poa'])
-    def rescale_clearsky_poa(clearsky_poa_unscaled, poa):
-        clearsky_poa = normalization.irradiance_rescale(
-                poa, clearsky_poa_unscaled, method='iterative'
-        )
-        return clearsky_poa
-
-    @sa.plugin(requires=['pvlib_location', 'times'],
-               provides=['clearsky_ambient_temperature'])
-    def clearsky_ambient_temperature(pvlib_location, times):
-        cs_tamb = clearsky_temperature.get_clearsky_tamb(
-            times, pvlib_location.latitude, pvlib_location.longitude
-        )
-        return cs_tamb
-
-    @sa.plugin(requires=['poa', 'windspeed', 'ambient_temperature'],
-               optional=['temperature_model'],
-               provides=['sensor_cell_temperature'])
-    def sensor_cell_temperature(poa, windspeed, ambient_temperature,
-                                temperature_model):
-        kwargs = dict(
-            poa_global=poa,
-            wind_speed=windspeed,
-            temp_air=ambient_temperature
-        )
-        temperature_model = temperature_model()
-        if temperature_model is not None:
-            kwargs['model'] = temperature_model
-        tcell = pvlib.pvsystem.sapm_celltemp(**kwargs)
-        return tcell['temp_cell']
-
     @sa.plugin(requires=['sensor_normalized',
                          'normalized_low_cutoff',
                          'normalized_high_cutoff'],
                provides=['sensor_normalized_filter'])
-    def normalized_filter(sensor_normalized, normalized_low_cutoff,
-                          normalized_high_cutoff):
+    def sensor_normalized_filter(sensor_normalized, normalized_low_cutoff,
+                                 normalized_high_cutoff):
         filt = filtering.normalized_filter(
             sensor_normalized, normalized_low_cutoff, normalized_high_cutoff
         )
@@ -206,15 +104,6 @@ def initialize_rdtools_plugins(sa):
     def sensor_clip_filter(pv, clip_quantile):
         filt = filtering.clip_filter(pv, clip_quantile)
         return filt
-
-    '''
-    @sa.plugin(requires=['poa', 'clearsky_poa', 'clearsky_index_threshold'],
-               provides=['sensor_csi_filter'])
-    def sensor_csi_filter(poa, clearsky_poa, clearsky_index_threshold):
-        filt = filtering.csi_filter(poa, clearsky_poa,
-                                    clearsky_index_threshold)
-        return filt
-    '''
 
     @sa.plugin(requires=['sensor_cell_temperature',
                          'cell_temperature_low_cutoff',
@@ -256,7 +145,7 @@ def initialize_rdtools_plugins(sa):
                provides=['sensor_soiling_results'])
     def sensor_srr_soiling(sensor_aggregated, sensor_aggregated_insolation,
                            **kwargs):
-        if sensor_aggregated_insolation.index.freq != 'D' or \
+        if sensor_aggregated.index.freq != 'D' or \
            sensor_aggregated_insolation.index.freq != 'D':
             raise ValueError(
                 'Soiling SRR analysis requires daily aggregation.'
@@ -286,8 +175,215 @@ def initialize_rdtools_plugins(sa):
         }
         return yoy_results
 
+    #%% plugins for the clearsky-based analysis
+
+    @sa.plugin(requires=['pv'], provides=['times'])
+    def get_times(pv):
+        return pv.index
+
+    @sa.plugin(requires=['pvlib_location', 'times'],
+               provides=['solar_position'])
+    def get_solarposition(pvlib_location, times):
+        return pvlib_location.get_solarposition(times)
+
+    @sa.plugin(requires=['pvlib_location', 'times'],
+               provides=['clearsky_irradiance'])
+    def get_clearsky_irradiance(pvlib_location, times):
+        return pvlib_location.get_clearsky(times)
+
+    @sa.plugin(requires=['pv_tilt', 'pv_azimuth', 'albedo', 'solar_position',
+                         'clearsky_irradiance'],
+               provides=['clearsky_poa_unscaled'])
+    def get_clearsky_poa(pv_tilt, pv_azimuth, albedo, solar_position,
+                         clearsky_irradiance, **kwargs):
+        poa = pvlib.irradiance.get_total_irradiance(
+                pv_tilt, pv_azimuth,
+                solar_position['apparent_zenith'],
+                solar_position['azimuth'],
+                clearsky_irradiance['dni'],
+                clearsky_irradiance['ghi'],
+                clearsky_irradiance['dhi'],
+                albedo=albedo, **kwargs)
+        return poa['poa_global']
+
+    @sa.plugin(requires=['clearsky_poa_unscaled', 'poa', 'rescale_poa'],
+               provides=['clearsky_poa'])
+    def rescale_clearsky_poa(clearsky_poa_unscaled, poa, rescale_poa):
+        if rescale_poa:
+            clearsky_poa = normalization.irradiance_rescale(
+                poa, clearsky_poa_unscaled, method='iterative'
+            )
+        else:
+            clearsky_poa = clearsky_poa_unscaled
+        return clearsky_poa
+
+    @sa.plugin(requires=['pvlib_location', 'times'],
+               provides=['clearsky_ambient_temperature'])
+    def clearsky_ambient_temperature(pvlib_location, times):
+        cs_tamb = clearsky_temperature.get_clearsky_tamb(
+            times, pvlib_location.latitude, pvlib_location.longitude
+        )
+        return cs_tamb
+
+    @sa.plugin(requires=['clearsky_poa', 'clearsky_ambient_temperature'],
+               optional=['temperature_model'],
+               provides=['clearsky_cell_temperature'])
+    def clearsky_cell_temperature(clearsky_poa, clearsky_ambient_temperature,
+                                  temperature_model):
+        kwargs = dict(
+            poa_global=clearsky_poa,
+            wind_speed=0,
+            temp_air=clearsky_ambient_temperature
+        )
+        temperature_model = temperature_model()
+        if temperature_model is not None:
+            kwargs['model'] = temperature_model
+        tcell = pvlib.pvsystem.sapm_celltemp(**kwargs)
+        return tcell['temp_cell']
+
+    @sa.plugin(requires=['pv_energy', 'clearsky_poa',
+                         'clearsky_cell_temperature', 'gamma_pdc', 'g_ref',
+                         't_ref', 'system_size'],
+               provides=['clearsky_normalized', 'clearsky_insolation'])
+    def clearsky_normalize(pv_energy, clearsky_poa, clearsky_cell_temperature,
+                           gamma_pdc, g_ref, t_ref, system_size):
+        if system_size is None:
+            renorm = True
+            system_size = 1.0
+        else:
+            renorm = False
+
+        pvwatts_kws = {
+            "poa_global": clearsky_poa,
+            "P_ref": system_size,
+            "T_cell": clearsky_cell_temperature,
+            "G_ref": g_ref,
+            "T_ref": t_ref,
+            "gamma_pdc": gamma_pdc
+        }
+
+        normalized, insolation = normalization.normalize_with_pvwatts(
+                pv_energy, pvwatts_kws
+        )
+
+        if renorm:
+            # Normalize to the 95th percentile for convenience;
+            # this is renormalized out in the calculations but is relevant
+            # to normalized_filter()
+            x = normalized[np.isfinite(normalized)]
+            normalized = normalized / x.quantile(0.95)
+        return normalized, insolation
+
+    @sa.plugin(requires=['clearsky_normalized',
+                         'normalized_low_cutoff',
+                         'normalized_high_cutoff'],
+               provides=['clearsky_normalized_filter'])
+    def clearsky_normalized_filter(clearsky_normalized, normalized_low_cutoff,
+                                   normalized_high_cutoff):
+        filt = filtering.normalized_filter(
+            clearsky_normalized, normalized_low_cutoff, normalized_high_cutoff
+        )
+        return filt
+
+    @sa.plugin(requires=['clearsky_poa', 'poa_low_cutoff', 'poa_high_cutoff'],
+               provides=['clearsky_poa_filter'])
+    def clearsky_poa_filter(clearsky_poa, poa_low_cutoff, poa_high_cutoff):
+        filt = filtering.poa_filter(clearsky_poa, poa_low_cutoff,
+                                    poa_high_cutoff)
+        return filt
+
+    @sa.plugin(requires=['clearsky_cell_temperature',
+                         'cell_temperature_low_cutoff',
+                         'cell_temperature_high_cutoff'],
+               provides=['clearsky_cell_temperature_filter'])
+    def clearsky_cell_temperature_filter(clearsky_cell_temperature,
+                                         cell_temperature_low_cutoff,
+                                         cell_temperature_high_cutoff):
+        filt = filtering.tcell_filter(clearsky_cell_temperature,
+                                      cell_temperature_low_cutoff,
+                                      cell_temperature_high_cutoff)
+        return filt
+
+    @sa.plugin(requires=['poa', 'clearsky_poa', 'clearsky_index_threshold'],
+               provides=['clearsky_csi_filter'])
+    def sensor_csi_filter(poa, clearsky_poa, clearsky_index_threshold):
+        filt = filtering.csi_filter(poa, clearsky_poa,
+                                    clearsky_index_threshold)
+        return filt
+
+    @sa.plugin(requires=['clearsky_normalized_filter', 'clearsky_poa_filter',
+                         'clip_filter', 'clearsky_cell_temperature_filter',
+                         'clearsky_csi_filter'],
+               provides=['clearsky_overall_filter'])
+    def clearsky_filter(clearsky_normalized_filter, clearsky_poa_filter,
+                        clip_filter, clearsky_cell_temperature_filter,
+                        clearsky_csi_filter):
+        filt = clearsky_normalized_filter \
+             & clearsky_poa_filter \
+             & clip_filter \
+             & clearsky_cell_temperature_filter \
+             & clearsky_csi_filter
+        return filt
+
+    @sa.plugin(requires=['clearsky_normalized', 'clearsky_insolation',
+                         'clearsky_overall_filter', 'aggregation_frequency'],
+               provides=['clearsky_aggregated',
+                         'clearsky_aggregated_insolation'])
+    def clearsky_aggregate(clearsky_normalized, clearsky_insolation,
+                           clearsky_overall_filter, aggregation_frequency):
+        norm = clearsky_normalized[clearsky_overall_filter]
+        insol = clearsky_insolation[clearsky_overall_filter]
+        aggregated = aggregation.aggregation_insol(norm, insol,
+                                                   aggregation_frequency)
+        aggregated_insolation = insol.resample(aggregation_frequency).sum()
+
+        return aggregated, aggregated_insolation
+
+    @sa.plugin(requires=['clearsky_aggregated',
+                         'clearsky_aggregated_insolation'],
+               provides=['clearsky_soiling_results'])
+    def clearsky_srr_soiling(clearsky_aggregated,
+                             clearsky_aggregated_insolation,
+                             **kwargs):
+        if clearsky_aggregated.index.freq != 'D' or \
+           clearsky_aggregated_insolation.index.freq != 'D':
+            raise ValueError(
+                'Soiling SRR analysis requires daily aggregation.'
+            )
+
+        sr, sr_ci, soiling_info = soiling.soiling_srr(
+                clearsky_aggregated, clearsky_aggregated_insolation,
+                **kwargs
+        )
+        srr_results = {
+            'p50_sratio': sr,
+            'sratio_confidence_interval': sr_ci,
+            'calc_info': soiling_info
+        }
+        return srr_results
+
+    @sa.plugin(requires=['clearsky_aggregated'],
+               provides=['clearsky_degradation_results'])
+    def clearsky_yoy_degradation(clearsky_aggregated, **kwargs):
+        yoy_rd, yoy_ci, yoy_info = \
+            degradation.degradation_year_on_year(clearsky_aggregated, **kwargs)
+
+        yoy_results = {
+            'p50_rd': yoy_rd,
+            'rd_confidence_interval': yoy_ci,
+            'calc_info': yoy_info
+        }
+        return yoy_results
+
+    #%%
+
 
 class SystemAnalysis:
+    """
+    A high-level class for performing end-to-end analysis.  The class is based
+    on a dynamic model plugin architecture that automatically determines the
+    required calculations for a desired result variable.
+    """
 
     def __init__(self, pv, poa=None, ghi=None, dni=None, dhi=None, albedo=0.25,
                  ambient_temperature=None, windspeed=None, gamma_pdc=None,
@@ -300,13 +396,13 @@ class SystemAnalysis:
                  aggregation_frequency='D', pv_tilt=None, pv_azimuth=None,
                  pvlib_location=None, pvlib_localized_pvsystem=None,
                  interpolation_frequency=None, max_timedelta=None,
-                 temperature_model=None):
+                 temperature_model=None, rescale_poa=True):
 
         # It's desirable to use explicit parameters for documentation and
         # autocomplete purposes, but we still want to collect them all into
         # a dictionary for the modeling namespace.  Use locals() to grab them:
         # Important!  Don't create any variables before this line, or else
-        # they'll be included in the modeling namespace
+        # they'll be included in the modeling namespace.
         self.dataset = locals()
         self.dataset.pop('self')
         self.primary_inputs = self.dataset.keys()  # used for diagram colors
@@ -337,6 +433,22 @@ class SystemAnalysis:
                 self.dataset[key] = interpolated
 
     def trace(self, key, collapse_tree=False):
+        """
+        Recursively traverse the model graph and trace the dependencies
+        required to calculate `key`.
+
+        Parameters
+        ----------
+        key : str
+            The variable to trace.
+
+        collapse_tree : bool, default False
+            If True, flatten the depency tree into a list of dependencies.
+
+        Returns
+        -------
+        A nested dict representing the dependency tree of `key`.
+        """
         provider = self.PROVIDES_REGISTRY.get(key, None)
         requires = self.REQUIRES_REGISTRY.get(provider, [])
         optional = self.OPTIONAL_REGISTRY.get(provider, [])
@@ -351,17 +463,50 @@ class SystemAnalysis:
         return tree
 
     def model_inputs(self):
+        """
+        Return the list of variables that the current set of plugins requires.
+        """
         return list(sorted(set(sum(self.REQUIRES_REGISTRY.values(), []))))
 
     def model_outputs(self):
+        """
+        Return the list of variables that the current set of plugins can
+        calculate.
+        """
         return list(sorted(self.PROVIDES_REGISTRY.keys()))
 
     def calculate(self, key, **kwargs):
+        """
+        Calculate and return the value of `key`, dynamically resolving any
+        dependencies.
+
+        Parameters
+        ----------
+        key : str
+            The variable to retrieve.
+
+        kwargs :
+            Extra parameters passed to the model plugin that provides `key`.
+
+        Returns
+        -------
+        The value of `key` returned from its provider model.
+        """
         provider = self.PROVIDES_REGISTRY[key]
         provider(self.dataset, **kwargs)
         return self.dataset[key]
 
     def diagram(self, target=None):
+        """
+        Generate a diagram of a directed graph representing the current set of
+        model plugins.  Edges represent model dependencies.
+
+        Parameters
+        ----------
+        target : str, optional
+            A model output to focus on.  Graph edges between this variable and
+            its prerequisites will be drawn in bold.
+        """
         import networkx as nx
         import matplotlib.pyplot as plt
 
@@ -389,21 +534,48 @@ class SystemAnalysis:
             path_nodes.add(target)
             edges = G.edges()
             width = [3.0 if edge[1] in path_nodes else 1.0 for edge in edges]
+            bold_labels1 = [edge[1] for edge in edges if edge[1] in path_nodes]
+            bold_labels2 = [edge[0] for edge in edges if edge[1] in path_nodes]
+            bold_labels = list(set(bold_labels1) | set(bold_labels2))
+            normal_labels = [l for l in G.nodes() if l not in bold_labels]
         else:
             width = 1.0
+            bold_labels = []
+            normal_labels = G.nodes()
 
         nx.draw_networkx_nodes(G, pos, node_size=1000, node_shape='H',
                                node_color=colors)
-        nx.draw_networkx_labels(G, pos, font_weight='bold')
+        nx.draw_networkx_labels(G.subgraph(bold_labels), pos, 
+                                font_weight='bold')
+        nx.draw_networkx_labels(G.subgraph(normal_labels), pos, 
+                                font_weight='normal')
         nx.draw_networkx_edges(G, pos, arrows=True, arrowsize=40,
-                               edge_color='grey', width=width)
+                               edge_color='lightgrey', width=width)
         if target is not None:
             plt.title(target)
 
     def plugin(self, requires, provides, optional=[]):
         """
-        Register a model into the plugin architecture
+        Register a model into the plugin architecture.  Intended for use as a
+        decorator but can be called manually if needed.
+
+        Parameters
+        ----------
+        requires : list
+            The list of required inputs for the decorated function.  The values
+            of these inputs will be passed as keyword arguments, so these names
+            must match the argument names of the decorated function.
+
+        provides : list
+            The list of outputs of the decorated function.
+
+        optional : list, optional
+            A list of optional inputs for the decorated function.  These will
+            be passed in as functions that calculate and return the value of
+            the given input.  Useful for cases when not all required inputs are
+            actually needed for a given model invocation.
         """
+
         def decorator(func):
             """
             Create a wrapper around the model to auto-calculate required inputs
@@ -412,7 +584,7 @@ class SystemAnalysis:
                 """
                 Return cached value of key if known, calculate it otherwise.
 
-                If defer is True, return a functools.partial for deferred
+                If defer is True, return a retrieval function for delayed
                 evaluation.
                 """
                 # determine what plugin can calculate it
@@ -449,6 +621,10 @@ class SystemAnalysis:
 
             @functools.wraps(func)
             def model(ds, **user_kwargs):
+                """
+                Wrapper around the model function.  Calculates input values and
+                stores output values.
+                """
                 _debug(
                     f'checking prerequisites for {func.__name__}: {requires}')
                 try:
@@ -509,6 +685,7 @@ class SystemAnalysis:
             'clearsky'
         kwargs :
             Extra parameters passed to plotting.soiling_interval_plot()
+
         Returns
         -------
         matplotlib.figure.Figure
@@ -518,9 +695,8 @@ class SystemAnalysis:
             results_dict = self.dataset['sensor_soiling_results']
             aggregated = self.dataset['sensor_aggregated']
         elif result_to_plot == 'clearsky':
-            # results_dict = self.results['clearsky']['srr_soiling']
-            # aggregated = self.clearsky_aggregated_performance
-            pass
+            results_dict = self.dataset['clearsky_soiling_results']
+            aggregated = self.dataset['clearsky_aggregated']
         fig = plotting.soiling_interval_plot(results_dict['calc_info'],
                                              aggregated, **kwargs)
 
@@ -538,6 +714,7 @@ class SystemAnalysis:
             'clearsky'
         kwargs :
             Extra parameters passed to plotting.soiling_rate_histogram()
+
         Returns
         -------
         matplotlib.figure.Figure
@@ -546,8 +723,7 @@ class SystemAnalysis:
         if result_to_plot == 'sensor':
             results_dict = self.dataset['sensor_soiling_results']
         elif result_to_plot == 'clearsky':
-            # results_dict = self.results['clearsky']['srr_soiling']
-            pass
+            results_dict = self.results['clearsky_soiling_results']
 
         fig = plotting.soiling_rate_histogram(results_dict['calc_info'],
                                               **kwargs)
@@ -566,6 +742,7 @@ class SystemAnalysis:
             'clearsky'
         kwargs :
             Extra parameters passed to plotting.soiling_monte_carlo_plot()
+
         Returns
         -------
         matplotlib.figure.Figure
@@ -575,9 +752,8 @@ class SystemAnalysis:
             results_dict = self.dataset['sensor_soiling_results']
             aggregated = self.dataset['sensor_aggregated']
         elif result_to_plot == 'clearsky':
-            # results_dict = self.results['clearsky']['srr_soiling']
-            # aggregated = self.clearsky_aggregated_performance
-            pass
+            results_dict = self.results['clearsky_soiling_results']
+            aggregated = self.dataset['clearsky_aggregated']
 
         fig = plotting.soiling_monte_carlo_plot(results_dict['calc_info'],
                                                 aggregated, **kwargs)
@@ -598,6 +774,7 @@ class SystemAnalysis:
             transparency of the scatter plot
         kwargs :
             Extra parameters passed to matplotlib.pyplot.axis.plot()
+
         Returns
         -------
         matplotlib.figure.Figure
@@ -633,6 +810,7 @@ class SystemAnalysis:
             'clearsky'
         kwargs :
             Extra parameters passed to plotting.degradation_summary_plots()
+
         Returns
         -------
         matplotlib.figure.Figure
@@ -642,9 +820,8 @@ class SystemAnalysis:
             results_dict = self.dataset['sensor_degradation_results']
             aggregated = self.dataset['sensor_aggregated']
         elif result_to_plot == 'clearsky':
-            # results_dict = self.results['clearsky']['yoy_degradation']
-            # aggregated = self.clearsky_aggregated_performance
-            pass
+            results_dict = self.dataset['clearsky_degradation_results']
+            aggregated = self.dataset['clearsky_aggregated']
 
         fig = plotting.degradation_summary_plots(
                 results_dict['p50_rd'],

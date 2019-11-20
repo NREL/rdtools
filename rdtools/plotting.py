@@ -1,3 +1,5 @@
+"""Functions to visualize analysis results"""
+
 import matplotlib.pyplot as plt
 
 
@@ -6,8 +8,6 @@ def degradation_summary_plots(yoy_rd, yoy_ci, yoy_info, normalized_yield,
                               scatter_ymax=None, plot_color=None, summary_title=None,
                               scatter_alpha=0.5):
     '''
-    Description
-    -----------
     Return a figure containing plots (scatter plot and histogram) that summarize
     degradation analysis results
 
@@ -91,8 +91,6 @@ def degradation_summary_plots(yoy_rd, yoy_ci, yoy_info, normalized_yield,
 def soiling_monte_carlo_plot(soiling_info, normalized_yield, point_alpha=0.5, profile_alpha=0.05,
                              ymin=None, ymax=None, profiles=None, point_color=None, profile_color='C1'):
     '''
-    Description
-    -----------
     Return a figure to visualize Monte Carlo of soiling profiles used in the SRR analysis.
 
     Parameters
@@ -141,8 +139,6 @@ def soiling_monte_carlo_plot(soiling_info, normalized_yield, point_alpha=0.5, pr
 def soiling_interval_plot(soiling_info, normalized_yield, point_alpha=0.5, profile_alpha=1,
                           ymin=None, ymax=None, point_color=None, profile_color=None):
     '''
-    Description
-    -----------
     Return figure to visualize valid soiling profiles used in the SRR analysis.
 
     Parameters
@@ -185,8 +181,6 @@ def soiling_interval_plot(soiling_info, normalized_yield, point_alpha=0.5, profi
 
 def soiling_rate_histogram(soiling_info, bins=None):
     '''
-    Description
-    -----------
     Return a figure containing a histogram of soiling rates found in the SRR analysis.
 
     Parameters

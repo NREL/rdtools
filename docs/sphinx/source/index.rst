@@ -22,6 +22,7 @@ Documentation Contents
 
    In-Depth Examples <example>
    API Reference <api>
+   SystemAnalysis <system_analysis>
 
 Indices and tables
 ==================
