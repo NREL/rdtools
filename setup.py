@@ -34,12 +34,13 @@ TESTS_REQUIRE = [
 ]
 
 INSTALL_REQUIRES = [
+    'h5py >= 2.7.1',
+    'matplotlib >= 2.2.2',
     'numpy >= 1.12',
     'pandas >= 0.23.0',
-    'statsmodels >= 0.8.0',
-    'scipy >= 0.19.1',
-    'h5py >= 2.7.1',
     'pvlib >= 0.6.0, <0.7.0',
+    'scipy >= 0.19.1',
+    'statsmodels >= 0.8.0',
 ]
 
 CLASSIFIERS = [
