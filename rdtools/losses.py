@@ -128,6 +128,7 @@ def downtime_loss(inverters, meter, online_mask, expected_power,
 
     # inverter-specific fraction of total production
     inverter_shares = inverters[online_mask].div(meter, axis=0).median()
+    inverter_shares /= inverter_shares.sum()  # normalize it so sum == 1
 
     # timeseries fraction of online site capacity
     online_fraction = online_mask.multiply(inverter_shares, axis=1).sum(axis=1)
