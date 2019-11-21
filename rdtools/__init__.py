@@ -14,6 +14,9 @@ from rdtools.filtering import tcell_filter
 from rdtools.filtering import clip_filter
 from rdtools.soiling import soiling_srr
 from rdtools.losses import is_online
+from rdtools.losses import downtime_loss
+from rdtools.losses import signal_to_profile
+from rdtools.losses import profile_to_signal
 
 from ._version import get_versions
 __version__ = get_versions()['version']

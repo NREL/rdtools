@@ -9,7 +9,7 @@ import numpy as np
 import pvlib
 import math
 
-from rdtools import is_online
+from rdtools import is_online, downtime_loss, signal_to_profile
 
 
 # make up some test clear-sky meter power data
@@ -107,3 +107,58 @@ def test_is_online_multiple_inverters_offline(relative_sizing,
     mask = is_online(invs, meter_adjusted)
     uptime = mask.loc[is_daylight, :].mean().mean()
     assert math.isclose(uptime, expected_uptime, rel_tol=0.01)
+
+
+def test_downtime_loss():
+    """
+    Test if losses.downtime_loss can handle:
+        - single inverters offline
+        - all inverters offline
+        - differently-sized inverters
+        - inverter comms outages
+    """
+    ideal_inverter_power = pd.DataFrame({
+        'inv0': (meter/3).clip(upper=20),
+        'inv1': (2*meter/3).clip(upper=40)
+    })
+    expected_power = ideal_inverter_power.sum(axis=1)
+    production_profile = signal_to_profile(expected_power)
+
+    inverter_power = ideal_inverter_power.copy()
+    # introduce various outages
+    inverter_power.loc['2019-01-03', 'inv0'] = 0
+    inverter_power.loc['2019-01-05 10:00':'2019-01-05 14:00', 'inv1'] = 0
+    inverter_power.loc['2019-01-07 12:00':'2019-01-08 10:00', :] = 0
+    inverter_power.loc['2019-01-06'] = 0
+
+    # this one is just an inverter comms outage though
+    meter_adjusted = inverter_power.sum(axis=1)
+    meter_adjusted['2019-01-06'] = expected_power['2019-01-06']
+
+    online_mask = is_online(inverter_power, meter_adjusted)
+    lost_power = downtime_loss(
+            inverter_power,
+            meter_adjusted,
+            online_mask,
+            expected_power,
+            production_profile,
+            is_daylight
+    )
+    daily_loss = lost_power.resample('d').sum() / 4
+    observed = daily_loss['2019-01-03']
+    expected = ideal_inverter_power.loc['2019-01-03',
+                                        'inv0'].sum() / 4
+    assert abs(observed / expected) - 1 < 0.01
+
+    observed = daily_loss['2019-01-05']
+    expected = ideal_inverter_power.loc['2019-01-05 10:00':'2019-01-05 14:00',
+                                        'inv1'].sum() / 4
+    assert abs(observed / expected) - 1 < 0.01
+
+    observed = daily_loss['2019-01-07'] + daily_loss['2019-01-08']
+    expected = ideal_inverter_power.loc['2019-01-07 12:00':'2019-01-08 10:00',
+                                        :].sum().sum() / 4
+    assert abs(observed / expected) - 1 < 0.01
+
+    observed = daily_loss['2019-01-06']
+    assert observed == 0

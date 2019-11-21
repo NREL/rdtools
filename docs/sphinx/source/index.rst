@@ -20,7 +20,8 @@ Documentation Contents
 .. toctree::
    :maxdepth: 2
 
-   In-Depth Examples <example>
+   Degradation and Soiling <rd_example>
+   Inverter Downtime <availability_example>
    API Reference <api>
 
 Indices and tables

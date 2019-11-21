@@ -20,6 +20,7 @@ analysis workflow.
    normalization
    aggregation
    clearsky_temperature
+   losses
 
 
 Degradation
@@ -103,3 +104,17 @@ Functions for modeling ambient temperature.
    :toctree: generated/
 
    clearsky_temperature.get_clearsky_tamb
+
+
+Production Losses
+=================
+
+Functions for quantifying short-term PV system performance.
+
+.. autosummary::
+   :toctree: generated/
+   
+   losses.is_online
+   losses.downtime_loss
+   losses.profile_to_signal
+   losses.signal_to_profile
