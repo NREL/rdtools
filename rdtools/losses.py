@@ -175,6 +175,7 @@ def profile_to_signal(profile, times):
     months = profile.columns
     profile['Hour'] = profile.index
     profile = profile.melt(id_vars=['Hour'], value_vars=months)
+    profile['Month'] = profile['Month'].astype(int)
 
     signal = pd.merge(aux, profile, on=['Month', 'Hour'], how='left')
     signal.index = times
