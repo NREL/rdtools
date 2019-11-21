@@ -8,3 +8,4 @@ pytz==2018.5
 scipy==1.2.2
 six==1.11.0
 statsmodels==0.10.1
+tables==3.5.2
