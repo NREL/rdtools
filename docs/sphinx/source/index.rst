@@ -20,9 +20,9 @@ Documentation Contents
 .. toctree::
    :maxdepth: 2
 
-   In-Depth Examples <example>
+   Functional API Tutorial <example>
+   SystemAnalysis Tutorial <system_analysis>
    API Reference <api>
-   SystemAnalysis <system_analysis>
 
 Indices and tables
 ==================

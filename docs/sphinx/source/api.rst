@@ -130,6 +130,7 @@ Constructing a SystemAnalysis.
    :toctree: generated/
    
    system_analysis.SystemAnalysis
+   system_analysis.ModelChain
 
 Primary SystemAnalysis methods:
 

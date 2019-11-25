@@ -36,6 +36,11 @@ class ModelChain:
     A class for lazy evaluation of complex computation sequences.
     The class is based on a dynamic model plugin architecture that
     automatically determines the required calculations for a desired result.
+
+    Parameters
+    ----------
+    **kwargs : optional
+        Base values to use as inputs for models.
     """
 
     def __init__(self, **kwargs):
@@ -381,6 +386,10 @@ class SystemAnalysis(ModelChain):
         Returns
         -------
         matplotlib.figure.Figure
+
+        See Also
+        --------
+        rdtools.plotting.soiling_interval_plot
         '''
 
         if result_to_plot == 'sensor':
@@ -410,6 +419,10 @@ class SystemAnalysis(ModelChain):
         Returns
         -------
         matplotlib.figure.Figure
+
+        See Also
+        --------
+        rdtools.plotting.soiling_rate_histogram
         '''
 
         if result_to_plot == 'sensor':
@@ -438,6 +451,10 @@ class SystemAnalysis(ModelChain):
         Returns
         -------
         matplotlib.figure.Figure
+
+        See Also
+        --------
+        rdtools.plotting.soiling_monte_carlo_plot
         '''
 
         if result_to_plot == 'sensor':
@@ -506,6 +523,10 @@ class SystemAnalysis(ModelChain):
         Returns
         -------
         matplotlib.figure.Figure
+
+        See Also
+        --------
+        rdtools.plotting.degradation_summary_plots
         '''
 
         if result_to_plot == 'sensor':
