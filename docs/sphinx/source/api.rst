@@ -130,21 +130,27 @@ Constructing a SystemAnalysis.
    :toctree: generated/
    
    system_analysis.SystemAnalysis
-   system_analysis.initialize_rdtools_plugins
 
-SystemAnalysis methods
+Primary SystemAnalysis methods:
 
 .. autosummary::
    :toctree: generated/
    
    system_analysis.SystemAnalysis.calculate
-   system_analysis.SystemAnalysis.diagram
-   system_analysis.SystemAnalysis.model_inputs
-   system_analysis.SystemAnalysis.model_outputs
    system_analysis.SystemAnalysis.plot_degradation_summary
    system_analysis.SystemAnalysis.plot_pv_vs_irradiance
    system_analysis.SystemAnalysis.plot_soiling_interval
    system_analysis.SystemAnalysis.plot_soiling_monte_carlo
    system_analysis.SystemAnalysis.plot_soiling_rate_histogram
+
+SystemAnalysis methods for inspecting and analyzing the model chain:
+
+.. autosummary::
+   :toctree: generated/
+
+   system_analysis.SystemAnalysis.diagram
+   system_analysis.SystemAnalysis.model_inputs
+   system_analysis.SystemAnalysis.model_outputs
    system_analysis.SystemAnalysis.plugin
    system_analysis.SystemAnalysis.trace
+   system_analysis.SystemAnalysis.default_plugins
