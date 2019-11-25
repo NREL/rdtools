@@ -64,7 +64,7 @@ a way of achieving this abstraction.
 Each model is associated with its abstract inputs and outputs and
 the SystemAnalysis object figures out how to hook them all together.
 
-Here is a diagram of the default RdTools model chain.  The dependencies of
+Here is a diagram of the default RdTools System Analysis model chain.  The dependencies of
 ``sensor_degradation_results`` are bolded, showing how the chain traces
 relationships when calculating outputs.  Cyan nodes are considered "primary"
 inputs in that they are not provided by any default model, while yellow nodes
@@ -120,25 +120,9 @@ dynamically calculate required inputs as needed, allowing the user to directly
 request the value of ``expected_power`` without having to explicitly calculate
 ``cell_temperature`` beforehand -- the model chain will do it for you.
 
-Plugins can also be "stacked" if you want to use the same code for multiple
-calculation steps.  For instance:  since the default RdTools analysis
-calculates POA filters based on both measured POA irradiance and modeled
-clearsky POA irradiance, the same function can be used for both plugins by
-stacking the ``@sa.plugin`` calls.  Here is the implementation inside RdTools:
-
-::
-
-    @self.plugin(requires=['clearsky_poa', 'poa_low_cutoff', 'poa_high_cutoff'],
-                 provides=['clearsky_poa_filter'])
-    @self.plugin(requires=['poa', 'poa_low_cutoff', 'poa_high_cutoff'],
-                 provides=['sensor_poa_filter'])
-    def poa_filter(poa, poa_low_cutoff, poa_high_cutoff):
-        filt = filtering.poa_filter(poa, poa_low_cutoff, poa_high_cutoff)
-        return filt
-
 
 Registering Custom Plugins
-==========================
+--------------------------
 
 The plugin architecture allows two cool things.  First, the default RdTools
 models can be overridden with new models simply by registering a new function
@@ -182,6 +166,89 @@ rest of the model chain and allow you to calculate it like anything else:
         return (poa * cell_temperature).resample('m').sum() / poa.resample('m').sum()
     
     print(sa.calculate('poa_weighted_cell_temperature'))
+
+
+Reusing Plugins
+---------------
+
+Plugins can also be "stacked" if you want to use the same code for multiple
+calculation steps.  For instance:  since the default RdTools analysis
+calculates POA filters based on both measured POA irradiance and modeled
+clearsky POA irradiance, the same function can be used for both plugins by
+stacking the ``@sa.plugin`` calls.  Here is the implementation inside RdTools:
+
+::
+
+    @self.plugin(requires=['clearsky_poa', 'poa_low_cutoff', 'poa_high_cutoff'],
+                 provides=['clearsky_poa_filter'])
+    @self.plugin(requires=['poa', 'poa_low_cutoff', 'poa_high_cutoff'],
+                 provides=['sensor_poa_filter'])
+    def poa_filter(poa, poa_low_cutoff, poa_high_cutoff):
+        filt = filtering.poa_filter(poa, poa_low_cutoff, poa_high_cutoff)
+        return filt
+
+
+Optional Inputs
+---------------
+
+Finally, plugins can have "optional" inputs that are not necessarily required
+for the plugin function to complete.  An example would be an optional keyword
+argument that gets passed to a lower-level function.  Arguments listed in the
+``requires`` list of a plugin are evaluated prior to running the plugin itself,
+whereas ``optional`` arguments are passed in as parameterless functions.  These
+functions return ``None`` if the argument has no registered provider and wasn't
+specified as a base input when the model chain was created.
+
+This is how the SystemAnalysis cell temperature plugin works:
+
+::
+
+    @self.plugin(requires=['clearsky_poa', 'clearsky_windspeed', 'clearsky_ambient_temperature'],
+                 optional=['temperature_model'],
+                 provides=['clearsky_cell_temperature'])
+    @self.plugin(requires=['poa', 'windspeed', 'ambient_temperature'],
+                 optional=['temperature_model'],
+                 provides=['sensor_cell_temperature'])
+    def cell_temperature(poa, windspeed, ambient_temperature,
+                         temperature_model):
+        kwargs = dict(
+            poa_global=poa,
+            wind_speed=windspeed,
+            temp_air=ambient_temperature
+        )
+        temperature_model = temperature_model()
+        if temperature_model is not None:
+            kwargs['model'] = temperature_model
+        tcell = pvlib.pvsystem.sapm_celltemp(**kwargs)
+        return tcell['temp_cell']
+
+Deferring the evaluation of an argument provides two benefits.  First, it can
+prevent a model chain from evaluating calculation paths that are unnecessary
+and/or impossible given the model chain's base inputs.  For instance, here's a
+hypothetical branch plugin that chooses one of two code paths:
+
+::
+
+    @self.plugin(requires=['dc_model'],
+                 optional=['pvwatts_power', 'sapm_power'],
+                 provides=['expected_power'])
+    def dc_power_branch(dc_model, pvwatts_power, sapm_power):
+        if dc_model == 'pvwatts':
+            dc_power = pvwatts_power() # evaluate the pvwatts chain
+        elif dc_model == 'sapm_power':
+            dc_power = sapm_power() # evaluate the sapm chain
+        else:
+            raise ValueError()
+        return dc_power
+
+In this example, deferring the evaluation of the two energy models is necessary --
+putting both inputs in the ``requires`` list would require the user to supply
+all the SAPM inputs as well as the PVWatts inputs, even if they only ever
+specified ``dc_model='pvwatts'``.  
+
+Second, even if the inputs to the two models were the
+same, deferring the execution also prevents running models whose outputs won't
+be used for anything. 
 
 
 Looking under the hood

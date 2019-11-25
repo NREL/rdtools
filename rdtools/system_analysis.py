@@ -698,9 +698,9 @@ class SystemAnalysis(ModelChain):
                                'cell_temperature_low_cutoff',
                                'cell_temperature_high_cutoff'],
                      provides=['sensor_cell_temperature_filter'])
-        def sensor_cell_temperature_filter(sensor_cell_temperature,
-                                           cell_temperature_low_cutoff,
-                                           cell_temperature_high_cutoff):
+        def cell_temperature_filter(sensor_cell_temperature,
+                                    cell_temperature_low_cutoff,
+                                    cell_temperature_high_cutoff):
             filt = filtering.tcell_filter(sensor_cell_temperature,
                                           cell_temperature_low_cutoff,
                                           cell_temperature_high_cutoff)
