@@ -183,3 +183,152 @@ rest of the model chain and allow you to calculate it like anything else:
     
     print(sa.calculate('poa_weighted_cell_temperature'))
 
+
+Looking under the hood
+======================
+
+One advantage of using the high-level 
+:py:class:`~.system_analysis.SystemAnalysis` API is to not have to worry about
+details when running common analyses.  However, there are methods of inspecting
+the sequence of calculations that an analysis takes.  
+
+Logging
+-------
+
+RdTools outputs debugging information to a standard python logger,
+accessible like so:
+
+::
+    
+    In [1]: from rdtools import SystemAnalysis
+       ...: import logging
+       ...: 
+       ...: console_handler = logging.StreamHandler()
+       ...: fmt = '%(levelname)s - %(message)s'
+       ...: console_handler.setFormatter(logging.Formatter(fmt))
+       ...: logging.getLogger('rdtools').addHandler(console_handler)
+       ...: logging.getLogger('rdtools').setLevel(logging.DEBUG)
+       ...: 
+       ...: sa = SystemAnalysis(pv=0)
+       ...: 
+    DEBUG - registering plugin get_times: ['pv']->['times']
+    DEBUG - registering plugin get_solarposition: ['pvlib_location', 'times']->['solar_position']
+    DEBUG - registering plugin get_clearsky_irradiance: ['pvlib_location', 'times']->['clearsky_irradiance']
+    DEBUG - registering plugin get_clearsky_poa: ['pv_tilt', 'pv_azimuth', 'albedo', 'solar_position', 'clearsky_irradiance']->['clearsky_poa_unscaled']
+    DEBUG - registering plugin rescale_clearsky_poa: ['clearsky_poa_unscaled', 'poa', 'rescale_poa']->['clearsky_poa']
+    DEBUG - registering plugin clearsky_ambient_temperature: ['pvlib_location', 'times']->['clearsky_ambient_temperature']
+    DEBUG - registering plugin power_to_energy: ['pv', 'max_timedelta']->['pv_energy']
+    DEBUG - registering plugin cell_temperature: ['poa', 'windspeed', 'ambient_temperature']->['sensor_cell_temperature']
+    DEBUG - registering plugin cell_temperature: ['clearsky_poa', 'clearsky_windspeed', 'clearsky_ambient_temperature']->['clearsky_cell_temperature']
+    DEBUG - registering plugin normalize: ['pv_energy', 'poa', 'sensor_cell_temperature', 'gamma_pdc', 'g_ref', 't_ref', 'system_size']->['sensor_normalized', 'sensor_insolation']
+    DEBUG - registering plugin normalize: ['pv_energy', 'clearsky_poa', 'clearsky_cell_temperature', 'gamma_pdc', 'g_ref', 't_ref', 'system_size']->['clearsky_normalized', 'clearsky_insolation']
+    DEBUG - registering plugin normalized_filter: ['sensor_normalized', 'normalized_low_cutoff', 'normalized_high_cutoff']->['sensor_normalized_filter']
+    DEBUG - registering plugin normalized_filter: ['clearsky_normalized', 'normalized_low_cutoff', 'normalized_high_cutoff']->['clearsky_normalized_filter']
+    DEBUG - registering plugin poa_filter: ['poa', 'poa_low_cutoff', 'poa_high_cutoff']->['sensor_poa_filter']
+    DEBUG - registering plugin poa_filter: ['clearsky_poa', 'poa_low_cutoff', 'poa_high_cutoff']->['clearsky_poa_filter']
+    DEBUG - registering plugin clip_filter: ['pv', 'clip_quantile']->['clip_filter']
+    DEBUG - registering plugin sensor_cell_temperature_filter: ['sensor_cell_temperature', 'cell_temperature_low_cutoff', 'cell_temperature_high_cutoff']->['sensor_cell_temperature_filter']
+    DEBUG - registering plugin sensor_cell_temperature_filter: ['clearsky_cell_temperature', 'cell_temperature_low_cutoff', 'cell_temperature_high_cutoff']->['clearsky_cell_temperature_filter']
+    DEBUG - registering plugin clearsky_csi_filter: ['poa', 'clearsky_poa', 'clearsky_index_threshold']->['clearsky_csi_filter']
+    DEBUG - registering plugin sensor_filter: ['sensor_normalized_filter', 'sensor_poa_filter', 'clip_filter', 'sensor_cell_temperature_filter']->['sensor_overall_filter']
+    DEBUG - registering plugin clearsky_filter: ['clearsky_normalized_filter', 'clearsky_poa_filter', 'clip_filter', 'clearsky_cell_temperature_filter', 'clearsky_csi_filter']->['clearsky_overall_filter']
+    DEBUG - registering plugin aggregate: ['sensor_normalized', 'sensor_insolation', 'sensor_overall_filter', 'aggregation_frequency']->['sensor_aggregated', 'sensor_aggregated_insolation']
+    DEBUG - registering plugin aggregate: ['clearsky_normalized', 'clearsky_insolation', 'clearsky_overall_filter', 'aggregation_frequency']->['clearsky_aggregated', 'clearsky_aggregated_insolation']
+    DEBUG - registering plugin srr_soiling: ['sensor_aggregated', 'sensor_aggregated_insolation']->['sensor_soiling_results']
+    DEBUG - registering plugin srr_soiling: ['clearsky_aggregated', 'clearsky_aggregated_insolation']->['clearsky_soiling_results']
+    DEBUG - registering plugin sensor_yoy_degradation: ['sensor_aggregated']->['sensor_degradation_results']
+    DEBUG - registering plugin sensor_yoy_degradation: ['clearsky_aggregated']->['clearsky_degradation_results']
+
+This shows the process of registering the default set of RdTools plugins.  Now,
+let's try to calculate a value that we didn't provide the prerequisites for:
+
+::
+
+    In [2]: sa.calculate('sensor_degradation_results')
+    DEBUG - checking prerequisites for sensor_yoy_degradation: ['sensor_aggregated']
+    DEBUG - calculating requirement sensor_aggregated with provider aggregate
+    DEBUG - checking prerequisites for aggregate: ['sensor_normalized', 'sensor_insolation', 'sensor_overall_filter', 'aggregation_frequency']
+    DEBUG - calculating requirement sensor_normalized with provider normalize
+    DEBUG - checking prerequisites for normalize: ['pv_energy', 'poa', 'sensor_cell_temperature', 'gamma_pdc', 'g_ref', 't_ref', 'system_size']
+    DEBUG - calculating requirement pv_energy with provider power_to_energy
+    DEBUG - checking prerequisites for power_to_energy: ['pv', 'max_timedelta']
+    DEBUG - requirement already satisfied: pv
+    Traceback (most recent call last):
+    
+      File "<ipython-input-2-13e7e81d0e29>", line 1, in <module>
+        sa.calculate('sensor_degradation_results')
+    
+      File "C:\Users\KANDERSO\projects\rdtools\rdtools\system_analysis.py", line 126, in calculate
+        provider(self.dataset, **kwargs)
+    
+      File "C:\Users\KANDERSO\projects\rdtools\rdtools\system_analysis.py", line 277, in model
+        f'{func.__name__} -> {msg}'
+    
+    ValueError: sensor_yoy_degradation -> aggregate -> normalize -> power_to_energy -> "max_timedelta" not specified and no provider registered
+
+We can follow how the model chain tries to resolve dependencies.  In this case,
+the only dependency for ``sensor_degradation_results`` is ``sensor_aggregated``,
+which in turn requires the values ``sensor_normalized``, ``sensor_insolation``,
+``sensor_overall_filter``, and ``aggregation_frequency``.  The chain iterates
+through each of these in turn, starting with ``sensor_normalized``, and so on
+down the dependency stack.  Eventually it reaches the point where ``pv_energy``
+is required, which depends on ``pv`` and ``max_timedelta``, but there's no way
+for it to get the value of ``max_timedelta``.
+
+sa.trace()
+----------
+
+Model chains also have a ``.trace(key)`` method that calculates the dependency
+graph (but not any of its values) for the given variable.  
+
+::
+    
+    In [24]: import json
+        ...: print(json.dumps(sa.trace('sensor_overall_filter'), indent=4))
+    {
+        "sensor_normalized_filter": {
+            "sensor_normalized": {
+                "pv_energy": {
+                    "pv": {},
+                    "max_timedelta": {}
+                },
+                "poa": {},
+                "sensor_cell_temperature": {
+                    "poa": {},
+                    "windspeed": {},
+                    "ambient_temperature": {},
+                    "temperature_model": {}
+                },
+                "gamma_pdc": {},
+                "g_ref": {},
+                "t_ref": {},
+                "system_size": {}
+            },
+            "normalized_low_cutoff": {},
+            "normalized_high_cutoff": {}
+        },
+        "sensor_poa_filter": {
+            "poa": {},
+            "poa_low_cutoff": {},
+            "poa_high_cutoff": {}
+        },
+        "clip_filter": {
+            "pv": {},
+            "clip_quantile": {}
+        },
+        "sensor_cell_temperature_filter": {
+            "sensor_cell_temperature": {
+                "poa": {},
+                "windspeed": {},
+                "ambient_temperature": {},
+                "temperature_model": {}
+            },
+            "cell_temperature_low_cutoff": {},
+            "cell_temperature_high_cutoff": {}
+        }
+    }
+
+``sa.trace(key)`` returns a nested dictionary of dependencies.  In this case,
+it shows that ``sensor_overall_filter`` depends on ``sensor_normalized_filter``, 
+``sensor_poa_filter``, ``clip_filter``, and ``sensor_cell_temperature_filter``,
+along with each of their respective dependencies.
