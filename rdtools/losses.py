@@ -26,14 +26,15 @@ def is_online(inverters, meter, low_limit=None):
     low_limit : float or pd.Series, optional
         The threshold to consider an inverter offline.  If a float is given,
         it is used for all inverters.  If a series is given, index values
-        must match the column names in `inverters`.  If not specified,
-        `0.01 * inverters.quantile(0.99)` will be used.
+        must match the column names in ``inverters``.  If not specified,
+        ``0.01 * inverters.quantile(0.99)`` will be used.
 
     Returns
     -------
     online_mask : pd.DataFrame
-        A dataframe with the same shape and indexes as `inverters` with boolean
-        values representing inferred inverter status.
+        A dataframe with the same columns and index as ``inverters`` with
+        boolean values representing inferred inverter status.  ``True`` means
+        online.
     """
     times = inverters.index
     inverters = inverters.fillna(0)
@@ -110,19 +111,19 @@ def downtime_loss(inverters, meter, online_mask, expected_power,
     meter : pd.Series
         Timeseries meter power measurements
     online_mask : pd.DataFrame
-        A boolean mask matching the shape and indexes of `inverters`.
+        A boolean mask matching the columns and index of ``inverters``.
     expected_power : pd.Series
         Expected sitewide power, assuming all inverters were producing.  This
         is expected to be modeled from onsite measured weather conditions.
         Used for estimating lost production when all inverters are offline.
     production_profile : pd.DataFrame
         A 12 column by 24 row dataframe indicating typical hourly production.
-        This will be used in place of `expected_power` when it is unavailable.
+        Used in place of ``expected_power`` when it is unavailable.
     is_daylight : pd.Series
         A boolean timeseries indicating whether weather conditions are
         sufficient to expect inverter production.  Since power measurements can
         be strange around sunrise and sunset, using a filter like
-        `solar_position['elevation'] > 5` or similar can prevent spurious
+        ``solar_position['elevation'] > 5`` or similar can prevent spurious
         downtime at the edges of the day.
     system_limit : float, optional
         A sitewide power limit to use as a ceiling for (meter + lost_power).
