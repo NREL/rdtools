@@ -145,6 +145,18 @@ def downtime_loss(inverters, meter, online_mask, expected_power,
     # timeseries fraction of online site capacity
     online_fraction = online_mask.multiply(inverter_shares, axis=1).sum(axis=1)
 
+    # online_fraction will be too low during mixed comms and production outage.
+    # fix this scaling by the ratio of meter to inv_sum (which is
+    # bigger the more inverters are producing but not communicating).
+    inv_sum = inverters.sum(axis=1)
+    communications_factor = (meter / inv_sum).clip(lower=1)
+    # if no invs are reporting power, can't calculate this comms ratio.
+    # it could be either total system production outage or just bad comms
+    # issues outage.  either way it doesn't make sense to apply the correction.
+    communications_factor[online_fraction == 0] = 1
+    online_fraction *= communications_factor
+    online_fraction = online_fraction.clip(upper=1)
+
     # power that would have been produced if everything was online.
     # NOTE: this asumes that each inverter acts independently,
     # i.e. one inverter being offline doesn't affect the others.  This is not
