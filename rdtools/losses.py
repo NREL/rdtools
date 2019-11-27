@@ -6,6 +6,7 @@ Functions for quantifying short-term PV system performance.
 import pandas as pd
 import numpy as np
 
+
 def is_online(inverters, meter, low_limit=None):
     """
     Detect offline inverters by comparing inverter power against meter power.
@@ -45,13 +46,16 @@ def is_online(inverters, meter, low_limit=None):
 
     # detect inverter downtime based on the mean reported
     # inverter power.  this is more robust to cases where inverters
-    # are online but not reporting data.  note that it assumes that the
-    # mean reporting power is the same as the mean power -- not robust to
-    # inverters of vastly different sizes with some not reporting.
+    # are online but not reporting data.
     mean_inverter_power = inverters[inverters > low_limit].mean(axis=1)
 
+    # note that above line assumes that the mean reporting power is the same as
+    # the true mean power -- not robust to inverters of vastly different sizes
+    # with some not reporting.
     # apply correction for relative sizing based on who's reporting
-    relative_sizing = inverters.divide(mean_inverter_power, axis=0).median()
+    relative_sizing = inverters[inverters > low_limit] \
+                               .divide(mean_inverter_power, axis=0) \
+                               .median()
     mean_inverter_power = inverters[inverters > low_limit] \
                                    .divide(relative_sizing, axis=1) \
                                    .mean(axis=1)
@@ -68,17 +72,24 @@ def is_online(inverters, meter, low_limit=None):
     # and actual meter readings
     meter_delta = 1 - meter / (n_inv * mean_inverter_power)
 
-    # calculate the expected delta if the smallest inverter is offline:
-    smallest_delta = (relative_sizing / relative_sizing.sum()).min()
+    # calculate the expected delta if the smallest inverter that LOOKS offline
+    # actually IS offline:
+    inverter_fraction = relative_sizing / relative_sizing.sum()
+    smallest_delta = inverters.le(low_limit) \
+                              .replace(False, np.nan) \
+                              .multiply(inverter_fraction) \
+                              .min(axis=1) \
+                              .fillna(1)  # if nothing, use safe value of 100%
     meter_appears_low = meter_delta > (0.75 * smallest_delta)
 
-    # if meter is low enough relative to inverters that one might be offline,
-    # AND some actually look offline, assume there are offline inverters
+    # if meter is low enough relative to what you would expect from inverters
+    # that one might be offline, AND some actually look offline, assume there
+    # are offline inverters
     inverters_appear_offline = ~(inverters > low_limit).all(axis=1)
     inverters_offline = inverters_appear_offline & meter_appears_low
 
-    # assume that if at least 1 inv is offline, any inv < 1% of max is
-    # offline.  this falls down if some invs are online but not reporting.
+    # assume that if at least 1 inv is offline then any inv below threshold is
+    # offline.  this will overcount if some invs are online but not reporting.
     online_mask = pd.DataFrame(index=times,
                                columns=inverters.columns,
                                data=True)
@@ -88,7 +99,7 @@ def is_online(inverters, meter, low_limit=None):
 
 
 def downtime_loss(inverters, meter, online_mask, expected_power,
-                  production_profile, is_daylight, site_limit=None):
+                  production_profile, is_daylight, system_limit=None):
     """
     Determine lost production due to inverter downtime.
 
@@ -113,7 +124,7 @@ def downtime_loss(inverters, meter, online_mask, expected_power,
         be strange around sunrise and sunset, using a filter like
         `solar_position['elevation'] > 5` or similar can prevent spurious
         downtime at the edges of the day.
-    site_limit : float, optional
+    system_limit : float, optional
         A sitewide power limit to use as a ceiling for (meter + lost_power).
 
     Returns
@@ -133,14 +144,17 @@ def downtime_loss(inverters, meter, online_mask, expected_power,
     # timeseries fraction of online site capacity
     online_fraction = online_mask.multiply(inverter_shares, axis=1).sum(axis=1)
 
-    # power that would have been produced if everything was online
+    # power that would have been produced if everything was online.
+    # NOTE: this asumes that each inverter acts independently,
+    # i.e. one inverter being offline doesn't affect the others.  This is not
+    # necessarily true for systems with plant controllers, for instance.
     estimated_full_power = meter / online_fraction
 
     lost_power = estimated_full_power - meter
     lost_power = lost_power.clip(lower=0)
 
     # filter by solar elevation to avoid "downtime" on the edges of
-    # the day when stuff gets wacky in low-light.
+    # the day when stuff gets unpredictable/inconsistent in low-light.
     lost_power.loc[~is_daylight] = 0
 
     # for the case where all inverters are offline, we fall back to using
@@ -151,16 +165,16 @@ def downtime_loss(inverters, meter, online_mask, expected_power,
                                  expected_power,
                                  typical_power)
 
-    # broadcasting the hourly TMY profile into subhourly values, ignoring
+    # hourly TMY profile is broadcasted to subhourly values, so need to ignore
     # times where the subhourly values don't count as daytime
     lost_power[(online_fraction == 0) & is_daylight] = replacement_power
 
     # don't let the total power (actual + lost) go above AC limit
-    if site_limit:
+    if system_limit:
         total_power = meter + lost_power
-        total_power_clipped = total_power.clip(upper=site_limit)
+        total_power_clipped = total_power.clip(upper=system_limit)
         lost_power = total_power_clipped - meter
-        lost_power = lost_power.clip(lower=0, upper=site_limit)
+        lost_power = lost_power.clip(lower=0, upper=system_limit)
 
     return lost_power
 
