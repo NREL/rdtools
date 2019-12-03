@@ -210,18 +210,14 @@ def test_downtime_loss_mixed():
     daily_loss = lost_power.resample('d').sum() / 4
 
     observed = daily_loss['2019-01-03']
-    expected = ideal_inverter_power.loc['2019-01-03',
-                                        'inv0'].sum() / 4
+    expected = ideal_inverter_power.loc['2019-01-03', 'inv0'].sum() / 4
     assert abs(observed / expected) - 1 < 0.01
 
-    expected = ideal_inverter_power.loc['2019-01-04',
-                                        'inv1'].sum() / 4
+    expected = ideal_inverter_power.loc['2019-01-04', 'inv1'].sum() / 4
     assert abs(observed / expected) - 1 < 0.01
 
-    expected = ideal_inverter_power.loc['2019-01-05',
-                                        'inv2'].sum() / 4
+    expected = ideal_inverter_power.loc['2019-01-05', 'inv2'].sum() / 4
     assert abs(observed / expected) - 1 < 0.01
 
-    expected = ideal_inverter_power.loc['2019-01-06',
-                                        'inv3'].sum() / 4
+    expected = ideal_inverter_power.loc['2019-01-06', 'inv3'].sum() / 4
     assert abs(observed / expected) - 1 < 0.01

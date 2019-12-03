@@ -34,7 +34,7 @@ def is_online(inverters, meter, low_limit=None):
     online_mask : pd.DataFrame
         A dataframe with the same columns and index as ``inverters`` with
         boolean values representing inferred inverter status.  ``True`` means
-        online.
+        online and ``False`` means "may be offline".
     """
     times = inverters.index
     inverters = inverters.fillna(0)

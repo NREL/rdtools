@@ -21,7 +21,7 @@ Documentation Contents
    :maxdepth: 2
 
    Degradation and Soiling <rd_example>
-   Inverter Downtime <availability_example>
+   Inverter Downtime <availability_explanation>
    API Reference <api>
 
 Indices and tables
