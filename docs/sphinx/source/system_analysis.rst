@@ -139,7 +139,7 @@ that ``provides`` a given variable:
       ...: def my_tcell_plugin(poa, ambient_temperature):
       ...:     return 25 # dummy return value
       ...: 
-   system_analysis.py:660: UserWarning: Replacing 'sensor_cell_temperature' provider 'sensor_cell_temperature' with new provider 'my_tcell_plugin'
+   system_analysis.py:660: UserWarning: Replacing 'sensor_cell_temperature' provider 'cell_temperature' with new provider 'my_tcell_plugin'
 
 Here the model chain recognizes that this new plugin conflicts with the default
 cell temperature plugin and replaces the default with the new version.  This
@@ -188,16 +188,14 @@ stacking the ``@sa.plugin`` calls.  Here is the implementation inside RdTools:
         return filt
 
 
-Optional Inputs
----------------
+Optional and Deferred Inputs
+----------------------------
 
-Finally, plugins can have "optional" inputs that are not necessarily required
+Plugins can have "optional" inputs that are not necessarily required
 for the plugin function to complete.  An example would be an optional keyword
-argument that gets passed to a lower-level function.  Arguments listed in the
-``requires`` list of a plugin are evaluated prior to running the plugin itself,
-whereas ``optional`` arguments are passed in as parameterless functions.  These
-functions return ``None`` if the argument has no registered provider and wasn't
-specified as a base input when the model chain was created.
+argument that gets passed to a lower-level function.  If an optional input does
+not have a known value and can't be calculated through the model chain, 
+``None`` is passed in.
 
 This is how the SystemAnalysis cell temperature plugin works:
 
@@ -209,28 +207,31 @@ This is how the SystemAnalysis cell temperature plugin works:
     @self.plugin(requires=['poa', 'windspeed', 'ambient_temperature'],
                  optional=['temperature_model'],
                  provides=['sensor_cell_temperature'])
-    def cell_temperature(poa, windspeed, ambient_temperature,
-                         temperature_model):
+    def cell_temperature(poa, windspeed, ambient_temperature, temperature_model):
         kwargs = dict(
             poa_global=poa,
             wind_speed=windspeed,
             temp_air=ambient_temperature
         )
-        temperature_model = temperature_model()
         if temperature_model is not None:
             kwargs['model'] = temperature_model
         tcell = pvlib.pvsystem.sapm_celltemp(**kwargs)
         return tcell['temp_cell']
 
-Deferring the evaluation of an argument provides two benefits.  First, it can
-prevent a model chain from evaluating calculation paths that are unnecessary
+"Deferred" inputs allow plugins to determine which inputs are actually needed
+at runtime without pre-calculating their values like the ``requires`` inputs.
+These inputs are passed in as parameterless functions that dynamically
+calculate the input value as decided by the plugin.  
+
+Deferring the evaluation of an argument prevents the model chain from
+evaluating calculation paths that are unnecessary
 and/or impossible given the model chain's base inputs.  For instance, here's a
 hypothetical branch plugin that chooses one of two code paths:
 
 ::
 
     @self.plugin(requires=['dc_model'],
-                 optional=['pvwatts_power', 'sapm_power'],
+                 deferred=['pvwatts_power', 'sapm_power'],
                  provides=['expected_power'])
     def dc_power_branch(dc_model, pvwatts_power, sapm_power):
         if dc_model == 'pvwatts':
@@ -238,17 +239,88 @@ hypothetical branch plugin that chooses one of two code paths:
         elif dc_model == 'sapm_power':
             dc_power = sapm_power() # evaluate the sapm chain
         else:
-            raise ValueError()
+            raise ValueError(...)
         return dc_power
 
 In this example, deferring the evaluation of the two energy models is necessary --
 putting both inputs in the ``requires`` list would require the user to supply
 all the SAPM inputs as well as the PVWatts inputs, even if they only ever
-specified ``dc_model='pvwatts'``.  
+specified ``dc_model='pvwatts'``.  And even if the inputs to both models were
+available, deferring their execution prevents wasting time on models whose
+outputs won't be used for anything. 
 
-Second, even if the inputs to the two models were the
-same, deferring the execution also prevents running models whose outputs won't
-be used for anything. 
+
+Plugin kwargs
+-------------
+
+Plugin execution can be customized via optional keyword arguments.  For
+instance:
+
+::
+    
+    In [1]: from rdtools import ModelChain
+       ...: mc = ModelChain(prefix='Hello')
+       ...: 
+       ...: @mc.plugin(requires=['prefix'], provides=['greeting'])
+       ...: def greet(prefix, name='user'):
+       ...:     return f"{prefix}, {name}!"
+       ...: 
+       ...: mc.calculate('greeting')
+       ...: 
+    Out[1]: 'Hello, user!'
+
+
+Default argument values are allowed and can be overridden by the user outside
+of the requires/provides machinery:
+
+::
+    
+    In [1]: from rdtools import ModelChain
+       ...: mc = ModelChain(prefix='Hello')
+       ...: 
+       ...: @mc.plugin(requires=['prefix'], provides=['greeting'])
+       ...: def greet(prefix, name='user'):
+       ...:     return f"{prefix}, {name}!"
+       ...: 
+       ...: mc.calculate('greeting', name='world')
+       ...: 
+    Out[1]: 'Hello, world!'
+
+
+This mechanism can also be used to pass kwargs through to lower-level
+functions. For instance, the SRR soiling plugin in SystemAnalysis passes any
+extra kwargs through to the underlying ``rdtools.soiling.soiling_srr`` call:
+
+::
+
+    @self.plugin(requires=['clearsky_aggregated', 'clearsky_aggregated_insolation'],
+                 provides=['clearsky_soiling_results'])
+    @self.plugin(requires=['sensor_aggregated', 'sensor_aggregated_insolation'],
+                 provides=['sensor_soiling_results'])
+    def srr_soiling(aggregated, aggregated_insolation, **kwargs):
+        if aggregated.index.freq != 'D' or \
+           aggregated_insolation.index.freq != 'D':
+            raise ValueError(
+                'Soiling SRR analysis requires daily aggregation.'
+            )
+
+        sr, sr_ci, soiling_info = soiling.soiling_srr(
+                aggregated, aggregated_insolation,
+                **kwargs
+        )
+        srr_results = {
+            'p50_sratio': sr,
+            'sratio_confidence_interval': sr_ci,
+            'calc_info': soiling_info
+        }
+        return srr_results
+
+Which lets you specify :py:func:`~.soiling.soiling_srr` keywords directly, for
+instance:
+
+::
+
+    sa.calculate('sensor_soiling_results', reps=2000)
 
 
 Looking under the hood

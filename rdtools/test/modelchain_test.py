@@ -81,6 +81,33 @@ def test_modelchain_override(mc):
 
     assert mc.calculate('2x') == 15
 
+    # test multiple outputs
+    @mc.plugin(requires=['x'], provides=['multiple1', 'multiple2'])
+    def multiple(x):
+        return x, -x
+
+    # multiple outputs, full swap out
+    with pytest.warns(UserWarning):
+        @mc.plugin(requires=['x'], provides=['multiple1', 'multiple2'])
+        def multiple_full_replacement(x):
+            return 2*x, -2*x
+
+    assert mc.calculate('multiple1') == 10  # calculated with replacement
+    assert mc.calculate('multiple2') == -10  # calculated with replacement
+
+    # multiple outputs, partial swap out
+    @mc.plugin(requires=['x'], provides=['multiple3', 'multiple4'])
+    def multiple_again(x):
+        return x, -x
+
+    with pytest.warns(UserWarning):
+        @mc.plugin(requires=['x'], provides=['multiple3'])
+        def multiple_partial_replacement(x):
+            return 2*x
+
+    assert mc.calculate('multiple3') == 10  # calculated with replacement
+    assert mc.calculate('multiple4') == -5  # calculate with original
+
 
 def test_modelchain_inputs_outputs(mc):
     assert mc.model_inputs() == ['x', 'y']
@@ -151,7 +178,6 @@ def test_modelchain_plugin_optional_inputs(mc):
     """ test optional inputs """
 
     def func(x, flag):
-        flag = flag()
         if flag is not None:
             raise RuntimeError(f"flag value: {flag}")
         return x
@@ -166,3 +192,23 @@ def test_modelchain_plugin_optional_inputs(mc):
         mc.calculate('output1')
 
     assert mc.calculate('output2') == 5
+
+
+def test_modelchain_plugin_deferred_inputs(mc):
+    """ test deferred inputs """
+
+    @mc.plugin(requires=['flag'], deferred=['x', 'z'], provides=['value'])
+    def func(flag, x, z):
+        if flag:
+            return z()
+        else:
+            return x()
+
+    # this fails because z can't be evaluated
+    with pytest.raises(ValueError):
+        mc.dataset['flag'] = True
+        mc.calculate('value')
+
+    # this works since the impossible z evaluation is deferred
+    mc.dataset['flag'] = False
+    assert mc.calculate('value') == 5

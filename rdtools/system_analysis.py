@@ -27,7 +27,7 @@ def _debug(msg):
 
 
 def _warn(msg):
-    log.warn(msg)
+    log.warning(msg)
     warnings.warn(msg)
 
 
@@ -50,6 +50,7 @@ class ModelChain:
         self.PROVIDES_REGISTRY = {}  # map keys to models -- "who provides X?"
         self.REQUIRES_REGISTRY = {}  # map models to keys -- "X requires what?"
         self.OPTIONAL_REGISTRY = {}  # map models to optional keys
+        self.DEFERRED_REGISTRY = {}  # map models to deferred keys
         self.default_plugins()
 
     def default_plugins(self):
@@ -79,8 +80,9 @@ class ModelChain:
         """
         provider = self.PROVIDES_REGISTRY.get(key, None)
         requires = self.REQUIRES_REGISTRY.get(provider, [])
+        deferred = self.DEFERRED_REGISTRY.get(provider, [])
         optional = self.OPTIONAL_REGISTRY.get(provider, [])
-        tree = {key: self.trace(key) for key in requires + optional}
+        tree = {key: self.trace(key) for key in requires + deferred + optional}
 
         if collapse_tree:
             def collapse(tree):
@@ -189,7 +191,7 @@ class ModelChain:
         if target is not None:
             plt.title(target)
 
-    def plugin(self, requires, provides, optional=[]):
+    def plugin(self, requires, provides, deferred=[], optional=[]):
         """
         Register a model into the plugin architecture.  Intended for use as a
         decorator but can be called manually if needed.
@@ -204,54 +206,53 @@ class ModelChain:
         provides : list
             The list of outputs of the decorated function.
 
-        optional : list, optional
-            A list of optional inputs for the decorated function.  These will
+        deferred : list, optional
+            A list of deferred inputs for the decorated function.  These will
             be passed in as functions that calculate and return the value of
-            the given input.  Useful for cases when not all required inputs are
-            actually needed for a given model invocation.
+            the given input.  Useful for cases when a plugin needs to determine
+            required inputs at runtime.
+
+        optional : list, optional
+            A list of optional inputs for the decorated function.  These values
+            will be provided if they are already present in the dataset or can
+            be calculated from the model chain, or passed as None otherwise.
         """
 
         def decorator(func):
             """
             Create a wrapper around the model to auto-calculate required inputs
             """
-            def evaluate(key, ds, defer=False):
+            def evaluate(key, ds, optional=False):
                 """
                 Return value of ``key`` if cached, calculate it otherwise.
 
-                If ``defer`` is True, return a retrieval function for delayed
-                evaluation.
+                If ``optional`` is True and the value cannot be calculated,
+                return ``None`` instead of raising a ValueError.
                 """
-                # determine what plugin can calculate it
-                provider = self.PROVIDES_REGISTRY.get(key, None)
-                if defer:
-                    if key not in ds and provider is None:
-                        return lambda: None
-
-                    if key in ds:
-                        return lambda: ds[key]
-
-                    def wrapper():
-                        _ = provider(ds)
-                        return ds[key]
-                    return wrapper
                 if key in ds:
                     # value was provided by user, or already calculated
                     _debug(f'requirement already satisfied: {key}')
                     value = ds[key]
                 else:
                     # value not yet known
+                    # determine what plugin can calculate it
+                    provider = self.PROVIDES_REGISTRY.get(key, None)
                     if provider is None:
-                        raise ValueError(
-                            f'"{key}" not specified and no provider registered'
-                        )
-                    _debug(f'calculating requirement {key} '
-                           f'with provider {provider.__name__}')
-                    # run the plugin
-                    # ignore the return value since it might be a tuple,
-                    # and all models put results into ds as singlets anyway
-                    _ = provider(ds)
-                    value = ds[key]
+                        if optional:
+                            value = None
+                        else:
+                            raise ValueError(
+                                f'"{key}" has no registered provider and was '
+                                'not defined at model chain creation'
+                            )
+                    else:
+                        _debug(f'calculating requirement {key} '
+                               f'with provider {provider.__name__}')
+                        # run the plugin
+                        # ignore the return value since it might be a tuple,
+                        # so using the entries in ds guarantee single values
+                        _ = provider(ds)
+                        value = ds[key]
                 return value
 
             @functools.wraps(func)
@@ -267,31 +268,46 @@ class ModelChain:
                     required_args = {
                         key: evaluate(key, ds) for key in requires
                     }
-                    # generate deferred evals for the optional params
+                    # calculate any optional params
                     optional_args = {
-                        key: evaluate(key, ds, defer=True) for key in optional
+                        key: evaluate(key, ds, optional=True)
+                        for key in optional
+                    }
+                    # generate deferred evals for the deferred params.
+                    # Note: lambdas don't enclose scope, so use
+                    # functools.partial here instead.
+                    deferred_args = {
+                        key: functools.partial(evaluate, key=key, ds=ds)
+                        for key in deferred
                     }
                 except ValueError as e:
                     msg = str(e)
                     raise ValueError(
                         f'{func.__name__} -> {msg}'
                     )
-                args = {**required_args, **optional_args}
+                args = {**required_args, **deferred_args, **optional_args}
                 _debug(f'calling {func.__name__} with '
                        f'requires={list(required_args.keys())}, '
+                       f'deferred={list(deferred_args.keys())}, '
                        f'optional={list(optional_args.keys())}, '
                        f'and kwargs={list(user_kwargs.keys())}')
-                # TODO: this is a future bug -- if a model returns 2 things but
-                # should only provide one (because eg it used to provide both
-                # and one got replaced by another model) this will grab the
-                # wrong value.  need to match up return values to provides.
-
                 # use positional args instead of double-splat for args
                 # to allow chained plugins.
                 # Requires py3's order-preserving dicts.
                 value = func(*args.values(), **user_kwargs)
                 if len(provides) > 1:
+                    # if a model returns 2 things but should only provide one,
+                    # eg it used to provide both and one got replaced by
+                    # another model, we should only store the correct values.
                     for key, val in zip(provides, value):
+                        # check that we are still the provider for each key
+                        our_name = func.__name__
+                        provider_name = self.PROVIDES_REGISTRY[key].__name__
+                        if our_name != provider_name:
+                            _debug(f'skipping return value {key} because '
+                                   f'{our_name} has been replaced by '
+                                   f'{provider_name}')
+                            continue
                         ds[key] = val
                 else:
                     ds[provides[0]] = value
@@ -300,6 +316,7 @@ class ModelChain:
             _debug(
                 f'registering plugin {func.__name__}: {requires}->{provides}')
             self.REQUIRES_REGISTRY[model] = requires
+            self.DEFERRED_REGISTRY[model] = deferred
             self.OPTIONAL_REGISTRY[model] = optional
             for key in provides:
                 provider = self.PROVIDES_REGISTRY.get(key, None)
@@ -616,7 +633,6 @@ class SystemAnalysis(ModelChain):
                 wind_speed=windspeed,
                 temp_air=ambient_temperature
             )
-            temperature_model = temperature_model()
             if temperature_model is not None:
                 kwargs['model'] = temperature_model
             tcell = pvlib.pvsystem.sapm_celltemp(**kwargs)
