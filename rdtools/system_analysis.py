@@ -191,6 +191,42 @@ class ModelChain:
         if target is not None:
             plt.title(target)
 
+    def to_dask(self):
+        """ return a dask task graph representation of this model chain """
+        dsk = {}
+        for key in self.primary_inputs:
+            dsk[key] = self.dataset[key]
+
+        for key, provider in self.PROVIDES_REGISTRY.items():
+            func = provider.__wrapped__
+            reqs = self.REQUIRES_REGISTRY[provider]
+            opts = self.OPTIONAL_REGISTRY[provider]
+
+            # if the provider has multiple return values, we have to
+            # have separate tasks to index them out.
+            # this next bit is the hackiest python I've ever written...
+            # don't ever do this
+            enclosed_vars = dict(zip(
+                provider.__code__.co_freevars,
+                [x.cell_contents for x in provider.__closure__]
+            ))
+            returned_vars = enclosed_vars['provides']
+            if len(returned_vars) == 1:
+                dsk[key] = (func, *reqs, *opts)
+            else:
+                # if multiple return values, save the tuple separately.
+                # note: this will get overwritten N times for N returned vars.
+                # doesn't matter, it's the same every time
+                tuple_key = "-".join(returned_vars)
+                dsk[tuple_key] = (func, *reqs, *opts)
+                # index out the one we want:
+                idx = returned_vars.index(key)
+                # can't use a lambda since it doesn't enclose scope
+                indexer = functools.partial(lambda tup, idx: tup[idx], idx=idx)
+                dsk[key] = (indexer, tuple_key)
+
+        return dsk
+
     def plugin(self, requires, provides, deferred=[], optional=[]):
         """
         Register a model into the plugin architecture.  Intended for use as a
