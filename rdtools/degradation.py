@@ -386,3 +386,83 @@ def _degradation_CI(results, confidence_level):
     half_ci = confidence_level / 2.0
     Rd_CI = np.percentile(dist, [50.0 - half_ci, 50.0 + half_ci]) * 100.0
     return Rd_CI
+
+
+def naive_YOY(normalized_energy, recenter=True):
+    '''
+    Description
+    -----------
+    Year-on-year decomposition method
+
+    Parameters
+    ----------
+    normalized_energy: Pandas Time Series (numeric)
+        Daily or lower frequency time series of normalized system ouput.
+    recenter (bool): default value True
+        specify whether data is centered to normalized yield of 1 based on 
+        first year
+
+    Returns
+    -------
+    tuple of (degradation_rate, confidence_interval, calc_info)
+        degradation_rate:  float
+            rate of relative performance change in %/yr
+    '''
+    
+    
+    # Ensure index is DatetimeIndex (if not, just make it so)
+    if not isinstance(normalized_energy.index, 
+                      pd.core.indexes.datetimes.DatetimeIndex):
+        end_date = '2020-01-01'
+        normalized_energy = normalized_energy.copy()
+        normalized_energy.index = pd.DatetimeIndex(
+                                pd.date_range(end=end_date, 
+                                              periods=len(normalized_energy), 
+                                              freq='D'))
+
+    # Ensure the data is in order
+    normalized_energy = normalized_energy.sort_index()
+    normalized_energy.name = 'energy'
+    normalized_energy.index.name = 'dt'
+
+    # Detect sub-daily data:
+    if min(np.diff(normalized_energy.index.values, n=1)) < np.timedelta64(23, 'h'):
+        raise ValueError('normalized_energy must not be more frequent than daily')
+
+    # Detect less than 2 years of data
+    if normalized_energy.index[-1] - normalized_energy.index[0] < pd.Timedelta('730d'):
+        raise ValueError('must provide at least two years of normalized energy')
+
+    # Auto center
+    if recenter:
+        start = normalized_energy.index[0]
+        oneyear = start + pd.Timedelta('364d')
+        renorm = normalized_energy[start:oneyear].median()
+    else:
+        renorm = 1.0
+
+    normalized_energy = normalized_energy.reset_index()
+    normalized_energy['energy'] = normalized_energy['energy'] / renorm
+
+    normalized_energy['dt_shifted'] = normalized_energy.dt + pd.DateOffset(years=1)
+
+    # Merge with what happened one year ago, use tolerance of 8 days to allow for
+    # weekly aggregated data
+    df = pd.merge_asof(normalized_energy[['dt', 'energy']], normalized_energy,
+                       left_on='dt', right_on='dt_shifted',
+                       suffixes=['', '_right'],
+                       tolerance=pd.Timedelta('8D')
+                       )
+
+    df['time_diff_years'] = (df.dt - df.dt_right).astype('timedelta64[h]') / 8760.0
+    df['yoy'] = 100.0 * (df.energy - df.energy_right) / (df.time_diff_years)
+    df.index = df.dt
+
+    yoy_result = df.yoy.dropna()
+
+    if not len(yoy_result):
+        raise ValueError('no year-over-year aggregated data pairs found')
+
+    Rd_pct = yoy_result.median()
+    
+    return Rd_pct
