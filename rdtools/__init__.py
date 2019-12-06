@@ -14,7 +14,6 @@ from rdtools.filtering import tcell_filter
 from rdtools.filtering import clip_filter
 from rdtools.soiling import soiling_srr
 from rdtools.system_analysis import SystemAnalysis
-from rdtools.system_analysis import ModelChain
 
 from ._version import get_versions
 __version__ = get_versions()['version']
