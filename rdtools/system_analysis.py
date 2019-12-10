@@ -474,22 +474,22 @@ class SystemAnalysis:
             msg = f"calculating {key} with {f.__name__}({argmsg})"
             log.debug(msg)
 
-            # chained exceptions like:
-
-            # IndexError: index 0 is out of bounds for axis 0 with size 0
-            #
-            # The above exception was the direct cause of the following
-            # exception:
-            #
-            # RuntimeError: Could not evaluate 'pv_energy'. Check the above
-            # traceback for details.  Note: some inputs are of type str;
-            # this can be an indication that not all inputs are specified.
-
-            # note:  ipython recently fixed a bug with printing exc chains
-            # https://github.com/ipython/ipython/issues/11995
             try:
                 value = f(*args, **kwargs)
             except Exception as e:
+                # chained exceptions like:
+
+                # IndexError: index 0 is out of bounds for axis 0 with size 0
+                #
+                # The above exception was the direct cause of the following
+                # exception:
+                #
+                # RuntimeError: Could not evaluate 'pv_energy'. Check the above
+                # traceback for details.  Note: some inputs are of type str;
+                # this can be an indication that not all inputs are specified.
+
+                # note:  ipython recently fixed a bug with printing exc chains
+                # https://github.com/ipython/ipython/issues/11995
                 err_msg = (f"Could not evaluate '{key}'.  Check the above "
                             "traceback for details.  ")
                 if any(argtype == 'builtins.str' for argtype in argtypes):
@@ -509,15 +509,27 @@ class SystemAnalysis:
 
         Parameters
         ----------
-        key : str
-            The variable to retrieve.
+        key : str or list of str
+            The variable(s) to retrieve.
+        scheduler : function, default dask.get
+            A function capable of evaluating keys from task graphs.  The
+            default scheduler ``dask.get`` is synchronous (single-threaded).
+            Dask does provide asynchronous schedulers through
+            ``dask.multiprocessing.get`` and ``dask.threaded.get``.  It may
+            also be possible to use dasks's distributed functionality here.
         kwargs :
-            Extra parameters passed to the model plugin that provides ``key``.
+            Extra parameters passed to the scheduler function.
 
         Returns
         -------
-        The value of ``key`` returned from its provider model.
+        The value of ``key`` (or a tuple of values if passed a list) as
+        calculated from the task graph.
         """
+        args = {}
+        if scheduler in [dask.get, dask.multiprocessing.get]:
+            args['keys'] = key
+        else:
+            args['result'] = key  # dask.threaded.get has a different interface
         # trace the graph first to make sure it's complete
         if isinstance(key, list):
             for k in key:
@@ -525,7 +537,8 @@ class SystemAnalysis:
         else:
             _ = self.trace(key)
         dsk, _ = dask.optimization.cull(self.graph, key)
-        val = scheduler(dsk, key, **kwargs)
+        args['dsk'] = dsk
+        val = scheduler(**args, **kwargs)
         return val
 
     def visualize(self):

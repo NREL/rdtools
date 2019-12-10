@@ -130,7 +130,6 @@ Constructing a SystemAnalysis.
    :toctree: generated/
    
    system_analysis.SystemAnalysis
-   system_analysis.ModelChain
 
 Primary SystemAnalysis methods:
 
@@ -149,9 +148,6 @@ SystemAnalysis methods for inspecting and analyzing the model chain:
 .. autosummary::
    :toctree: generated/
 
-   system_analysis.SystemAnalysis.diagram
-   system_analysis.SystemAnalysis.model_inputs
-   system_analysis.SystemAnalysis.model_outputs
-   system_analysis.SystemAnalysis.plugin
+   system_analysis.SystemAnalysis.visualize
    system_analysis.SystemAnalysis.trace
-   system_analysis.SystemAnalysis.default_plugins
+   system_analysis.SystemAnalysis.keys
