@@ -36,6 +36,7 @@ release = version = rdtools.__version__
 # ones.
 extensions = [
     'sphinx.ext.napoleon',
+    'sphinx.ext.extlinks',
     'sphinx_rtd_theme',
     'sphinx.ext.autosummary',
     'm2r',
