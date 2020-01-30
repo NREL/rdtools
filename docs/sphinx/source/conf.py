@@ -56,6 +56,13 @@ exclude_patterns = []
 
 source_suffix = ['.rst', '.md']
 
+# List of external link aliases.  Allows use of :pull:`123` to autolink that PR
+extlinks = {
+    'issue': ('https://github.com/NREL/rdtools/issues/%s', 'GH #'),
+    'pull': ('https://github.com/NREL/rdtools/pull/%s', 'GH #'),
+    'ghuser': ('https://github.com/%s', '@')
+}
+
 # -- Options for HTML output -------------------------------------------------
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for

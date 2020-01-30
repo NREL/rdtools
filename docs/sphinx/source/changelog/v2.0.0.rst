@@ -6,7 +6,7 @@ v2.0.0 (MONTH DAY, YEAR)
 Enhancements
 ------------
 * Add new ``soiling`` module to implement the stochastic rate and recovery
-  method.
+  method (:pull:`112`).
 * Add new functions ``energy_from_power`` and ``interpolate`` to the
   ``normalization`` module.
 
@@ -18,7 +18,7 @@ Testing
 
 Documentation
 -------------
-* Create sphinx documentation and set up ReadTheDocs.
+* Create sphinx documentation and set up ReadTheDocs (:pull:`125`).
 
 Requirements
 ------------
