@@ -1,0 +1,26 @@
+﻿
+v2.0.0 (MONTH DAY, YEAR)
+------------------------
+
+Enhancements
+------------
+* Add new ``soiling`` module to implement the stochastic rate and recovery
+  method.
+* Add new functions ``energy_from_power`` and ``interpolate`` to the
+  ``normalization`` module.
+
+Bug fixes
+---------
+
+Testing
+-------
+
+Documentation
+-------------
+* Create sphinx documentation and set up ReadTheDocs.
+
+Requirements
+------------
+
+Contributors
+------------
