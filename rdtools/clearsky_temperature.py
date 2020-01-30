@@ -1,3 +1,5 @@
+'''Functions for estimating clear-sky ambient temperature.'''
+
 import h5py
 from numpy import arange
 from datetime import timedelta
@@ -5,6 +7,7 @@ import pandas as pd
 import pkg_resources
 import numpy as np
 import warnings
+
 
 def get_clearsky_tamb(times, latitude, longitude, window_size=40,
                       gauss_std=20):

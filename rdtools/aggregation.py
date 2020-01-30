@@ -1,6 +1,5 @@
-'''
-Aggregation Helper Functions
-'''
+'''Functions for calculating weighted aggregates of PV system data.'''
+
 
 def aggregation_insol(normalized_energy, insolation, frequency='D'):
     '''
