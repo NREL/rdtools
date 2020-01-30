@@ -42,6 +42,20 @@ INSTALL_REQUIRES = [
     'pvlib >= 0.6.0, <0.7.0',
 ]
 
+EXTRAS_REQUIRE = {
+    'doc': [
+        'sphinx==1.8.5',
+        'm2r==0.2.1',
+        'nbsphinx==0.4.3',
+        'nbsphinx-link==1.3.0',
+        'pandas==0.23.0',
+        'pvlib==0.6.1',
+        'sphinx_rtd_theme==0.4.3'
+    ]
+}
+EXTRAS_REQUIRE['all'] = sorted(set(sum(EXTRAS_REQUIRE.values(), [])))
+
+
 CLASSIFIERS = [
     'Development Status :: 4 - Beta',
     'License :: OSI Approved :: MIT License',
@@ -83,6 +97,7 @@ setup(name=DISTNAME,
       setup_requires=SETUP_REQUIRES,
       tests_require=TESTS_REQUIRE,
       install_requires=INSTALL_REQUIRES,
+      extras_require=EXTRAS_REQUIRE,
       description=DESCRIPTION,
       long_description=LONG_DESCRIPTION,
       author=AUTHOR,
