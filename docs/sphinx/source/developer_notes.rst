@@ -8,7 +8,7 @@ This page documents some of the workflows specific to RdTools development.
 Installing RdTools source code
 ------------------------------
 
-Installing RdTools using pip will install a condensed version of RdTools that
+Installing RdTools using pip will install a condensed version that
 doesn't include the full source code.  If you want to make changes to RdTools,
 you'll need to clone the RdTools source repository from Github with e.g.
 
@@ -23,18 +23,26 @@ Running the test suite
 RdTools uses `PyTest<https://docs.pytest.org/en/latest/>`_ to run its test
 suite.  If you don't already have it installed:
 
+::
+
     pip install pytest
 
 To run the entire test suite, navigate to the git repo folder and run
+
+::
 
     python -m pytest rdtools
 
 For convenience, pytest lets you run tests for a single module if you don't
 want to wait around for the entire suite to finish:
 
+::
+
     python -m pytest rdtools\test\soiling_test.py
 
 And even a single test function:
+
+::
 
     python -m pytest rdtools\test\soiling_test.py::test_soiling_srr
 
@@ -42,17 +50,21 @@ And even a single test function:
 Building Documentation
 ----------------------
 
-RdTools uses `Sphinx<https://www.sphinx-doc.org/>`_ to build its documentation.
+RdTools uses `Sphinx <https://www.sphinx-doc.org/>`_ to build its documentation.
 To build the documentation locally, you'll need to have a local copy of the git
 repository.  
 
 Sphinx and the other required libraries can be installed with pip by
-installing the `doc` extras (see `here<https://setuptools.readthedocs.io/en/latest/setuptools.html#declaring-extras-optional-features-with-their-own-dependencies>`_
+installing the `doc` extras (see `here <https://setuptools.readthedocs.io/en/latest/setuptools.html#declaring-extras-optional-features-with-their-own-dependencies>`_
 for more info): 
+
+::
 
     pip install rdtools[doc]
 
 or you can install from your own local git repo (run from the repo folder):
+
+::
 
     pip install .[doc]
 
@@ -61,13 +73,17 @@ documentation.  We recommend doing this in a virtual environment to keep
 package installations between projects separate!
 
 Once the required packages are installed, change your console's working
-directory to `rdtools/docs/sphinx` and run
+directory to ``rdtools/docs/sphinx`` and run
+
+::
 
     make html
 
-Note that on Windows, you don't actually need the `make` utility installed for
-this to work because there is a `make.bat` in this directory.  Building the
+Note that on Windows, you don't actually need the ``make`` utility installed for
+this to work because there is a ``make.bat`` in this directory.  Building the
 docs should result in output like this:
+
+::
 
     (venv)$ make html
     Running Sphinx v1.8.5
@@ -94,14 +110,18 @@ docs should result in output like this:
     
     The HTML pages are in build\html.
 
-If you get an error like `Pandoc wasn't found`, you can install it with conda:
+If you get an error like ``Pandoc wasn't found``, you can install it with conda:
+
+::
 
     conda install -c conda-forge pandoc
 
-If you get a warning like `Pygments lexer name 'ipython3' is not known`, your
-environment doesn't have `ipython`.  You can install it from conda or pypi:
+If you get a warning like ``Pygments lexer name 'ipython3' is not known``, your
+environment doesn't have ``ipython``.  You can install it from conda or pypi:
+
+::
 
     pip install ipython
 
-The built documentation should be in `rdtools/docs/sphinx/build` and opening
-`index.html` with a web browser will display it.
+The built documentation should be in ``rdtools/docs/sphinx/build`` and opening
+``index.html`` with a web browser will display it.
