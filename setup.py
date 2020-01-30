@@ -35,7 +35,7 @@ TESTS_REQUIRE = [
 
 INSTALL_REQUIRES = [
     'numpy >= 1.12',
-    'pandas >= 0.23.0',
+    'pandas >= 0.23.0, <1.0.0',
     'statsmodels >= 0.8.0',
     'scipy >= 0.19.1',
     'h5py >= 2.7.1',
