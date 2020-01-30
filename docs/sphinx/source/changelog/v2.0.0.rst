@@ -5,7 +5,7 @@ v2.0.0 (MONTH DAY, YEAR)
 
 Enhancements
 ------------
-* Add new :py:module:`~rdtools.soiling` module to implement the stochastic rate and
+* Add new :py:mod:`~rdtools.soiling` module to implement the stochastic rate and
   recovery method (:pull:`112`).
 * Add new functions :py:func:`~rdtools.normalization.energy_from_power` and
   :py:func:`~rdtools.normalization.interpolate`.
