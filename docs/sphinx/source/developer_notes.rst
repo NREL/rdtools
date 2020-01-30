@@ -12,6 +12,8 @@ Installing RdTools using pip will install a condensed version that
 doesn't include the full source code.  If you want to make changes to RdTools,
 you'll need to clone the RdTools source repository from Github with e.g.
 
+::
+
     git clone https://github.com/NREL/rdtools.git
 
 from the command line, or using a GUI git client like Github Desktop.  This
@@ -20,7 +22,7 @@ will clone the entire git repository onto your computer.
 Running the test suite
 ----------------------
 
-RdTools uses `PyTest<https://docs.pytest.org/en/latest/>`_ to run its test
+RdTools uses `PyTest <https://docs.pytest.org/en/latest/>`_ to run its test
 suite.  If you don't already have it installed:
 
 ::
