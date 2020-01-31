@@ -36,6 +36,7 @@ release = version = rdtools.__version__
 # ones.
 extensions = [
     'sphinx.ext.napoleon',
+    'sphinx.ext.extlinks',
     'sphinx_rtd_theme',
     'sphinx.ext.autosummary',
     'm2r',
@@ -55,6 +56,13 @@ templates_path = ['_templates']
 exclude_patterns = []
 
 source_suffix = ['.rst', '.md']
+
+# List of external link aliases.  Allows use of :pull:`123` to autolink that PR
+extlinks = {
+    'issue': ('https://github.com/NREL/rdtools/issues/%s', 'GH #'),
+    'pull': ('https://github.com/NREL/rdtools/pull/%s', 'GH #'),
+    'ghuser': ('https://github.com/%s', '@')
+}
 
 # -- Options for HTML output -------------------------------------------------
 
