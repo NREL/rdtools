@@ -46,6 +46,7 @@ Functions for estimating soiling rates from PV system data.
 
    soiling.soiling_srr
    soiling.srr_analysis
+   soiling.srr_analysis.run
 
 
 Filtering
@@ -108,7 +109,8 @@ Functions for modeling ambient temperature.
 
 Plotting
 ========
-functions to visualize degradation and soiling analysis results. 
+
+Functions to visualize degradation and soiling analysis results. 
 
 .. autosummary::
    :toctree: generated/

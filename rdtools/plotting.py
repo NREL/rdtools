@@ -25,7 +25,7 @@ def degradation_summary_plots(yoy_rd, yoy_ci, yoy_info, normalized_yield,
         * renormalizing_factor - float value used to recenter data
         * exceedance_level - the degradation rate that was outperformed with
           a probability given by the ``exceedance_prob`` parameter in
-          the :py:func:`degradation.degradation_year_on_year`
+          the :py:func:`.degradation.degradation_year_on_year`
 
     normalized_yield : pd.Series
          PV yield data that is normalized, filtered and aggregated
@@ -47,7 +47,7 @@ def degradation_summary_plots(yoy_rd, yoy_ci, yoy_info, normalized_yield,
     Note
     ----
     It should be noted that the yoy_rd, yoy_ci and yoy_info are the outputs
-    from :py:func:`degradation.degradation_year_on_year`.
+    from :py:func:`.degradation.degradation_year_on_year`.
 
     Returns
     -------
@@ -110,8 +110,8 @@ def soiling_monte_carlo_plot(soiling_info, normalized_yield, point_alpha=0.5,
     Parameters
     ----------
     soiling_info : dict
-        ``soiling_info`` returned by :py:meth:`soiling.srr_analysis.run` or
-        :py:func:`soiling.soiling_srr`.
+        ``soiling_info`` returned by :py:meth:`.soiling.srr_analysis.run` or
+        :py:func:`.soiling.soiling_srr`.
     normalized_yield : pd.Series
         PV yield data that is normalized, filtered and aggregated.
     point_alpha : float, default 0.5
@@ -163,8 +163,8 @@ def soiling_interval_plot(soiling_info, normalized_yield, point_alpha=0.5,
     Parameters
     ----------
     soiling_info : dict
-        ``soiling_info`` returned by :py:meth:`soiling.srr_analysis.run` or
-        :py:func:`soiling.soiling_srr`.
+        ``soiling_info`` returned by :py:meth:`.soiling.srr_analysis.run` or
+        :py:func:`.soiling.soiling_srr`.
     normalized_yield : pd.Series
         PV yield data that is normalized, filtered and aggregated.
     point_alpha : float, default 0.5
@@ -205,8 +205,8 @@ def soiling_rate_histogram(soiling_info, bins=None):
     Parameters
     ----------
     soiling_info : dict
-        ``soiling_info`` returned by :py:meth:`soiling.srr_analysis.run` or
-        :py:func:`soiling.soiling_srr`.
+        ``soiling_info`` returned by :py:meth:`.soiling.srr_analysis.run` or
+        :py:func:`.soiling.soiling_srr`.
     bins : int
         number of histogram bins to use
 
