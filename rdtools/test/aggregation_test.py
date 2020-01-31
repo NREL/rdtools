@@ -8,7 +8,7 @@ class AggregationTestCase(unittest.TestCase):
     '''Unit tests for aggregation module'''
 
     def setUp(self):
-        ind = pd.DatetimeIndex(freq='12h', start='2015-01-01', end='2015-01-02 23:59')
+        ind = pd.date_range('2015-01-01', '2015-01-02 23:59', freq='12h')
 
         self.insol = pd.Series(data=[500, 1000, 500, 1000], index=ind)
         self.energy = pd.Series(data=[1.0, 4, 1.0, 4], index=ind)
