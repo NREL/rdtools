@@ -50,7 +50,8 @@ EXTRAS_REQUIRE = {
         'nbsphinx-link==1.3.0',
         'pandas==0.23.0',
         'pvlib==0.6.1',
-        'sphinx_rtd_theme==0.4.3'
+        'sphinx_rtd_theme==0.4.3',
+        'ipython',
     ]
 }
 EXTRAS_REQUIRE['all'] = sorted(set(sum(EXTRAS_REQUIRE.values(), [])))
