@@ -40,13 +40,13 @@ want to wait around for the entire suite to finish:
 
 ::
 
-    python -m pytest rdtools\test\soiling_test.py
+    python -m pytest rdtools/test/soiling_test.py
 
 And even a single test function:
 
 ::
 
-    python -m pytest rdtools\test\soiling_test.py::test_soiling_srr
+    python -m pytest rdtools/test/soiling_test.py::test_soiling_srr
 
 
 Building Documentation
@@ -117,13 +117,6 @@ If you get an error like ``Pandoc wasn't found``, you can install it with conda:
 ::
 
     conda install -c conda-forge pandoc
-
-If you get a warning like ``Pygments lexer name 'ipython3' is not known``, your
-environment doesn't have ``ipython``.  You can install it from conda or pypi:
-
-::
-
-    pip install ipython
 
 The built documentation should be in ``rdtools/docs/sphinx/build`` and opening
 ``index.html`` with a web browser will display it.
