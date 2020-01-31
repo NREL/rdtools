@@ -1331,7 +1331,7 @@ class cods_analysis():
                                                      ['SC', 'SR', 'Rd']],
                                                     [.4, .8],
                                                     [.75, 1.25],
-                                                    [5e-5, 2e-4]]
+                                                    [True, False]]
             List of model knobs/parameters for the initial N model fits
 
         Returns
