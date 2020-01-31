@@ -1,3 +1,5 @@
+'''Functions for plotting degradation and soiling analysis results.'''
+
 import matplotlib.pyplot as plt
 
 
