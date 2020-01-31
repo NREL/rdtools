@@ -66,7 +66,7 @@ Alternatively it can be installed manually using the command line:
 
 On some systems installation with `pip` can fail due to problems installing requirements. If this occurs, the requirements specified in `setup.py` may need to be separately installed (for example by using `conda`) before installing `rdtools`.
 
-RdTools currently runs in both Python 2.7 and 3.6.
+RdTools currently is tested on Python 3.6+.
 
 ## Usage and examples
 

@@ -35,7 +35,7 @@ TESTS_REQUIRE = [
 
 INSTALL_REQUIRES = [
     'numpy >= 1.12',
-    'pandas >= 0.23.0',
+    'pandas >= 0.23.0, <1.0.0',
     'statsmodels >= 0.8.0',
     'scipy >= 0.19.1',
     'h5py >= 2.7.1',
@@ -48,10 +48,10 @@ CLASSIFIERS = [
     'Operating System :: OS Independent',
     'Intended Audience :: Science/Research',
     'Programming Language :: Python',
-    'Programming Language :: Python :: 2',
-    'Programming Language :: Python :: 2.7',
     'Programming Language :: Python :: 3',
     'Programming Language :: Python :: 3.6',
+    'Programming Language :: Python :: 3.7',
+    'Programming Language :: Python :: 3.8',
     'Topic :: Scientific/Engineering',
 ]
 
