@@ -8,8 +8,10 @@ This page documents some of the workflows specific to RdTools development.
 Installing RdTools source code
 ------------------------------
 
+To make changes to RdTools, run the test suite, or build the documentation
+locally, you'll need to have a local copy of the git repository.
 Installing RdTools using pip will install a condensed version that
-doesn't include the full source code.  If you want to make changes to RdTools,
+doesn't include the full source code.  To get the full source code,
 you'll need to clone the RdTools source repository from Github with e.g.
 
 ::
@@ -22,7 +24,7 @@ will clone the entire git repository onto your computer.
 Running the test suite
 ----------------------
 
-RdTools uses `PyTest <https://docs.pytest.org/en/latest/>`_ to run its test
+RdTools uses `pytest <https://docs.pytest.org/en/latest/>`_ to run its test
 suite.  If you don't already have it installed:
 
 ::
@@ -49,15 +51,13 @@ And even a single test function:
     python -m pytest rdtools/test/soiling_test.py::test_soiling_srr
 
 
-Building Documentation
-----------------------
+Building documentation locally
+------------------------------
 
 RdTools uses `Sphinx <https://www.sphinx-doc.org/>`_ to build its documentation.
-To build the documentation locally, you'll need to have a local copy of the git
-repository.  
 
 Sphinx and the other required libraries can be installed with pip by
-installing the `doc` extras (see `here <https://setuptools.readthedocs.io/en/latest/setuptools.html#declaring-extras-optional-features-with-their-own-dependencies>`_
+installing the ``doc`` extras (see the `setuptools docs <https://setuptools.readthedocs.io/en/latest/setuptools.html#declaring-extras-optional-features-with-their-own-dependencies>`_
 for more info): 
 
 ::
