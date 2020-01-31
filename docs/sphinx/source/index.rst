@@ -22,6 +22,7 @@ Documentation Contents
 
    In-Depth Examples <example>
    API Reference <api>
+   Change Log <changelog>
    Developer Notes <developer_notes>
 
 Indices and tables
