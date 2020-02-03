@@ -114,7 +114,7 @@ directory.
 
 The following functions are used for degradation analysis:
 
-:: code:: python
+.. code:: python
 
    import rdtools
 
@@ -182,7 +182,7 @@ appropriate:
 -  RdTools, version x.x.x, https://github.com/NREL/rdtools,
    https://doi.org/10.5281/zenodo.1210316
    
-   + (be sure to include the version number used in your analysis)
+   + Be sure to include the version number used in your analysis!
 
 References
 ----------
@@ -191,6 +191,7 @@ References
   ``clearsky_temperature.get_clearsky_tamb()``, uses data from images
   created by Jesse Allen, NASA’s Earth Observatory using data courtesy
   of the MODIS Land Group.
+    
     + https://neo.sci.gsfc.nasa.gov/view.php?datasetId=MOD_LSTD_CLIM_M
     + https://neo.sci.gsfc.nasa.gov/view.php?datasetId=MOD_LSTN_CLIM_M
 
