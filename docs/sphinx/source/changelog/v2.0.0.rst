@@ -12,6 +12,7 @@ Enhancements
   recovery method (:pull:`112`).
 * Add new functions :py:func:`~rdtools.normalization.energy_from_power` and
   :py:func:`~rdtools.normalization.interpolate`.
+* Add new function :py:func:`~rdtools.filtering.normalized_filter`.
 
 Bug fixes
 ---------
