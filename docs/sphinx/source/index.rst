@@ -39,13 +39,13 @@ Degradation Results
 -------------------
 
 The preferred method for degradation rate estimation is the year-on-year
-(YOY) approach, available in ``degradation.degradation_year_on_year``.
+(YOY) approach, available in :py:func:`.degradation.degradation_year_on_year`.
 The YOY calculation yields in a distribution of degradation rates, the
 central tendency of which is the most representative of the true
 degradation. The width of the distribution provides information about
 the uncertainty in the estimate via a bootstrap calculation. The
 `example notebook`_ uses the output of
-``degradation.degradation_year_on_year()`` to visualize the calculation.
+:py:func:`.degradation.degradation_year_on_year` to visualize the calculation.
 
 .. image:: _images/Clearsky_result_updated.png
    :alt: RdTools degradation results plot
@@ -67,7 +67,7 @@ Soiling can be estimated with the stochastic rate and recovery (SRR)
 method (Deceglie 2018). This method works well when soiling patterns
 follow a "sawtooth" pattern, a linear decline followed by a sharp
 recovery associated with natural or manual cleaning.
-``rdtools.soiling_srr()`` performs the calculation and returns the P50
+:py:func:`.soiling.soiling_srr` performs the calculation and returns the P50
 insolation-weighted soiling ratio, confidence interval, and additional
 information (``soiling_info``) which includes a summary of the soiling
 intervals identified, ``soiling_info['soiling_interval_summary']``. This
@@ -76,6 +76,8 @@ identified soiling rates for the dataset.
 
 .. image:: _images/soiling_histogram.png
    :alt: RdTools soiling results plot
+   :width: 320
+   :height: 216
 
 Install RdTools using pip
 -------------------------
