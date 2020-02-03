@@ -1,9 +1,24 @@
-import pandas as pd
 import numpy as np
 
 
 def normalized_filter(normalized, low_cutoff=0, high_cutoff=None):
-    '''Return a boolean pandas filter that selects normalized yield between low_cutoff and high_cutoff'''
+    '''
+    Select normalized yield between ``low_cutoff`` and ``high_cutoff``
+    Parameters
+    ----------
+    normalized : pd.Series
+        Normalized power measurements.
+    low_cutoff : float, default 0
+        The lower bound of acceptable values.
+    high_cutoff : float, optional
+        The upper bound of acceptable values.
+
+    Returns
+    -------
+    pd.Series
+        Boolean Series of whether the given measurement is within acceptable
+        bounds.
+    '''
 
     if low_cutoff is None:
         low_cutoff = -np.inf
