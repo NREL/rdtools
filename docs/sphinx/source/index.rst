@@ -114,7 +114,7 @@ environment by first installing RdTools as described above, then running
 ``pip install -r docs/notebook_requirements.txt`` from the base
 directory.
 
-The following functions are used for degradation analysis:
+The following functions are used for degradation and soiling analysis:
 
 .. code:: python
 
