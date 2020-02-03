@@ -190,7 +190,7 @@ References
 ----------
 
 - The clear sky temperature calculation,
-  ``clearsky_temperature.get_clearsky_tamb()``, uses data from images
+  :py:func:`.clearsky_temperature.get_clearsky_tamb()`, uses data from images
   created by Jesse Allen, NASA’s Earth Observatory using data courtesy
   of the MODIS Land Group.
     
