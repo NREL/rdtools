@@ -59,6 +59,7 @@ Functions to perform filtering on PV system data.
    filtering.csi_filter
    filtering.poa_filter
    filtering.tcell_filter
+   filtering.normalized_filter
 
 
 Normalization
