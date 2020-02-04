@@ -14,6 +14,7 @@ from rdtools.filtering import tcell_filter
 from rdtools.filtering import clip_filter
 from rdtools.filtering import stale_values_filter
 from rdtools.filtering import interpolation_filter
+from rdtools import qcrad
 from rdtools.soiling import soiling_srr
 
 from ._version import get_versions
