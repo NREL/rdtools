@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 
 
 def degradation_summary_plots(yoy_rd, yoy_ci, yoy_info, normalized_yield,
-                              hist_xmin=None, hist_xmax=None,
+                              hist_xmin=None, hist_xmax=None, bins=None,
                               scatter_ymin=None, scatter_ymax=None,
                               plot_color=None, summary_title=None,
                               scatter_alpha=0.5):
@@ -33,6 +33,9 @@ def degradation_summary_plots(yoy_rd, yoy_ci, yoy_info, normalized_yield,
         lower limit of x-axis for the histogram
     hist_xmax : float, optional
         upper limit of x-axis for the histogram
+    bins : int, optional
+        Number of bins in the histogram distribution. If omitted,
+        ``len(yoy_values) // 40`` will be used
     scatter_ymin : float, optional
         lower limit of y-axis for the scatter plot
     scatter_ymax : float, optional
@@ -57,6 +60,11 @@ def degradation_summary_plots(yoy_rd, yoy_ci, yoy_info, normalized_yield,
 
     yoy_values = yoy_info['YoY_values']
 
+    if bins is None:
+        bins = len(yoy_values) // 40
+
+    bins = int(min(bins, len(yoy_values)))
+
     # Calculate the degradation line
     start = normalized_yield.index[0]
     end = normalized_yield.index[-1]
@@ -67,8 +75,7 @@ def degradation_summary_plots(yoy_rd, yoy_ci, yoy_info, normalized_yield,
     y = [1, 1 + (yoy_rd * years) / 100.0]
 
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 3))
-    ax2.hist(yoy_values, label='YOY', bins=len(
-        yoy_values) // 40, color=plot_color)
+    ax2.hist(yoy_values, label='YOY', bins=bins, color=plot_color)
     ax2.axvline(x=yoy_rd, color='black', linestyle='dashed', linewidth=3)
 
     ax2.set_xlim(hist_xmin, hist_xmax)
