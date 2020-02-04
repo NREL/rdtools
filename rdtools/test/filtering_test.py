@@ -5,7 +5,8 @@ import unittest
 import pandas as pd
 import numpy as np
 
-from rdtools import csi_filter, poa_filter, tcell_filter, clip_filter, stale_values_filter
+from rdtools import csi_filter, poa_filter, tcell_filter, clip_filter, \
+    stale_values_filter, interpolation_filter
 
 
 class CSIFilterTestCase(unittest.TestCase):
@@ -135,6 +136,62 @@ class StaleValueFilterTestCase(unittest.TestCase):
     def test_bad_window_raises_exception(self):
         with self.assertRaises(ValueError):
             stale_values_filter(self.data, window=1)
+
+
+class InterpolationFilterTestCase(unittest.TestCase):
+    ''' Unit tests for interpolation filter.'''
+
+    def setUp(self):
+        self.data = pd.Series(
+            [1.0, 1.001, 1.002001, 1.003, 1.004, 1.001001, 1.001001,
+              1.001001, 1.2, 1.3, 1.5, 1.4, 1.5, 1.6, 1.7, 1.8, 2.0])
+
+        self.data_with_negatives = pd.Series(
+            [0.0, 0.0, 0.0, -0.0, 0.00001, 0.000010001, -0.00000001])
+
+    def test_default_parameters(self):
+        self.assertListEqual(
+            interpolation_filter(self.data).tolist(),
+            [False, False, False, False, False,
+             False, False, True, False, False,
+             False, False, False, True, True, True,
+             False])
+
+    def test_tolerance(self):
+        filtered = interpolation_filter(self.data, rtol=1e-2)
+        self.assertListEqual(
+            filtered.tolist(),
+            [False, False, True, True, True,
+             False, False, True, False, False,
+             False, False, False, True, True, True,
+             False])
+
+        filtered = interpolation_filter(self.data, atol=1e-2)
+        self.assertListEqual(
+            filtered.tolist(),
+            [False, False, True, True, True,
+             True, True, True, False, False,
+             False, False, False, True, True, True,
+             False])
+
+    def test_larger_window(self):
+        filtered = interpolation_filter(self.data, window=5)
+        self.assertListEqual(
+            filtered.tolist(),
+            [False, False, False, False, False,
+             False, False, False, False, False,
+             False, False, False, False, False,
+             True, False])
+
+    def test_negative_values(self):
+        filtered = interpolation_filter(self.data_with_negatives, atol=1e-5)
+        self.assertListEqual(
+            filtered.tolist(),
+            [False, False, True, True, True, True, False])
+
+    def test_bad_window_raises_exception(self):
+        with self.assertRaises(ValueError):
+            interpolation_filter(self.data, window=2)
 
 
 if __name__ == '__main__':

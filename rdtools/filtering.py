@@ -151,3 +151,42 @@ def stale_values_filter(data, window=3, rtol=1e-5, atol=1e-8):
         _all_close_to_first, raw=True, kwargs={'rtol': rtol, 'atol': atol}
     ).fillna(False).astype(bool)
     return flags
+
+
+def interpolation_filter(data, window=3, rtol=1e-5, atol=1e-8):
+    '''
+    Detects sequences of data which appear linear.
+
+    Sequences are linear if the first difference appears to be constant.
+    For a window of length N, the last value (index N-1) is flagged
+    if all values in the window appear to be a line segment.
+
+    Parameters
+    ----------
+    data : pd.Series
+        data to be processed
+    window : int, default 3
+        number of sequential values that, if the first difference is constant,
+        are classified as a linear sequence
+    rtol : float, default 1e-5
+        tolerance relative to max(abs(x.diff()) for detecting a change
+    atol : float, default 1e-8
+        absolute tolerance for detecting a change in first difference
+
+    Returns
+    -------
+    pd.Series
+        True if the value is part of a linear sequence
+
+    Raises
+    ------
+        ValueError if window < 3
+    '''
+    if window < 3:
+        raise ValueError('window set to {}, must be at least 3'.format(window))
+
+    # reduce window by 1 because we're passing the first difference
+    flags = stale_values_filter(data.diff(periods=1), window=window-1, rtol=rtol,
+                                atol=atol)
+    return flags
+
