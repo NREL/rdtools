@@ -2,8 +2,9 @@ import matplotlib.pyplot as plt
 
 
 def degradation_summary_plots(yoy_rd, yoy_ci, yoy_info, normalized_yield,
-                              hist_xmin=None, hist_xmax=None, scatter_ymin=None,
-                              scatter_ymax=None, plot_color=None, summary_title=None,
+                              hist_xmin=None, hist_xmax=None, bins=None,
+                              scatter_ymin=None, scatter_ymax=None,
+                              plot_color=None, summary_title=None,
                               scatter_alpha=0.5):
     '''
     Description
@@ -43,12 +44,32 @@ def degradation_summary_plots(yoy_rd, yoy_ci, yoy_info, normalized_yield,
     -------
     matplotlib.Figure.figure
 
-    Notes
-    -----
-    The yoy_rd, yoy_ci and yoy_info are the outputs from
-    the degradation_year_on_year() function of the degradation module
+    normalized_yield : pd.Series
+         PV yield data that is normalized, filtered and aggregated
+    hist_xmin : float, optional
+        lower limit of x-axis for the histogram
+    hist_xmax : float, optional
+        upper limit of x-axis for the histogram
+    bins : int, optional
+        Number of bins in the histogram distribution. If omitted,
+        ``len(yoy_values) // 40`` will be used
+    scatter_ymin : float, optional
+        lower limit of y-axis for the scatter plot
+    scatter_ymax : float, optional
+        upper limit of y-axis for the scatter plot
+    plot_color : str, optional
+        color of the summary plots
+    summary_title : str, optional
+        overall title for summary plots
+    scatter_alpha : float, default 0.5
+        Transparency of the scatter plot
 
     '''
+
+    if bins is None:
+        bins = len(yoy_values) // 40
+
+    bins = int(min(bins, len(yoy_values)))
 
     # Calculate the degradation line
     start = normalized_yield.index[0]
@@ -60,8 +81,7 @@ def degradation_summary_plots(yoy_rd, yoy_ci, yoy_info, normalized_yield,
     y = [1, 1 + (yoy_rd * years) / 100.0]
 
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 3))
-    ax2.hist(yoy_values, label='YOY', bins=len(
-        yoy_values) // 40, color=plot_color)
+    ax2.hist(yoy_values, label='YOY', bins=bins, color=plot_color)
     ax2.axvline(x=yoy_rd, color='black', linestyle='dashed', linewidth=3)
 
     ax2.set_xlim(hist_xmin, hist_xmax)
