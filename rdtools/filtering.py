@@ -1,5 +1,8 @@
 '''Functions for filtering and subsetting PV system data.'''
 
+import pandas as pd
+import numpy as np
+
 
 def poa_filter(poa, low_irradiance_cutoff=200, high_irradiance_cutoff=1200):
     '''
@@ -92,3 +95,59 @@ def csi_filter(measured_poa, clearsky_poa, threshold=0.15):
 
     csi = measured_poa / clearsky_poa
     return (csi >= 1.0 - threshold) & (csi <= 1.0 + threshold)
+
+
+def _all_close_to_first(data, rtol=1e-5, atol=1e-8):
+    '''
+    Returns True if all values in x are close to data[0].
+
+    Parameters
+    ----------
+    x : array
+    rtol : float, default 1e-5
+        relative tolerance for detecting a change in data values
+    atol : float, default 1e-8
+        absolute tolerance for detecting a change in data values
+
+    Returns
+    -------
+    Boolean
+    '''
+    return np.allclose(a=data, b=data[0], rtol=rtol, atol=atol)
+
+
+def stale_values_filter(data, window=3, rtol=1e-5, atol=1e-8):
+    '''
+    Detects stale data.
+
+    For a window of length N, the last value (index N-1) is considered stale
+    if all values in the window are close to the first value (index 0).
+
+    Parameters
+    ----------
+    data : pd.Series
+        data to be processed
+    window : int, default 3
+        number of consecutive values which, if unchanged, indicates stale data
+    rtol : float, default 1e-5
+        relative tolerance for detecting a change in data values
+    atol : float, default 1e-8
+        absolute tolerance for detecting a change in data values
+
+    Parameters rtol and atol have the same meaning as in numpy.allclose
+
+    Returns
+    -------
+    pd.Series
+        Boolean Series of whether the value is part of a stale sequence of data
+    Raises
+    ------
+        ValueError if window < 2
+    '''
+    if window < 2:
+        raise ValueError('window set to {}, must be at least 2'.format(window))
+
+    flags = data.rolling(window=window).apply(
+        _all_close_to_first, raw=True, kwargs={'rtol': rtol, 'atol': atol}
+    ).fillna(False).astype(bool)
+    return flags

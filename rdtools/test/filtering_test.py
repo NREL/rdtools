@@ -5,7 +5,7 @@ import unittest
 import pandas as pd
 import numpy as np
 
-from rdtools import csi_filter, poa_filter, tcell_filter, clip_filter
+from rdtools import csi_filter, poa_filter, tcell_filter, clip_filter, stale_values_filter
 
 
 class CSIFilterTestCase(unittest.TestCase):
@@ -80,6 +80,61 @@ class ClipFilterTestCase(unittest.TestCase):
         # Expect power <=2 to be filtered
         expected_result = (self.power > 2)
         self.assertTrue((expected_result.iloc[0:5] == filtered.iloc[0:5]).all())
+
+
+class StaleValueFilterTestCase(unittest.TestCase):
+    ''' Unit tests for stale value filter.'''
+
+    def setUp(self):
+        self.data = pd.Series(
+            [1.0, 1.001, 1.001, 1.001, 1.001,
+             1.001001, 1.001, 1.001, 1.2, 1.3])
+        self.data_with_negatives = pd.Series(
+            [0.0, 0.0, 0.0, -0.0, 0.00001, 0.000010001, -0.00000001])
+
+    def test_stale_value_defaults(self):
+        filtered = stale_values_filter(self.data)
+        self.assertListEqual(filtered.tolist(),
+                             [False, False, False, True, True,
+                              True, True, True, False, False])
+
+    def test_low_tolerance_small_window(self):
+        filtered = stale_values_filter(self.data, rtol=1e-8, window=2)
+        self.assertListEqual(filtered.tolist(),
+                             [False, False, True, True, True,
+                              False, False, True, False, False])
+
+    def test_large_window(self):
+        filtered7 = stale_values_filter(self.data, window=7)
+        filtered8 = stale_values_filter(self.data, window=8)
+        self.assertListEqual(filtered7.tolist(),
+                             [False, False, False, False, False,
+                              False, False, True, False, False])
+        self.assertFalse(all(filtered8))
+
+    def test_negative_values(self):
+        filtered = stale_values_filter(self.data_with_negatives)
+        self.assertListEqual(filtered.tolist(),
+                             [False, False, True, True,
+                              False, False, False])
+
+        filtered = stale_values_filter(self.data_with_negatives,
+                                       atol=1e-3)
+        self.assertListEqual(filtered.tolist(),
+                             [False, False, True, True,
+                              True, True, True])
+        filtered = stale_values_filter(self.data_with_negatives, atol=1e-5)
+        self.assertListEqual(filtered.tolist(),
+                             [False, False, True, True,
+                              True, False, False])
+        filtered = stale_values_filter(self.data_with_negatives, atol=2e-5)
+        self.assertListEqual(filtered.tolist(),
+                             [False, False, True, True,
+                              True, True, True])
+
+    def test_bad_window_raises_exception(self):
+        with self.assertRaises(ValueError):
+            stale_values_filter(self.data, window=1)
 
 
 if __name__ == '__main__':
