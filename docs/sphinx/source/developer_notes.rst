@@ -21,15 +21,65 @@ you'll need to clone the RdTools source repository from Github with e.g.
 from the command line, or using a GUI git client like Github Desktop.  This
 will clone the entire git repository onto your computer.  
 
+Installing RdTools dependencies
+-------------------------------
+
+The packages necessary to run RdTools itself can be installed with ``pip``.
+You can install the dependencies along with RdTools itself from 
+`PyPI <https://pypi.org/project/rdtools/>`_:
+
+::
+
+    pip install rdtools
+
+This will install the latest official release of RdTools.  If you want to work
+with a development version and you have cloned the Github repository to your
+computer, you can also install RdTools and dependencies by navigating to the
+repository root and running:
+
+::
+
+    pip install .
+
+This will install the development version of RdTools along with the current
+set of requirements. 
+
+.. _installing-optional-dependencies:
+
+Installing optional dependencies
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+RdTools has extra dependencies for running its test suite and building its
+documentation.  These packages aren't necessary for running RdTools itself and
+are only needed if you want to contribute source code to RdTools.  
+
+.. note::
+    These will install RdTools along with other packages necessary to build its
+    documentation and run its test suite.  We recommend doing this in a virtual
+    environment to keep package installations between projects separate!
+
+Optional dependencies can be installed with the special 
+`syntax <https://setuptools.readthedocs.io/en/latest/setuptools.html#declaring-extras-optional-features-with-their-own-dependencies>`_:
+
+::
+
+    pip install rdtools[test]  # test suite dependencies
+    pip install rdtools[doc]   # documentation dependecies
+
+Or, if your local repository has an updated dependencies list:
+
+::
+
+    pip install .[test]  # test suite dependencies
+    pip install .[doc]   # documentation dependecies
+
+
 Running the test suite
 ----------------------
 
 RdTools uses `pytest <https://docs.pytest.org/en/latest/>`_ to run its test
-suite.  If you don't already have it installed:
-
-::
-
-    pip install pytest
+suite.  If you haven't already, install the testing depencencies
+(:ref:`installing-optional-dependencies`).
 
 To run the entire test suite, navigate to the git repo folder and run
 
@@ -55,24 +105,8 @@ Building documentation locally
 ------------------------------
 
 RdTools uses `Sphinx <https://www.sphinx-doc.org/>`_ to build its documentation.
-
-Sphinx and the other required libraries can be installed with pip by
-installing the ``doc`` extras (see the `setuptools docs <https://setuptools.readthedocs.io/en/latest/setuptools.html#declaring-extras-optional-features-with-their-own-dependencies>`_
-for more info): 
-
-::
-
-    pip install rdtools[doc]
-
-or you can install from your own local git repo (run from the repo folder):
-
-::
-
-    pip install .[doc]
-
-This will install rdtools along with all the packages necessary to build its
-documentation.  We recommend doing this in a virtual environment to keep
-package installations between projects separate!
+If you haven't already, install the documentation depencencies
+(:ref:`installing-optional-dependencies`).
 
 Once the required packages are installed, change your console's working
 directory to ``rdtools/docs/sphinx`` and run
