@@ -103,7 +103,13 @@ def get_clearsky_tamb(times, latitude, longitude, window_size=40,
     df = df.resample(freq_actual).interpolate(method='linear')
     df['month'] = df.index.month
 
+    # workaround for pandas #26683 reindexing bug in pandas 1.0.0
+    tz = times.tz
+    df.index = df.index.tz_convert('UTC').tz_localize(None)
+    times = times.tz_convert('UTC').tz_localize(None)
     df = df.reindex(times, method='nearest')
+    times = times.tz_localize('UTC').tz_convert(tz)
+    df.index = df.index.tz_localize('UTC').tz_convert(tz)
 
     utc_offsets = [y.utcoffset().total_seconds() / 3600.0 for y in df.index]
 
