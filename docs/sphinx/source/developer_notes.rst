@@ -154,3 +154,17 @@ If you get an error like ``Pandoc wasn't found``, you can install it with conda:
 
 The built documentation should be in ``rdtools/docs/sphinx/build`` and opening
 ``index.html`` with a web browser will display it.
+
+Code requirements
+-----------------
+
+RdTools follows the `PEP 8 <https://www.python.org/dev/peps/pep-0008/>`_ style guide.
+We recommend setting up your text editor to automatically highlight style
+violations because it's easy to miss some isses (trailing whitespace, etc) otherwise.
+
+Additionally, our documentation is built in part from docstrings in the source
+code.  These docstrings must be in `NumpyDoc format <https://numpydoc.readthedocs.io/en/latest/format.html>`_
+to be rendered correctly in the documentation.  
+
+Finally, all code should be tested.  Some older tests in RdTools use the unittest
+module, but new tests should all use pytest. 
