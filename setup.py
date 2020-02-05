@@ -9,10 +9,12 @@ except ImportError:
 import versioneer
 
 
-DESCRIPTION = 'Functions for analyzing the degradation of photovoltaic systems.'
+DESCRIPTION = 'Functions for reproducible timeseries analysis of photovoltaic systems.'
 
 LONG_DESCRIPTION = """
-Rdtools is a collection of tools for the analysis of photovoltaic degradation.
+RdTools is an open-source library to support reproducible technical analysis of
+PV time series data. The library aims to provide best practice analysis
+routines along with the building blocks for users to tailor their own analyses.
 
 Source code: https://github.com/NREL/rdtools
 """
