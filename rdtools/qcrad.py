@@ -1,5 +1,8 @@
 '''Implementation of the QCRad algorithm for validating irradiance
-obseervations.'''
+obseervations.
+
+@author: Cliff Hansen
+'''
 
 import pandas as pd
 import numpy as np

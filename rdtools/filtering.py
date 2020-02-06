@@ -2,6 +2,7 @@
 
 import pandas as pd
 import numpy as np
+from pvlib import solarposition
 
 
 def poa_filter(poa, low_irradiance_cutoff=200, high_irradiance_cutoff=1200):
@@ -190,3 +191,44 @@ def interpolation_filter(data, window=3, rtol=1e-5, atol=1e-8):
                                 atol=atol)
     return flags
 
+def irradiance_limits_filter(latitude, longitude, altitude,
+                             ghi=None, dhi=None, dni=None):
+    '''Filter irradiance measurements for physically plausible values.
+
+    Parameters
+    ----------
+    latitude : float
+        Latitude of irradiance observations.
+    longitude : float
+        Longitude of irradiance observations.
+    altitude : float
+        Altitude of irradiance observations.
+    ghi : pd.Series, default None
+        Global horizontal irradiance in W/m^2
+    dhi : pd.Series, default None
+        Diffuse horizontal irradiance in W/m^2
+    dni : pd.Series, default None
+        Direct normal irradiance in W/m^2
+
+    Note: ``ghi``, ``dhi``, and ``dni`` are assumed to have the same
+    index.
+
+    Returns
+    -------
+    tuple
+
+        (GHI mask, DHI mask, DNI mask) Each is a series of booleans
+        with True for values that are physically plausible. If any of
+        the ``ghi``, ``dhi``, or ``dni`` parameters is None, then the
+        corresonding mask will also be None
+
+    '''
+    solar_position = solarposition.get_solarposition(
+        ghi.index,
+        latitude,
+        longitude,
+        altitude)
+    dni_extra = get_extra_radiation(ghi.index)
+
+    return qcrad.check_irradiance_limits(
+        solar_position['solar_zenith'], dni_extra, ghi=ghi, dhi=dhi, dni=dni)
