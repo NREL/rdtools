@@ -27,3 +27,9 @@ docs/sphinx/source/generated
 build/
 dist/
 rdtools.egg-info*
+
+# emacs temp files
+*~
+\#*\#
+.\#*
+
