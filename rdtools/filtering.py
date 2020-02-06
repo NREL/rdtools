@@ -3,6 +3,8 @@
 import pandas as pd
 import numpy as np
 from pvlib import solarposition
+from pvlib.irradiance import get_extra_radiation
+from rdtools import qcrad
 
 
 def poa_filter(poa, low_irradiance_cutoff=200, high_irradiance_cutoff=1200):
@@ -193,7 +195,8 @@ def interpolation_filter(data, window=3, rtol=1e-5, atol=1e-8):
 
 def irradiance_limits_filter(latitude, longitude, altitude,
                              ghi=None, dhi=None, dni=None):
-    '''Filter irradiance measurements for physically plausible values.
+    '''
+    Filter irradiance measurements for physically plausible values.
 
     Parameters
     ----------
@@ -221,14 +224,22 @@ def irradiance_limits_filter(latitude, longitude, altitude,
         with True for values that are physically plausible. If any of
         the ``ghi``, ``dhi``, or ``dni`` parameters is None, then the
         corresonding mask will also be None
-
     '''
+    if ghi is not None:
+        times = ghi.index
+    elif dhi is not None:
+        times = dhi.index
+    elif dni is not None:
+        times = dni.index
+    else:
+        return None, None, None
+
     solar_position = solarposition.get_solarposition(
-        ghi.index,
+        times,
         latitude,
         longitude,
         altitude)
-    dni_extra = get_extra_radiation(ghi.index)
+    dni_extra = get_extra_radiation(times)
 
     return qcrad.check_irradiance_limits(
-        solar_position['solar_zenith'], dni_extra, ghi=ghi, dhi=dhi, dni=dni)
+        solar_position['zenith'], dni_extra, ghi=ghi, dhi=dhi, dni=dni)

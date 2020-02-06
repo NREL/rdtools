@@ -6,7 +6,10 @@ import pandas as pd
 import numpy as np
 
 from rdtools import csi_filter, poa_filter, tcell_filter, clip_filter, \
-    stale_values_filter, interpolation_filter
+    stale_values_filter, interpolation_filter, irradiance_limits_filter
+
+
+ALBUQUERQUE = {'latitude': 35.05, 'longitude': -106.5, 'altitude': 1619}
 
 
 class CSIFilterTestCase(unittest.TestCase):
@@ -192,6 +195,42 @@ class InterpolationFilterTestCase(unittest.TestCase):
     def test_bad_window_raises_exception(self):
         with self.assertRaises(ValueError):
             interpolation_filter(self.data, window=2)
+
+
+class IrradianceLimitsFilterTestCase(unittest.TestCase):
+    ''' Unit tests for irradiance_limits_filter'''
+
+    def setUp(self):
+        self.location = ALBUQUERQUE
+        self.data = pd.Series([-100, 100, 100, 1000, 1000, 1000, 1000,
+                               1000, 1000, 500, 1000, 500, 500, 0])
+        self.data.index = pd.date_range(start='01-01-2020 09:30:00',
+                                        freq='15T', periods=14)
+        self.data.tz_localize('America/Denver')
+
+    def test_no_data_returns_all_none(self):
+        x, y, z = irradiance_limits_filter(**self.location)
+        self.assertIsNone(x)
+        self.assertIsNone(y)
+        self.assertIsNone(z)
+
+    def test_passing_ghi_returns_ghi_mask(self):
+        ghi, dhi, dni = irradiance_limits_filter(**self.location, ghi=self.data)
+        self.assertIsNotNone(ghi)
+        self.assertIsNone(dhi)
+        self.assertIsNone(dni)
+
+    def test_passing_dhi_returns_dhi_mask(self):
+        ghi, dhi, dni = irradiance_limits_filter(**self.location, dhi=self.data)
+        self.assertIsNone(ghi)
+        self.assertIsNotNone(dhi)
+        self.assertIsNone(dni)
+
+    def test_passing_dni_returns_dni_mask(self):
+        ghi, dhi, dni = irradiance_limits_filter(**self.location, dni=self.data)
+        self.assertIsNone(ghi)
+        self.assertIsNone(dhi)
+        self.assertIsNotNone(dni)
 
 
 if __name__ == '__main__':
