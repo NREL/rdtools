@@ -45,11 +45,11 @@ def tcell_filter(tcell, low_tcell_cutoff=-50, high_tcell_cutoff=110):
     return (tcell > low_tcell_cutoff) & (tcell < high_tcell_cutoff)
 
 
-def clip_filter(power, quant=0.98, low_power_cutoff=0.01):
+def clip_filter(power, quant=0.98):
     '''
     Filter data points likely to be affected by clipping
     with power greater than or equal to 99% of the `quant`
-    quantile and less than `low_power_cutoff`
+    quantile.
 
     Parameters
     ----------
@@ -57,17 +57,15 @@ def clip_filter(power, quant=0.98, low_power_cutoff=0.01):
         AC power in Watts
     quant : float, default 0.98
         Value for upper threshold quantile
-    low_power_cutoff : float, default 0.01
-        Value for low-power cutoff (in Watts)
 
     Returns
     -------
     pd.Series
         Boolean Series of whether the given measurement is below 99% of the
-        quantile filter and above the low-power cutoff.
+        quantile filter.
     '''
     v = power.quantile(quant)
-    return (power < v * 0.99) & (power > low_power_cutoff)
+    return (power < v * 0.99)
 
 
 def csi_filter(measured_poa, clearsky_poa, threshold=0.15):
