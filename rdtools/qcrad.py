@@ -176,7 +176,7 @@ def check_dni_limits(dni, solar_zenith, dni_extra, limits=None):
 
 
 def check_irradiance_limits(solar_zenith, dni_extra, ghi=None, dhi=None,
-                                  dni=None, limits=None):
+                            dni=None, limits=None):
     '''
     Tests for physical limits on GHI, DHI or DNI using the QCRad criteria.
 
@@ -255,7 +255,7 @@ def _check_irrad_ratio(ratio, ghi, sza, bounds):
 
 
 def check_irradiance_consistency(ghi, solar_zenith, dni_extra, dhi, dni,
-                                       param=None):
+                                 param=None):
     '''
     Checks consistency of GHI, DHI and DNI. Not valid for night time.
 
