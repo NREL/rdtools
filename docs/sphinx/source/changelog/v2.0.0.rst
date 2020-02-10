@@ -24,6 +24,7 @@ Testing
 Documentation
 -------------
 * Create sphinx documentation and set up ReadTheDocs (:pull:`125`).
+* Improve module-level docstrings (:pull:`137`).
 
 Requirements
 ------------

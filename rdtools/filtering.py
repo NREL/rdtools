@@ -1,3 +1,5 @@
+'''Functions for filtering and subsetting PV system data.'''
+
 import numpy as np
 
 

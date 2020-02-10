@@ -1,8 +1,4 @@
-''' Energy Normalization Module
-
-This module contains functions to help normalize AC energy output with measured
-poa_global in preparation for calculating PV system degradation.
-'''
+'''Functions for normalizing, rescaling, and regularizing PV system data.'''
 
 import pandas as pd
 import pvlib
