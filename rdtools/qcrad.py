@@ -271,7 +271,7 @@ def check_irradiance_consistency(ghi, solar_zenith, dni_extra, dhi, dni,
         Diffuse horizontal irradiance in W/m^2
     dni : Series
         Direct normal irradiance in W/m^2
-    param : dict
+    param : dict, default None
         keys are 'ghi_ratio' and 'dhi_ratio'. For each key, value is a dict
         with keys 'high_zenith' and 'low_zenith'; for each of these keys,
         value is a dict with keys 'zenith_bounds', 'ghi_bounds', and

@@ -97,7 +97,7 @@ def test_check_dni_limits(irradiance):
                                      expected['dni_extra'])
     assert_series_equal(dni_out, dni_out_expected)
 
-def test_check_irradiance_consistency_QCRad(irradiance):
+def test_check_irradiance_consistency(irradiance):
     expected = irradiance
     cons_comp, diffuse = qcrad.check_irradiance_consistency(
         expected['ghi'], expected['solar_zenith'], expected['dni_extra'],

@@ -243,3 +243,43 @@ def irradiance_limits_filter(latitude, longitude, altitude,
 
     return qcrad.check_irradiance_limits(
         solar_position['zenith'], dni_extra, ghi=ghi, dhi=dhi, dni=dni)
+
+def irradiance_consistency_filter(latitude, longitude, altitude, ghi, dhi, dni):
+    '''Filter times when irradiance measurements are inconsistent.
+
+    Uses the QCRad algorithm to check for consistency. The results are
+    not valid for night time.
+
+    Parameters
+    ----------
+    latitude : float
+        Latitude of irradiance observations.
+    longitude : float
+        Longitude of irradiance observations.
+    altitude : float
+        Altitude of irradiance observations.
+    ghi : pd.Series
+        Obververd GHI in W/m^2
+    dhi : pd.Series
+        Observed DHI in W/m^2
+    dni : pd.Series
+        Observed DNI in W/m^2
+
+    Returns
+    -------
+    consistent_components : Series
+        True if ghi, dhi and dni components are consistent.
+    diffuse_ratio_limit : Series
+        True if diffuse to ghi ratio passes limit test.
+
+    '''
+    solar_position = solarposition.get_solarposition(
+        ghi.index,
+        latitude,
+        longitude,
+        altitude
+    )
+    dni_extra = get_extra_radiation(ghi.index)
+
+    return qcrad.check_irradiance_consistency(ghi, solar_position['zenith'],
+                                              dni_extra, dhi, dni)

@@ -5,8 +5,12 @@ import unittest
 import pandas as pd
 import numpy as np
 
+import pvlib
+from pvlib.location import Location
+
 from rdtools import csi_filter, poa_filter, tcell_filter, clip_filter, \
-    stale_values_filter, interpolation_filter, irradiance_limits_filter
+    stale_values_filter, interpolation_filter, irradiance_limits_filter, \
+    irradiance_consistency_filter
 
 
 ALBUQUERQUE = {'latitude': 35.05, 'longitude': -106.5, 'altitude': 1619}
@@ -231,6 +235,46 @@ class IrradianceLimitsFilterTestCase(unittest.TestCase):
         self.assertIsNone(ghi)
         self.assertIsNone(dhi)
         self.assertIsNotNone(dni)
+
+
+class IrradianceConsistencyFilterTestCase(unittest.TestCase):
+    ''' Unit tests for irradiance_consistency_filter'''
+
+    def setUp(self):
+        self.location = ALBUQUERQUE
+        self.data = pd.Series([-100, 100, 100, 1000, 1000, 1000, 1000,
+                               1000, 1000, 500, 1000, 500, 500, 0])
+        self.data.index = pd.date_range(start='01-01-2020 09:30:00',
+                                        freq='15T', periods=14)
+        self.data.tz_localize('America/Denver')
+
+    def test_irradiance_inconsistent(self):
+        consistent, ratios = irradiance_consistency_filter(
+            **self.location,
+            ghi=self.data,
+            dhi=self.data,
+            dni=self.data
+        )
+
+        self.assertFalse(consistent.any())
+        self.assertFalse(ratios.any())
+
+    def test_irradiance_consistent_synthetic_data(self):
+        location = Location(**self.location, tz='America/Denver')
+        times = pd.date_range(start='07-01-2020 07:00:00',
+                              end='07-01-2020 17:00:00',
+                              freq='15T',
+                              tz='America/Denver')
+        irradiance = location.get_clearsky(times)
+
+        consistent, _ = irradiance_consistency_filter(
+            **self.location,
+            ghi=irradiance['ghi'],
+            dhi=irradiance['dhi'],
+            dni=irradiance['dni']
+        )
+
+        self.assertTrue(consistent.all())
 
 
 if __name__ == '__main__':
