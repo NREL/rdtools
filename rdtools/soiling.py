@@ -774,12 +774,12 @@ class cods_analysis():
                                                     ].index.to_list()
 
         # Initialize various parameters
-        rolling_median_13 = zs_series.rolling(13, center=True).median().ffill()
+        rolling_median_13 = zs_series.ffill().rolling(13, center=True).median().ffill()
         # A rough estimate of the measurement noise
         measurement_noise = (rolling_median_13 - zs_series).var()
         # An initial guess of the slope
         initial_slope = np.array(theilslopes(zs_series.bfill().iloc[:14]))
-        rolling_median_7 = zs_series.rolling(7, center=True).median().ffill()
+        rolling_median_7 = zs_series.ffill().rolling(7, center=True).median().ffill()
         dt = 1  # All time stemps are one day
 
         # Initialize Kalman filter
@@ -905,6 +905,7 @@ class cods_analysis():
                 f.predict()
             if not np.isnan(z):
                 f.update(z)  # Update
+
             Xs[i] = f.x
             Ps[i] = f.P
             rate_std, zs_std = Ps[-1, 1, 1], Ps[-1, 0, 0]
@@ -1104,6 +1105,10 @@ class cods_analysis():
         if degradation_method == 'STL' and 'Rd' in order:
             order.remove('Rd')
 
+        if 'SR' not in order:
+            raise ValueError('\'SR\' must be in argument \'order\' '
+                             + '(e.g. order=[\'SR\', \'SC\', \'Rd\']')
+
         n_steps = len(order)
         day = range(len(pi))
         degradation_trend = [1]
@@ -1175,7 +1180,7 @@ class cods_analysis():
                 # Run STL model
                 STL_res = STL(season_dummy, period=365, seasonal=181,
                               seasonal_deg=0, trend_deg=0,
-                              robust=True, low_pass_jump=7,
+                              robust=True, low_pass_jump=30, seasonal_jump=30,
                               trend_jump=365).fit()
                 # Smooth result
                 smooth_season = lowess(STL_res.seasonal.apply(np.exp),
@@ -1220,7 +1225,7 @@ class cods_analysis():
 
             # Convergence happens if there is no improvement in RMSE from one
             # step to the next
-            if ic >= len(order):
+            if ic >= n_steps:
                 relative_improvement = ((convergence_metric[-n_steps-1]
                                          - convergence_metric[-1])
                                         / convergence_metric[-n_steps-1])
@@ -1237,7 +1242,7 @@ class cods_analysis():
                         print('Now not assuming perfect cleaning')
                 elif (not perfect_cleaning
                       and (ic >= max_iterations
-                           or (ic >= change_point + 3
+                           or (ic >= change_point + n_steps
                                and relative_improvement
                                < convergence_criterium))):
                     if verbose:
@@ -1737,16 +1742,21 @@ def force_periodicity(in_signal, signal_index, out_index):
         signal.loc[signal_index] = in_signal
     else:
         signal = in_signal
-
+    
+    # Make sure that we don't remove too much of the data:
+    remove_length = np.min([180, int((len(signal) - 365) / 2)])
     # Remove beginning and end of series
-    signal.iloc[:180] = np.nan
-    signal.iloc[-180:] = np.nan
+    signal.iloc[:remove_length] = np.nan
+    signal.iloc[-remove_length:] = np.nan
 
     unique_years = signal.index.year.unique()  # Years involved in time series
     # Make a signal matrix where each column is a year and each row is a date
-    year_matrix = pd.concat([pd.Series(signal.loc[str(year)].values)
-                             for year in unique_years],
-                            axis=1, ignore_index=True)
+    year_matrix = pd.DataFrame(index=np.arange(0,365), columns=unique_years)
+    for year in unique_years:
+        dates_in_year = pd.date_range(str(year)+'-01-01', str(year)+'-12-31')
+        # We cut off the extra day(s) of leap years
+        year_matrix[year] = \
+            signal.loc[str(year)].reindex(dates_in_year).values[:365]
     # We will use the median signal through all the years...
     median_signal = year_matrix.median(1)
     # The output is the median signal broadcasted to the whole time series
@@ -1780,6 +1790,7 @@ def find_numeric_outliers(x, multiplier=1.5, where='both', verbose=False):
                   Q3 + multiplier * IQR,
                   Q1 - multiplier * IQR)
         return (x > Q3 + multiplier * IQR), (x < Q1 - multiplier * IQR)
+
 
 def _RMSE(y_true, y_pred):
     '''Calculates the Root Mean Squared Error for y_true and y_pred, where
