@@ -1178,13 +1178,13 @@ class cods_analysis():
                     season_dummy.interpolate('linear', inplace=True)
                 season_dummy = season_dummy.apply(np.log)  # Log transform
                 # Run STL model
-                STL_res = STL(season_dummy, period=365, seasonal=181,
+                STL_res = STL(season_dummy, period=365, seasonal=np.inf,
                               seasonal_deg=0, trend_deg=0,
                               robust=True, low_pass_jump=30, seasonal_jump=30,
                               trend_jump=365).fit()
                 # Smooth result
                 smooth_season = lowess(STL_res.seasonal.apply(np.exp),
-                                       pi.index, is_sorted=True,
+                                       pi.index, is_sorted=True, delta=30,
                                        frac=180/len(pi), return_sorted=False)
                 # Ensure periodic seaonal component
                 seasonal_comp = force_periodicity(smooth_season,
