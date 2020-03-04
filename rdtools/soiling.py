@@ -1806,9 +1806,9 @@ def progressBarWithETA(value, endvalue, time, bar_length=20):
     percent = float(value) / endvalue * 100
     arrow = '-' * int(round(percent/100 * bar_length)-1) + '>'
     spaces = ' ' * (bar_length - len(arrow))
-    used = time/60  # Time Used
-    left = Elapsed/percent*(100-percent)  # Estimated time left
+    used = time / 60  # Time Used
+    left = used / percent*(100-percent)  # Estimated time left
     sys.stdout.write(
-        "\r# {} | Used: {:.1f} min | Left: {:.1f}".format(value, used, left), 
-        " min | Progress: [{}] {:.0f} %".format(arrow + spaces, percent))
+        "\r# {:} | Used: {:.1f} min | Left: {:.1f}".format(value, used, left) 
+        + " min | Progress: [{:}] {:.0f} %".format(arrow + spaces, percent))
     sys.stdout.flush()
