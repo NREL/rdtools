@@ -1,8 +1,4 @@
-''' Degradation Module
-
-This module contains functions to calculate the degradation rate of
-photovoltaic systems.
-'''
+'''Functions for calculating the degradation rate of photovoltaic systems.'''
 
 from __future__ import division
 import pandas as pd

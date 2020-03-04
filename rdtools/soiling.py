@@ -1,8 +1,4 @@
-''' Soiling Module
-
-This module contains functions to calculate soiling
-metrics from photovoltaic system data.
-'''
+'''Functions for calculating soiling metrics from photovoltaic system data.'''
 
 from __future__ import division
 from rdtools import degradation as RdToolsDeg

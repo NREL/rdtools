@@ -3,8 +3,9 @@ sudo: false
 language: python
 
 python:
-  - "2.7"
   - "3.6"
+  - "3.7"
+  - "3.8"
 
 # Test two environments:
 # 1) dependencies with pinned versions from requirements.txt
