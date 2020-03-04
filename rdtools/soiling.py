@@ -693,8 +693,9 @@ def soiling_srr(daily_normalized_energy, daily_insolation, reps=1000,
 class cods_analysis():
     '''
     Class for running the Combined Degradation and Soling (CODS) algorithm
-    for degradation and soiling loss analysis presented in Skomedal and
-    Deceglie. [JPV 8(2) p547] 2020
+    for degradation and soiling loss analysis presented in 
+    Skomedal and Deceglie. [JPV 8(2) p547] 2020
+    The promary function to use is run_boostrap()
 
     Parameters
     ----------
@@ -717,6 +718,628 @@ class cods_analysis():
         if self.insol.index.freq != 'D':
             raise ValueError('Daily insolation series must have '
                              'daily frequency')
+
+
+    def iterative_signal_decomposition(
+        self, order=['SR', 'SC', 'Rd'], degradation_method='YoY',
+        max_iterations=18, detection_tuner=.5, convergence_criterium=5e-3,
+        pruning_iterations=1, pruning_tuner=.6, soiling_significance_knob=.75,
+        process_noise=1e-4, renormalize_SR=None, perfect_cleaning=True,
+        ffill=True, clip_soiling=True, verbose=False):
+        '''
+        Description
+        -----------
+        A function for doing iterative decomposition of Performance Index time
+        series based on PV production data. The assumed underlying model
+        consists of a degradation trend, a seasonal component, and a soiling
+        signal (defined as 1 if no soiling, decreasing with increasing soiling
+        losses).
+
+            Model = degradation_trend * seasonal_component * soiling_ratio \
+                    * residuals
+              PI  ~         Rd        *         SC         *        SR     * R
+
+        The function has a huristic for detecting whether the soiling signal is
+        significant enough for soiling loss inference, which is based on the
+        ratio between the spread in the soiling signal versus the spread in the
+        residuals (defined by the 2.5th and 97.5th percentiles)
+
+        The degradation trend is obtained using the native RdTools Year-On-Year
+            method [1]
+        The seasonal component is derived with statsmodels STL [2]
+        The soiling signal is derived with a Kalman Filter with a cleaning
+            detection heuristic [3]
+
+        Parameters
+        ----------
+        order : list, defualt ['SR', 'SC', 'Rd']
+            List containing 1 to 3 of the following strings 'SR' (soiling
+            ratio), 'SC' (seasonal component), 'Rd' (degradation component),
+            defining the order in which these components will be found during
+            iterative decomposition
+        degradation_method : string, default 'YoY'
+            Either 'YoY' or 'STL'. If anything else, 'YoY' will be assumed.
+            Decides whether to use the YoY method [3] for estimating the
+            degradation trend (assumes linear trend), or the STL-method (does
+            not assume linear trend). The latter is slower.
+        max_iterations : int, default 18
+            The number of iterations to perform (each iteration fits only 1
+            component)
+        detection_tuner : float, default .5
+            Should be between 0.1 and 2
+        convergence_criterium : float, default 1e-3
+            the relative change in the convergence metric required for
+            convergence
+        pruning_iterations : int, default 1
+        pruning_tuner : float, default .6
+            Should be between 0.1 and 2
+        soiling_significance_knob float, defualt 0.75
+        process_noise : float, default 1e-4
+        renormalize_SR : float, default None
+            If not none, defines the percentile for which the SR will be
+            normalized to, based on the SR just after cleaning events
+        perfect_cleaning : bool, default False
+            Defines the conversion mode for converting Kalman Filter estimates
+            of the input signal to soiling ratio. See [3] for more details
+        ffill : bool, default True
+            Whether to use forward fill (default) or backward fill before
+            doing the rolling median for cleaning event detection
+        clip_soiling : bool, default True
+            Whether or not to clip the soiling ratio at max 1 and minimum 0.
+        verbose : bool, default False
+            If true, prints a progress report
+        ...
+
+        Returns
+        -------
+        df_out : pandas.DataFrame
+            Contains the estimated values of soiling ratio, soiling rates,
+            seasonal component and degradation trend
+        degradation : list
+            List of linear degradation rate of system in %/year, lower and
+            upper bound of 95% confidence interval
+        soiling_loss : list
+            List of average soiling losses over the time series in %, lower and
+            upper bound of 95% confidence interval
+        residual_shift : float
+            Mean value of residuals. Multiply total model by this number for
+            complete overlap with input pi
+        RMSE : float
+            Root Means Squared Error of total model vs input pi
+        small_soiling_signal : bool
+            Whether or not the signal is deemed too small to infer soiling
+            ratio
+        adf_res : list
+            The results of an Augmented Dickey-Fuller test (telling whether the
+            residuals are stationary or not)
+        ...
+
+        References
+        ----------
+        [1] Jordan, D.C., Deline, C., Kurtz, S.R., Kimball, G.M., Anderson, M.,
+            2017. Robust PV Degradation Methodology and Application. IEEE J.
+            Photovoltaics 1–7. https://doi.org/10.1109/JPHOTOV.2017.2779779
+        [2] Deceglie, M.G., Micheli, L., Muller, M., 2018. Quantifying Soiling
+            Loss Directly from PV Yield. IEEE J. Photovoltaics 8, 547–551.
+            https://doi.org/10.1109/JPHOTOV.2017.2784682
+        [3] Skomedal, Å, Deceglie, M, 2020. ...
+        '''
+        pi = self.pm.copy()
+        if degradation_method == 'STL' and 'Rd' in order:
+            order.remove('Rd')
+
+        if 'SR' not in order:
+            raise ValueError('\'SR\' must be in argument \'order\' '
+                             + '(e.g. order=[\'SR\', \'SC\', \'Rd\']')
+        n_steps = len(order)
+        day = range(len(pi))
+        degradation_trend = [1]
+        seasonal_component = [1]
+        soiling_ratio = [1]
+        soiling_dfs = []
+        yoy_save = [0]
+        residuals = pi.copy()
+        residual_shift = 1
+        convergence_metric = [_RMSE(pi, np.ones((len(pi),)))]
+
+        if not perfect_cleaning:
+            change_point = 0
+
+        # Find possible cleaning events based on the performance index
+        ce, rm9 = rolling_median_ce_detection(pi.index, pi, ffill=ffill,
+                                              tuner=detection_tuner)
+        pce = collapse_cleaning_events(ce, rm9.diff().values, 5)
+
+        small_soiling_signal = False
+        ic = 0  # iteration counter
+
+        if verbose:
+            print('It. nr\tstep\tRMSE\ttimer')
+        if verbose:
+            print('{:}\t- \t{:.5f}'.format(ic, convergence_metric[ic]))
+        while ic < max_iterations:
+            t0 = time.time()
+            ic += 1
+
+            # Find soiling component
+            if order[(ic-1) % n_steps] == 'SR':
+                if ic > 2:  # Add possible cleaning events found by considering
+                    # the residuals
+                    pce = soiling_dfs[-1].cleaning_events.copy()
+                    detection_tuner *= 1.2  # Increase value of detection tuner
+                    ce, rm9 = rolling_median_ce_detection(
+                        pi.index, residuals, ffill=ffill,
+                        tuner=detection_tuner)
+                    ce = collapse_cleaning_events(ce, rm9.diff().values, 5)
+                    pce[ce] = True
+                    pruning_tuner /= 1.1  # Decrease value of pruning tuner
+
+                # Decompose input signal
+                soiling_dummy = (pi
+                                 / degradation_trend[-1]
+                                 / seasonal_component[-1]
+                                 / residual_shift)
+
+                # Run Kalman Filter for obtaining soiling component
+                kdf, Ps = self.Kalman_filter_for_SR(
+                                zs_series=soiling_dummy,
+                                clip_soiling=clip_soiling,
+                                prescient_cleaning_events=pce,
+                                pruning_iterations=pruning_iterations,
+                                pruning_tuner=pruning_tuner,
+                                perfect_cleaning=perfect_cleaning,
+                                process_noise=process_noise,
+                                renormalize_SR=renormalize_SR)
+                soiling_ratio.append(kdf.soiling_ratio)
+                soiling_dfs.append(kdf)
+
+            # Find seasonal component
+            if order[(ic-1) % n_steps] == 'SC':
+                season_dummy = pi / soiling_ratio[-1]  # Decompose signal
+                if season_dummy.isna().sum() > 0:
+                    season_dummy.interpolate('linear', inplace=True)
+                season_dummy = season_dummy.apply(np.log)  # Log transform
+                # Run STL model
+                STL_res = STL(season_dummy, period=365, seasonal=999999,
+                              seasonal_deg=0, trend_deg=0,
+                              robust=True, low_pass_jump=30, seasonal_jump=30,
+                              trend_jump=365).fit()
+                # Smooth result
+                smooth_season = lowess(STL_res.seasonal.apply(np.exp),
+                                       pi.index, is_sorted=True, delta=30,
+                                       frac=180/len(pi), return_sorted=False)
+                # Ensure periodic seaonal component
+                seasonal_comp = force_periodicity(smooth_season,
+                                                  season_dummy.index,
+                                                  pi.index)
+                seasonal_component.append(seasonal_comp)
+                if degradation_method == 'STL':  # If not YoY
+                    deg_trend = pd.Series(index=pi.index,
+                                          data=STL_res.trend.apply(np.exp))
+                    degradation_trend.append(deg_trend / deg_trend.iloc[0])
+                    yoy_save.append(RdToolsDeg.naive_YOY(
+                        degradation_trend[-1]))
+
+            # Find degradation component
+            if order[(ic-1) % n_steps] == 'Rd':
+                # Decompose signal
+                trend_dummy = (pi
+                               / seasonal_component[-1]
+                               / soiling_ratio[-1])
+                yoy = RdToolsDeg.naive_YOY(trend_dummy)  # Run YoY
+                # Convert degradation rate to trend
+                degradation_trend.append(pd.Series(
+                    index=pi.index, data=(1 + day * yoy / 100 / 365.24)))
+                yoy_save.append(yoy)
+
+            # Combine and calculate residual flatness
+            total_model = (degradation_trend[-1]
+                           * seasonal_component[-1]
+                           * soiling_ratio[-1])
+            residuals = pi / total_model
+            residual_shift = residuals.mean()
+            total_model *= residual_shift
+            convergence_metric.append(_RMSE(pi, total_model))
+
+            if verbose:
+                print('{:}\t{:}\t{:.5f}\t\t\t{:.1f} s'.format(
+                    ic, order[(ic-1) % n_steps], convergence_metric[-1],
+                    time.time()-t0))
+
+            # Convergence happens if there is no improvement in RMSE from one
+            # step to the next
+            if ic >= n_steps:
+                relative_improvement = ((convergence_metric[-n_steps-1]
+                                         - convergence_metric[-1])
+                                        / convergence_metric[-n_steps-1])
+                if perfect_cleaning and (
+                        ic >= max_iterations / 2
+                        or relative_improvement < convergence_criterium):
+                    # From now on, do not assume perfect cleaning
+                    perfect_cleaning = False
+                    # Reorder to ensure SR first
+                    order = [order[(i+n_steps-1-(ic-1) % n_steps) % n_steps]
+                             for i in range(n_steps)]
+                    change_point = ic
+                    if verbose:
+                        print('Now not assuming perfect cleaning')
+                elif (not perfect_cleaning
+                      and (ic >= max_iterations
+                           or (ic >= change_point + n_steps
+                               and relative_improvement
+                               < convergence_criterium))):
+                    if verbose:
+                        if relative_improvement < convergence_criterium:
+                            print('Convergence reached.')
+                        else:
+                            print('Max iterations reached.')
+                    ic = max_iterations
+
+        # Initialize output DataFrame
+        df_out = pd.DataFrame(index=pi.index,
+                              columns=['soiling_ratio', 'soiling_rates',
+                                       'cleaning_events', 'seasonal_component',
+                                       'degradation_trend', 'total_model',
+                                       'residuals'])
+
+        # Save values
+        df_out.seasonal_component = seasonal_component[-1]
+        df_out.degradation_trend = degradation_trend[-1]
+        degradation = yoy_save[-1]
+        final_kdf = soiling_dfs[-1]
+        df_out.soiling_ratio = final_kdf.soiling_ratio
+        df_out.soiling_rates = final_kdf.soiling_rates
+        df_out.cleaning_events = final_kdf.cleaning_events
+
+        # Calculate soiling loss in %
+        soiling_loss = (1 - df_out.soiling_ratio).mean() * 100
+
+        # Total model
+        df_out.total_model = (df_out.soiling_ratio
+                              * df_out.seasonal_component
+                              * df_out.degradation_trend)
+        df_out.residuals = pi / df_out.total_model
+        residual_shift = df_out.residuals.mean()
+        df_out.total_model *= residual_shift
+        RMSE = _RMSE(pi, df_out.total_model)
+        adf_res = adfuller(df_out.residuals.dropna(), regression='ctt')
+        if verbose:
+            print('p-value for the H0 that there is a unit root in the'
+                  + 'residuals (using the Augmented Dickey-fuller test):'
+                  + '{:.3e}'.format(adf_res[1]))
+
+        # Check size of soiling signal vs residuals
+        SR_amp = float(np.diff(df_out.soiling_ratio.quantile([.025, .975])))
+        residuals_amp = float(np.diff(df_out.residuals.quantile([.025, .975])))
+        soiling_signal_strength = SR_amp / residuals_amp
+        if soiling_signal_strength < soiling_significance_knob:
+            if verbose:
+                print('Soiling signal is small relative to the noise')
+            small_soiling_signal = True
+            df_out.SR_high = 1.0
+            df_out.SR_low = 1.0 - SR_amp
+
+        return df_out, degradation, soiling_loss, residual_shift, RMSE, \
+            small_soiling_signal, adf_res
+
+
+    def run_bootstrap(self, bootstrap_nr=512, verbose=False,
+                      degradation_method='YoY',
+                      knob_alternatives=[[['SR', 'SC', 'Rd'],
+                                          ['SC', 'SR', 'Rd']],
+                                         [.4, .8],
+                                         [.75, 1.25],
+                                         [True, False]]):
+        '''
+        Boottrapping of iterative signal decomposition alforithm for
+        uncertainty analysis.
+
+        First, calls on iterative_signal_decomposition to fit N different
+        models. Bootstrap samples are generated based on all of these models.
+        Each bootstrap sample is generated by bootstrapping the residuals of
+        the respective model (one of the N), using circular block
+        bootstrapping, then multiplying these new residuals back onto the
+        model. Then, for each bootstrap sample, one of the N models is randomly
+        chosen and fit. The seasonal component is perturbed randomly and
+        divided out, so as to capture its uncertainty. In the end, 95%
+        confidence intervals are calulated based on the models fit to the
+        bootrapped signals. The returned soiling ratio and rates are based on
+        the best fit of the initial 16 models.
+
+        Parameters
+        ----------
+        bootstrap_nr : int, default 512,
+            Number of bootstrap realizations to be run
+            minimum N, where N is the possible combinations of model
+            knobs/parameters defined in knob_alternatives
+        verbose : bool, default False
+            Wheter or not to print information about progress
+        degradation_method : string, default 'YoY'
+            Either 'YoY' or 'STL'. If anything else, 'YoY' will be assumed.
+            Decides whether to use the YoY method [3] for estimating the
+            degradation trend (assumes linear trend), or the STL-method (does
+            not assume linear trend). The latter is slower.
+        knob_alternatives : list of lists, default [[['SR', 'SC', 'Rd'],
+                                                     ['SC', 'SR', 'Rd']],
+                                                    [.4, .8],
+                                                    [.75, 1.25],
+                                                    [True, False]]
+            List of model knobs/parameters for the initial N model fits
+
+        Returns
+        -------
+        df_out : pandas.DataFrame
+            Contains the columns/keys
+        degradation : list
+            List of linear degradation rate of system in %/year, lower and
+            upper bound of 95% confidence interval
+        soiling_loss : list
+            List of average soiling losses over the time series in %, lower and
+            upper bound of 95% confidence interval
+        residual_shift : float
+            Mean value of residuals. Multiply total model by this number for
+            complete overlap with input pi
+        RMSE : float
+            Root Means Squared Error of total model vs input pi
+        small_soiling_signal : bool
+            Whether or not the signal is deemed too small to infer anything
+            about it
+        adf_res : list
+            The results of an Augmented Dickey-Fuller test (telling whether the
+            residuals are stationary or not)
+        knobs_n_weights : pandas.DataFrame
+            Contains information about the knobs used in each bootstrap model
+            fit, and the resultant weight
+        '''
+        pi = self.pm.copy()
+
+        # Generate combinations of model knobs/parameters
+        index_list = list(itertools.product(
+                            [0, 1], repeat=len(knob_alternatives)))
+        combination_of_knobs = [[knob_alternatives[j][indexes[j]]
+                                 for j in range(len(knob_alternatives))]
+                                for indexes in index_list]
+        nr_models = len(index_list)
+        bootstrap_samples_list, results = [], []
+
+        # Check boostrap number
+        if bootstrap_nr % nr_models != 0:
+            bootstrap_nr += nr_models - bootstrap_nr % nr_models
+
+        if verbose:
+            print('Initially fitting {:} models'.format(nr_models))
+        t00 = time.time()
+        # For each combination of model knobs/parameters, fit one model:
+        for c, (order, dt, pt, ff) in enumerate(combination_of_knobs):
+            try:
+                result = self.iterative_signal_decomposition(
+                     max_iterations=18, order=order, clip_soiling=True,
+                     detection_tuner=dt, pruning_iterations=1,
+                     pruning_tuner=pt, process_noise=1e-4, ffill=ff,
+                     degradation_method=degradation_method)
+
+                # Save results
+                results.append(result)
+                adf = result[-1]
+                # If we can reject the null-hypothesis that there is a unit
+                # root in the residuals:
+                if adf[1] < .05:
+                    # ... generate bootstrap samples based on the fit:
+                    bootstrap_samples_list.append(
+                        make_bootstrap_samples(
+                            pi, result[0].total_model,
+                            sample_nr=int(bootstrap_nr / nr_models)))
+
+                # Print progress
+                if verbose:
+                    progressBarWithETA(c+1, nr_models, time.time()-t00,
+                                       bar_length=30)
+            except ValueError as ex:
+                print(ex)
+
+        # Revive results
+        adfs = np.array([(r[-1][0] if r[-1][1] < 0.05 else 0) for r in results])
+        RMSEs = np.array([r[4] for r in results])
+        SR_is_one_fraction = np.array(
+            [(r[0].soiling_ratio == 1).mean() for r in results])
+        sss = [r[5] for r in results]
+
+        # Calculate weights
+        weights = 1 / RMSEs / (.1 + SR_is_one_fraction)
+        weights /= np.sum(weights)
+
+        # Save knobs and weights for initial model fits
+        knobs_n_weights = pd.concat([pd.DataFrame(combination_of_knobs),
+                                     pd.Series(RMSEs),
+                                     pd.Series(SR_is_one_fraction),
+                                     pd.Series(weights),
+                                     pd.Series(sss)],
+                                    axis=1, ignore_index=True)
+
+        if verbose:  # Print summary
+            knobs_n_weights.columns = ['order', 'dt', 'pt', 'ff', 'RMSE',
+                                       'SR==1', 'weights', 'sss']
+            if verbose:
+                print('\n', knobs_n_weights)
+
+        # Check if data is decomposable
+        if np.sum(adfs == 0) > nr_models / 2:
+            self.errors = (
+                'Test for stationary residuals (Augmented Dickey-Fuller'
+                'test) not passed in half  of the instances:\nData not'
+                ' decomposable.')
+            print(self.errors)
+            return
+
+        # Save best model
+        self.initial_fits = [r[0] for r in results]
+        df_out = results[np.argmax(weights)][0]
+
+        # If more than half of the model fits indicate small soiling signal,
+        # don't do bootstrapping
+        if np.sum(sss) > nr_models / 2:
+            self.result_df = df_out
+            self.residual_shift = results[np.argmax(weights)][3]
+            YOY = RdToolsDeg.degradation_year_on_year(pi)
+            self.degradation = [YOY[0], YOY[1][0], YOY[1][1]]
+            self.soiling_loss = [0, 0, (1 - df_out.soiling_ratio).mean()]
+            self.errors = (
+                    'Soiling signal is small relative to the noise.'
+                    'Iterative decomposition not possible.\n'
+                    'Degradation found by RdTools YoY')
+            print(self.errors)
+            return
+
+        # Aggregate all bootstrap samples
+        all_bootstrap_samples = pd.concat(bootstrap_samples_list, axis=1,
+                                          ignore_index=True)
+
+        # Seasonal samples are generated from previously fitted seasonal
+        # components, by perturbing amplitude and phase shift
+        # Number of samples per fit:
+        sample_nr = int(bootstrap_nr / nr_models)
+        list_of_SCs = [results[m][0].seasonal_component
+                       for m in range(nr_models) if weights[m] > 0]
+        seasonal_samples = make_seasonal_samples(list_of_SCs,
+                                                 sample_nr=sample_nr,
+                                                 min_multiplier=.8,
+                                                 max_multiplier=1.75,
+                                                 max_shift=30)
+
+        # Entering bootstrapping
+        if verbose and bootstrap_nr > 0:
+            print('\nBootstrapping for uncertainty analysis',
+                  '({:} realizations):'.format(bootstrap_nr))
+        order = ['SR', 'SC' if degradation_method == 'STL' else 'Rd']
+        t0 = time.time()
+        bt_kdfs, bt_SL, bt_deg, knobs, adfs, RMSEs, SR_is_1, rss, errors = \
+            [], [], [], [], [], [], [], [], ['Bootstrapping errors']
+        for b in range(bootstrap_nr):
+            try:
+                # randomly choose model knobs
+                dt = np.random.uniform(knob_alternatives[1][0]*.75,
+                                       knob_alternatives[1][1]*.75)
+                pt = np.random.uniform(knob_alternatives[2][0]*1.5,
+                                       knob_alternatives[2][1]*1.5)
+                process_noise = np.random.uniform(7e-5, 1.5e-4)
+                renormalize_SR = np.random.choice([None,
+                                                   np.random.uniform(.5, .95)])
+                ffill = np.random.choice([True, False])
+                knobs.append([dt, pt, process_noise, renormalize_SR, ffill])
+
+                # Sample to infer soiling from
+                bootstrap_sample = \
+                    all_bootstrap_samples[b] / seasonal_samples[b]
+
+                # Set up a temprary instance of the cods_analysis object
+                temporary_cods_instance = cods_analysis(bootstrap_sample,
+                                                        self.insol)
+                # Do Signal decomposition for soiling and degradation component
+                kdf, deg, SL, rs, RMSE, sss, adf = \
+                    temporary_cods_instance.iterative_signal_decomposition(
+                        max_iterations=4, order=order, clip_soiling=True,
+                        detection_tuner=dt, pruning_iterations=1,
+                        pruning_tuner=pt, process_noise=process_noise,
+                        renormalize_SR=renormalize_SR, ffill=ffill,
+                        degradation_method=degradation_method)
+
+                # If we can reject the null-hypothesis that there is a unit
+                # root in the residuals:
+                if adf[1] < .05:  # Save the results
+                    bt_kdfs.append(kdf)
+                    adfs.append(adf[0])
+                    RMSEs.append(RMSE)
+                    bt_deg.append(deg)
+                    bt_SL.append(SL)
+                    rss.append(rs)
+                    SR_is_1.append((kdf.soiling_ratio == 1).mean())
+                else:
+                    seasonal_samples.drop(columns=[b], inplace=True)
+
+            except ValueError as ve:
+                seasonal_samples.drop(columns=[b], inplace=True)
+                errors.append(b, ve)
+
+            # Print progress
+            if verbose:
+                progressBarWithETA(b+1, bootstrap_nr, time.time()-t0,
+                                   bar_length=30)
+
+        # Reweight and save weights
+        weights = 1 / np.array(RMSEs) / (.1 + np.array(SR_is_1))
+        weights /= np.sum(weights)
+        self.knobs_n_weights = pd.concat(
+            [pd.DataFrame(knobs),
+             pd.Series(RMSEs),
+             pd.Series(adfs),
+             pd.Series(SR_is_1),
+             pd.Series(weights)],
+            axis=1, ignore_index=True)
+        self.knobs_n_weights.columns = ['dt', 'pt', 'pn', 'RSR', 'ffill',
+                                        'RMSE', 'ADF', 'SR==1', 'weights']
+
+        # Concatenate boostrap model fits
+        concat_tot_mod = pd.concat([kdf.total_model for kdf in bt_kdfs], 1)
+        concat_SR = pd.concat([kdf.soiling_ratio for kdf in bt_kdfs], 1)
+        concat_r_s = pd.concat([kdf.soiling_rates for kdf in bt_kdfs], 1)
+        concat_ce = pd.concat([kdf.cleaning_events for kdf in bt_kdfs], 1)
+        concat_deg = pd.concat([kdf.degradation_trend for kdf in bt_kdfs], 1)
+
+        # Find confidence intervals for SR and soiling rates
+        df_out['SR_low'] = concat_SR.quantile(.025, 1)
+        df_out['SR_high'] = concat_SR.quantile(.975, 1)
+        df_out['rates_low'] = concat_r_s.quantile(.025, 1)
+        df_out['rates_high'] = concat_r_s.quantile(.975, 1)
+
+        # Save best estimate and bootstrapped estimates of SR and soiling rates
+        df_out.soiling_ratio = df_out.soiling_ratio.clip(lower=0, upper=1)
+        df_out.loc[df_out.soiling_ratio.diff() == 0, 'soiling_rates'] = 0
+        df_out['bt_soiling_ratio'] = (concat_SR * weights).sum(1)
+        df_out['bt_soiling_rates'] = (concat_r_s * weights).sum(1)
+
+        # Set probability of cleaning events
+        df_out.cleaning_events = (concat_ce * weights).sum(1)
+
+        # Find degradation rates
+        self.degradation = [np.dot(bt_deg, weights),
+                            np.quantile(bt_deg, .025),
+                            np.quantile(bt_deg, .975)]
+        df_out.degradation_trend = (concat_deg * weights).sum(1)
+        df_out['degradation_low'] = concat_deg.quantile(.025, 1)
+        df_out['degradation_high'] = concat_deg.quantile(.975, 1)
+
+        # Soiling losses
+        self.soiling_loss = [np.dot(bt_SL, weights),
+                             np.quantile(bt_SL, .025),
+                             np.quantile(bt_SL, .975)]
+
+        # Save "confidence intervals" for seasonal component
+        df_out.seasonal_component = (seasonal_samples * weights).sum(1)
+        df_out['seasonal_low'] = seasonal_samples.quantile(.025, 1)
+        df_out['seasonal_high'] = seasonal_samples.quantile(.975, 1)
+
+        # Total model with confidence intervals
+        df_out.total_model = (df_out.degradation_trend
+                              * df_out.seasonal_component
+                              * df_out.soiling_ratio)
+        df_out['model_low'] = concat_tot_mod.quantile(.025, 1)
+        df_out['model_high'] = concat_tot_mod.quantile(.975, 1)
+
+        # Residuals and residual shift
+        df_out.residuals = pi / df_out.total_model
+        self.residual_shift = df_out.residuals.mean()
+        df_out.total_model *= self.residual_shift
+        self.RMSE = _RMSE(pi, df_out.total_model)
+        self.adf_results = adfuller(df_out.residuals.dropna(),
+                                    regression='ctt')
+        self.result_df = df_out
+        self.errors = errors
+
+        if verbose:
+            print('\nFinal RMSE: {:.5f}'.format(self.RMSE))
+            if len(self.errors) > 1:
+                print(self.errors)
+
 
     def Kalman_filter_for_SR(self, zs_series, process_noise=1e-4, zs_std=.05,
                              rate_std=.005, max_soiling_rates=.0005,
@@ -823,7 +1446,8 @@ class cods_analysis():
                 exceeding_rates = dfk.smooth_rates > max_soiling_rates
                 new_cleaning_events = collapse_cleaning_events(
                                         exceeding_rates, dfk.smooth_rates, 4)
-                cleaning_events.extend(new_cleaning_events)
+                cleaning_events.extend(
+                    new_cleaning_events[new_cleaning_events].index)
                 cleaning_events.sort()
 
             # 3: If the list of cleaning events has changed, run the Kalman
@@ -989,629 +1613,6 @@ class cods_analysis():
         f.R = measurement_noise
         return f
 
-    def iterative_signal_decomposition(self, order=['SR', 'SC', 'Rd'],
-                                       degradation_method='YoY',
-                                       max_iterations=18, detection_tuner=.5,
-                                       convergence_criterium=5e-3,
-                                       pruning_iterations=1, pruning_tuner=.6,
-                                       soiling_significance_knob=.75,
-                                       process_noise=1e-4, renormalize_SR=None,
-                                       perfect_cleaning=True, ffill=True,
-                                       clip_soiling=True, verbose=False):
-        '''
-        Description
-        -----------
-        A function for doing iterative decomposition of Performance Index time
-        series based on PV production data. The assumed underlying model
-        consists of a degradation trend, a seasonal component, and a soiling
-        signal (defined as 1 if no soiling, decreasing with increasing soiling
-        losses).
-
-            Model = degradation_trend * seasonal_component * soiling_ratio \
-                    * residuals
-              PI  ~         Rd        *         SC         *        SR     * R
-
-        The function has a huristic for detecting whether the soiling signal is
-        significant enough for soiling loss inference, which is based on the
-        ratio between the spread in the soiling signal versus the spread in the
-        residuals (defined by the 2.5th and 97.5th percentiles)
-
-        The degradation trend is obtained using the native RdTools Year-On-Year
-            method [1]
-        The seasonal component is derived with statsmodels STL [2]
-        The soiling signal is derived with a Kalman Filter with a cleaning
-            detection heuristic [3]
-
-        Parameters
-        ----------
-        order : list, defualt ['SR', 'SC', 'Rd']
-            List containing 1 to 3 of the following strings 'SR' (soiling
-            ratio), 'SC' (seasonal component), 'Rd' (degradation component),
-            defining the order in which these components will be found during
-            iterative decomposition
-        degradation_method : string, default 'YoY'
-            Either 'YoY' or 'STL'. If anything else, 'YoY' will be assumed.
-            Decides whether to use the YoY method [3] for estimating the
-            degradation trend (assumes linear trend), or the STL-method (does
-            not assume linear trend). The latter is slower.
-        max_iterations : int, default 18
-            The number of iterations to perform (each iteration fits only 1
-            component)
-        detection_tuner : float, default .5
-            Should be between 0.1 and 2
-        convergence_criterium : float, default 1e-3
-            the relative change in the convergence metric required for
-            convergence
-        pruning_iterations : int, default 1
-        pruning_tuner : float, default .6
-            Should be between 0.1 and 2
-        soiling_significance_knob float, defualt 0.75
-        process_noise : float, default 1e-4
-        renormalize_SR : float, default None
-            If not none, defines the percentile for which the SR will be
-            normalized to, based on the SR just after cleaning events
-        perfect_cleaning : bool, default False
-            Defines the conversion mode for converting Kalman Filter estimates
-            of the input signal to soiling ratio. See [3] for more details
-        ffill : bool, default True
-            Whether to use forward fill (default) or backward fill before
-            doing the rolling median for cleaning event detection
-        clip_soiling : bool, default True
-            Whether or not to clip the soiling ratio at max 1 and minimum 0.
-        verbose : bool, default False
-            If true, prints a progress report
-        ...
-
-        Returns
-        -------
-        df_out : pandas.DataFrame
-            Contains the estimated values of soiling ratio, soiling rates,
-            seasonal component and degradation trend
-        degradation : list
-            List of linear degradation rate of system in %/year, lower and
-            upper bound of 95% confidence interval
-        soiling_loss : list
-            List of average soiling losses over the time series in %, lower and
-            upper bound of 95% confidence interval
-        residual_shift : float
-            Mean value of residuals. Multiply total model by this number for
-            complete overlap with input pi
-        RMSE : float
-            Root Means Squared Error of total model vs input pi
-        small_soiling_signal : bool
-            Whether or not the signal is deemed too small to infer soiling
-            ratio
-        adf_res : list
-            The results of an Augmented Dickey-Fuller test (telling whether the
-            residuals are stationary or not)
-        ...
-
-        References
-        ----------
-        [1] Jordan, D.C., Deline, C., Kurtz, S.R., Kimball, G.M., Anderson, M.,
-            2017. Robust PV Degradation Methodology and Application. IEEE J.
-            Photovoltaics 1–7. https://doi.org/10.1109/JPHOTOV.2017.2779779
-        [2] Deceglie, M.G., Micheli, L., Muller, M., 2018. Quantifying Soiling
-            Loss Directly from PV Yield. IEEE J. Photovoltaics 8, 547–551.
-            https://doi.org/10.1109/JPHOTOV.2017.2784682
-        [3] Skomedal, Å, Deceglie, M, 2020. ...
-        '''
-        pi = self.pm.copy()
-
-        if degradation_method == 'STL' and 'Rd' in order:
-            order.remove('Rd')
-
-        if 'SR' not in order:
-            raise ValueError('\'SR\' must be in argument \'order\' '
-                             + '(e.g. order=[\'SR\', \'SC\', \'Rd\']')
-
-        n_steps = len(order)
-        day = range(len(pi))
-        degradation_trend = [1]
-        seasonal_component = [1]
-        soiling_ratio = [1]
-        soiling_dfs = []
-        yoy_save = [0]
-        residuals = pi.copy()
-        residual_shift = 1
-        convergence_metric = [_RMSE(pi, np.ones((len(pi),)))]
-
-        if not perfect_cleaning:
-            change_point = 0
-
-        # Find possible cleaning events based on the performance index
-        ce, rm9 = rolling_median_ce_detection(pi.index, pi, ffill=ffill,
-                                              tuner=detection_tuner)
-        pce = collapse_cleaning_events(ce, rm9.diff().values, 5)
-
-        small_soiling_signal = False
-        ic = 0  # iteration counter
-
-        if verbose:
-            print('It. nr\tstep\tRMSE\ttimer')
-        if verbose:
-            print('{:}\t- \t{:.5f}'.format(ic, convergence_metric[ic]))
-        while ic < max_iterations:
-            t0 = time.time()
-            ic += 1
-
-            # Find soiling component
-            if order[(ic-1) % n_steps] == 'SR':
-                if ic > 2:  # Add possible cleaning events found by considering
-                    # the residuals
-                    pce = soiling_dfs[-1].cleaning_events.copy()
-                    detection_tuner *= 1.2  # Increase value of detection tuner
-                    ce, rm9 = rolling_median_ce_detection(
-                        pi.index, residuals, ffill=ffill,
-                        tuner=detection_tuner)
-                    ce = collapse_cleaning_events(ce, rm9.diff().values, 5)
-                    pce[ce] = True
-                    pruning_tuner /= 1.1  # Decrease value of pruning tuner
-
-                # Decompose input signal
-                soiling_dummy = (pi
-                                 / degradation_trend[-1]
-                                 / seasonal_component[-1]
-                                 / residual_shift)
-
-                # Run Kalman Filter for obtaining soiling component
-                kdf, Ps = self.Kalman_filter_for_SR(
-                                zs_series=soiling_dummy,
-                                clip_soiling=clip_soiling,
-                                prescient_cleaning_events=pce,
-                                pruning_iterations=pruning_iterations,
-                                pruning_tuner=pruning_tuner,
-                                perfect_cleaning=perfect_cleaning,
-                                process_noise=process_noise,
-                                renormalize_SR=renormalize_SR)
-                soiling_ratio.append(kdf.soiling_ratio)
-                soiling_dfs.append(kdf)
-
-            # Find seasonal component
-            if order[(ic-1) % n_steps] == 'SC':
-                season_dummy = pi / soiling_ratio[-1]  # Decompose signal
-                if season_dummy.isna().sum() > 0:
-                    season_dummy.interpolate('linear', inplace=True)
-                season_dummy = season_dummy.apply(np.log)  # Log transform
-                # Run STL model
-                STL_res = STL(season_dummy, period=365, seasonal=np.inf,
-                              seasonal_deg=0, trend_deg=0,
-                              robust=True, low_pass_jump=30, seasonal_jump=30,
-                              trend_jump=365).fit()
-                # Smooth result
-                smooth_season = lowess(STL_res.seasonal.apply(np.exp),
-                                       pi.index, is_sorted=True, delta=30,
-                                       frac=180/len(pi), return_sorted=False)
-                # Ensure periodic seaonal component
-                seasonal_comp = force_periodicity(smooth_season,
-                                                  season_dummy.index,
-                                                  pi.index)
-                seasonal_component.append(seasonal_comp)
-                if degradation_method == 'STL':  # If not YoY
-                    deg_trend = pd.Series(index=pi.index,
-                                          data=STL_res.trend.apply(np.exp))
-                    degradation_trend.append(deg_trend / deg_trend.iloc[0])
-                    yoy_save.append(RdToolsDeg.naive_YOY(
-                        degradation_trend[-1]))
-
-            # Find degradation component
-            if order[(ic-1) % n_steps] == 'Rd':
-                # Decompose signal
-                trend_dummy = (pi
-                               / seasonal_component[-1]
-                               / soiling_ratio[-1])
-                yoy = RdToolsDeg.naive_YOY(trend_dummy)  # Run YoY
-                # Convert degradation rate to trend
-                degradation_trend.append(pd.Series(
-                    index=pi.index, data=(1 + day * yoy / 100 / 365.24)))
-                yoy_save.append(yoy)
-
-            # Combine and calculate residual flatness
-            total_model = (degradation_trend[-1]
-                           * seasonal_component[-1]
-                           * soiling_ratio[-1])
-            residuals = pi / total_model
-            residual_shift = residuals.mean()
-            convergence_metric.append(_RMSE(pi, total_model * residual_shift))
-
-            if verbose:
-                print('{:}\t{:}\t{:.5f}\t\t\t{:.1f} s'.format(
-                    ic, order[(ic-1) % n_steps], convergence_metric[-1],
-                    time.time()-t0))
-
-            # Convergence happens if there is no improvement in RMSE from one
-            # step to the next
-            if ic >= n_steps:
-                relative_improvement = ((convergence_metric[-n_steps-1]
-                                         - convergence_metric[-1])
-                                        / convergence_metric[-n_steps-1])
-                if perfect_cleaning and (
-                        ic >= max_iterations / 2
-                        or relative_improvement < convergence_criterium):
-                    # From now on, do not assume perfect cleaning
-                    perfect_cleaning = False
-                    # Reorder to ensure SR first
-                    order = [order[(i+n_steps-1-(ic-1) % n_steps) % n_steps]
-                             for i in range(n_steps)]
-                    change_point = ic
-                    if verbose:
-                        print('Now not assuming perfect cleaning')
-                elif (not perfect_cleaning
-                      and (ic >= max_iterations
-                           or (ic >= change_point + n_steps
-                               and relative_improvement
-                               < convergence_criterium))):
-                    if verbose:
-                        if relative_improvement < convergence_criterium:
-                            print('Convergence reached.')
-                        else:
-                            print('Max iterations reached.')
-                    ic = max_iterations
-
-        # Initialize output DataFrame
-        df_out = pd.DataFrame(index=pi.index,
-                              columns=['soiling_ratio', 'soiling_rates',
-                                       'cleaning_events', 'seasonal_component',
-                                       'degradation_trend', 'total_model',
-                                       'residuals'])
-
-        # Save values
-        df_out.seasonal_component = seasonal_component[-1]
-        df_out.degradation_trend = degradation_trend[-1]
-        degradation = yoy_save[-1]
-        final_kdf = soiling_dfs[-1]
-        df_out.soiling_ratio = final_kdf.soiling_ratio
-        df_out.soiling_rates = final_kdf.soiling_rates
-        df_out.cleaning_events = final_kdf.cleaning_events
-
-        # Calculate soiling loss in %
-        soiling_loss = (1-df_out.soiling_ratio).mean() * 100
-
-        # Total model
-        df_out.total_model = total_model
-        df_out.residuals = residuals
-        residual_shift = df_out.residuals.mean()
-        RMSE = _RMSE(pi, df_out.total_model * residual_shift)
-        adf_res = adfuller(df_out.residuals.dropna(), regression='ctt')
-        if verbose:
-            print('p-value for the H0 that there is a unit root in the'
-                  + 'residuals (using the Augmented Dickey-fuller test):'
-                  + '{:.3e}'.format(adf_res[1]))
-
-        # Check size of soiling signal vs residuals
-        SR_amp = float(np.diff(df_out.soiling_ratio.quantile([.025, .975])))
-        residuals_amp = float(np.diff(df_out.residuals.quantile([.025, .975])))
-        soiling_signal_strength = SR_amp / residuals_amp
-        if soiling_signal_strength < soiling_significance_knob:
-            if verbose:
-                print('Soiling signal is small relative to the noise')
-            small_soiling_signal = True
-            df_out.SR_high = 1.0
-            df_out.SR_low = 1.0 - SR_amp
-
-        return df_out, degradation, soiling_loss, residual_shift, RMSE, \
-            small_soiling_signal, adf_res
-
-    def run_bootstrap(self, bootstrap_nr=512, verbose=False,
-                      degradation_method='YoY',
-                      knob_alternatives=[[['SR', 'SC', 'Rd'],
-                                          ['SC', 'SR', 'Rd']],
-                                         [.4, .8],
-                                         [.75, 1.25],
-                                         [True, False]]):
-        '''
-        Boottrapping of iterative signal decomposition alforithm for
-        uncertainty analysis.
-
-        First, calls on iterative_signal_decomposition to fit N different
-        models. Bootstrap samples are generated based on all of these models.
-        Each bootstrap sample is generated by bootstrapping the residuals of
-        the respective model (one of the N), using circular block
-        bootstrapping, then multiplying these new residuals back onto the
-        model. Then, for each bootstrap sample, one of the N models is randomly
-        chosen and fit. The seasonal component is perturbed randomly and
-        divided out, so as to capture its uncertainty. In the end, 95%
-        confidence intervals are calulated based on the models fit to the
-        bootrapped signals. The returned soiling ratio and rates are based on
-        the best fit of the initial 16 models.
-
-        Parameters
-        ----------
-        bootstrap_nr : int, default 512,
-            Number of bootstrap realizations to be run
-            minimum N, where N is the possible combinations of model
-            knobs/parameters defined in knob_alternatives
-        verbose : bool, default False
-            Wheter or not to print information about progress
-        degradation_method : string, default 'YoY'
-            Either 'YoY' or 'STL'. If anything else, 'YoY' will be assumed.
-            Decides whether to use the YoY method [3] for estimating the
-            degradation trend (assumes linear trend), or the STL-method (does
-            not assume linear trend). The latter is slower.
-        knob_alternatives : list of lists, default [[['SR', 'SC', 'Rd'],
-                                                     ['SC', 'SR', 'Rd']],
-                                                    [.4, .8],
-                                                    [.75, 1.25],
-                                                    [True, False]]
-            List of model knobs/parameters for the initial N model fits
-
-        Returns
-        -------
-        df_out : pandas.DataFrame
-            Contains the columns/keys
-        degradation : list
-            List of linear degradation rate of system in %/year, lower and
-            upper bound of 95% confidence interval
-        soiling_loss : list
-            List of average soiling losses over the time series in %, lower and
-            upper bound of 95% confidence interval
-        residual_shift : float
-            Mean value of residuals. Multiply total model by this number for
-            complete overlap with input pi
-        RMSE : float
-            Root Means Squared Error of total model vs input pi
-        small_soiling_signal : bool
-            Whether or not the signal is deemed too small to infer anything
-            about it
-        adf_res : list
-            The results of an Augmented Dickey-Fuller test (telling whether the
-            residuals are stationary or not)
-        knobs_n_weights : pandas.DataFrame
-            Contains information about the knobs used in each bootstrap model
-            fit, and the resultant weight
-        '''
-        pi = self.pm.copy()
-
-        # Generate combinations of model knobs/parameters
-        index_list = list(itertools.product(
-                            [0, 1], repeat=len(knob_alternatives)))
-        combination_of_knobs = [[knob_alternatives[j][indexes[j]]
-                                 for j in range(len(knob_alternatives))]
-                                for indexes in index_list]
-        nr_models = len(index_list)
-        bootstrap_samples_list, results = [], []
-
-        # Check boostrap number
-        if bootstrap_nr % nr_models != 0:
-            bootstrap_nr += nr_models - bootstrap_nr % nr_models
-
-        if verbose:
-            print('Initially fitting {:} models'.format(nr_models))
-        t00 = time.time()
-        # For each combination of model knobs/parameters, fit one model:
-        for c, (order, dt, pt, ff) in enumerate(combination_of_knobs):
-            try:
-                result = self.iterative_signal_decomposition(
-                     max_iterations=18, order=order, clip_soiling=True,
-                     detection_tuner=dt, pruning_iterations=1,
-                     pruning_tuner=pt, process_noise=1e-4, ffill=ff,
-                     degradation_method=degradation_method)
-
-                # Save results
-                results.append(result)
-                adf = result[-1]
-                # If we can reject the null-hypothesis that there is a unit
-                # root in the residuals:
-                if adf[1] < .05:
-                    # ... generate bootstrap samples based on the fit:
-                    bootstrap_samples_list.append(make_bootstrap_samples(
-                        df_in=result[0].copy(),
-                        sample_nr=int(bootstrap_nr / nr_models)))
-
-                # Print progress
-                if verbose:
-                    progressBarWithETA(c+1, nr_models, time.time()-t00,
-                                       bar_length=30)
-            except ValueError as ex:
-                print(ex)
-
-        # Revive results
-        adfs = np.array([(r[0] if r[1] < 0.05 else 0) for r in results])
-        RMSEs = np.array([r[4] for r in results])
-        SR_is_one_fraction = np.array(
-            [(r[0].soiling_ratio == 1).mean() for r in results])
-        sss = [r[5] for r in results]
-
-        # Calculate weights
-        weights = 1 / RMSEs / (.1 + SR_is_one_fraction)
-        weights /= np.sum(weights)
-
-        # Save knobs and weights for initial model fits
-        knobs_n_weights = pd.concat([pd.DataFrame(combination_of_knobs),
-                                     pd.Series(RMSEs),
-                                     pd.Series(SR_is_one_fraction),
-                                     pd.Series(weights),
-                                     pd.Series(sss)],
-                                    axis=1, ignore_index=True)
-
-        if verbose:  # Print summary
-            knobs_n_weights.columns = ['order', 'dt', 'pt', 'ff', 'RMSE',
-                                       'SR==1', 'weights', 'sss']
-            if verbose:
-                print('\n', knobs_n_weights)
-
-        # Check if data is decomposable
-        if np.sum(adfs == 0) > nr_models / 2:
-            self.errors = (
-                'Test for stationary residuals (Augmented Dickey-Fuller'
-                'test) not passed in half  of the instances:\nData not'
-                ' decomposable.')
-            print(self.errors)
-            return
-
-        # Save best model
-        self.initial_fits = [r[0] for r in results]
-        df_out = results[np.argmax(weights)][0]
-
-        # If more than half of the model fits indicate small soiling signal,
-        # don't do bootstrapping
-        if np.sum(sss) > nr_models / 2:
-            self.result_df = df_out
-            self.residual_shift = results[np.argmax(weights)][3]
-            YOY = RdToolsDeg.degradation_year_on_year(pi)
-            self.degradation = [YOY[0], YOY[1][0], YOY[1][1]]
-            self.soiling_loss = [0, 0, (1 - df_out.soiling_ratio).mean()]
-            self.errors = (
-                    'Soiling signal is small relative to the noise.'
-                    'Iterative decomposition not possible.\n'
-                    'Degradation found by RdTools YoY')
-            print(self.errors)
-            return
-
-        # Aggregate all bootstrap samples
-        all_bootstrap_samples = pd.concat(bootstrap_samples_list, axis=1,
-                                          ignore_index=True)
-
-        # Seasonal samples are generated from previously fitted seasonal
-        # components, by perturbing amplitude and phase shift
-        # Number of samples per fit:
-        sample_nr = int(bootstrap_nr / nr_models)
-        list_of_SCs = [results[m][0].seasonal_component
-                       for m in range(nr_models) if weights[m] > 0]
-        seasonal_samples = make_seasonal_samples(list_of_SCs,
-                                                 sample_nr=sample_nr,
-                                                 min_multiplier=.8,
-                                                 max_multiplier=1.75,
-                                                 max_shift=30)
-
-        # Entering bootstrapping
-        if verbose and bootstrap_nr > 0:
-            print('\nBootstrapping for uncertainty analysis',
-                  '({:} realizations):'.format(bootstrap_nr))
-        order = ['SR', 'SC' if degradation_method == 'STL' else 'Rd']
-        t0 = time.time()
-        bt_kdfs, bt_SL, bt_deg, knobs, adfs, RMSEs, SR_is_1, rss, errors = \
-            [], [], [], [], [], [], [], [], ['Bootstrapping errors']
-        for b in range(bootstrap_nr):
-            try:
-                # randomly choose model knobs
-                dt = np.random.uniform(knob_alternatives[1][0]*.75,
-                                       knob_alternatives[1][1]*.75)
-                pt = np.random.uniform(knob_alternatives[2][0]*1.5,
-                                       knob_alternatives[2][1]*1.5)
-                process_noise = np.random.uniform(7e-5, 1.5e-4)
-                renormalize_SR = np.random.choice([None,
-                                                   np.random.uniform(.5, .95)])
-                ffill = np.random.choice([True, False])
-                knobs.append([dt, pt, process_noise, renormalize_SR, ffill])
-
-                # Sample to infer soiling from
-                bootstrap_sample = \
-                    all_bootstrap_samples[b] / seasonal_samples[b]
-
-                # Set up a temprary instance of the cods_analysis object
-                temporary_cods_instance = cods_analysis(bootstrap_sample,
-                                                        self.insol)
-                # Do Signal decomposition for soiling and degradation component
-                kdf, deg, SL, rs, RMSE, sss, adf = \
-                    temporary_cods_instance.iterative_signal_decomposition(
-                        max_iterations=4, order=order, clip_soiling=True,
-                        detection_tuner=dt, pruning_iterations=1,
-                        pruning_tuner=pt, process_noise=process_noise,
-                        renormalize_SR=renormalize_SR, ffill=ffill,
-                        degradation_method=degradation_method)
-
-                # If we can reject the null-hypothesis that there is a unit
-                # root in the residuals:
-                if adf[1] < .05:  # Save the results
-                    bt_kdfs.append(kdf)
-                    adfs.append(adf[0])
-                    RMSEs.append(RMSE)
-                    bt_deg.append(deg)
-                    bt_SL.append(SL)
-                    rss.append(rs)
-                    SR_is_1.append((kdf.soiling_ratio == 1).mean())
-                else:
-                    seasonal_samples.drop(columns=[b], inplace=True)
-
-            except ValueError as ve:
-                seasonal_samples.drop(columns=[b], inplace=True)
-                errors.append(b, ve)
-
-            # Print progress
-            if verbose:
-                progressBarWithETA(b+1, bootstrap_nr, time.time()-t0,
-                                   bar_length=30)
-
-        # Reweight and save weights
-        weights = 1 / np.array(RMSEs) / (.1 + np.array(SR_is_1))
-        weights /= np.sum(weights)
-        self.knobs_n_weights = pd.concat(
-            [pd.DataFrame(knobs),
-             pd.Series(RMSEs),
-             pd.Series(adfs),
-             pd.Series(SR_is_1),
-             pd.Series(weights)],
-            axis=1, ignore_index=True)
-        self.knobs_n_weights.columns = ['dt', 'pt', 'pn', 'RSR', 'ffill',
-                                        'RMSE', 'ADF', 'SR==1', 'weights']
-
-        # Concatenate boostrap model fits
-        concat_SR = pd.concat([kdf.soiling_ratio for kdf in bt_kdfs], 1)
-        concat_r_s = pd.concat([kdf.soiling_rates for kdf in bt_kdfs], 1)
-        concat_ce = pd.concat([kdf.cleaning_events for kdf in bt_kdfs], 1)
-        concat_deg = pd.concat([kdf.degradation_trend for kdf in bt_kdfs], 1)
-
-        # Find confidence intervals for SR and soiling rates
-        df_out['SR_low'] = concat_SR.quantile(.025, 1)
-        df_out['SR_high'] = concat_SR.quantile(.975, 1)
-        df_out['rates_low'] = concat_r_s.quantile(.025, 1)
-        df_out['rates_high'] = concat_r_s.quantile(.975, 1)
-
-        # Save best estimate and bootstrapped estimates of SR and soiling rates
-        df_out.soiling_ratio = df_out.soiling_ratio.clip(lower=0, upper=1)
-        df_out.loc[df_out.soiling_ratio.diff() == 0, 'soiling_rates'] = 0
-        df_out['bt_soiling_ratio'] = (concat_SR * weights).sum(1)
-        df_out['bt_soiling_rates'] = (concat_r_s * weights).sum(1)
-
-        # Set probability of cleaning events
-        df_out.cleaning_events = (concat_ce * weights).sum(1)
-
-        # Find degradation rates
-        self.degradation = [np.dot(bt_deg, weights),
-                            np.quantile(bt_deg, .025),
-                            np.quantile(bt_deg, .975)]
-        df_out.degradation_trend = (concat_deg * weights).sum(1)
-        df_out['degradation_low'] = concat_deg.quantile(.25, 1)
-        df_out['degradation_high'] = concat_deg.quantile(.975, 1)
-
-        # Soiling losses
-        self.soiling_loss = [np.dot(bt_SL, weights),
-                             np.quantile(bt_SL, .025),
-                             np.quantile(bt_SL, .975)]
-
-        # Save "confidence intervals" for seasonal component
-        df_out.seasonal_component = (seasonal_samples * weights).sum(1)
-        df_out['seasonal_low'] = seasonal_samples.quantile(.025, 1)
-        df_out['seasonal_high'] = seasonal_samples.quantile(.975, 1)
-
-        # Total model with confidence intervals
-        df_out.total_model = (df_out.degradation_trend
-                              * df_out.seasonal_component
-                              * df_out.soiling_ratio)
-
-        concat_models = pd.DataFrame(index=df_out.index, data=(
-            concat_SR.values
-            * concat_deg.values
-            * df_out.seasonal_component.values[:, None]
-            * np.array(rss)[None, :]))
-        df_out['model_low'] = concat_models.quantile(.025, 1)
-        df_out['model_high'] = concat_models.quantile(.975, 1)
-
-        # Residuals and residual shift
-        df_out.residuals = pi.copy() / df_out.total_model
-        self.residual_shift = df_out.residuals.mean()
-        self.RMSE = _RMSE(pi, df_out.total_model * self.residual_shift)
-        self.adf_results = adfuller(df_out.residuals.dropna(),
-                                    regression='ctt')
-        self.result_df = df_out
-        self.errors = errors
-
-        if verbose:
-            print('\nFinal RMSE: {:.5f}'.format(self.RMSE))
-            if len(self.errors) > 1:
-                print(self.errors)
-
 
 def collapse_cleaning_events(inferred_ce_in, metric, f=4):
     ''' A function for replacing quick successive cleaning events with one
@@ -1685,15 +1686,15 @@ def rolling_median_ce_detection(x, y, ffill=True, rolling_window=9, tuner=1.5):
     return cleaning_events, rm
 
 
-def make_bootstrap_samples(df_in, sample_nr=10):
+def make_bootstrap_samples(pi, model, sample_nr=10):
     ''' Generate bootstrap samples based on a CODS model fit '''
-    bs = CircularBlockBootstrap(180, df_in.residuals)
-    bootstrap_samples = pd.DataFrame(index=df_in.index,
+    residuals = pi / model
+    bs = CircularBlockBootstrap(180, residuals)
+    bootstrap_samples = pd.DataFrame(index=model.index,
                                      columns=range(sample_nr))
-    signal = df_in.total_model
     for b, bootstrapped_residuals in enumerate(bs.bootstrap(sample_nr)):
         bootstrap_samples.loc[:, b] = \
-            signal * bootstrapped_residuals[0][0].values
+            model * bootstrapped_residuals[0][0].values
     return bootstrap_samples
 
 
