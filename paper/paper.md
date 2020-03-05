@@ -4,6 +4,9 @@ tags:
   - Python
   - solar energy
   - photovoltaics
+  - degradation
+  - soiling
+  - system performance
   - renewable energy
 authors:
   - name: 
@@ -61,6 +64,17 @@ is available at its online documentation hosted by readthedocs.
 
 # Acknowledgements
 
-To-Do
+The authors acknowledge support from the U.S. Department of Energy’s Solar
+Energy Technologies Office. This work was authored, in part, by Alliance for
+SustainableEnergy, LLC, the manager and operator of the National Renewable 
+Energy Laboratory for the U.S. Department of Energy (DOE) under Contract
+No. DE-AC36-08GO28308. Funding provided by U.S. Department of Energy Office
+of Energy Efficiency and Renewable Energy Solar Energy Technologies Office.
+The views expressed in the article do not necessarily represent the views of
+the DOE or the U.S. Government. The U.S. Government retains and the publisher,
+by accepting the article for publication, acknowledges that the U.S. Government
+retains a nonexclusive, paid-up, irrevocable, worldwide license to publish or
+reproduce the published form of this work, or allow others to do so, for U.S.
+Government purposes. 
 
 # References
