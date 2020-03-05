@@ -45,12 +45,12 @@ PV module soiling analysis [@Deceglie2018].  Future releases will include
 functionality for assessing other sources of PV system underperformance.
 
 RdTools has been used in several PV degradation studies.  Meyers et al. used
-RdTools to benchmark a novel degradation rate assessment method [Meyers2020]
+RdTools to benchmark a novel degradation rate assessment method [@Meyers2020]
 and Deceglie et al. applied RdTools to timeseries data from over 500 PV systems
-to analyze how PV system configuration affects degradation rate [Deceglie2019].
+to analyze how PV system configuration affects degradation rate [@Deceglie2019].
 RdTools is in active use as the core analysis package for the National
 Renewable Energy Laboratory's PV Fleet Performance Data Initiative
-[PVFleets2019].
+[@PVFleets2019].
 
 RdTools is intended for use by academic researchers, industry engineers, and
 PV system owners and operators.  It is part of a broader ecosystem of 
