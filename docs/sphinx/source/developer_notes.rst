@@ -101,7 +101,7 @@ And even a single test function:
     python -m pytest rdtools/test/soiling_test.py::test_soiling_srr
 
 You can also evaluate code coverage when running the test suite using the 
-`coverage <https://coverage.readthedocs.io>_` package:
+`coverage <https://coverage.readthedocs.io>`_ package:
 
 ::
 
