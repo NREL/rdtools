@@ -85,20 +85,20 @@ To run the entire test suite, navigate to the git repo folder and run
 
 ::
 
-    python -m pytest rdtools
+    pytest
 
 For convenience, pytest lets you run tests for a single module if you don't
 want to wait around for the entire suite to finish:
 
 ::
 
-    python -m pytest rdtools/test/soiling_test.py
+    pytest rdtools/test/soiling_test.py
 
 And even a single test function:
 
 ::
 
-    python -m pytest rdtools/test/soiling_test.py::test_soiling_srr
+    pytest rdtools/test/soiling_test.py::test_soiling_srr
 
 You can also evaluate code coverage when running the test suite using the 
 `coverage <https://coverage.readthedocs.io>`_ package:
