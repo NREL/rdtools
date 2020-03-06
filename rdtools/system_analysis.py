@@ -251,7 +251,6 @@ class SystemAnalysis():
             pv_nameplate = 1.0
         else:
             renorm = False
-            pv_nameplate = self.pv_nameplate
 
         if self.temperature_coefficient is None:
             raise ValueError('Temperature coeffcient must be available to perform pvwatts_norm')
