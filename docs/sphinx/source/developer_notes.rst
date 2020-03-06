@@ -35,14 +35,29 @@ You can install the dependencies along with RdTools itself from
 This will install the latest official release of RdTools.  If you want to work
 with a development version and you have cloned the Github repository to your
 computer, you can also install RdTools and dependencies by navigating to the
-repository root and running:
+repository root, switching to the branch you're interested in, for instance:
+
+::
+
+    git checkout development
+
+and running:
 
 ::
 
     pip install .
 
-This will install the development version of RdTools along with the current
-set of requirements. 
+This will install based on whatever RdTools branch you have checked out.  You
+can check what version is currently installed by inspecting
+``rdtools.__version__``:
+
+::
+
+    >>> rdtools.__version__
+    '1.2.0+188.g5a96bb2'
+
+The hex string at the end represents the hash of the git commit for your
+installed version.
 
 .. _installing-optional-dependencies:
 
