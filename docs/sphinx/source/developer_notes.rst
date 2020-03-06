@@ -100,6 +100,21 @@ And even a single test function:
 
     python -m pytest rdtools/test/soiling_test.py::test_soiling_srr
 
+You can also evaluate code coverage when running the test suite using the 
+`coverage <https://coverage.readthedocs.io>_` package:
+
+::
+
+    coverage run -m pytest
+    coverage report
+
+The first line runs the test suite and keeps track of exactly what lines of
+code were run during test execution.  The second line then prints out a
+summary report showing how much much of each source file was
+executed in the test suite.  If a percentage is below 100, that means a
+function isn't tested or a branch inside a function isn't tested.  To get
+specific details, you can run ``coverage html`` to generate a detailed HTML
+report at ``htmlcov/index.html`` to view in a browser.  
 
 Building documentation locally
 ------------------------------

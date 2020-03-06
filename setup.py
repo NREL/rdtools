@@ -55,6 +55,7 @@ EXTRAS_REQUIRE = {
     ],
     'test': [
         'pytest',
+        'coverage',
     ]
 }
 EXTRAS_REQUIRE['all'] = sorted(set(sum(EXTRAS_REQUIRE.values(), [])))
