@@ -1,5 +1,5 @@
 ---
-title: 'RdTools: a python package for reproducible timeseries analysis of photovoltaic systems'
+title: 'DRAFT: RdTools: a python package for reproducible timeseries analysis of photovoltaic systems'
 tags:
   - Python
   - solar energy
@@ -9,18 +9,24 @@ tags:
   - system performance
   - renewable energy
 authors:
-  - name: 
-    orcid: 0000-0000-0000-0000
+  - name: Kevin Anderson
+    orcid: 0000-0002-1166-7957
     affiliation: 1
-  - name: 
-    orcid: 0000-0000-0000-0000
-    affiliation: 2
+  - name: Michael Deceglie
+    orcid: 0000-0001-7063-9676
+    affiliation: 1
+  - name: Chris Deline
+    orcid: 0000-0002-9867-8930
+    affiliation: 1
+  - name: Adam Shinn
+    orcid: 0000-0002-5473-3299
+    affiliation: 1
 affiliations:
- - name: 
+ - name: National Renewable Energy Laboratory, Golden, CO
    index: 1
- - name: 
+ - name: kWh Analytics
    index: 2
-date: 13 August 2017 
+date: 5 March 2020
 bibliography: paper.bib
 ---
 
