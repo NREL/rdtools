@@ -20,7 +20,7 @@ authors:
     affiliation: 1
   - name: Adam Shinn
     orcid: 0000-0002-5473-3299
-    affiliation: 1
+    affiliation: 2
 affiliations:
  - name: National Renewable Energy Laboratory, Golden, CO
    index: 1
