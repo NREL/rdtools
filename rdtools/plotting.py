@@ -130,7 +130,7 @@ def soiling_monte_carlo_plot(soiling_info, normalized_yield, point_alpha=0.5,
     ymax : float, optional
         maximum y coordinate
     profiles : int, optional
-        the number of stochasitc profiles to plot.  If not specified, plot
+        the number of stochastic profiles to plot.  If not specified, plot
         all profiles.
     point_color : str, optional
         color of the normalized_yield points

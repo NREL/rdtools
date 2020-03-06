@@ -57,8 +57,26 @@ def degradation_info(degradation_power_signal):
 
 def test_degradation_summary_plots(degradation_info):
     power, yoy_rd, yoy_ci, yoy_info = degradation_info
+    
+    # test defaults
     result = degradation_summary_plots(yoy_rd, yoy_ci, yoy_info, power)
     assert isinstance(result, plt.Figure)
+
+    # test kwargs
+    kwargs = dict(
+        hist_xmin=-1,
+        hist_xmax=1,
+        bins=100,
+        scatter_ymin=0,
+        scatter_ymax=1,
+        plot_color='g',
+        summary_title='test',
+        scatter_alpha=1.0,
+    )
+    result = degradation_summary_plots(yoy_rd, yoy_ci, yoy_info, power,
+                                       **kwargs)
+    assert isinstance(result, plt.Figure)
+
 
 
 @pytest.fixture()
@@ -85,17 +103,59 @@ def soiling_info(soiling_normalized_daily, soiling_insolation):
 
 def test_soiling_monte_carlo_plot(soiling_normalized_daily, soiling_info):
     sr, sr_ci, calc_info = soiling_info
+    
+    # test defaults
     result = soiling_monte_carlo_plot(calc_info, soiling_normalized_daily)
     assert isinstance(result, plt.Figure)
+
+    # test kwargs
+    kwargs = dict(
+        point_alpha=0.1,
+        profile_alpha=0.4,
+        ymin=0,
+        ymax=1,
+        profiles=5,
+        point_color='k',
+        profile_color='b',
+    )
+    result = soiling_monte_carlo_plot(calc_info, soiling_normalized_daily,
+                                      **kwargs)
+    assert isinstance(result, plt.Figure)
+
 
 
 def test_soiling_interval_plot(soiling_normalized_daily, soiling_info):
     sr, sr_ci, calc_info = soiling_info
+    
+    # test defaults
     result = soiling_interval_plot(calc_info, soiling_normalized_daily)
     assert isinstance(result, plt.Figure)
+
+    # test kwargs
+    kwargs = dict(
+        point_alpha=0.1,
+        profile_alpha=0.5,
+        ymin=0,
+        ymax=1,
+        point_color='k',
+        profile_color='g',
+    )
+    result = soiling_interval_plot(calc_info, soiling_normalized_daily,
+                                   **kwargs)
+    assert isinstance(result, plt.Figure)
+
 
 
 def test_soiling_rate_histogram(soiling_info):
     sr, sr_ci, calc_info = soiling_info
+
+    # test defaults
     result = soiling_rate_histogram(calc_info)
+    assert isinstance(result, plt.Figure)
+
+    # test kwargs
+    kwargs = dict(
+        bins=10,
+    )
+    result = soiling_rate_histogram(calc_info, **kwargs)
     assert isinstance(result, plt.Figure)
