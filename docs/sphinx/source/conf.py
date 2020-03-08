@@ -159,7 +159,7 @@ def make_github_url(pagename):
 
     # is it the example notebook?
     elif pagename == "example":
-        target_url = URL_BASE + "/docs/degradation_and_soiling_example.ipynb"
+        target_url = URL_BASE + "docs/degradation_and_soiling_example.ipynb"
 
     # Just a normal source RST page
     else:
