@@ -1,5 +1,5 @@
 ---
-title: 'DRAFT: RdTools: a python package for reproducible timeseries analysis of photovoltaic systems'
+title: 'DRAFT: RdTools: a Python package for reproducible timeseries analysis of photovoltaic systems'
 tags:
   - Python
   - solar energy
@@ -32,19 +32,19 @@ bibliography: paper.bib
 
 # Introduction
 
-Assessing the financial viability of commercial photovoltaic (PV) projects is
-based on technical system performance modeling.  The expected energy
+Financial analysts assess the financial viability of commercial photovoltaic
+(PV) projects with technical system performance models.  The expected energy
 production for a given PV system configuration and location is modeled using
 a weather dataset for the location and various assumptions about performance
 losses over time.  Among these loss sources are longterm PV system degradation
-(gradual production loss as the PV array ages) and array soiling (temporary
-production loss due to particulate accumulation on the array).  Because these
-effects are strongly influenced by local climate, operational data from
-existing PV systems can offer great insight into performance losses.
+(gradual efficiency loss as the system ages) and array soiling
+(sunlight blocking by particulate accumulation on the array).  Because these
+losses depend on system design and by local climate, it
+is useful to characterize them using operational measurements from
+existing PV systems to improve modeling of future systems.
 
-Although analysis of PV system datasets helps inform modeling of future
-projects, differences in analysis techniques and analyst preferences can lead
-to inconsistent conclusions [@Jordan2020]. RdTools is an open-source library
+However, differences in analysis techniques and analyst preferences can lead
+to inconsistent conclusions [@Jordan2020].  RdTools is an open-source library
 to support reproducible technical analysis of PV time series data. The library
 aims to provide best practice analysis routines along with the building blocks
 for users to tailor their own analyses. In particular, PV production data 
@@ -61,7 +61,7 @@ A typical RdTools analysis follows this process:
 4) Aggregate data to reduce noise and scatter
 5) Analyze aggregated production to extract degradation and soiling rates
 
-The RdTools API offers a high-level `SystemAnalysis` class to simplify and
+RdTools offers a high-level `SystemAnalysis` class to simplify and
 standardize the process of running an end-to-end data analysis. The high-level
 interface does allow some customization of the analysis but defaults to best
 practice methods to encourage standardized and reproducible analysis. However,
@@ -73,8 +73,8 @@ PV array soiling analysis [@Deceglie2018].  Future releases will include
 functionality for assessing other sources of PV system underperformance.
 
 RdTools is developed on GitHub by contributors from national laboratories and
-industry.  It relies on the pvlib [@pvlib] Python package as well as the
-broader scientific python ecosystem (e.g. pandas [@pandas], numpy [@numpy],
+industry.  It relies on the pvlib Python package [@pvlib] and the
+broader scientific Python ecosystem (e.g. pandas [@pandas], numpy [@numpy],
 and matplotlib [@matplotlib]).
 
 API documentation, usage examples, and other package documentation
@@ -91,8 +91,8 @@ Renewable Energy Laboratory's PV Fleet Performance Data Initiative
 [@PVFleets2019].
 
 RdTools is intended for use by academic researchers, industry engineers, and
-PV system owners and operators.  It is part of a broader ecosystem of 
-open-source python packages for PV modeling and analysis [@Holmgren2018].
+PV system owners and operators.  It is part of a growing ecosystem of 
+open-source Python packages for PV modeling and analysis [@Holmgren2018].
 
 # Acknowledgements
 
