@@ -62,6 +62,10 @@ def test_degradation_summary_plots(degradation_info):
     result = degradation_summary_plots(yoy_rd, yoy_ci, yoy_info, power)
     assert isinstance(result, plt.Figure)
 
+
+def test_degradation_summary_plots_kwargs(degradation_info):
+    power, yoy_rd, yoy_ci, yoy_info = degradation_info
+
     # test kwargs
     kwargs = dict(
         hist_xmin=-1,
@@ -76,7 +80,6 @@ def test_degradation_summary_plots(degradation_info):
     result = degradation_summary_plots(yoy_rd, yoy_ci, yoy_info, power,
                                        **kwargs)
     assert isinstance(result, plt.Figure)
-
 
 
 @pytest.fixture()
