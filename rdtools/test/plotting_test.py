@@ -19,6 +19,11 @@ from soiling_test import (
     insolation as soiling_insolation,
 )
 
+
+def assert_isinstance(obj, klass):
+    assert isinstance(obj, klass), f'got {type(obj)}, expected {klass}'
+
+
 # can't import degradation fixtures because it's a unittest file. 
 # roll our own here instead:
 @pytest.fixture()
@@ -60,7 +65,7 @@ def test_degradation_summary_plots(degradation_info):
     
     # test defaults
     result = degradation_summary_plots(yoy_rd, yoy_ci, yoy_info, power)
-    assert isinstance(result, plt.Figure)
+    assert_isinstance(result, plt.Figure)
 
 
 def test_degradation_summary_plots_kwargs(degradation_info):
@@ -79,7 +84,7 @@ def test_degradation_summary_plots_kwargs(degradation_info):
     )
     result = degradation_summary_plots(yoy_rd, yoy_ci, yoy_info, power,
                                        **kwargs)
-    assert isinstance(result, plt.Figure)
+    assert_isinstance(result, plt.Figure)
 
 
 @pytest.fixture()
@@ -105,7 +110,7 @@ def soiling_info(soiling_normalized_daily, soiling_insolation):
 def test_soiling_monte_carlo_plot(soiling_normalized_daily, soiling_info):
     # test defaults
     result = soiling_monte_carlo_plot(soiling_info, soiling_normalized_daily)
-    assert isinstance(result, plt.Figure)
+    assert_isinstance(result, plt.Figure)
 
 
 def test_soiling_monte_carlo_plot_kwargs(soiling_normalized_daily, soiling_info):
@@ -121,13 +126,13 @@ def test_soiling_monte_carlo_plot_kwargs(soiling_normalized_daily, soiling_info)
     )
     result = soiling_monte_carlo_plot(soiling_info, soiling_normalized_daily,
                                       **kwargs)
-    assert isinstance(result, plt.Figure)
+    assert_isinstance(result, plt.Figure)
 
 
 def test_soiling_interval_plot(soiling_normalized_daily, soiling_info):
     # test defaults
     result = soiling_interval_plot(soiling_info, soiling_normalized_daily)
-    assert isinstance(result, plt.Figure)
+    assert_isinstance(result, plt.Figure)
 
 
 def test_soiling_interval_plot_kwargs(soiling_normalized_daily, soiling_info):
@@ -142,14 +147,13 @@ def test_soiling_interval_plot_kwargs(soiling_normalized_daily, soiling_info):
     )
     result = soiling_interval_plot(soiling_info, soiling_normalized_daily,
                                    **kwargs)
-    assert isinstance(result, plt.Figure)
-
+    assert_isinstance(result, plt.Figure)
 
 
 def test_soiling_rate_histogram(soiling_info):
     # test defaults
     result = soiling_rate_histogram(soiling_info)
-    assert isinstance(result, plt.Figure)
+    assert_isinstance(result, plt.Figure)
 
 
 def test_soiling_rate_histogram_kwargs(soiling_info):
@@ -158,4 +162,4 @@ def test_soiling_rate_histogram_kwargs(soiling_info):
         bins=10,
     )
     result = soiling_rate_histogram(soiling_info, **kwargs)
-    assert isinstance(result, plt.Figure)
+    assert_isinstance(result, plt.Figure)
