@@ -86,8 +86,6 @@ def soiling_info(soiling_normalized_daily, soiling_insolation):
 
     Returns
     -------
-    sr : float
-    sr_ci : np.array of length 2
     calc_info : dict with keys:
         ['renormalizing_factor', 'exceedance_level',
         'stochastic_soiling_profiles', 'soiling_interval_summary',
@@ -98,16 +96,16 @@ def soiling_info(soiling_normalized_daily, soiling_insolation):
                                        soiling_insolation,
                                        reps=reps,
                                        random_seed=1977)
-    return sr, sr_ci, calc_info
+    return calc_info
 
 
 def test_soiling_monte_carlo_plot(soiling_normalized_daily, soiling_info):
-    sr, sr_ci, calc_info = soiling_info
-    
     # test defaults
-    result = soiling_monte_carlo_plot(calc_info, soiling_normalized_daily)
+    result = soiling_monte_carlo_plot(soiling_info, soiling_normalized_daily)
     assert isinstance(result, plt.Figure)
 
+
+def test_soiling_monte_carlo_plot_kwargs(soiling_normalized_daily, soiling_info):
     # test kwargs
     kwargs = dict(
         point_alpha=0.1,
@@ -118,19 +116,18 @@ def test_soiling_monte_carlo_plot(soiling_normalized_daily, soiling_info):
         point_color='k',
         profile_color='b',
     )
-    result = soiling_monte_carlo_plot(calc_info, soiling_normalized_daily,
+    result = soiling_monte_carlo_plot(soiling_info, soiling_normalized_daily,
                                       **kwargs)
     assert isinstance(result, plt.Figure)
 
 
-
 def test_soiling_interval_plot(soiling_normalized_daily, soiling_info):
-    sr, sr_ci, calc_info = soiling_info
-    
     # test defaults
-    result = soiling_interval_plot(calc_info, soiling_normalized_daily)
+    result = soiling_interval_plot(soiling_info, soiling_normalized_daily)
     assert isinstance(result, plt.Figure)
 
+
+def test_soiling_interval_plot_kwargs(soiling_normalized_daily, soiling_info):
     # test kwargs
     kwargs = dict(
         point_alpha=0.1,
@@ -140,22 +137,22 @@ def test_soiling_interval_plot(soiling_normalized_daily, soiling_info):
         point_color='k',
         profile_color='g',
     )
-    result = soiling_interval_plot(calc_info, soiling_normalized_daily,
+    result = soiling_interval_plot(soiling_info, soiling_normalized_daily,
                                    **kwargs)
     assert isinstance(result, plt.Figure)
 
 
 
 def test_soiling_rate_histogram(soiling_info):
-    sr, sr_ci, calc_info = soiling_info
-
     # test defaults
-    result = soiling_rate_histogram(calc_info)
+    result = soiling_rate_histogram(soiling_info)
     assert isinstance(result, plt.Figure)
 
+
+def test_soiling_rate_histogram_kwargs(soiling_info):
     # test kwargs
     kwargs = dict(
         bins=10,
     )
-    result = soiling_rate_histogram(calc_info, **kwargs)
+    result = soiling_rate_histogram(soiling_info, **kwargs)
     assert isinstance(result, plt.Figure)
