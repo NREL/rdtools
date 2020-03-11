@@ -1,6 +1,5 @@
 import pandas as pd
 import numpy as np
-from rdtools.normalization import normalize_with_pvwatts
 from rdtools.degradation import degradation_year_on_year
 from rdtools.soiling import soiling_srr
 from rdtools.plotting import (
