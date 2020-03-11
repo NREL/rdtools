@@ -45,7 +45,7 @@ class srr_analysis():
                              'daily frequency')
 
         if self.precip is not None:
-            if self.pm.index.freq != 'D':
+            if self.precip.index.freq != 'D':
                 raise ValueError('Precipitation series must have '
                                  'daily frequency')
 
