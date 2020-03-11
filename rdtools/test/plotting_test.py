@@ -24,7 +24,7 @@ def assert_isinstance(obj, klass):
     assert isinstance(obj, klass), f'got {type(obj)}, expected {klass}'
 
 
-# can't import degradation fixtures because it's a unittest file. 
+# can't import degradation fixtures because it's a unittest file.
 # roll our own here instead:
 @pytest.fixture()
 def degradation_power_signal():
@@ -62,7 +62,7 @@ def degradation_info(degradation_power_signal):
 
 def test_degradation_summary_plots(degradation_info):
     power, yoy_rd, yoy_ci, yoy_info = degradation_info
-    
+
     # test defaults
     result = degradation_summary_plots(yoy_rd, yoy_ci, yoy_info, power)
     assert_isinstance(result, plt.Figure)
