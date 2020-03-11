@@ -11,6 +11,7 @@ Enhancements
   recovery method (:pull:`112`).
 * Add new functions :py:func:`~rdtools.normalization.energy_from_power` and
   :py:func:`~rdtools.normalization.interpolate`.
+* Add new :py:mod:`~rdtools.plotting` module for generating standard plots.
 
 Bug fixes
 ---------
