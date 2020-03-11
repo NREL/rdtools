@@ -8,7 +8,7 @@ import pytest
 @pytest.fixture
 def simple_irradiance():
     times = pd.date_range('2019-06-01 12:00', freq='15T', periods=5)
-    time_series = pd.Series([1,2,3,4,5], index=times)
+    time_series = pd.Series([1, 2, 3, 4, 5], index=times)
     return time_series
 
 
@@ -20,7 +20,7 @@ def test_rescale(method, simple_irradiance):
     rescaled = irradiance_rescale(measured, modeled, method=method)
     expected = measured
     assert_series_equal(rescaled, expected, check_exact=False)
-    
+
 
 def test_warn(simple_irradiance):
     with pytest.warns(UserWarning,
@@ -37,7 +37,7 @@ def test_max_iterations(simple_irradiance):
 
 def test_non_convergence(simple_irradiance):
     # use iterative method without enough iterations to converge
-    measured = simple_irradiance * 100 # method expects irrad > 200
+    measured = simple_irradiance * 100  # method expects irrad > 200
     modeled = measured.copy()
     modeled.iloc[2] *= 1.1
     modeled.iloc[3] *= 1.3
