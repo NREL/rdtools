@@ -30,7 +30,7 @@ def test_warn(simple_irradiance):
 
 def test_max_iterations(simple_irradiance):
     # check that max_iterations is actually used.  passing zero should fail
-    with pytest.raises(NameError):
+    with pytest.raises(UnboundLocalError):
         _ = irradiance_rescale(simple_irradiance, simple_irradiance,
                                max_iterations=0, method='iterative')
 
