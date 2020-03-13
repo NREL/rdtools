@@ -37,13 +37,17 @@ Financial analysts assess the financial viability of commercial photovoltaic
 production for a given PV system configuration and location is modeled using
 a weather dataset for the location and various assumptions about performance
 losses over time.  Among these loss sources are longterm PV system degradation
-(gradual efficiency loss as the system ages) and array soiling
+(gradual PV efficiency loss as the system ages) and array soiling
 (sunlight blocking by particulate accumulation on the array).  Because these
-losses depend on system design and by local climate, it
+losses vary in magnitude across system designs and local climates, it
 is useful to characterize them using operational measurements from
 existing PV systems to improve modeling of future systems.
 
-However, differences in analysis techniques and analyst preferences can lead
+However, extracting these loss signals from operational time series data can
+be difficult due to the complications seen in real-world datasets -- data loss,
+seasonality, sensor calibration drift, and other confounding factors can bias
+extracted loss rates if not handled appropriately. Additionally,
+differences in analysis techniques and analyst preferences can lead
 to inconsistent conclusions [@Jordan2020].  RdTools is an open-source library
 to support reproducible technical analysis of PV time series data. The library
 aims to provide best practice analysis routines along with the building blocks
@@ -88,7 +92,8 @@ and Deceglie et al. applied RdTools to timeseries data from over 500 PV systems
 to analyze how PV system configuration affects degradation rate [@Deceglie2019].
 RdTools is in active use as the core analysis package for the National
 Renewable Energy Laboratory's PV Fleet Performance Data Initiative
-[@PVFleets2019].
+[@PVFleets2019].  It is also used for internal analyses by several PV industry
+groups. 
 
 RdTools is intended for use by academic researchers, industry engineers, and
 PV system owners and operators.  It is part of a growing ecosystem of 
