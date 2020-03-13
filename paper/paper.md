@@ -38,22 +38,26 @@ production for a given PV system configuration and location is modeled using
 a weather dataset for the location and various assumptions about performance
 losses over time.  Among these loss sources are longterm PV system degradation
 (gradual PV efficiency loss as the system ages) and array soiling
-(sunlight blocking by particulate accumulation on the array).  Because these
-losses vary in magnitude across system designs and local climates, it
-is useful to characterize them using operational measurements from
-existing PV systems to improve modeling of future systems.
+(sunlight blocking by particulate accumulation on the array).  Long-term field
+datasets carry value for both degradation and soiling analysis.  Modern
+PV modules often experience slow degradation rates below one percent per year
+[@Jordan2016] and the multi-year datasets from operational PV systems enable
+analysis of how degradation is influenced by climactic conditions and PV cell
+technology.  Soiling rates depend strongly on local conditions, so extracting
+soiling signals from historical field data gives insight to regional trends.  
 
 However, extracting these loss signals from operational time series data can
-be difficult due to the complications seen in real-world datasets -- data loss,
-seasonality, sensor calibration drift, and other confounding factors can bias
-extracted loss rates if not handled appropriately. Additionally,
+be difficult due to the complications seen in real-world datasets -- if not
+appropriately accounted for, data loss, seasonality, sensor calibration drift,
+and other confounding factors can bias extracted loss rates. Additionally,
 differences in analysis techniques and analyst preferences can lead
 to inconsistent conclusions [@Jordan2020].  RdTools is an open-source library
 to support reproducible technical analysis of PV time series data. The library
 aims to provide best practice analysis routines along with the building blocks
 for users to tailor their own analyses. In particular, PV production data 
 across several years is evaluated to obtain rates of performance degradation
-and soiling loss.  
+and soiling loss.  The algorithms employed by RdTools have been separately
+validated and shown to be accurate and robust when applied to field data.
 
 # RdTools
 
