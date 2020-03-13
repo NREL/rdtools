@@ -16,7 +16,10 @@ both high frequency (hourly or better) or low frequency (daily, weekly,
 etc.) datasets. Best results are obtained with higher frequency data.
 
 Full examples are worked out in the example notebooks in the
-`documentation`_.
+`example notebook`_.
+
+To report issues, contribute code, or suggest improvements to this
+documentation, visit the RdTools development repository on `github`_.
 
 Workflow
 --------
@@ -31,8 +34,8 @@ the following:
 4. Analyze aggregated data to estimate the degradation rate and/or
    soiling loss
 
-Steps 1 and 2 may be accomplished with the clearsky workflow (`see
-example`_) which can help eliminate problems from irradiance sensor
+Steps 1 and 2 may be accomplished with the clearsky workflow (see the
+`example notebook`_) which can help eliminate problems from irradiance sensor
 drift.
 
 .. image:: _images/RdTools_workflows.png
@@ -104,12 +107,14 @@ installing requirements. If this occurs, the requirements specified in
 ``setup.py`` may need to be separately installed (for example by using
 ``conda``) before installing ``rdtools``.
 
+For more detailed instructions, see the :ref:`developer_notes` page.
+
 RdTools currently is tested on Python 3.6+.
 
 Usage and examples
 ------------------
 
-Full workflow examples are found in the notebooks in `documentation`_.
+Full workflow examples are found in the notebooks in `example notebook`_.
 The examples are designed to work with python 3.6. For a consistent
 experience, we recommend installing the packages and versions documented
 in ``docs/notebook_requirements.txt``. This can be achieved in your
@@ -249,7 +254,6 @@ Indices and tables
 
 .. links and references
 
-.. _documentation: https://rdtools.readthedocs.io/en/latest/example.html
-.. _see example: https://rdtools.readthedocs.io/en/latest/example.html
 .. _example notebook: https://rdtools.readthedocs.io/en/latest/example.html
 .. _release: https://github.com/NREL/rdtools/releases
+.. _github: https://github.com/NREL/rdtools
