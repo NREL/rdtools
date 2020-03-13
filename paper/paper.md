@@ -82,7 +82,9 @@ RdTools also provides access to the low-level analysis functions used by
 Although some of its functions are widely applicable to PV data analysis,
 RdTools currently focuses on PV system degradation analysis [@Jordan2018] and
 PV array soiling analysis [@Deceglie2018].  Future releases will include
-functionality for assessing other sources of PV system underperformance.
+functionality for assessing other sources of PV system underperformance as well
+as improvements to the degradation and soiling workflows to keep pace with
+state-of-the-art practices. 
 
 RdTools is available under an MIT license and is developed on GitHub by
 contributors from national laboratories and
