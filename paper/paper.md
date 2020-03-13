@@ -38,8 +38,12 @@ production for a given PV system configuration and location is modeled using
 a weather dataset for the location and various assumptions about performance
 losses over time.  Among these loss sources are longterm PV system degradation
 (gradual PV efficiency loss as the system ages) and array soiling
-(sunlight blocking by particulate accumulation on the array).  Long-term field
-datasets carry value for both degradation and soiling analysis.  Modern
+(sunlight blocking by particulate accumulation on the array).  Reducing the
+uncertainty in the degradation and soiling rates included in PV system modeling
+carries significant financial value, but these losses depend on system design
+and location and it is therefore difficult to characterize these losses
+accurately across all systems.  Long-term field datasets offer one route to
+more general characterization of both degradation and soiling.  Modern
 PV modules often experience slow degradation rates below one percent per year
 [@Jordan2016] and the multi-year datasets from operational PV systems enable
 analysis of how degradation is influenced by climactic conditions and PV cell
