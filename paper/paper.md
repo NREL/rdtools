@@ -84,10 +84,11 @@ RdTools currently focuses on PV system degradation analysis [@Jordan2018] and
 PV array soiling analysis [@Deceglie2018].  Future releases will include
 functionality for assessing other sources of PV system underperformance.
 
-RdTools is developed on GitHub by contributors from national laboratories and
-industry.  It relies on the pvlib Python package [@pvlib] and the
-broader scientific Python ecosystem (e.g. pandas [@pandas], numpy [@numpy],
-and matplotlib [@matplotlib]).
+RdTools is available under an MIT license and is developed on GitHub by
+contributors from national laboratories and
+industry.  It relies on the pvlib Python package [@pvlib] and packages from the
+broader scientific Python ecosystem: pandas [@pandas], numpy [@numpy],
+and matplotlib [@matplotlib].
 
 API documentation, usage examples, and other package documentation
 is available at its online documentation hosted by readthedocs. 
