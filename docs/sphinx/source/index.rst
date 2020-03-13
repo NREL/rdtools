@@ -152,7 +152,7 @@ The most frequently used functions are:
 
 .. code:: python
 
-   degradation.degradataion_year_on_year(aggregated)
+   degradation.degradation_year_on_year(aggregated)
      '''
      Inputs: Aggregated, normalized, filtered time series data
      Outputs: Tuple: `yoy_rd`: Degradation rate 
