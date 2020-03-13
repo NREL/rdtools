@@ -1,4 +1,4 @@
-import pandas as pd
+'''Functions for filtering and subsetting PV system data.'''
 
 
 def poa_filter(poa, low_irradiance_cutoff=200, high_irradiance_cutoff=1200):
