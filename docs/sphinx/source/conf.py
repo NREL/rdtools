@@ -140,10 +140,17 @@ def make_github_url(pagename):
     provides templates with a built-in `pagename` variable that is the path
     at the end of the URL, without the extension.  For instance,
     https://rdtools.rtfd.io/en/latest/generated/rdtools.soiling.soiling_srr.html
-    will have pagename = "generated/rdtools.soiling.soiling_srr.html".
+    will have pagename = "generated/rdtools.soiling.soiling_srr".
     """
 
-    URL_BASE = "https://github.com/nrel/rdtools/blob/master/"
+    # RTD automatically sets READTHEDOCS_VERSION to the version being built.
+    if os.environ.get('READTHEDOCS_VERSION', None) == 'stable':
+        branch = 'master'
+    else:
+        # if 'latest', a PR build, or unset (e.g. building locally)
+        branch = 'development'
+
+    URL_BASE = "https://github.com/nrel/rdtools/blob/{}/".format(branch)
 
     # is it an API autogen page?
     if "generated" in pagename:
