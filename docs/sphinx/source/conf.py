@@ -153,7 +153,7 @@ def make_github_url(pagename):
     URL_BASE = "https://github.com/nrel/rdtools/blob/{}/".format(branch)
 
     # is it an API autogen page?
-    if "generated" in pagename:
+    if pagename.startswith("generated/"):
         # pagename looks like "generated/rdtools.degradation.degradation_ols"
         qualname = pagename.split("/")[-1]
         obj, module = get_obj_module(qualname)
