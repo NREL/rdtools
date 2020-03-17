@@ -48,7 +48,6 @@ INSTALL_REQUIRES = [
 EXTRAS_REQUIRE = {
     'doc': [
         'sphinx==1.8.5',
-        'm2r==0.2.1',
         'nbsphinx==0.4.3',
         'nbsphinx-link==1.3.0',
         'pandas==0.23.0',
