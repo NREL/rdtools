@@ -17,10 +17,14 @@ Note: make_github_url is defined in conf.py
 
 {% extends "!breadcrumbs.html" %}
 {% block breadcrumbs_aside %}
-    <li class="wy-breadcrumbs-aside">
-        {# Get the appropriate GH link based on this page's name: #}
-        {% set target_url = make_github_url(pagename) %}
-        {# Create the HTML element with our custom GH link: #}
-        <a href="{{ target_url }}" class="fa fa-github">View on Github</a>
-    </li>
+    {# Get the appropriate GH link based on this page's name: #}
+    {% set target_url = make_github_url(pagename) %}
+
+    {# Create the HTML element with our custom GH link, unless it couldn't
+       be determined. Note that None is lowercase in templates. #}
+    {% if target_url is not none %}
+        <li class="wy-breadcrumbs-aside">
+            <a href="{{ target_url }}" class="fa fa-github">View on Github</a>
+        </li>
+    {% endif %}
 {% endblock %}

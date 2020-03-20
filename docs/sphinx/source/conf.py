@@ -141,14 +141,21 @@ def make_github_url(pagename):
     at the end of the URL, without the extension.  For instance,
     https://rdtools.rtfd.io/en/latest/generated/rdtools.soiling.soiling_srr.html
     will have pagename = "generated/rdtools.soiling.soiling_srr".
+
+    Returns None if not building development or master.
     """
 
     # RTD automatically sets READTHEDOCS_VERSION to the version being built.
-    if os.environ.get('READTHEDOCS_VERSION', None) == 'stable':
-        branch = 'master'
-    else:
-        # if 'latest', a PR build, or unset (e.g. building locally)
-        branch = 'development'
+    rtd_version = os.environ.get('READTHEDOCS_VERSION', None)
+    version_map = {
+        'stable': 'master',
+        'latest': 'development',        
+    }
+    try:
+        branch = version_map[rtd_version]
+    except KeyError:
+        # for other builds (PRs, local builds etc), it's unclear where to link
+        return None
 
     URL_BASE = "https://github.com/nrel/rdtools/blob/{}/".format(branch)
 
