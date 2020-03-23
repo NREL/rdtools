@@ -1024,7 +1024,7 @@ class cods_analysis():
 
 
     def run_bootstrap(self, bootstrap_nr=512, verbose=False,
-                      degradation_method='YoY',
+                      degradation_method='YoY', process_noise=1e-4,
                       knob_alternatives=[[['SR', 'SC', 'Rd'],
                                           ['SC', 'SR', 'Rd']],
                                          [.4, .8],
@@ -1115,7 +1115,7 @@ class cods_analysis():
                 result = self.iterative_signal_decomposition(
                      max_iterations=18, order=order, clip_soiling=True,
                      detection_tuner=dt, pruning_iterations=1,
-                     pruning_tuner=pt, process_noise=1e-4, ffill=ff,
+                     pruning_tuner=pt, process_noise=process_noise, ffill=ff,
                      degradation_method=degradation_method)
 
                 # Save results
@@ -1221,11 +1221,11 @@ class cods_analysis():
                                        knob_alternatives[1][1]*.75)
                 pt = np.random.uniform(knob_alternatives[2][0]*1.5,
                                        knob_alternatives[2][1]*1.5)
-                process_noise = np.random.uniform(7e-5, 1.5e-4)
+                pn = np.random.uniform(process_noise / 1.5, process_noise * 1.5)
                 renormalize_SR = np.random.choice([None,
                                                    np.random.uniform(.5, .95)])
                 ffill = np.random.choice([True, False])
-                knobs.append([dt, pt, process_noise, renormalize_SR, ffill])
+                knobs.append([dt, pt, pn, renormalize_SR, ffill])
 
                 # Sample to infer soiling from
                 bootstrap_sample = \
@@ -1239,7 +1239,7 @@ class cods_analysis():
                     temporary_cods_instance.iterative_signal_decomposition(
                         max_iterations=4, order=order, clip_soiling=True,
                         detection_tuner=dt, pruning_iterations=1,
-                        pruning_tuner=pt, process_noise=process_noise,
+                        pruning_tuner=pt, process_noise=pn,
                         renormalize_SR=renormalize_SR, ffill=ffill,
                         degradation_method=degradation_method)
 
