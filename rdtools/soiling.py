@@ -832,7 +832,7 @@ class cods_analysis():
             raise ValueError('\'SR\' must be in argument \'order\' '
                              + '(e.g. order=[\'SR\', \'SC\', \'Rd\']')
         n_steps = len(order)
-        day = range(len(pi))
+        day = np.arange(len(pi))
         degradation_trend = [1]
         seasonal_component = [1]
         soiling_ratio = [1]
