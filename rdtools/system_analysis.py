@@ -171,7 +171,7 @@ class SystemAnalysis():
         if self.pvlib_location is None:
             raise ValueError('pvlib location must be provided')
         if self.pv_tilt is None or self.pv_azimuth is None:
-            raise ValueError('pv_tilt and pv_azimuth must be provded')
+            raise ValueError('pv_tilt and pv_azimuth must be provided')
         if times is not self.poa.index and rescale is True:
             raise ValueError('rescale=True can only be used when clearsky poa is on same index as poa')
 
