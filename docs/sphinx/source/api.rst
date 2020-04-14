@@ -20,6 +20,7 @@ analysis workflow.
    normalization
    aggregation
    clearsky_temperature
+   plotting
 
 
 Degradation
@@ -45,6 +46,7 @@ Functions for estimating soiling rates from PV system data.
 
    soiling.soiling_srr
    soiling.srr_analysis
+   soiling.srr_analysis.run
 
 
 Filtering
@@ -104,3 +106,17 @@ Functions for modeling ambient temperature.
    :toctree: generated/
 
    clearsky_temperature.get_clearsky_tamb
+
+
+Plotting
+========
+
+Functions to visualize degradation and soiling analysis results. 
+
+.. autosummary::
+   :toctree: generated/
+
+   plotting.degradation_summary_plots
+   plotting.soiling_monte_carlo_plot
+   plotting.soiling_interval_plot
+   plotting.soiling_rate_histogram

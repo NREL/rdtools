@@ -10,6 +10,7 @@
 # ignore coveralls yaml, coverge dir
 .coveralls.yml
 .coverage
+htmlcov/
 
 # ignore test cache
 .pytest_cache
