@@ -66,6 +66,11 @@ clear-sky conditions to be analyzed. In many cases, the 'clear-sky'
 analysis can identify conditions of instrument errors or irradiance
 sensor drift, such as in the above analysis.
 
+The clear-sky analysis tends to provide less stable results than sensor-based
+analysis when details such as filtering are changed. We generally recommend
+that the clear-sky analysis be used as a check on the sensor based results,
+rather than as a stand-alone analysis.
+
 Soiling Results
 ---------------
 

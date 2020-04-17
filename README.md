@@ -15,7 +15,14 @@ to obtain rates of performance degradation and soiling loss. RdTools can
 handle both high frequency (hourly or better) or low frequency (daily, weekly, etc.)
 datasets. Best results are obtained with higher frequency data.
 
-Full examples are worked out in the example notebooks in the [documentation](https://rdtools.readthedocs.io/en/latest/example.html).
+RdTools can be installed automatically into Python from PyPI using the
+command line:
+
+```
+pip install rdtools
+```
+
+For API documentation and full examples, please see the [documentation](https://rdtools.readthedocs.io).
 
 RdTools currently is tested on Python 3.6+.
 
