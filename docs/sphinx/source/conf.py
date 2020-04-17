@@ -39,7 +39,6 @@ extensions = [
     'sphinx.ext.extlinks',
     'sphinx_rtd_theme',
     'sphinx.ext.autosummary',
-    'm2r',
     'nbsphinx',
     'nbsphinx_link',
 ]
