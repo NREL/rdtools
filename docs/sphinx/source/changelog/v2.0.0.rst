@@ -4,6 +4,7 @@ v2.0.0 (MONTH DAY, YEAR)
 
 API Changes
 -----------
+* Remove `low_power_cutoff` parameter in `filtering.clipping_filter` (:issue:`84`).
 
 Enhancements
 ------------
