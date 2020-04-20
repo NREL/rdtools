@@ -21,6 +21,9 @@ class srr_analysis():
     ----------
     daily_normalized_energy : pd.Series
         Daily performance metric (i.e. performance index, yield, etc.)
+        Alternatively, the soiling ratio output of a soiling sensor (e.g. the
+        photocurrent ratio between matched dirty and clean PV reference cells).
+        In either case, data should be insolation-weighted daily aggregates.
     daily_insolation : pd.Series
         Daily plane-of-array insolation corresponding to
         `daily_normalized_energy`
@@ -582,6 +585,9 @@ def soiling_srr(daily_normalized_energy, daily_insolation, reps=1000,
     ----------
     daily_normalized_energy : pd.Series
         Daily performance metric (i.e. performance index, yield, etc.)
+        Alternatively, the soiling ratio output of a soiling sensor (e.g. the
+        photocurrent ratio between matched dirty and clean PV reference cells).
+        In either case, data should be insolation-weighted daily aggregates.
     daily_insolation : pd.Series
         Daily plane-of-array insolation corresponding to d
         `daily_normalized_energy`
