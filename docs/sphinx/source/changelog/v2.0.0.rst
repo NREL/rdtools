@@ -4,7 +4,7 @@ v2.0.0 (MONTH DAY, YEAR)
 
 API Changes
 -----------
-* Remove `low_power_cutoff` parameter in `filtering.clipping_filter` (:issue:`84`).
+* Remove ``low_power_cutoff`` parameter in ``filtering.clipping_filter`` (:issue:`84`).
 
 Enhancements
 ------------
@@ -30,6 +30,12 @@ Documentation
 Requirements
 ------------
 * Drop support for Python 2.7, minimum supported version is now 3.6 (:pull:`135`).
+* Update requirements.txt and notebook_requirements.txt to avoid conflicting specifications. Taken together,
+  they represent the complete environment for the notebook example.
+
+Example Updates
+---------------
+* Seed ``numpy.random`` to ensure repeatable results
 
 Contributors
 ------------
