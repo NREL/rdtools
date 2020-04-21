@@ -367,7 +367,7 @@ def irradiance_rescale(irrad, modeled_irrad, max_iterations=100,
         # Iteratively run the optimization,
         # recalculating the clear sky filter each time
         iteration = 0
-        while abs(factor - prev_factor) < convergence_threshold:
+        while abs(factor - prev_factor) > convergence_threshold:
             iteration += 1
             if iteration > max_iterations:
                 msg = 'Rescale did not converge within max_iterations'

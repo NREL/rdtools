@@ -62,7 +62,7 @@ def test_convergence_threshold(simple_irradiance):
     # can't converge if threshold is negative
     with pytest.raises(ConvergenceError):
         _ = irradiance_rescale(simple_irradiance,
-                               simple_irradiance,
+                               simple_irradiance * 1.05,
                                max_iterations=5,  # reduced count for speed
                                convergence_threshold=-1,
                                method='iterative')
