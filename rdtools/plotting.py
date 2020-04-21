@@ -117,7 +117,7 @@ def soiling_monte_carlo_plot(soiling_info, normalized_yield, point_alpha=0.5,
     Parameters
     ----------
     soiling_info : dict
-        ``soiling_info`` returned by :py:meth:`.soiling.srr_analysis.run` or
+        ``soiling_info`` returned by :py:meth:`.soiling.SRRAnalysis.run` or
         :py:func:`.soiling.soiling_srr`.
     normalized_yield : pd.Series
         PV yield data that is normalized, filtered and aggregated.
@@ -170,7 +170,7 @@ def soiling_interval_plot(soiling_info, normalized_yield, point_alpha=0.5,
     Parameters
     ----------
     soiling_info : dict
-        ``soiling_info`` returned by :py:meth:`.soiling.srr_analysis.run` or
+        ``soiling_info`` returned by :py:meth:`.soiling.SRRAnalysis.run` or
         :py:func:`.soiling.soiling_srr`.
     normalized_yield : pd.Series
         PV yield data that is normalized, filtered and aggregated.
@@ -212,7 +212,7 @@ def soiling_rate_histogram(soiling_info, bins=None):
     Parameters
     ----------
     soiling_info : dict
-        ``soiling_info`` returned by :py:meth:`.soiling.srr_analysis.run` or
+        ``soiling_info`` returned by :py:meth:`.soiling.SRRAnalysis.run` or
         :py:func:`.soiling.soiling_srr`.
     bins : int
         number of histogram bins to use

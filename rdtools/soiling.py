@@ -12,7 +12,7 @@ class NoValidIntervalError(Exception):
     pass
 
 
-class srr_analysis():
+class SRRAnalysis():
     '''
     Class for running the stochastic rate and recovery (SRR) photovoltaic
     soiling loss analysis presented in Deceglie et al. JPV 8(2) p547 2018
@@ -574,9 +574,9 @@ def soiling_srr(daily_normalized_energy, daily_insolation, reps=1000,
                 max_relative_slope_error=500.0, max_negative_step=0.05,
                 random_seed=None):
     '''
-    Functional wrapper for srr_analysis(). Perform the stochastic rate and
-    recovery soiling loss calculation. Based on the methods presented in
-    Deceglie et al. JPV 8(2) p547 2018.
+    Functional wrapper for :py:class`~rdtools.soiling.SRRAnalysis`. Perform
+    the stochastic rate and recovery soiling loss calculation. Based on the
+    methods presented in Deceglie et al. JPV 8(2) p547 2018.
 
     Parameters
     ----------
@@ -656,9 +656,9 @@ def soiling_srr(daily_normalized_energy, daily_insolation, reps=1000,
           and P50 slopes.
     '''
 
-    srr = srr_analysis(daily_normalized_energy,
-                       daily_insolation,
-                       precip=precip)
+    srr = SRRAnalysis(daily_normalized_energy,
+                      daily_insolation,
+                      precip=precip)
 
     sr, sr_ci, soiling_info = srr.run(
             reps=reps,
