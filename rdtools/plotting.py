@@ -65,7 +65,8 @@ def degradation_summary_plots(yoy_rd, yoy_ci, yoy_info, normalized_yield,
         Transparency of the scatter plot
 
     '''
-
+    yoy_values = yoy_info['YoY_values']
+    
     if bins is None:
         bins = len(yoy_values) // 40
 
