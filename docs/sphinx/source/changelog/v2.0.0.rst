@@ -1,10 +1,10 @@
-﻿
 ************************
 v2.0.0 (MONTH DAY, YEAR)
 ************************
 
 API Changes
 -----------
+* Remove `low_power_cutoff` parameter in `filtering.clipping_filter` (:issue:`84`).
 
 Enhancements
 ------------
@@ -12,6 +12,7 @@ Enhancements
   recovery method (:pull:`112`).
 * Add new functions :py:func:`~rdtools.normalization.energy_from_power` and
   :py:func:`~rdtools.normalization.interpolate`.
+* Add new :py:mod:`~rdtools.plotting` module for generating standard plots.
 * Add parameter ``convergence_threshold`` to
   :py:func:`~rdtools.normalization.irradiance_rescale` (:pull:`152`).
 
@@ -28,6 +29,7 @@ Testing
 Documentation
 -------------
 * Create sphinx documentation and set up ReadTheDocs (:pull:`125`).
+* Add guides on running tests and building sphinx docs (:pull:`136`).
 * Improve module-level docstrings (:pull:`137`).
 
 Requirements
