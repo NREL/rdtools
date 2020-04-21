@@ -22,11 +22,6 @@ def test_rescale(method, simple_irradiance):
     assert_series_equal(rescaled, expected, check_exact=False)
 
 
-def test_warn(simple_irradiance):
-    with pytest.warns(UserWarning,
-                      match="underlying calculations for irradiance_rescale"):
-        _ = irradiance_rescale(simple_irradiance, simple_irradiance)
-
 
 def test_max_iterations(simple_irradiance):
     # check that max_iterations is actually used.  passing zero should fail
