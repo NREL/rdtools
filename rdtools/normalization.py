@@ -330,7 +330,7 @@ def irradiance_rescale(irrad, modeled_irrad, max_iterations=100,
         determine convergence.  If the threshold is not reached after
         `max_iterations`, raise
         :py:exc:`rdtools.normalization.ConvergenceError`.
-        Only used if `method=='iterative'`.
+        Must be greater than zero.  Only used if `method=='iterative'`.
 
     Returns
     -------
@@ -360,23 +360,22 @@ def irradiance_rescale(irrad, modeled_irrad, max_iterations=100,
             return factor
 
         # Calculate an initial guess for the rescale factor
-        factor = np.percentile(irrad.dropna(), 90) / \
-                 np.percentile(modeled_irrad.dropna(), 90)
+        factor = (np.percentile(irrad.dropna(), 90) /
+                  np.percentile(modeled_irrad.dropna(), 90))
+        prev_factor = 1.0
 
         # Iteratively run the optimization,
         # recalculating the clear sky filter each time
-        for i in range(max_iterations):
+        iteration = 0
+        while abs(factor - prev_factor) < convergence_threshold:
+            iteration += 1
+            if iteration > max_iterations:
+                msg = 'Rescale did not converge within max_iterations'
+                raise ConvergenceError(msg)
             prev_factor = factor
             factor = _single_rescale(irrad, modeled_irrad, factor)
-            delta = abs(factor - prev_factor)
-            if delta < convergence_threshold:
-                break
 
-        if delta >= convergence_threshold:
-            msg = 'Rescale did not converge within max_iterations'
-            raise ConvergenceError(msg)
-        else:
-            return factor * modeled_irrad
+        return factor * modeled_irrad
 
     elif method == 'single_opt':
         def _rmse(fact):

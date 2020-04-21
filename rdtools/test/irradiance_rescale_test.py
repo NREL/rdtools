@@ -8,7 +8,7 @@ import pytest
 @pytest.fixture
 def simple_irradiance():
     times = pd.date_range('2019-06-01 12:00', freq='15T', periods=5)
-    time_series = pd.Series([1, 2, 3, 4, 5], index=times)
+    time_series = pd.Series([1, 2, 3, 4, 5], index=times, dtype=float)
     return time_series
 
 
@@ -22,15 +22,7 @@ def test_rescale(method, simple_irradiance):
     assert_series_equal(rescaled, expected, check_exact=False)
 
 
-
 def test_max_iterations(simple_irradiance):
-    # check that max_iterations is actually used.  passing zero should fail
-    with pytest.raises(UnboundLocalError):
-        _ = irradiance_rescale(simple_irradiance, simple_irradiance,
-                               max_iterations=0, method='iterative')
-
-
-def test_non_convergence(simple_irradiance):
     # use iterative method without enough iterations to converge
     measured = simple_irradiance * 100  # method expects irrad > 200
     modeled = measured.copy()
@@ -44,3 +36,33 @@ def test_non_convergence(simple_irradiance):
 
     _ = irradiance_rescale(measured, modeled, method='iterative',
                            max_iterations=10)
+
+
+def test_max_iterations_zero(simple_irradiance):
+    # zero is sort of a special case, test it separately
+
+    # test series already close enough
+    true_factor = 1.0 + 1e-8
+    rescaled = irradiance_rescale(simple_irradiance,
+                                  simple_irradiance * true_factor,
+                                  max_iterations=0,
+                                  method='iterative')
+    assert_series_equal(rescaled, simple_irradiance, check_exact=False)
+
+    # tighten threshold so that it isn't already close enough
+    with pytest.raises(ConvergenceError):
+        _ = irradiance_rescale(simple_irradiance,
+                               simple_irradiance * true_factor,
+                               max_iterations=0,
+                               convergence_threshold=1e-9,
+                               method='iterative')
+
+
+def test_convergence_threshold(simple_irradiance):
+    # can't converge if threshold is negative
+    with pytest.raises(ConvergenceError):
+        _ = irradiance_rescale(simple_irradiance,
+                               simple_irradiance,
+                               max_iterations=5,  # reduced count for speed
+                               convergence_threshold=-1,
+                               method='iterative')
