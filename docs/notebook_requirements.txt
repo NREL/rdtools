@@ -1,7 +1,8 @@
+# This is an incomplete specification of the intended environment
+# it is meant to be used tandem with ../requirements.txt
 appnope==0.1.0
 backcall==0.1.0
 bleach==3.1.1
-cycler==0.10.0
 decorator==4.3.0
 entrypoints==0.2.3
 html5lib==1.0.1
@@ -16,26 +17,19 @@ jupyter==1.0.0
 jupyter-client==5.2.3
 jupyter-console==5.2.0
 jupyter-core==4.4.0
-kiwisolver==1.0.1
-MarkupSafe==1.0
-matplotlib==2.2.2
+MarkupSafe==1.1.1
 mistune==0.8.3
 nbconvert==5.3.1
 nbformat==4.4.0
 notebook==5.7.5
-numpy==1.15.2
-pandas==0.23.4
 pandocfilters==1.4.2
 parso==0.3.1
-patsy==0.5.0
 pexpect==4.6.0
 pickleshare==0.7.4
 prometheus-client==0.3.0
 prompt-toolkit==1.0.15
 ptyprocess==0.6.0
-pvlib==0.6.1
 Pygments==2.2.0
-pyparsing==2.2.0
 pyzmq==17.1.0
 qtconsole==4.3.1
 Send2Trash==1.5.0
