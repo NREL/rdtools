@@ -35,6 +35,7 @@ Documentation
 Requirements
 ------------
 * Drop support for Python 2.7, minimum supported version is now 3.6 (:pull:`135`).
+* Increase minimum pvlib version to 0.7.0.
 * Update requirements.txt and notebook_requirements.txt to avoid conflicting specifications. Taken together,
   they represent the complete environment for the notebook example (:pull:`164`).
 
