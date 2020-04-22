@@ -9,10 +9,12 @@ except ImportError:
 import versioneer
 
 
-DESCRIPTION = 'Functions for analyzing the degradation of photovoltaic systems.'
+DESCRIPTION = 'Functions for reproducible timeseries analysis of photovoltaic systems.'
 
 LONG_DESCRIPTION = """
-Rdtools is a collection of tools for the analysis of photovoltaic degradation.
+RdTools is an open-source library to support reproducible technical analysis of
+PV time series data. The library aims to provide best practice analysis
+routines along with the building blocks for users to tailor their own analyses.
 
 Source code: https://github.com/NREL/rdtools
 """
@@ -36,7 +38,7 @@ TESTS_REQUIRE = [
 INSTALL_REQUIRES = [
     'matplotlib >= 2.2.2',
     'numpy >= 1.12',
-    'pandas >= 0.23.0, <1.0.0',
+    'pandas >= 0.23.0,!=1.0.0,!=1.0.1',  # exclude 1.0.0 & 1.0.1 for GH142
     'statsmodels >= 0.8.0',
     'scipy >= 0.19.1',
     'h5py >= 2.7.1',
@@ -46,7 +48,6 @@ INSTALL_REQUIRES = [
 EXTRAS_REQUIRE = {
     'doc': [
         'sphinx==1.8.5',
-        'm2r==0.2.1',
         'nbsphinx==0.4.3',
         'nbsphinx-link==1.3.0',
         'pandas==0.23.0',

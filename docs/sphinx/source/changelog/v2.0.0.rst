@@ -4,6 +4,7 @@ v2.0.0 (MONTH DAY, YEAR)
 
 API Changes
 -----------
+* Remove ``low_power_cutoff`` parameter in :py:func:`~rdtools.filtering.clip_filter` (:issue:`84`).
 
 Enhancements
 ------------
@@ -13,9 +14,14 @@ Enhancements
   :py:func:`~rdtools.normalization.interpolate`.
 * Add new function :py:func:`~rdtools.filtering.normalized_filter`.
 * Add new :py:mod:`~rdtools.plotting` module for generating standard plots.
+* Add parameter ``convergence_threshold`` to
+  :py:func:`~rdtools.normalization.irradiance_rescale` (:pull:`152`).
 
 Bug fixes
 ---------
+* Allow ``max_iterations=0`` in
+  :py:func:`~rdtools.normalization.irradiance_rescale` (:pull:`152`).
+
 
 Testing
 -------
@@ -30,6 +36,12 @@ Documentation
 Requirements
 ------------
 * Drop support for Python 2.7, minimum supported version is now 3.6 (:pull:`135`).
+* Update requirements.txt and notebook_requirements.txt to avoid conflicting specifications. Taken together,
+  they represent the complete environment for the notebook example (:pull:`164`).
+
+Example Updates
+---------------
+* Seed ``numpy.random`` to ensure repeatable results (:pull:`164`).
 
 Contributors
 ------------
