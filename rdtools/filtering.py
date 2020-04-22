@@ -3,14 +3,15 @@
 import numpy as np
 
 
-def normalized_filter(normalized, low_cutoff=0, high_cutoff=None):
+def normalized_filter(normalized, low_cutoff=0.01, high_cutoff=None):
     '''
     Select normalized yield between ``low_cutoff`` and ``high_cutoff``
+
     Parameters
     ----------
     normalized : pd.Series
         Normalized power measurements.
-    low_cutoff : float, default 0
+    low_cutoff : float, default 0.01
         The lower bound of acceptable values.
     high_cutoff : float, optional
         The upper bound of acceptable values.
