@@ -66,20 +66,11 @@ class ClipFilterTestCase(unittest.TestCase):
         #       use of the Series.quantile() method.
 
     def test_clip_filter_upper(self):
-        filtered = clip_filter(self.power, quant=0.98,
-                               low_power_cutoff=0)
+        filtered = clip_filter(self.power, quant=0.98)
 
         # Expect 99% of the 98th quantile to be filtered
         expected_result = self.power < (98 * 0.99)
         self.assertTrue((expected_result == filtered).all())
-
-    def test_clip_filter_low_cutoff(self):
-        filtered = clip_filter(self.power, quant=0.98,
-                               low_power_cutoff=2)
-
-        # Expect power <=2 to be filtered
-        expected_result = (self.power > 2)
-        self.assertTrue((expected_result.iloc[0:5] == filtered.iloc[0:5]).all())
 
 
 def test_normalized_filter_default():
