@@ -20,6 +20,8 @@ Bug fixes
 ---------
 * Allow ``max_iterations=0`` in
   :py:func:`~rdtools.normalization.irradiance_rescale` (:pull:`152`).
+* Fix a bug in :py:mod:`~rdtools.soiling` code that caused problems for soiling intervals
+  consisting solely of invalid data. (:pull:`169`)
 
 
 Testing
