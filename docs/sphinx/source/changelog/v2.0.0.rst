@@ -13,9 +13,14 @@ Enhancements
 * Add new functions :py:func:`~rdtools.normalization.energy_from_power` and
   :py:func:`~rdtools.normalization.interpolate`.
 * Add new :py:mod:`~rdtools.plotting` module for generating standard plots.
+* Add parameter ``convergence_threshold`` to
+  :py:func:`~rdtools.normalization.irradiance_rescale` (:pull:`152`).
 
 Bug fixes
 ---------
+* Allow ``max_iterations=0`` in
+  :py:func:`~rdtools.normalization.irradiance_rescale` (:pull:`152`).
+
 
 Testing
 -------
