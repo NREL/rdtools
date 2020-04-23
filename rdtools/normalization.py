@@ -145,7 +145,7 @@ def sapm_dc_power(pvlib_pvsystem, met_data):
         Object contains orientation, geographic coordinates, equipment
         constants (including DC rated power in watts).  The object must also
         specify either the `temperature_model_parameters` attribute or both
-        `racking_model` and `module_type` to infer the model parameters.
+        `racking_model` and `module_type` attributes to infer the temperature model parameters.
     met_data : pd.DataFrame
         Measured irradiance components, ambient temperature, and wind speed.
         Expected met_data DataFrame column names:
