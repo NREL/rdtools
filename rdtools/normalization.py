@@ -143,7 +143,9 @@ def sapm_dc_power(pvlib_pvsystem, met_data):
     ----------
     pvlib_pvsystem : pvlib-python LocalizedPVSystem object
         Object contains orientation, geographic coordinates, equipment
-        constants (including DC rated power in watts).
+        constants (including DC rated power in watts).  The object must also
+        specify either the `temperature_model_parameters` attribute or both
+        `racking_model` and `module_type` to infer the model parameters.
     met_data : pd.DataFrame
         Measured irradiance components, ambient temperature, and wind speed.
         Expected met_data DataFrame column names:
@@ -220,7 +222,9 @@ def normalize_with_sapm(energy, sapm_kws):
     ---------------
     pvlib_pvsystem : pvlib-python LocalizedPVSystem object
         Object contains orientation, geographic coordinates, equipment
-        constants.
+        constants (including DC rated power in watts).  The object must also
+        specify either the `temperature_model_parameters` attribute or both
+        `racking_model` and `module_type` to infer the model parameters.
     met_data : pd.DataFrame
         Measured met_data, ambient temperature, and wind speed.  Expected
         column names are ['DNI', 'GHI', 'DHI', 'Temperature', 'Wind Speed']
