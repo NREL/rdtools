@@ -189,9 +189,9 @@ def sapm_dc_power(pvlib_pvsystem, met_data):
                                    module=pvlib_pvsystem.module)
 
     temp_cell = pvlib_pvsystem\
-        .sapm_celltemp(poa_global=total_irradiance['poa_global'],
-                       wind_speed=met_data['Wind Speed'],
-                       temp_air=met_data['Temperature'])
+        .sapm_celltemp(total_irradiance['poa_global'],
+                       met_data['Temperature'],
+                       met_data['Wind Speed'])
 
     dc_power = pvlib_pvsystem\
         .pvwatts_dc(g_poa_effective=effective_poa,
