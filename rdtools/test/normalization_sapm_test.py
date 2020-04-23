@@ -44,6 +44,7 @@ class SapmNormalizationTestCase(unittest.TestCase):
                                module=module,
                                module_parameters=module_parameters,
                                racking_model='insulated_back',
+                               module_type='glass_polymer',
                                modules_per_string=6)
 
         # define dummy energy data
