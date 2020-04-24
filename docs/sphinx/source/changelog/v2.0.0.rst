@@ -4,6 +4,10 @@ v2.0.0 (MONTH DAY, YEAR)
 
 API Changes
 -----------
+* The behavior of :py:func:`~rdtools.normalization.normalize_with_pvwatts`
+  and :py:func:`~rdtools.normalization.normalize_with_sapm` have changed to
+  expect input energy in the moving average form calculated by
+  :py:func:`~rdtools.normalization.energy_from_power` (:pull:`105`, :pull:`108`).  
 * Remove ``low_power_cutoff`` parameter in :py:func:`~rdtools.filtering.clip_filter` (:issue:`84`).
 
 Enhancements
@@ -11,7 +15,7 @@ Enhancements
 * Add new :py:mod:`~rdtools.soiling` module to implement the stochastic rate and
   recovery method (:pull:`112`).
 * Add new functions :py:func:`~rdtools.normalization.energy_from_power` and
-  :py:func:`~rdtools.normalization.interpolate`.
+  :py:func:`~rdtools.normalization.interpolate` (:pull:`105`, :pull:`108`).
 * Add new :py:mod:`~rdtools.plotting` module for generating standard plots.
 * Add parameter ``convergence_threshold`` to
   :py:func:`~rdtools.normalization.irradiance_rescale` (:pull:`152`).
