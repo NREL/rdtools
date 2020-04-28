@@ -702,23 +702,18 @@ class cods_analysis():
     daily_normalized_energy : pd.Series
         Daily performance metric (i.e. performance index, yield, etc.)
         Index must be DatetimeIndex with daily frequency
-    daily_insolation : pd.Series
-        Daily plane-of-array insolation corresponding to
-        `daily_normalized_energy`
     '''
 
-    def __init__(self, daily_normalized_energy, daily_insolation):
+    def __init__(self, daily_normalized_energy):
         self.pm = daily_normalized_energy  # daily performance metric
-        self.insol = daily_insolation  # daily insolation
+        
+        if np.isnan(self.pm.iloc[0]):
+            first_keeper = self.pm.isna().idxmin()
+            self.pm = self.pm.loc[first_keeper:]
 
         if self.pm.index.freq != 'D':
             raise ValueError('Daily performance metric series must have '
                              'daily frequency')
-
-        if self.insol.index.freq != 'D':
-            raise ValueError('Daily insolation series must have '
-                             'daily frequency')
-
 
     def iterative_signal_decomposition(
         self, order=['SR', 'SC', 'Rd'], degradation_method='YoY',
@@ -1027,8 +1022,8 @@ class cods_analysis():
                       degradation_method='YoY', process_noise=1e-4,
                       knob_alternatives=[[['SR', 'SC', 'Rd'],
                                           ['SC', 'SR', 'Rd']],
-                                         [.4, .8],
-                                         [.75, 1.25],
+                                         [.25, .75],
+                                         [1/1.5, 1.5],
                                          [True, False]]):
         '''
         Boottrapping of iterative signal decomposition alforithm for
@@ -1226,14 +1221,14 @@ class cods_analysis():
                                                    np.random.uniform(.5, .95)])
                 ffill = np.random.choice([True, False])
                 knobs.append([dt, pt, pn, renormalize_SR, ffill])
-
+    
                 # Sample to infer soiling from
                 bootstrap_sample = \
                     all_bootstrap_samples[b] / seasonal_samples[b]
-
+    
                 # Set up a temprary instance of the cods_analysis object
-                temporary_cods_instance = cods_analysis(bootstrap_sample,
-                                                        self.insol)
+                temporary_cods_instance = cods_analysis(bootstrap_sample)
+                
                 # Do Signal decomposition for soiling and degradation component
                 kdf, deg, SL, rs, RMSE, sss, adf = \
                     temporary_cods_instance.iterative_signal_decomposition(
@@ -1242,7 +1237,7 @@ class cods_analysis():
                         pruning_tuner=pt, process_noise=pn,
                         renormalize_SR=renormalize_SR, ffill=ffill,
                         degradation_method=degradation_method)
-
+    
                 # If we can reject the null-hypothesis that there is a unit
                 # root in the residuals:
                 if adf[1] < .05:  # Save the results
@@ -1258,7 +1253,7 @@ class cods_analysis():
 
             except ValueError as ve:
                 seasonal_samples.drop(columns=[b], inplace=True)
-                errors.append(b, ve)
+                errors.append([b, ve])
 
             # Print progress
             if verbose:
@@ -1304,9 +1299,8 @@ class cods_analysis():
         self.degradation = [np.dot(bt_deg, weights),
                             np.quantile(bt_deg, .025),
                             np.quantile(bt_deg, .975)]
-        df_out.degradation_trend = (concat_deg * weights).sum(1)
-        df_out['degradation_low'] = concat_deg.quantile(.025, 1)
-        df_out['degradation_high'] = concat_deg.quantile(.975, 1)
+        df_out.degradation_trend = 1 + np.arange(len(pi)) * \
+            self.degradation[0] / 100 / 365.24
 
         # Soiling losses
         self.soiling_loss = [np.dot(bt_SL, weights),
@@ -1346,7 +1340,7 @@ class cods_analysis():
                              pruning_iterations=1, pruning_tuner=.6,
                              renormalize_SR=None, perfect_cleaning=False,
                              prescient_cleaning_events=None,
-                             clip_soiling=True):
+                             clip_soiling=True, ffill=True):
         '''
         A function for estimating the underlying Soiling Ratio (SR) and the
         rate of change of the SR (soiling rate), based on a noisy time series
@@ -1384,21 +1378,29 @@ class cods_analysis():
             prescient_cleaning_events = prescient_cleaning_events.copy()
             prescient_cleaning_events.index = zs_series.index
         else:  # If no prescient cleaning events, detect cleaning events
-            ce, rm9 = rolling_median_ce_detection(zs_series.index,
-                                                  zs_series,
-                                                  tuner=0.5)
+            ce, rm9 = rolling_median_ce_detection(
+                zs_series.index, zs_series, tuner=0.5)
             prescient_cleaning_events = \
                 collapse_cleaning_events(ce, rm9.diff().values, 5)
         cleaning_events = prescient_cleaning_events[prescient_cleaning_events
                                                     ].index.to_list()
+        
+        # Find soiling events (e.g. dust storms)
+        soiling_events = soiling_event_detection(
+            zs_series.index, zs_series, ffill=ffill, tuner=5)
+        soiling_events = soiling_events[soiling_events].index.to_list()
 
         # Initialize various parameters
-        rolling_median_13 = zs_series.ffill().rolling(13, center=True).median().ffill()
+        if ffill:
+            rolling_median_13 = zs_series.ffill().rolling(13, center=True).median().ffill().bfill()
+            rolling_median_7 = zs_series.ffill().rolling(7, center=True).median().ffill().bfill()
+        else:
+            rolling_median_13 = zs_series.bfill().rolling(13, center=True).median().ffill().bfill()
+            rolling_median_7 = zs_series.bfill().rolling(7, center=True).median().ffill().bfill()
         # A rough estimate of the measurement noise
         measurement_noise = (rolling_median_13 - zs_series).var()
         # An initial guess of the slope
         initial_slope = np.array(theilslopes(zs_series.bfill().iloc[:14]))
-        rolling_median_7 = zs_series.ffill().rolling(7, center=True).median().ffill()
         dt = 1  # All time stemps are one day
 
         # Initialize Kalman filter
@@ -1417,13 +1419,13 @@ class cods_analysis():
         # Kalman Filter part:
         #######################################################################
         # Call the forward pass function (the actual KF procedure)
-        Xs, Ps, rate_std, zs_std = self.forward_pass(f, zs_series,
-                                                     rolling_median_7,
-                                                     cleaning_events)
+        Xs, Ps, rate_std, zs_std = self.forward_pass(
+            f, zs_series, rolling_median_7, cleaning_events, soiling_events)
 
         # Save results and smooth with rts smoother
-        dfk, Xs, Ps = self.smooth_results(dfk, f, Xs, Ps, zs_series,
-                                          cleaning_events, perfect_cleaning)
+        dfk, Xs, Ps = self.smooth_results(
+            dfk, f, Xs, Ps, zs_series, cleaning_events, soiling_events,
+            perfect_cleaning)
         #######################################################################
 
         # Some steps to clean up the soiling data:
@@ -1458,12 +1460,12 @@ class cods_analysis():
                                                      measurement_noise,
                                                      rate_std, zs_std,
                                                      initial_slope)
-                Xs, Ps, rate_std, zs_std = self.forward_pass(f, zs_series,
-                                                             rolling_median_7,
-                                                             cleaning_events)
-                dfk, Xs, Ps = self.smooth_results(dfk, f, Xs, Ps, zs_series,
-                                                  cleaning_events,
-                                                  perfect_cleaning)
+                Xs, Ps, rate_std, zs_std = self.forward_pass(
+                    f, zs_series, rolling_median_7, cleaning_events,
+                    soiling_events)
+                dfk, Xs, Ps = self.smooth_results(
+                    dfk, f, Xs, Ps, zs_series, cleaning_events,
+                    soiling_events, perfect_cleaning)
 
             else:
                 counter = 100  # Make sure the while loop stops
@@ -1509,14 +1511,15 @@ class cods_analysis():
 
         return dfk, Ps
 
-    def forward_pass(self, f, zs_series, rolling_median_7, cleaning_events):
+    def forward_pass(self, f, zs_series, rolling_median_7, cleaning_events,
+                     soiling_events):
         ''' Run the forward pass of the Kalman Filter algortihm '''
         zs = zs_series.values
         N = len(zs)
         Xs, Ps = np.zeros((N, 2)), np.zeros((N, 2, 2))
         # Enter forward pass of filtering algorithm
         for i, z in enumerate(zs):
-            if 7 < i < N-7 and i in cleaning_events:
+            if 7 < i < N-7 and (i in cleaning_events or i in soiling_events):
                 rolling_median_local = rolling_median_7.loc[i-5:i+5].values
                 u = self.set_control_input(f, rolling_median_local, i,
                                            cleaning_events)
@@ -1547,20 +1550,21 @@ class cods_analysis():
         moving_diff = np.diff(rolling_median_local)
         # Index of maximum change in rolling median
         max_diff_index = moving_diff.argmax()
-        if max_diff_index == HW-1:  # if the max difference is today
+        if max_diff_index == HW-1 or index not in cleaning_events:
             # The median zs of the week after the cleaning event
             z_med = rolling_median_local[HW+3]
             # Set control input this future median
             u[0] = z_med - np.dot(f.H, np.dot(f.F, f.x))
             # If the change is bigger than the measurement noise:
-            if u[0] > np.sqrt(f.R)/2:
+            if np.abs(u[0]) > np.sqrt(f.R)/2:
                 index_dummy = [n+3 for n in range(window_size-HW-1)
                                if n+3 != HW]
                 cleaning_events = [ce for ce in cleaning_events
                                    if ce-index+HW not in index_dummy]
             else:  # If the cleaning event is insignificant
                 u[0] = 0
-                cleaning_events.remove(index)
+                if index in cleaning_events:
+                    cleaning_events.remove(index)
         else:  # If the index with the maximum difference is not today...
             cleaning_events.remove(index)  # ...remove today from the list
             if moving_diff[max_diff_index] > 0 \
@@ -1570,7 +1574,7 @@ class cods_analysis():
         return u
 
     def smooth_results(self, dfk, f, Xs, Ps, zs_series, cleaning_events,
-                       perfect_cleaning):
+                       soiling_events, perfect_cleaning):
         ''' Smoother for Kalman Filter estimates. Smooths the Kalaman estimate
             between given cleaning events and saves all in DataFrame dfk'''
         # Save unsmoothed estimates
@@ -1581,6 +1585,7 @@ class cods_analysis():
         df_num_ind = pd.Series(index=dfk.index, data=range(len(dfk)))
         ce_dummy = cleaning_events.copy()
         ce_dummy.extend(dfk.index[[0, -1]])
+        ce_dummy.extend(soiling_events)
         ce_dummy.sort()
 
         # Smooth between cleaning events
@@ -1681,15 +1686,31 @@ def rolling_median_ce_detection(x, y, ffill=True, rolling_window=9, tuner=1.5):
         rm = y.bfill().rolling(rolling_window, center=True).median()
     Q3 = rm.diff().abs().quantile(.75)
     Q1 = rm.diff().abs().quantile(.25)
-    limit = Q3 + tuner*(Q3 - Q1)
+    limit = Q3 + tuner * (Q3 - Q1)
     cleaning_events = rm.diff() > limit
     return cleaning_events, rm
 
+def soiling_event_detection(x, y, ffill=True, tuner=5):
+    ''' Finds cleaning events in a time series of performance index (y) '''
+    y = pd.Series(index=x, data=y)
+    if ffill:  # forward fill NaNs in y before running mean
+        rm = y.ffill().rolling(9, center=True).median()
+    else:  # ... or backfill instead
+        rm = y.bfill().rolling(9, center=True).median()
+    Q3 = rm.diff().abs().quantile(.99)
+    Q1 = rm.diff().abs().quantile(.01)
+    limit = Q1 - tuner * (Q3 - Q1)
+    soiling_events = rm.diff() < limit
+    return soiling_events
 
 def make_bootstrap_samples(pi, model, sample_nr=10):
     ''' Generate bootstrap samples based on a CODS model fit '''
     residuals = pi / model
-    bs = CircularBlockBootstrap(180, residuals)
+    # Remove NaNs in residuals
+    residuals = residuals.apply(
+        lambda x: np.random.choice(
+            [x for x in residuals.dropna().values]) if (np.isnan(x)) else x)
+    bs = CircularBlockBootstrap(90, residuals)
     bootstrap_samples = pd.DataFrame(index=model.index,
                                      columns=range(sample_nr))
     for b, bootstrapped_residuals in enumerate(bs.bootstrap(sample_nr)):
