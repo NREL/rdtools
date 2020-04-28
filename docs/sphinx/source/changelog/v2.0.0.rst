@@ -12,6 +12,7 @@ Enhancements
   recovery method (:pull:`112`).
 * Add new functions :py:func:`~rdtools.normalization.energy_from_power` and
   :py:func:`~rdtools.normalization.interpolate`.
+* Add new function :py:func:`~rdtools.filtering.normalized_filter`.
 * Add new :py:mod:`~rdtools.plotting` module for generating standard plots.
 * Add parameter ``convergence_threshold`` to
   :py:func:`~rdtools.normalization.irradiance_rescale` (:pull:`152`).
@@ -43,6 +44,9 @@ Requirements
 Example Updates
 ---------------
 * Seed ``numpy.random`` to ensure repeatable results (:pull:`164`).
+* Use :py:func:`~rdtools.filtering.normalized_filter` instead of manually
+  filtering the normalized energy timeseries.  Also updated the associated mask
+  variable names (:pull:`139`).
 
 Contributors
 ------------
