@@ -5,6 +5,7 @@ v2.0.0 (MONTH DAY, YEAR)
 API Changes
 -----------
 * Remove ``low_power_cutoff`` parameter in :py:func:`~rdtools.filtering.clip_filter` (:issue:`84`).
+* Rename `soiling.srr_analysis` to :py:class:`~rdtools.soiling.SRRAnalysis` (:pull:`168`).
 
 Enhancements
 ------------
