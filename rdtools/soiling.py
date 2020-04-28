@@ -21,6 +21,9 @@ class srr_analysis():
     ----------
     daily_normalized_energy : pd.Series
         Daily performance metric (i.e. performance index, yield, etc.)
+        Alternatively, the soiling ratio output of a soiling sensor (e.g. the
+        photocurrent ratio between matched dirty and clean PV reference cells).
+        In either case, data should be insolation-weighted daily aggregates.
     daily_insolation : pd.Series
         Daily plane-of-array insolation corresponding to
         `daily_normalized_energy`
@@ -45,7 +48,7 @@ class srr_analysis():
                              'daily frequency')
 
         if self.precip is not None:
-            if self.pm.index.freq != 'D':
+            if self.precip.index.freq != 'D':
                 raise ValueError('Precipitation series must have '
                                  'daily frequency')
 
@@ -64,7 +67,7 @@ class srr_analysis():
         clean_threshold : float or 'infer', default 'infer'
             If float: the fractional positive shift in rolling median for
             cleaning detection.
-            If 'infer:' automatically use outliers in the shift as the
+            If 'infer': automatically use outliers in the shift as the
             threshold
 
         recenter : bool, default True
@@ -589,6 +592,9 @@ def soiling_srr(daily_normalized_energy, daily_insolation, reps=1000,
     ----------
     daily_normalized_energy : pd.Series
         Daily performance metric (i.e. performance index, yield, etc.)
+        Alternatively, the soiling ratio output of a soiling sensor (e.g. the
+        photocurrent ratio between matched dirty and clean PV reference cells).
+        In either case, data should be insolation-weighted daily aggregates.
     daily_insolation : pd.Series
         Daily plane-of-array insolation corresponding to d
         `daily_normalized_energy`
