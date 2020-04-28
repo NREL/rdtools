@@ -247,9 +247,6 @@ def normalize_with_sapm(energy, sapm_kws):
     irrad_tds, mean_irrad_td = delta_index(irrad)
     measure_tds, mean_measure_td = delta_index(energy)
 
-    model_tds, mean_model_td = delta_index(dc_power)
-    measure_tds, mean_measure_td = delta_index(energy)
-
     # Case in which the model is as or more frequent than the measurments
     if mean_model_td <= mean_measure_td:
 

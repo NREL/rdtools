@@ -1,6 +1,5 @@
 '''Functions for calculating soiling metrics from photovoltaic system data.'''
 
-from __future__ import division
 import pandas as pd
 import numpy as np
 from scipy.stats.mstats import theilslopes
