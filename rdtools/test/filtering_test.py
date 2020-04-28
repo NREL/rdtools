@@ -74,10 +74,17 @@ class ClipFilterTestCase(unittest.TestCase):
 
 
 def test_normalized_filter_default():
-    pd.testing.assert_series_equal(normalized_filter(pd.Series([-5, 5])), pd.Series([False, True]))
-    pd.testing.assert_series_equal(normalized_filter(pd.Series([-1e6, 1e6]), low_cutoff=None, high_cutoff=None), pd.Series([True, True]))
-    pd.testing.assert_series_equal(normalized_filter(pd.Series([-2, 2]), low_cutoff=-1, high_cutoff=1), pd.Series([False, False]))
+    pd.testing.assert_series_equal(normalized_filter(pd.Series([-5, 5])),
+                                   pd.Series([False, True]))
 
+    pd.testing.assert_series_equal(normalized_filter(pd.Series([-1e6, 1e6]), low_cutoff=None, high_cutoff=None),
+                                   pd.Series([True, True]))
+
+    pd.testing.assert_series_equal(normalized_filter(pd.Series([-2, 2]), low_cutoff=-1, high_cutoff=1),
+                                   pd.Series([False, False]))
+
+    pd.testing.assert_series_equal(normalized_filter(pd.Series([0.01 - 1e-16, 0.01 + 1e-16, 1e308])),
+                                   pd.Series([False, True, True]))
 
 if __name__ == '__main__':
     unittest.main()
