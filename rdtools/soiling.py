@@ -45,7 +45,7 @@ class srr_analysis():
                              'daily frequency')
 
         if self.precip is not None:
-            if self.pm.index.freq != 'D':
+            if self.precip.index.freq != 'D':
                 raise ValueError('Precipitation series must have '
                                  'daily frequency')
 
@@ -64,7 +64,7 @@ class srr_analysis():
         clean_threshold : float or 'infer', default 'infer'
             If float: the fractional positive shift in rolling median for
             cleaning detection.
-            If 'infer:' automatically use outliers in the shift as the
+            If 'infer': automatically use outliers in the shift as the
             threshold
 
         recenter : bool, default True
