@@ -187,10 +187,17 @@ class SRRAnalysis():
             length = (run.day[-1] - run.day[0])
             start_day = run.day[0]
             end_day = run.day[-1]
-            run = run[run.pi_norm > 0]
+            start = run.index[0]
+            end = run.index[-1]
+            run_filtered = run[run.pi_norm > 0]
+            # use the filtered version if it contains any points
+            # otherwise use the unfiltered version to populate a
+            # valid=False row
+            if not run_filtered.empty:
+                run = run_filtered
             result_dict = {
-                'start': run.index[0],
-                'end': run.index[-1],
+                'start': start,
+                'end': end,
                 'length': length,
                 'run': r,
                 'run_slope': 0,

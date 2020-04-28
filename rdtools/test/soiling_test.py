@@ -185,3 +185,16 @@ def test_soiling_srr_max_negative_slope_error(normalized_daily, insolation):
 
     assert 0.952995 == pytest.approx(sr, abs=1e-6),\
         'Soiling ratio different from expected when max_relative_slope_error=50.0'
+
+def test_soiling_srr_with_nan_interval(normalized_daily, insolation, times):
+    '''
+    Previous versions had a bug which would have raised an error when an entire interval
+    was NaN. See https://github.com/NREL/rdtools/issues/129
+    '''
+    reps = 10
+    normalized_corrupt = normalized_daily.copy()
+    normalized_corrupt[26:50] = np.nan
+    sr, sr_ci, soiling_info = soiling_srr(normalized_corrupt, insolation, reps=reps,
+                                          random_seed=1977)
+    assert 0.947416 == pytest.approx(sr, abs=1e-6),\
+        'Soiling ratio different from expected value when an entire interval was NaN'

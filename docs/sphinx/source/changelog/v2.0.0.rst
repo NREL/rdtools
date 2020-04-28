@@ -4,7 +4,7 @@ v2.0.0 (MONTH DAY, YEAR)
 
 API Changes
 -----------
-* Remove `low_power_cutoff` parameter in `filtering.clipping_filter` (:issue:`84`).
+* Remove ``low_power_cutoff`` parameter in :py:func:`~rdtools.filtering.clip_filter` (:issue:`84`).
 * Rename `soiling.srr_analysis` to :py:class:`~rdtools.soiling.SRRAnalysis` (:pull:`168`).
 
 Enhancements
@@ -14,9 +14,16 @@ Enhancements
 * Add new functions :py:func:`~rdtools.normalization.energy_from_power` and
   :py:func:`~rdtools.normalization.interpolate`.
 * Add new :py:mod:`~rdtools.plotting` module for generating standard plots.
+* Add parameter ``convergence_threshold`` to
+  :py:func:`~rdtools.normalization.irradiance_rescale` (:pull:`152`).
 
 Bug fixes
 ---------
+* Allow ``max_iterations=0`` in
+  :py:func:`~rdtools.normalization.irradiance_rescale` (:pull:`152`).
+* Fix a bug in :py:mod:`~rdtools.soiling` code that caused problems for soiling intervals
+  consisting solely of invalid data. (:pull:`169`)
+
 
 Testing
 -------
@@ -31,6 +38,12 @@ Documentation
 Requirements
 ------------
 * Drop support for Python 2.7, minimum supported version is now 3.6 (:pull:`135`).
+* Update requirements.txt and notebook_requirements.txt to avoid conflicting specifications. Taken together,
+  they represent the complete environment for the notebook example (:pull:`164`).
+
+Example Updates
+---------------
+* Seed ``numpy.random`` to ensure repeatable results (:pull:`164`).
 
 Contributors
 ------------

@@ -305,7 +305,8 @@ def delta_index(series):
     return deltas, np.mean(deltas.dropna())
 
 
-def irradiance_rescale(irrad, modeled_irrad, max_iterations=100, method=None):
+def irradiance_rescale(irrad, modeled_irrad, max_iterations=100,
+                       method='iterative', convergence_threshold=1e-6):
     '''
     Attempt to rescale modeled irradiance to match measured irradiance on
     clear days.
@@ -319,25 +320,23 @@ def irradiance_rescale(irrad, modeled_irrad, max_iterations=100, method=None):
     max_iterations : int, default 100
         The maximum number of times to attempt rescale optimization.
         Ignored if `method` = 'single_opt'
-    method: str, default None
+    method : str, default 'iterative'
         The calculation method to use. 'single_opt' implements the
         irradiance_rescale of rdtools v1.1.3 and earlier. 'iterative'
         implements a more stable calculation that may yield different results
         from the single_opt method.
-        If omitted, issues a warning and uses the iterative calculation.
+    convergence_threshold : float, default 1e-6
+        The acceptable iteration-to-iteration scaling factor difference to
+        determine convergence.  If the threshold is not reached after
+        `max_iterations`, raise
+        :py:exc:`rdtools.normalization.ConvergenceError`.
+        Must be greater than zero.  Only used if `method=='iterative'`.
 
     Returns
     -------
     pd.Series
         Rescaled modeled irradiance time series
     '''
-
-    if method is None:
-        warnings.warn("The underlying calculations for irradiance_rescale "
-                      "have changed which may affect results. To revert to "
-                      "the version of irradiance_rescale from rdtools v1.1.3 "
-                      "or earlier, use method = 'single_opt'.")
-        method = 'iterative'
 
     if method == 'iterative':
         def _rmse(fact):
@@ -361,24 +360,22 @@ def irradiance_rescale(irrad, modeled_irrad, max_iterations=100, method=None):
             return factor
 
         # Calculate an initial guess for the rescale factor
-        factor = np.percentile(irrad.dropna(), 90) / \
-                 np.percentile(modeled_irrad.dropna(), 90)
+        factor = (np.percentile(irrad.dropna(), 90) /
+                  np.percentile(modeled_irrad.dropna(), 90))
+        prev_factor = 1.0
 
         # Iteratively run the optimization,
         # recalculating the clear sky filter each time
-        convergence_threshold = 10**-6
-        for i in range(max_iterations):
+        iteration = 0
+        while abs(factor - prev_factor) > convergence_threshold:
+            iteration += 1
+            if iteration > max_iterations:
+                msg = 'Rescale did not converge within max_iterations'
+                raise ConvergenceError(msg)
             prev_factor = factor
             factor = _single_rescale(irrad, modeled_irrad, factor)
-            delta = abs(factor - prev_factor)
-            if delta < convergence_threshold:
-                break
 
-        if delta >= convergence_threshold:
-            msg = 'Rescale did not converge within max_iterations'
-            raise ConvergenceError(msg)
-        else:
-            return factor * modeled_irrad
+        return factor * modeled_irrad
 
     elif method == 'single_opt':
         def _rmse(fact):
