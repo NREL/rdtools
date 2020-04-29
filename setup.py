@@ -42,7 +42,7 @@ INSTALL_REQUIRES = [
     'statsmodels >= 0.8.0',
     'scipy >= 0.19.1',
     'h5py >= 2.7.1',
-    'pvlib >= 0.6.0, <0.7.0',
+    'pvlib >= 0.7.0, <0.8.0',
 ]
 
 EXTRAS_REQUIRE = {
@@ -51,7 +51,7 @@ EXTRAS_REQUIRE = {
         'nbsphinx==0.4.3',
         'nbsphinx-link==1.3.0',
         'pandas==0.23.0',
-        'pvlib==0.6.1',
+        'pvlib==0.7.1',
         'sphinx_rtd_theme==0.4.3',
         'ipython',
     ],

@@ -143,7 +143,9 @@ def sapm_dc_power(pvlib_pvsystem, met_data):
     ----------
     pvlib_pvsystem : pvlib-python LocalizedPVSystem object
         Object contains orientation, geographic coordinates, equipment
-        constants (including DC rated power in watts).
+        constants (including DC rated power in watts).  The object must also
+        specify either the `temperature_model_parameters` attribute or both
+        `racking_model` and `module_type` attributes to infer the temperature model parameters.
     met_data : pd.DataFrame
         Measured irradiance components, ambient temperature, and wind speed.
         Expected met_data DataFrame column names:
@@ -184,17 +186,16 @@ def sapm_dc_power(pvlib_pvsystem, met_data):
                                    poa_diffuse=total_irradiance['poa_diffuse'],
                                    airmass_absolute=airmass_absolute,
                                    aoi=aoi,
-                                   module=pvlib_pvsystem.module,
-                                   reference_irradiance=1)
+                                   module=pvlib_pvsystem.module)
 
     temp_cell = pvlib_pvsystem\
-        .sapm_celltemp(irrad=total_irradiance['poa_global'],
-                       wind=met_data['Wind Speed'],
-                       temp=met_data['Temperature'])
+        .sapm_celltemp(total_irradiance['poa_global'],
+                       met_data['Temperature'],
+                       met_data['Wind Speed'])
 
     dc_power = pvlib_pvsystem\
         .pvwatts_dc(g_poa_effective=effective_poa,
-                    temp_cell=temp_cell['temp_cell'])
+                    temp_cell=temp_cell)
 
     return dc_power, effective_poa
 
@@ -221,7 +222,9 @@ def normalize_with_sapm(energy, sapm_kws):
     ---------------
     pvlib_pvsystem : pvlib-python LocalizedPVSystem object
         Object contains orientation, geographic coordinates, equipment
-        constants.
+        constants (including DC rated power in watts).  The object must also
+        specify either the `temperature_model_parameters` attribute or both
+        `racking_model` and `module_type` to infer the model parameters.
     met_data : pd.DataFrame
         Measured met_data, ambient temperature, and wind speed.  Expected
         column names are ['DNI', 'GHI', 'DHI', 'Temperature', 'Wind Speed']
