@@ -54,6 +54,8 @@ Example Updates
 * Use :py:func:`~rdtools.filtering.normalized_filter` instead of manually
   filtering the normalized energy timeseries.  Also updated the associated mask
   variable names (:pull:`139`).
+* Add a new example notebook that analyzes data from the NREL Sanyo PV system
+  (PVDAQ system #4) (:pull:`171`).
 
 Contributors
 ------------
