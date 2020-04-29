@@ -43,7 +43,8 @@ class SapmNormalizationTestCase(unittest.TestCase):
                                surface_azimuth=180,
                                module=module,
                                module_parameters=module_parameters,
-                               racking_model='insulated_back_polymerback',
+                               racking_model='insulated_back',
+                               module_type='glass_polymer',
                                modules_per_string=6)
 
         # define dummy energy data

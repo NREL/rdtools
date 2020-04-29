@@ -4,18 +4,32 @@ v2.0.0 (MONTH DAY, YEAR)
 
 API Changes
 -----------
+* The calculations internal to :py:func:`~rdtools.normalization.normalize_with_pvwatts`
+  and :py:func:`~rdtools.normalization.normalize_with_sapm` have changed.
+  Generally, when working with raw power data it should be converted to
+  right-labeled energy with :py:func:`~rdtools.normalization.energy_from_power`
+  before being used with the normalization functions (:pull:`105`, :pull:`108`).
 * Remove ``low_power_cutoff`` parameter in :py:func:`~rdtools.filtering.clip_filter` (:issue:`84`).
+* Rename `soiling.srr_analysis` to :py:class:`~rdtools.soiling.SRRAnalysis` (:pull:`168`).
 
 Enhancements
 ------------
 * Add new :py:mod:`~rdtools.soiling` module to implement the stochastic rate and
   recovery method (:pull:`112`).
 * Add new functions :py:func:`~rdtools.normalization.energy_from_power` and
-  :py:func:`~rdtools.normalization.interpolate`.
+  :py:func:`~rdtools.normalization.interpolate` (:pull:`105`, :pull:`108`).
+* Add new function :py:func:`~rdtools.filtering.normalized_filter`.
 * Add new :py:mod:`~rdtools.plotting` module for generating standard plots.
+* Add parameter ``convergence_threshold`` to
+  :py:func:`~rdtools.normalization.irradiance_rescale` (:pull:`152`).
 
 Bug fixes
 ---------
+* Allow ``max_iterations=0`` in
+  :py:func:`~rdtools.normalization.irradiance_rescale` (:pull:`152`).
+* Fix a bug in :py:mod:`~rdtools.soiling` code that caused problems for soiling intervals
+  consisting solely of invalid data. (:pull:`169`)
+
 
 Testing
 -------
@@ -30,12 +44,16 @@ Documentation
 Requirements
 ------------
 * Drop support for Python 2.7, minimum supported version is now 3.6 (:pull:`135`).
+* Increase minimum pvlib version to 0.7.0.
 * Update requirements.txt and notebook_requirements.txt to avoid conflicting specifications. Taken together,
   they represent the complete environment for the notebook example (:pull:`164`).
 
 Example Updates
 ---------------
 * Seed ``numpy.random`` to ensure repeatable results (:pull:`164`).
+* Use :py:func:`~rdtools.filtering.normalized_filter` instead of manually
+  filtering the normalized energy timeseries.  Also updated the associated mask
+  variable names (:pull:`139`).
 
 Contributors
 ------------

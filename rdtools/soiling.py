@@ -1,6 +1,5 @@
 '''Functions for calculating soiling metrics from photovoltaic system data.'''
 
-from __future__ import division
 import pandas as pd
 import numpy as np
 from scipy.stats.mstats import theilslopes
@@ -12,7 +11,7 @@ class NoValidIntervalError(Exception):
     pass
 
 
-class srr_analysis():
+class SRRAnalysis():
     '''
     Class for running the stochastic rate and recovery (SRR) photovoltaic
     soiling loss analysis presented in Deceglie et al. JPV 8(2) p547 2018
@@ -21,6 +20,9 @@ class srr_analysis():
     ----------
     daily_normalized_energy : pd.Series
         Daily performance metric (i.e. performance index, yield, etc.)
+        Alternatively, the soiling ratio output of a soiling sensor (e.g. the
+        photocurrent ratio between matched dirty and clean PV reference cells).
+        In either case, data should be insolation-weighted daily aggregates.
     daily_insolation : pd.Series
         Daily plane-of-array insolation corresponding to
         `daily_normalized_energy`
@@ -45,7 +47,7 @@ class srr_analysis():
                              'daily frequency')
 
         if self.precip is not None:
-            if self.pm.index.freq != 'D':
+            if self.precip.index.freq != 'D':
                 raise ValueError('Precipitation series must have '
                                  'daily frequency')
 
@@ -64,7 +66,7 @@ class srr_analysis():
         clean_threshold : float or 'infer', default 'infer'
             If float: the fractional positive shift in rolling median for
             cleaning detection.
-            If 'infer:' automatically use outliers in the shift as the
+            If 'infer': automatically use outliers in the shift as the
             threshold
 
         recenter : bool, default True
@@ -187,10 +189,17 @@ class srr_analysis():
             length = (run.day[-1] - run.day[0])
             start_day = run.day[0]
             end_day = run.day[-1]
-            run = run[run.pi_norm > 0]
+            start = run.index[0]
+            end = run.index[-1]
+            run_filtered = run[run.pi_norm > 0]
+            # use the filtered version if it contains any points
+            # otherwise use the unfiltered version to populate a
+            # valid=False row
+            if not run_filtered.empty:
+                run = run_filtered
             result_dict = {
-                'start': run.index[0],
-                'end': run.index[-1],
+                'start': start,
+                'end': end,
                 'length': length,
                 'run': r,
                 'run_slope': 0,
@@ -574,14 +583,17 @@ def soiling_srr(daily_normalized_energy, daily_insolation, reps=1000,
                 max_relative_slope_error=500.0, max_negative_step=0.05,
                 random_seed=None):
     '''
-    Functional wrapper for srr_analysis(). Perform the stochastic rate and
-    recovery soiling loss calculation. Based on the methods presented in
-    Deceglie et al. JPV 8(2) p547 2018.
+    Functional wrapper for :py:class:`~rdtools.soiling.SRRAnalysis`. Perform
+    the stochastic rate and recovery soiling loss calculation. Based on the
+    methods presented in Deceglie et al. JPV 8(2) p547 2018.
 
     Parameters
     ----------
     daily_normalized_energy : pd.Series
         Daily performance metric (i.e. performance index, yield, etc.)
+        Alternatively, the soiling ratio output of a soiling sensor (e.g. the
+        photocurrent ratio between matched dirty and clean PV reference cells).
+        In either case, data should be insolation-weighted daily aggregates.
     daily_insolation : pd.Series
         Daily plane-of-array insolation corresponding to d
         `daily_normalized_energy`
@@ -656,9 +668,9 @@ def soiling_srr(daily_normalized_energy, daily_insolation, reps=1000,
           and P50 slopes.
     '''
 
-    srr = srr_analysis(daily_normalized_energy,
-                       daily_insolation,
-                       precip=precip)
+    srr = SRRAnalysis(daily_normalized_energy,
+                      daily_insolation,
+                      precip=precip)
 
     sr, sr_ci, soiling_info = srr.run(
             reps=reps,

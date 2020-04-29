@@ -1,5 +1,35 @@
 '''Functions for filtering and subsetting PV system data.'''
 
+import numpy as np
+
+
+def normalized_filter(normalized, low_cutoff=0.01, high_cutoff=None):
+    '''
+    Select normalized yield between ``low_cutoff`` and ``high_cutoff``
+
+    Parameters
+    ----------
+    normalized : pd.Series
+        Normalized power measurements.
+    low_cutoff : float, default 0.01
+        The lower bound of acceptable values.
+    high_cutoff : float, optional
+        The upper bound of acceptable values.
+
+    Returns
+    -------
+    pd.Series
+        Boolean Series of whether the given measurement is within acceptable
+        bounds.
+    '''
+
+    if low_cutoff is None:
+        low_cutoff = -np.inf
+    if high_cutoff is None:
+        high_cutoff = np.inf
+
+    return (normalized > low_cutoff) & (normalized < high_cutoff)
+
 
 def poa_filter(poa, low_irradiance_cutoff=200, high_irradiance_cutoff=1200):
     '''
