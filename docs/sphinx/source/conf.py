@@ -175,6 +175,10 @@ def make_github_url(pagename):
     elif pagename == "example":
         target_url = URL_BASE + "docs/degradation_and_soiling_example.ipynb"
 
+    # is the the changelog page?
+    elif pagename == "changelog":
+        target_url = URL_BASE + "docs/sphinx/source/changelog"
+        
     # Just a normal source RST page
     else:
         target_url = URL_BASE + "docs/sphinx/source/" + pagename + ".rst"
