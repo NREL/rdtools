@@ -22,7 +22,7 @@ Note: make_github_url is defined in conf.py
 
     {# Create the HTML element with our custom GH link, unless it couldn't
        be determined. Note that None is lowercase in templates. #}
-    {% if target_url is not none %}
+    {% if link_info is not none %}
         <li class="wy-breadcrumbs-aside">
             <a href="{{ link_info['url'] }}" class="fa fa-github">
                 {{ link_info['text'] }}
