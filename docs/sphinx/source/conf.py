@@ -179,7 +179,12 @@ def make_github_url(pagename):
     else:
         target_url = URL_BASE + "docs/sphinx/source/" + pagename + ".rst"
 
-    return target_url
+    display_text = "View on github/" + branch
+    link_info = {
+        'url': target_url,
+        'text': display_text        
+    }
+    return link_info
 
 
 # variables to pass into the HTML templating engine; these are accessible from
