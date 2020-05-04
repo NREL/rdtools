@@ -11,6 +11,61 @@ class ConvergenceError(Exception):
     '''Rescale optimization did not converge'''
     pass
 
+def normalize_with_expected_power(pv, expected_power, irradiance, pv_input='power'):
+    '''
+    Normalize pv output based on expected PV power.
+
+    Parameters
+    ----------
+    pv : pd.Series
+        Right-labeled time series PV energy or power. If energy, should *not*
+        be cumulative, but only for preceding time step.
+    expected_power : pd.Series
+        Right-labeled time series of expected PV power.
+    irradiance : pd.Series
+        Right labeled time series of plane-of-array irradiance associated with `expected_power`
+    pv_input : str
+        'power' or 'energy' to specify type of input used for pv parameter
+
+    Returns
+    -------
+    normalized_energy : pd.Series
+        Energy normalized based on `expected_power
+    insolation : pd.Series
+        Insolation associated with each normalized point
+
+    '''
+    
+    freq = check_series_frequency(pv, 'pv')
+
+    if pv_input == 'power':
+        energy = energy_from_power(pv, freq)
+    elif pv_input == 'energy':
+        energy = pv
+    else:
+        raise ValueError("Unexpected value for pv_input. pv_input should be 'power' of 'energy'.")
+
+    model_tds, mean_model_td = delta_index(expected_power)
+    measure_tds, mean_measure_td = delta_index(energy)
+
+    # Case in which the model is as or more ruent than the measurements
+    if mean_model_td <= mean_measure_td:
+
+        expected_energy = energy_from_power(expected_power, freq)
+        insolation = energy_from_power(irradiance, freq)
+
+    # Case in which the model less frequent than the measurements
+    elif mean_model_td > mean_measure_td:
+
+        expected_power = interpolate(expected_power, energy.index)
+        expected_energy = energy_from_power(expected_power, freq)
+
+        irradiance = interpolate(irradiance, energy.index)
+        insolation = energy_from_power(irradiance, freq)
+
+    normalized_energy = energy / expected_energy
+
+    return normalized_energy, insolation
 
 def pvwatts_dc_power(poa_global, P_ref, T_cell=None, G_ref=1000, T_ref=25,
                      gamma_pdc=None):
@@ -104,30 +159,10 @@ def normalize_with_pvwatts(energy, pvwatts_kws):
         Insolation associated with each normalized point
     '''
 
-    freq = check_series_frequency(energy, 'energy')
-
     dc_power = pvwatts_dc_power(**pvwatts_kws)
     irrad = pvwatts_kws['poa_global']
 
-    model_tds, mean_model_td = delta_index(dc_power)
-    measure_tds, mean_measure_td = delta_index(energy)
-
-    # Case in which the model is as or more frequent than the measurements
-    if mean_model_td <= mean_measure_td:
-
-        energy_dc = energy_from_power(dc_power, freq)
-        insolation = energy_from_power(irrad, freq)
-
-    # Case in which the model less frequent than the measurements
-    elif mean_model_td > mean_measure_td:
-
-        dc_power = interpolate(dc_power, energy.index)
-        energy_dc = energy_from_power(dc_power, freq)
-
-        irrad = interpolate(irrad, energy.index)
-        insolation = energy_from_power(irrad, freq)
-
-    normalized_energy = energy / energy_dc
+    normalized_energy, insolation = normalize_with_expected_power(energy, dc_power, irrad, pv_input='energy')
 
     return normalized_energy, insolation
 
@@ -242,30 +277,9 @@ def normalize_with_sapm(energy, sapm_kws):
         Insolation associated with each normalized point
     '''
 
-    freq = check_series_frequency(energy, 'energy')
-
     dc_power, irrad = sapm_dc_power(**sapm_kws)
 
-    model_tds, mean_model_td = delta_index(dc_power)
-    irrad_tds, mean_irrad_td = delta_index(irrad)
-    measure_tds, mean_measure_td = delta_index(energy)
-
-    # Case in which the model is as or more frequent than the measurments
-    if mean_model_td <= mean_measure_td:
-
-        energy_dc = energy_from_power(dc_power, freq)
-        insolation = energy_from_power(irrad, freq)
-
-    # Case in which the model less frequent than the measurments
-    elif mean_model_td > mean_measure_td:
-
-        dc_power = interpolate(dc_power, energy.index)
-        energy_dc = energy_from_power(dc_power, freq)
-
-        irrad = interpolate(irrad, energy.index)
-        insolation = energy_from_power(irrad, freq)
-
-    normalized_energy = energy / energy_dc
+    normalized_energy, insolation = normalize_with_expected_power(energy, dc_power, irrad, pv_input='energy')
 
     return normalized_energy, insolation
 
