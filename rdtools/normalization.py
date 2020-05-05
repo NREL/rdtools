@@ -59,6 +59,10 @@ def normalize_with_expected_power(pv, expected_power, irradiance, pv_input='powe
 
     normalized_energy = energy / expected_energy
 
+    index_union = normalized_energy.index.union(insolation.index)
+    normalized_energy = normalized_energy.reindex(index_union)
+    insolation = insolation.reindex(index_union)
+
     return normalized_energy, insolation
 
 def pvwatts_dc_power(poa_global, P_ref, T_cell=None, G_ref=1000, T_ref=25,

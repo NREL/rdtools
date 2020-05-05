@@ -81,7 +81,8 @@ def test_normalize_with_expected_power_energy_option(pv_15, expected_15, irradia
     expected_norm.name = 'energy_Wh'
 
     expected_insol = pd.Series(
-        {Timestamp('2020-01-01 12:15:00', freq='15T'): 231.25,
+        {Timestamp('2020-01-01 12:00:00', freq='15T'): np.nan,
+         Timestamp('2020-01-01 12:15:00', freq='15T'): 231.25,
          Timestamp('2020-01-01 12:30:00', freq='15T'): 225.0,
          Timestamp('2020-01-01 12:45:00', freq='15T'): 240.625,
          Timestamp('2020-01-01 13:00:00', freq='15T'): 233.125}
