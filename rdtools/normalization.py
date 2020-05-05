@@ -30,7 +30,7 @@ def normalize_with_expected_power(pv, expected_power, irradiance, pv_input='powe
     Returns
     -------
     normalized_energy : pd.Series
-        Energy normalized based on `expected_power
+        Energy normalized based on `expected_power`
     insolation : pd.Series
         Insolation associated with each normalized point
 
@@ -44,7 +44,7 @@ def normalize_with_expected_power(pv, expected_power, irradiance, pv_input='powe
         energy = pv.copy()
         energy.name = 'energy_Wh'
     else:
-        raise ValueError("Unexpected value for pv_input. pv_input should be 'power' of 'energy'.")
+        raise ValueError("Unexpected value for pv_input. pv_input should be 'power' or 'energy'.")
 
     model_tds, mean_model_td = delta_index(expected_power)
     measure_tds, mean_measure_td = delta_index(energy)
