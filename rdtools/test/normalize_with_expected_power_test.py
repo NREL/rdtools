@@ -39,7 +39,7 @@ def irradiance_30(times_30):
 def test_normalize_with_expected_power_uniform_frequency(pv_15, expected_15, irradiance_15):
 	norm, insol = normalize_with_expected_power(pv_15, expected_15, irradiance_15)
 	expected_norm = pd.Series({Timestamp('2020-01-01 12:15:00', freq='15T'): 1.0,
-							   Timestamp('2020-01-01 12:30:00', freq='15T'): 1.0784313725490198,
+							  Timestamp('2020-01-01 12:30:00', freq='15T'): 1.0784313725490198,
                                Timestamp('2020-01-01 12:45:00', freq='15T'): 1.0612244897959184,
                                Timestamp('2020-01-01 13:00:00', freq='15T'): 1.0487804878048783})
 	expected_norm.name = 'energy_Wh'
