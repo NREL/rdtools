@@ -49,20 +49,13 @@ def normalize_with_expected_power(pv, expected_power, irradiance, pv_input='powe
     model_tds, mean_model_td = delta_index(expected_power)
     measure_tds, mean_measure_td = delta_index(energy)
 
-    # Case in which the model is as or more frequent than the measurements
-    if mean_model_td <= mean_measure_td:
-
-        expected_energy = energy_from_power(expected_power, freq)
-        insolation = energy_from_power(irradiance, freq)
-
     # Case in which the model less frequent than the measurements
-    elif mean_model_td > mean_measure_td:
-
+    if mean_model_td > mean_measure_td:
         expected_power = interpolate(expected_power, pv.index)
-        expected_energy = energy_from_power(expected_power, freq)
-
         irradiance = interpolate(irradiance, pv.index)
-        insolation = energy_from_power(irradiance, freq)
+        
+    expected_energy = energy_from_power(expected_power, freq)
+    insolation = energy_from_power(irradiance, freq)
 
     normalized_energy = energy / expected_energy
 
