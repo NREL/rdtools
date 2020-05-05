@@ -23,7 +23,7 @@ def normalize_with_expected_power(pv, expected_power, irradiance, pv_input='powe
     expected_power : pd.Series
         Right-labeled time series of expected PV power.
     irradiance : pd.Series
-        Right labeled time series of plane-of-array irradiance associated with `expected_power`
+        Right-labeled time series of plane-of-array irradiance associated with `expected_power`
     pv_input : str
         'power' or 'energy' to specify type of input used for pv parameter
 
