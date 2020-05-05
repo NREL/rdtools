@@ -41,14 +41,15 @@ def normalize_with_expected_power(pv, expected_power, irradiance, pv_input='powe
     if pv_input == 'power':
         energy = energy_from_power(pv, freq)
     elif pv_input == 'energy':
-        energy = pv
+        energy = pv.copy()
+        energy.name = 'energy_Wh'
     else:
         raise ValueError("Unexpected value for pv_input. pv_input should be 'power' of 'energy'.")
 
     model_tds, mean_model_td = delta_index(expected_power)
     measure_tds, mean_measure_td = delta_index(energy)
 
-    # Case in which the model is as or more ruent than the measurements
+    # Case in which the model is as or more frequent than the measurements
     if mean_model_td <= mean_measure_td:
 
         expected_energy = energy_from_power(expected_power, freq)
@@ -57,10 +58,10 @@ def normalize_with_expected_power(pv, expected_power, irradiance, pv_input='powe
     # Case in which the model less frequent than the measurements
     elif mean_model_td > mean_measure_td:
 
-        expected_power = interpolate(expected_power, energy.index)
+        expected_power = interpolate(expected_power, pv.index)
         expected_energy = energy_from_power(expected_power, freq)
 
-        irradiance = interpolate(irradiance, energy.index)
+        irradiance = interpolate(irradiance, pv.index)
         insolation = energy_from_power(irradiance, freq)
 
     normalized_energy = energy / expected_energy
