@@ -16,6 +16,7 @@ Enhancements
 ------------
 * Add new :py:mod:`~rdtools.soiling` module to implement the stochastic rate and
   recovery method (:pull:`112`).
+* Add new function :py:func:`~rdtools.normalization.normalize_with_expected_power` (:pull:`173`).
 * Add new functions :py:func:`~rdtools.normalization.energy_from_power` and
   :py:func:`~rdtools.normalization.interpolate` (:pull:`105`, :pull:`108`).
 * Add new function :py:func:`~rdtools.filtering.normalized_filter`.
