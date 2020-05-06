@@ -78,6 +78,7 @@ Functions for normalizing power measurements for further analysis.
    normalization.interpolate
    normalization.interpolate_series
    normalization.irradiance_rescale
+   normalization.normalize_with_expected_power
    normalization.normalize_with_pvwatts
    normalization.normalize_with_sapm
    normalization.pvwatts_dc_power

@@ -8,7 +8,7 @@ API Changes
   and :py:func:`~rdtools.normalization.normalize_with_sapm` have changed.
   Generally, when working with raw power data it should be converted to
   right-labeled energy with :py:func:`~rdtools.normalization.energy_from_power`
-  before being used with the normalization functions (:pull:`105`, :pull:`108`).
+  before being used with these normalization functions (:pull:`105`, :pull:`108`).
 * Remove ``low_power_cutoff`` parameter in :py:func:`~rdtools.filtering.clip_filter` (:issue:`84`).
 * Rename `soiling.srr_analysis` to :py:class:`~rdtools.soiling.SRRAnalysis` (:pull:`168`).
 
@@ -16,6 +16,7 @@ Enhancements
 ------------
 * Add new :py:mod:`~rdtools.soiling` module to implement the stochastic rate and
   recovery method (:pull:`112`).
+* Add new function :py:func:`~rdtools.normalization.normalize_with_expected_power` (:pull:`173`).
 * Add new functions :py:func:`~rdtools.normalization.energy_from_power` and
   :py:func:`~rdtools.normalization.interpolate` (:pull:`105`, :pull:`108`).
 * Add new function :py:func:`~rdtools.filtering.normalized_filter`.
