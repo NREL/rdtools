@@ -3,6 +3,12 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
+.. image:: _images/logo_horizontal_highres.png
+   :width: 600
+
+.. pipe character renders as a blank line, used as spacer after the logo
+|
+
 RdTools Overview
 ================
 
