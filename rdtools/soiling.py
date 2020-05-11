@@ -1768,11 +1768,14 @@ def make_seasonal_samples(list_of_SCs, sample_nr=10, min_multiplier=0.5,
 def force_periodicity(in_signal, signal_index, out_index):
     ''' Function for forcing periodicity in a seasonal component signal '''
     # Make sure the in_signal is a Series
-    if type(in_signal) == np.ndarray:
-        signal = pd.Series(index=out_index, data=np.nan)
-        signal.loc[signal_index] = in_signal
+    if isinstance(in_signal, np.ndarray):
+        signal = pd.Series(index=pd.DatetimeIndex(signal_index.date),
+            data=in_signal)
+    elif isinstance(in_signal, pd.Series):
+        signal = pd.Series(index=pd.DatetimeIndex(signal_index.date),
+            data=in_signal.values)
     else:
-        signal = in_signal
+        raise ValueError('in_signal must be numpy array or pandas Series')
     
     # Make sure that we don't remove too much of the data:
     remove_length = np.min([180, int((len(signal) - 365) / 2)])
@@ -1792,8 +1795,8 @@ def force_periodicity(in_signal, signal_index, out_index):
     median_signal = year_matrix.median(1)
     # The output is the median signal broadcasted to the whole time series
     output = pd.Series(
-        index=signal.index,
-        data=median_signal.reindex(signal.index.dayofyear-1).values)
+        index=out_index,
+        data=median_signal.reindex(out_index.dayofyear - 1).values)
     return output
 
 
