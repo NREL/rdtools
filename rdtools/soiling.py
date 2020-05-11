@@ -1347,7 +1347,7 @@ class cods_analysis():
             if len(self.errors) > 1:
                 print(self.errors)
     
-    return self.result_df, self.degradation, self.soiling_loss
+        return self.result_df, self.degradation, self.soiling_loss
 
 
     def Kalman_filter_for_SR(self, zs_series, process_noise=1e-4, zs_std=.05,
