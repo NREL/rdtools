@@ -1,6 +1,5 @@
 '''Functions for calculating the degradation rate of photovoltaic systems.'''
 
-from __future__ import division
 import pandas as pd
 import numpy as np
 import statsmodels.api as sm

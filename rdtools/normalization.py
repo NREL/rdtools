@@ -11,6 +11,59 @@ class ConvergenceError(Exception):
     '''Rescale optimization did not converge'''
     pass
 
+def normalize_with_expected_power(pv, expected_power, irradiance, pv_input='power'):
+    '''
+    Normalize pv output based on expected PV power.
+
+    Parameters
+    ----------
+    pv : pd.Series
+        Right-labeled time series PV energy or power. If energy, should *not*
+        be cumulative, but only for preceding time step.
+    expected_power : pd.Series
+        Right-labeled time series of expected PV power.
+    irradiance : pd.Series
+        Right-labeled time series of plane-of-array irradiance associated with `expected_power`
+    pv_input : str
+        'power' or 'energy' to specify type of input used for pv parameter
+
+    Returns
+    -------
+    normalized_energy : pd.Series
+        Energy normalized based on `expected_power`
+    insolation : pd.Series
+        Insolation associated with each normalized point
+
+    '''
+    
+    freq = check_series_frequency(pv, 'pv')
+
+    if pv_input == 'power':
+        energy = energy_from_power(pv, freq)
+    elif pv_input == 'energy':
+        energy = pv.copy()
+        energy.name = 'energy_Wh'
+    else:
+        raise ValueError("Unexpected value for pv_input. pv_input should be 'power' or 'energy'.")
+
+    model_tds, mean_model_td = delta_index(expected_power)
+    measure_tds, mean_measure_td = delta_index(energy)
+
+    # Case in which the model less frequent than the measurements
+    if mean_model_td > mean_measure_td:
+        expected_power = interpolate(expected_power, pv.index)
+        irradiance = interpolate(irradiance, pv.index)
+        
+    expected_energy = energy_from_power(expected_power, freq)
+    insolation = energy_from_power(irradiance, freq)
+
+    normalized_energy = energy / expected_energy
+
+    index_union = normalized_energy.index.union(insolation.index)
+    normalized_energy = normalized_energy.reindex(index_union)
+    insolation = insolation.reindex(index_union)
+
+    return normalized_energy, insolation
 
 def pvwatts_dc_power(poa_global, P_ref, T_cell=None, G_ref=1000, T_ref=25,
                      gamma_pdc=None):
@@ -104,30 +157,10 @@ def normalize_with_pvwatts(energy, pvwatts_kws):
         Insolation associated with each normalized point
     '''
 
-    freq = check_series_frequency(energy, 'energy')
-
     dc_power = pvwatts_dc_power(**pvwatts_kws)
     irrad = pvwatts_kws['poa_global']
 
-    model_tds, mean_model_td = delta_index(dc_power)
-    measure_tds, mean_measure_td = delta_index(energy)
-
-    # Case in which the model is as or more frequent than the measurements
-    if mean_model_td <= mean_measure_td:
-
-        energy_dc = energy_from_power(dc_power, freq)
-        insolation = energy_from_power(irrad, freq)
-
-    # Case in which the model less frequent than the measurements
-    elif mean_model_td > mean_measure_td:
-
-        dc_power = interpolate(dc_power, energy.index)
-        energy_dc = energy_from_power(dc_power, freq)
-
-        irrad = interpolate(irrad, energy.index)
-        insolation = energy_from_power(irrad, freq)
-
-    normalized_energy = energy / energy_dc
+    normalized_energy, insolation = normalize_with_expected_power(energy, dc_power, irrad, pv_input='energy')
 
     return normalized_energy, insolation
 
@@ -143,7 +176,9 @@ def sapm_dc_power(pvlib_pvsystem, met_data):
     ----------
     pvlib_pvsystem : pvlib-python LocalizedPVSystem object
         Object contains orientation, geographic coordinates, equipment
-        constants (including DC rated power in watts).
+        constants (including DC rated power in watts).  The object must also
+        specify either the `temperature_model_parameters` attribute or both
+        `racking_model` and `module_type` attributes to infer the temperature model parameters.
     met_data : pd.DataFrame
         Measured irradiance components, ambient temperature, and wind speed.
         Expected met_data DataFrame column names:
@@ -184,17 +219,16 @@ def sapm_dc_power(pvlib_pvsystem, met_data):
                                    poa_diffuse=total_irradiance['poa_diffuse'],
                                    airmass_absolute=airmass_absolute,
                                    aoi=aoi,
-                                   module=pvlib_pvsystem.module,
-                                   reference_irradiance=1)
+                                   module=pvlib_pvsystem.module)
 
     temp_cell = pvlib_pvsystem\
-        .sapm_celltemp(irrad=total_irradiance['poa_global'],
-                       wind=met_data['Wind Speed'],
-                       temp=met_data['Temperature'])
+        .sapm_celltemp(total_irradiance['poa_global'],
+                       met_data['Temperature'],
+                       met_data['Wind Speed'])
 
     dc_power = pvlib_pvsystem\
         .pvwatts_dc(g_poa_effective=effective_poa,
-                    temp_cell=temp_cell['temp_cell'])
+                    temp_cell=temp_cell)
 
     return dc_power, effective_poa
 
@@ -221,7 +255,9 @@ def normalize_with_sapm(energy, sapm_kws):
     ---------------
     pvlib_pvsystem : pvlib-python LocalizedPVSystem object
         Object contains orientation, geographic coordinates, equipment
-        constants.
+        constants (including DC rated power in watts).  The object must also
+        specify either the `temperature_model_parameters` attribute or both
+        `racking_model` and `module_type` to infer the model parameters.
     met_data : pd.DataFrame
         Measured met_data, ambient temperature, and wind speed.  Expected
         column names are ['DNI', 'GHI', 'DHI', 'Temperature', 'Wind Speed']
@@ -239,33 +275,9 @@ def normalize_with_sapm(energy, sapm_kws):
         Insolation associated with each normalized point
     '''
 
-    freq = check_series_frequency(energy, 'energy')
-
     dc_power, irrad = sapm_dc_power(**sapm_kws)
 
-    model_tds, mean_model_td = delta_index(dc_power)
-    irrad_tds, mean_irrad_td = delta_index(irrad)
-    measure_tds, mean_measure_td = delta_index(energy)
-
-    model_tds, mean_model_td = delta_index(dc_power)
-    measure_tds, mean_measure_td = delta_index(energy)
-
-    # Case in which the model is as or more frequent than the measurments
-    if mean_model_td <= mean_measure_td:
-
-        energy_dc = energy_from_power(dc_power, freq)
-        insolation = energy_from_power(irrad, freq)
-
-    # Case in which the model less frequent than the measurments
-    elif mean_model_td > mean_measure_td:
-
-        dc_power = interpolate(dc_power, energy.index)
-        energy_dc = energy_from_power(dc_power, freq)
-
-        irrad = interpolate(irrad, energy.index)
-        insolation = energy_from_power(irrad, freq)
-
-    normalized_energy = energy / energy_dc
+    normalized_energy, insolation = normalize_with_expected_power(energy, dc_power, irrad, pv_input='energy')
 
     return normalized_energy, insolation
 
@@ -305,7 +317,8 @@ def delta_index(series):
     return deltas, np.mean(deltas.dropna())
 
 
-def irradiance_rescale(irrad, modeled_irrad, max_iterations=100, method=None):
+def irradiance_rescale(irrad, modeled_irrad, max_iterations=100,
+                       method='iterative', convergence_threshold=1e-6):
     '''
     Attempt to rescale modeled irradiance to match measured irradiance on
     clear days.
@@ -319,25 +332,23 @@ def irradiance_rescale(irrad, modeled_irrad, max_iterations=100, method=None):
     max_iterations : int, default 100
         The maximum number of times to attempt rescale optimization.
         Ignored if `method` = 'single_opt'
-    method: str, default None
+    method : str, default 'iterative'
         The calculation method to use. 'single_opt' implements the
         irradiance_rescale of rdtools v1.1.3 and earlier. 'iterative'
         implements a more stable calculation that may yield different results
         from the single_opt method.
-        If omitted, issues a warning and uses the iterative calculation.
+    convergence_threshold : float, default 1e-6
+        The acceptable iteration-to-iteration scaling factor difference to
+        determine convergence.  If the threshold is not reached after
+        `max_iterations`, raise
+        :py:exc:`rdtools.normalization.ConvergenceError`.
+        Must be greater than zero.  Only used if `method=='iterative'`.
 
     Returns
     -------
     pd.Series
         Rescaled modeled irradiance time series
     '''
-
-    if method is None:
-        warnings.warn("The underlying calculations for irradiance_rescale "
-                      "have changed which may affect results. To revert to "
-                      "the version of irradiance_rescale from rdtools v1.1.3 "
-                      "or earlier, use method = 'single_opt'.")
-        method = 'iterative'
 
     if method == 'iterative':
         def _rmse(fact):
@@ -361,24 +372,22 @@ def irradiance_rescale(irrad, modeled_irrad, max_iterations=100, method=None):
             return factor
 
         # Calculate an initial guess for the rescale factor
-        factor = np.percentile(irrad.dropna(), 90) / \
-                 np.percentile(modeled_irrad.dropna(), 90)
+        factor = (np.percentile(irrad.dropna(), 90) /
+                  np.percentile(modeled_irrad.dropna(), 90))
+        prev_factor = 1.0
 
         # Iteratively run the optimization,
         # recalculating the clear sky filter each time
-        convergence_threshold = 10**-6
-        for i in range(max_iterations):
+        iteration = 0
+        while abs(factor - prev_factor) > convergence_threshold:
+            iteration += 1
+            if iteration > max_iterations:
+                msg = 'Rescale did not converge within max_iterations'
+                raise ConvergenceError(msg)
             prev_factor = factor
             factor = _single_rescale(irrad, modeled_irrad, factor)
-            delta = abs(factor - prev_factor)
-            if delta < convergence_threshold:
-                break
 
-        if delta >= convergence_threshold:
-            msg = 'Rescale did not converge within max_iterations'
-            raise ConvergenceError(msg)
-        else:
-            return factor * modeled_irrad
+        return factor * modeled_irrad
 
     elif method == 'single_opt':
         def _rmse(fact):

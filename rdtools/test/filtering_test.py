@@ -5,7 +5,7 @@ import unittest
 import pandas as pd
 import numpy as np
 
-from rdtools import csi_filter, poa_filter, tcell_filter, clip_filter
+from rdtools import csi_filter, poa_filter, tcell_filter, clip_filter, normalized_filter
 
 
 class CSIFilterTestCase(unittest.TestCase):
@@ -66,21 +66,25 @@ class ClipFilterTestCase(unittest.TestCase):
         #       use of the Series.quantile() method.
 
     def test_clip_filter_upper(self):
-        filtered = clip_filter(self.power, quant=0.98,
-                               low_power_cutoff=0)
+        filtered = clip_filter(self.power, quant=0.98)
 
         # Expect 99% of the 98th quantile to be filtered
         expected_result = self.power < (98 * 0.99)
         self.assertTrue((expected_result == filtered).all())
 
-    def test_clip_filter_low_cutoff(self):
-        filtered = clip_filter(self.power, quant=0.98,
-                               low_power_cutoff=2)
 
-        # Expect power <=2 to be filtered
-        expected_result = (self.power > 2)
-        self.assertTrue((expected_result.iloc[0:5] == filtered.iloc[0:5]).all())
+def test_normalized_filter_default():
+    pd.testing.assert_series_equal(normalized_filter(pd.Series([-5, 5])),
+                                   pd.Series([False, True]))
 
+    pd.testing.assert_series_equal(normalized_filter(pd.Series([-1e6, 1e6]), low_cutoff=None, high_cutoff=None),
+                                   pd.Series([True, True]))
+
+    pd.testing.assert_series_equal(normalized_filter(pd.Series([-2, 2]), low_cutoff=-1, high_cutoff=1),
+                                   pd.Series([False, False]))
+
+    pd.testing.assert_series_equal(normalized_filter(pd.Series([0.01 - 1e-16, 0.01 + 1e-16, 1e308])),
+                                   pd.Series([False, True, True]))
 
 if __name__ == '__main__':
     unittest.main()
