@@ -139,9 +139,9 @@ class SRRAnalysis():
                 1.5 * (deltas.quantile(0.75) - deltas.quantile(0.25))
 
         df['clean_event_detected'] = (df.delta > clean_threshold)
-        df['clean_event_detected'] = df.clean_event | out_start | out_end
-        df['clean_event_detected'] = (df.clean_event) & \
-                                     (~df.clean_event.shift(-1).fillna(False))
+        df['clean_event_detected'] = df.clean_event_detected | out_start | out_end
+        df['clean_event_detected'] = (df.clean_event_detected) & \
+                                     (~df.clean_event_detected.shift(-1).fillna(False))
 
         # Detect which cleaning events are associated with rain
         rolling_precip = df.precip.rolling(3, center=True).sum()
