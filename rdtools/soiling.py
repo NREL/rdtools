@@ -157,14 +157,7 @@ class SRRAnalysis():
         df = df.fillna(0)
 
         # Give an index to each soiling interval/run
-        run_list = []
-        run = 0
-        for x in df.clean_event:
-            if x:
-                run += 1
-            run_list.append(run)
-
-        df['run'] = run_list
+        df['run'] = df.clean_event.cumsum()
         df.index.name = 'date'  # this gets used by name
 
         self.renorm_factor = renorm
