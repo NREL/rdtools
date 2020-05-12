@@ -52,7 +52,7 @@ class SRRAnalysis():
                                  'daily frequency')
 
     def _calc_daily_df(self, day_scale=14, clean_threshold='infer',
-                       recenter=True):
+                       recenter=True, clean_criterion='precip_and_shift'):
         '''
         Calculates self.daily_df, a pandas dataframe prepared for SRR analysis,
         and self.renorm_factor, the renormalization factor for the daily
@@ -72,6 +72,14 @@ class SRRAnalysis():
         recenter : bool, default True
             Whether to recenter (renormalize) the daily performance to the
             median of the first year
+
+        clean_criterion : {'precip_and_shift', 'precip_or_shift'}, default \
+                'precip_and_shift'
+            The method of partitioning the dataset into soiling intervals.
+            If 'precip_and_shift', only rolling median shifts must coincide
+            with precipiation to be a valid cleaning event.
+            If 'precip_or_shift', rolling median shifts and precipitation
+            events are each sufficient on their own to be a cleaning event.
         '''
 
         df = self.pm.to_frame()
@@ -130,14 +138,21 @@ class SRRAnalysis():
             clean_threshold = deltas.quantile(0.75) + \
                 1.5 * (deltas.quantile(0.75) - deltas.quantile(0.25))
 
-        df['clean_event'] = (df.delta > clean_threshold)
-        df['clean_event'] = df.clean_event | out_start | out_end
-        df['clean_event'] = (df.clean_event) & \
-                            (~df.clean_event.shift(-1).fillna(False))
+        df['clean_event_detected'] = (df.delta > clean_threshold)
+        df['clean_event_detected'] = df.clean_event | out_start | out_end
+        df['clean_event_detected'] = (df.clean_event) & \
+                                     (~df.clean_event.shift(-1).fillna(False))
 
         # Detect which cleaning events are associated with rain
         rolling_precip = df.precip.rolling(3, center=True).sum()
-        df['clean_wo_precip'] = ~(rolling_precip > 0.01) & (df.clean_event)
+        precip_event = (rolling_precip > 0.01)
+        if clean_criterion == 'precip_and_shift':
+            df['clean_event'] = (df.clean_event_detected) & precip_event
+        elif clean_criterion == 'precip_or_shift':
+            df['clean_event'] = (df.clean_event_detected) | precip_event
+        else:
+            raise ValueError('clean_criterion must be one of '
+                             '{"precip_and_shift", "precip_or_shift"}')
 
         df = df.fillna(0)
 
@@ -207,7 +222,6 @@ class SRRAnalysis():
                 'run_slope_high': 0,
                 'max_neg_step': min(run.delta),
                 'start_loss': 1,
-                'clean_wo_precip': run.clean_wo_precip[0],
                 'inferred_start_loss': run.pi_norm.mean(),
                 'inferred_end_loss': run.pi_norm.mean(),
                 'valid': False
@@ -289,7 +303,7 @@ class SRRAnalysis():
         self.analyzed_daily_df = pm_frame_out
 
     def _calc_monte(self, monte, method='half_norm_clean',
-                    precip_clean_only=False, random_seed=None):
+                    random_seed=None):
         '''
         Runs the Monte Carlo step of the SRR method. Calculates
         self.random_profiles, a list of the random soiling profiles realized in
@@ -308,9 +322,6 @@ class SRRAnalysis():
             * 'half_norm_clean' - The three-sigma lower bound of recovery is
               inferred from the fit of the following interval, the upper bound
               is 1 with the magnitude drawn from a half normal centered at 1
-        precip_clean_only : bool, default False
-            If True, only consider cleaning events valid if they coincide with
-            precipitation events
         random_seed : int, default None
             Seed for random number generation in the Monte Carlo simulation.
             Use to ensure identical results on subsequent runs. Not a
@@ -361,14 +372,10 @@ class SRRAnalysis():
                     end = inter_start + row.run_loss
                     end_list.append(end)
 
-                    if row.clean_wo_precip and precip_clean_only:
-                        # don't allow recovery if there was no precipitation
-                        inter_start = end
-                    else:
-                        # Use a half normal with the infered clean at the
-                        # 3sigma point
-                        x = np.clip(end + row.inferred_recovery, 0, 1)
-                        inter_start = 1 - abs(np.random.normal(0.0, (1 - x)/3))
+                    # Use a half normal with the infered clean at the
+                    # 3sigma point
+                    x = np.clip(end + row.inferred_recovery, 0, 1)
+                    inter_start = 1 - abs(np.random.normal(0.0, (1 - x)/3))
 
                 # Update the valid rows in results_rand
                 valid_update = pd.DataFrame()
@@ -413,22 +420,14 @@ class SRRAnalysis():
                 for i, row in results_rand.iterrows():
                     start_list.append(inter_start)
                     end = inter_start + row.run_loss
-                    if row.clean_wo_precip and precip_clean_only:
-                        # don't allow recovery if there was no precipitation
-                        inter_start = end
-                    else:
-                        inter_start = np.random.uniform(end, 1)
+                    inter_start = np.random.uniform(end, 1)
                 results_rand['start_loss'] = start_list
 
             elif method == 'perfect_clean':
                 for i, row in results_rand.iterrows():
                     start_list.append(inter_start)
                     end = inter_start + row.run_loss
-                    if row.clean_wo_precip and precip_clean_only:
-                        # don't allow recovery if there was no precipitation
-                        inter_start = end
-                    else:
-                        inter_start = 1
+                    inter_start = 1
                 results_rand['start_loss'] = start_list
 
             else:
@@ -454,7 +453,8 @@ class SRRAnalysis():
         self.monte_losses = monte_losses
 
     def run(self, reps=1000, day_scale=14, clean_threshold='infer',
-            trim=False, method='half_norm_clean', precip_clean_only=False,
+            trim=False, method='half_norm_clean',
+            clean_criterion='precip_or_shift',
             exceedance_prob=95.0, confidence_level=68.2, recenter=True,
             max_relative_slope_error=500.0, max_negative_step=0.05,
             random_seed=None):
@@ -489,9 +489,13 @@ class SRRAnalysis():
               upper bound is 1 with the magnitude drawn from a half normal
               centered at 1
 
-        precip_clean_only : bool, default False
-            If True, only consider cleaning events valid if they coincide with
-            precipitation events
+        clean_criterion : {'precip_and_shift', 'precip_or_shift'}, default \
+                'precip_and_shift'
+            The method of partitioning the dataset into soiling intervals.
+            If 'precip_and_shift', only rolling median shifts must coincide
+            with precipiation to be a valid cleaning event.
+            If 'precip_or_shift', rolling median shifts and precipitation
+            events are each sufficient on their own to be a cleaning event.
         exceedance_prob : float, default 95.0
             The probability level to use for exceedance value calculation in
             percent
@@ -535,12 +539,12 @@ class SRRAnalysis():
         '''
         self._calc_daily_df(day_scale=day_scale,
                             clean_threshold=clean_threshold,
-                            recenter=recenter)
+                            recenter=recenter,
+                            clean_criterion=clean_criterion)
         self._calc_result_df(trim=trim,
                              max_relative_slope_error=max_relative_slope_error,
                              max_negative_step=max_negative_step)
         self._calc_monte(reps, method=method,
-                         precip_clean_only=precip_clean_only,
                          random_seed=random_seed)
 
         # Calculate the P50 and confidence interval
@@ -578,7 +582,8 @@ class SRRAnalysis():
 
 def soiling_srr(daily_normalized_energy, daily_insolation, reps=1000,
                 precip=None, day_scale=14, clean_threshold='infer',
-                trim=False, method='half_norm_clean', precip_clean_only=False,
+                trim=False, method='half_norm_clean',
+                clean_criterion='precip_or_shift',
                 exceedance_prob=95.0, confidence_level=68.2, recenter=True,
                 max_relative_slope_error=500.0, max_negative_step=0.05,
                 random_seed=None):
@@ -621,9 +626,13 @@ def soiling_srr(daily_normalized_energy, daily_insolation, reps=1000,
         * `half_norm_clean` (default) - The three-sigma lower bound of recovery
           is inferred from the fit of the following interval, the upper bound
           is 1 with the magnitude drawn from a half normal centered at 1
-    precip_clean_only : bool, default False
-        If True, only consider cleaning events valid if they coincide with
-        precipitation events
+    clean_criterion : {'precip_and_shift', 'precip_or_shift'}, default \
+            'precip_and_shift'
+        The method of partitioning the dataset into soiling intervals.
+        If 'precip_and_shift', only rolling median shifts must coincide
+        with precipiation to be a valid cleaning event.
+        If 'precip_or_shift', rolling median shifts and precipitation
+        events are each sufficient on their own to be a cleaning event.
     exceedance_prob : float, default 95.0
         the probability level to use for exceedance value calculation in
         percent
@@ -678,7 +687,7 @@ def soiling_srr(daily_normalized_energy, daily_insolation, reps=1000,
             clean_threshold=clean_threshold,
             trim=trim,
             method=method,
-            precip_clean_only=precip_clean_only,
+            clean_criterion=clean_criterion,
             exceedance_prob=exceedance_prob,
             confidence_level=confidence_level,
             recenter=recenter,
