@@ -164,7 +164,7 @@ class SRRAnalysis():
         self.daily_df = df
 
     def _calc_result_df(self, trim=False, max_relative_slope_error=500.0,
-                        max_negative_step=0.05):
+                        max_negative_step=0.05, min_interval_length=2):
         '''
         Calculates self.result_df, a pandas dataframe summarizing the soiling
         intervals identified and self.analyzed_daily_df, a version of
@@ -182,6 +182,9 @@ class SRRAnalysis():
             The maximum magnitude of negative discrete steps allowed in an
             interval for the interval to be considered valid (units of
             normalized performance metric).
+        min_interval_length : int, default 2
+            The minimum duration for an interval to be considered
+            valid.  Cannot be less than 2 (days).
         '''
 
         daily_df = self.daily_df
@@ -219,7 +222,7 @@ class SRRAnalysis():
                 'inferred_end_loss': run.pi_norm.mean(),
                 'valid': False
             }
-            if len(run) > 2 and run.pi_norm.sum() > 0:
+            if len(run) > min_interval_length and run.pi_norm.sum() > 0:
                 fit = theilslopes(run.pi_norm, run.day)
                 fit_poly = np.poly1d(fit[0:2])
                 result_dict['run_slope'] = fit[0]
@@ -447,7 +450,7 @@ class SRRAnalysis():
 
     def run(self, reps=1000, day_scale=14, clean_threshold='infer',
             trim=False, method='half_norm_clean',
-            clean_criterion='precip_or_shift',
+            clean_criterion='precip_or_shift', min_interval_length=2,
             exceedance_prob=95.0, confidence_level=68.2, recenter=True,
             max_relative_slope_error=500.0, max_negative_step=0.05,
             random_seed=None):
@@ -489,6 +492,9 @@ class SRRAnalysis():
             with precipiation to be a valid cleaning event.
             If 'precip_or_shift', rolling median shifts and precipitation
             events are each sufficient on their own to be a cleaning event.
+        min_interval_length : int, default 2
+            The minimum duration for an interval to be considered
+            valid.  Cannot be less than 2 (days).
         exceedance_prob : float, default 95.0
             The probability level to use for exceedance value calculation in
             percent
@@ -536,7 +542,8 @@ class SRRAnalysis():
                             clean_criterion=clean_criterion)
         self._calc_result_df(trim=trim,
                              max_relative_slope_error=max_relative_slope_error,
-                             max_negative_step=max_negative_step)
+                             max_negative_step=max_negative_step,
+                             min_interval_length=min_interval_length)
         self._calc_monte(reps, method=method,
                          random_seed=random_seed)
 
@@ -576,7 +583,7 @@ class SRRAnalysis():
 def soiling_srr(daily_normalized_energy, daily_insolation, reps=1000,
                 precip=None, day_scale=14, clean_threshold='infer',
                 trim=False, method='half_norm_clean',
-                clean_criterion='precip_or_shift',
+                clean_criterion='precip_or_shift', min_interval_length=2,
                 exceedance_prob=95.0, confidence_level=68.2, recenter=True,
                 max_relative_slope_error=500.0, max_negative_step=0.05,
                 random_seed=None):
@@ -626,6 +633,9 @@ def soiling_srr(daily_normalized_energy, daily_insolation, reps=1000,
         with precipiation to be a valid cleaning event.
         If 'precip_or_shift', rolling median shifts and precipitation
         events are each sufficient on their own to be a cleaning event.
+    min_interval_length : int, default 2
+        The minimum duration for an interval to be considered
+        valid.  Cannot be less than 2 (days).
     exceedance_prob : float, default 95.0
         the probability level to use for exceedance value calculation in
         percent
