@@ -1,4 +1,4 @@
-# About RdTools
+<img src="./docs/sphinx/source/_images/logo_horizontal_highres.png" width="600" alt="RdTools logo"/>
 
 Master branch: 
 [![Build Status](https://travis-ci.org/NREL/rdtools.svg?branch=master)](https://travis-ci.org/NREL/rdtools)  
