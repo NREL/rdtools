@@ -1153,7 +1153,7 @@ class cods_analysis():
         sss = [r[5] for r in results]
 
         # Calculate weights
-        weights = 1 / RMSEs / (.1 + SR_is_one_fraction)
+        weights = 1 / RMSEs / (1 + SR_is_one_fraction)
         weights /= np.sum(weights)
 
         # Save knobs and weights for initial model fits
@@ -1274,7 +1274,7 @@ class cods_analysis():
                                    bar_length=30)
 
         # Reweight and save weights
-        weights = 1 / np.array(RMSEs) / (.1 + np.array(SR_is_1))
+        weights = 1 / np.array(RMSEs) / (1 + np.array(SR_is_1))
         weights /= np.sum(weights)
         self.knobs_n_weights = pd.concat(
             [pd.DataFrame(knobs),
