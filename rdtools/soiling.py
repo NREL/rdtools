@@ -30,6 +30,7 @@ class SRRAnalysis():
         Daily total precipitation. (Only used if `precip_clean_only` is True in
         subsequent calculations)
     '''
+
     def __init__(self, daily_normalized_energy, daily_insolation, precip=None):
         self.pm = daily_normalized_energy  # daily performance metric
         self.insol = daily_insolation
@@ -117,7 +118,7 @@ class SRRAnalysis():
         bfill = df['pi_norm'].fillna(method='bfill', limit=day_scale)
         ffill = df['pi_norm'].fillna(method='ffill', limit=day_scale)
         out_start = (~df['pi_norm'].isnull() & bfill.shift(-1).isnull())
-        out_end   = (~df['pi_norm'].isnull() & ffill.shift(1).isnull())
+        out_end = (~df['pi_norm'].isnull() & ffill.shift(1).isnull())
 
         # clean up the first and last elements
         out_start.iloc[-1] = False
@@ -240,8 +241,7 @@ class SRRAnalysis():
 
         # Filter results for each interval,
         # setting invalid interval to slope of 0
-        results['slope_err'] = (results.run_slope_high-results.run_slope_low) \
-                                    / abs(results.run_slope)
+        results['slope_err'] = (results.run_slope_high-results.run_slope_low)/abs(results.run_slope)
         # critera for exclusions
         filt = (
             (results.run_slope > 0) |
@@ -256,12 +256,12 @@ class SRRAnalysis():
 
         # Calculate the next inferred start loss from next valid interval
         results['next_inferred_start_loss'] = np.clip(
-                results[results.valid].inferred_start_loss.shift(-1),
-                0, 1)
+            results[results.valid].inferred_start_loss.shift(-1),
+            0, 1)
         # Calculate the inferred recovery at the end of each interval
         results['inferred_recovery'] = np.clip(
-                results.next_inferred_start_loss - results.inferred_end_loss,
-                0, 1)
+            results.next_inferred_start_loss - results.inferred_end_loss,
+            0, 1)
 
         # Don't consider data outside of first and last valid interverals
         if len(results[results.valid]) == 0:
@@ -559,9 +559,9 @@ class SRRAnalysis():
         # Construct calc_info output
 
         intervals_out = self.result_df[
-                ['start', 'end', 'run_slope', 'run_slope_low',
-                 'run_slope_high', 'inferred_start_loss', 'inferred_end_loss',
-                 'length', 'valid']].copy()
+            ['start', 'end', 'run_slope', 'run_slope_low',
+                'run_slope_high', 'inferred_start_loss', 'inferred_end_loss',
+                'length', 'valid']].copy()
         intervals_out.rename(columns={'run_slope': 'slope',
                                       'run_slope_high': 'slope_high',
                                       'run_slope_low': 'slope_low',
@@ -685,17 +685,17 @@ def soiling_srr(daily_normalized_energy, daily_insolation, reps=1000,
                       precip=precip)
 
     sr, sr_ci, soiling_info = srr.run(
-            reps=reps,
-            day_scale=day_scale,
-            clean_threshold=clean_threshold,
-            trim=trim,
-            method=method,
-            clean_criterion=clean_criterion,
-            exceedance_prob=exceedance_prob,
-            confidence_level=confidence_level,
-            recenter=recenter,
-            max_relative_slope_error=max_relative_slope_error,
-            max_negative_step=max_negative_step,
-            random_seed=random_seed)
+        reps=reps,
+        day_scale=day_scale,
+        clean_threshold=clean_threshold,
+        trim=trim,
+        method=method,
+        clean_criterion=clean_criterion,
+        exceedance_prob=exceedance_prob,
+        confidence_level=confidence_level,
+        recenter=recenter,
+        max_relative_slope_error=max_relative_slope_error,
+        max_negative_step=max_negative_step,
+        random_seed=random_seed)
 
     return sr, sr_ci, soiling_info
