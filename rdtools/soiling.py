@@ -1101,6 +1101,10 @@ class cods_analysis():
         '''
         pi = self.pm.copy()
 
+        ########################
+        ####### STAGE 1 ########
+        ########################
+
         # Generate combinations of model knobs/parameters
         index_list = list(itertools.product(
                             [0, 1], repeat=len(knob_alternatives)))
@@ -1191,12 +1195,14 @@ class cods_analysis():
             YOY = RdToolsDeg.degradation_year_on_year(pi)
             self.degradation = [YOY[0], YOY[1][0], YOY[1][1]]
             self.soiling_loss = [0, 0, (1 - df_out.soiling_ratio).mean()]
+            self.sss = True
             self.errors = (
                     'Soiling signal is small relative to the noise.'
                     'Iterative decomposition not possible.\n'
                     'Degradation found by RdTools YoY')
             print(self.errors)
             return
+        self.sss = False
 
         # Aggregate all bootstrap samples
         all_bootstrap_samples = pd.concat(bootstrap_samples_list, axis=1,
@@ -1214,7 +1220,10 @@ class cods_analysis():
                                                  max_multiplier=1.75,
                                                  max_shift=30)
 
-        # Entering bootstrapping
+        ########################
+        ####### STAGE 2 ########
+        ########################
+
         if verbose and bootstrap_nr > 0:
             print('\nBootstrapping for uncertainty analysis',
                   '({:} realizations):'.format(bootstrap_nr))
@@ -1225,10 +1234,10 @@ class cods_analysis():
         for b in range(bootstrap_nr):
             try:
                 # randomly choose model knobs
-                dt = np.random.uniform(knob_alternatives[1][0]*.75,
-                                       knob_alternatives[1][1]*.75)
-                pt = np.random.uniform(knob_alternatives[2][0]*1.5,
-                                       knob_alternatives[2][1]*1.5)
+                dt = np.random.uniform(knob_alternatives[1][0],
+                                       knob_alternatives[1][1])
+                pt = np.random.uniform(knob_alternatives[2][0],
+                                       knob_alternatives[2][1])
                 pn = np.random.uniform(process_noise / 1.5, process_noise * 1.5)
                 renormalize_SR = np.random.choice([None,
                                                    np.random.uniform(.5, .95)])
@@ -1285,6 +1294,10 @@ class cods_analysis():
             axis=1, ignore_index=True)
         self.knobs_n_weights.columns = ['dt', 'pt', 'pn', 'RSR', 'ffill',
                                         'RMSE', 'ADF', 'SR==1', 'weights']
+
+        ########################
+        ####### STAGE 3 ########
+        ########################
 
         # Concatenate boostrap model fits
         concat_tot_mod = pd.concat([kdf.total_model for kdf in bt_kdfs], 1)
