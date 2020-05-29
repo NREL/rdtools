@@ -34,3 +34,4 @@ rdtools.egg-info*
 \#*\#
 .\#*
 
+*.pickle
