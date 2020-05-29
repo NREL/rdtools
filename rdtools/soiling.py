@@ -53,7 +53,7 @@ class SRRAnalysis():
                                  'daily frequency')
 
     def _calc_daily_df(self, day_scale=14, clean_threshold='infer',
-                       recenter=True, clean_criterion='precip_and_shift'):
+                       recenter=True, clean_criterion='shift'):
         '''
         Calculates self.daily_df, a pandas dataframe prepared for SRR analysis,
         and self.renorm_factor, the renormalization factor for the daily
@@ -74,13 +74,15 @@ class SRRAnalysis():
             Whether to recenter (renormalize) the daily performance to the
             median of the first year
 
-        clean_criterion : {'precip_and_shift', 'precip_or_shift'}, default \
-                'precip_and_shift'
+        clean_criterion : {'precip_and_shift', 'precip_or_shift', 'precip', 'shift'} \
+                default 'shift'
             The method of partitioning the dataset into soiling intervals.
             If 'precip_and_shift', only rolling median shifts must coincide
             with precipiation to be a valid cleaning event.
             If 'precip_or_shift', rolling median shifts and precipitation
             events are each sufficient on their own to be a cleaning event.
+            If 'shift', only rolling median shifts are treated as cleaning events.
+            If 'precip', only preciptation events are treated as cleaning events.
         '''
 
         df = self.pm.to_frame()
@@ -145,12 +147,16 @@ class SRRAnalysis():
         rolling_precip = df.precip.rolling(3, center=True).sum()
         precip_event = (rolling_precip > 0.01)
         if clean_criterion == 'precip_and_shift':
-            df['clean_event'] = (df.clean_event_detected) & precip_event
+            df['clean_event'] = (df['clean_event_detected'] & precip_event)
         elif clean_criterion == 'precip_or_shift':
-            df['clean_event'] = (df.clean_event_detected) | precip_event
+            df['clean_event'] = (df['clean_event_detected'] | precip_event)
+        elif clean_criterion == 'precip':
+            df['clean_event'] = precip_event
+        elif clean_criterion == 'shift':
+            df['clean_event'] = df['clean_event_detected']
         else:
             raise ValueError('clean_criterion must be one of '
-                             '{"precip_and_shift", "precip_or_shift"}')
+                             '{"precip_and_shift", "precip_or_shift", "precip", "shift"}')
 
         df['clean_event'] = df.clean_event | out_start | out_end
         df['clean_event'] = (df.clean_event) & (~df.clean_event.shift(-1).fillna(False))
@@ -450,7 +456,7 @@ class SRRAnalysis():
 
     def run(self, reps=1000, day_scale=14, clean_threshold='infer',
             trim=False, method='half_norm_clean',
-            clean_criterion='precip_or_shift', min_interval_length=2,
+            clean_criterion='shift', min_interval_length=2,
             exceedance_prob=95.0, confidence_level=68.2, recenter=True,
             max_relative_slope_error=500.0, max_negative_step=0.05,
             random_seed=None):
@@ -485,13 +491,15 @@ class SRRAnalysis():
               upper bound is 1 with the magnitude drawn from a half normal
               centered at 1
 
-        clean_criterion : {'precip_and_shift', 'precip_or_shift'}, default \
-                'precip_and_shift'
+        clean_criterion : {'precip_and_shift', 'precip_or_shift', 'precip', 'shift'} \
+                default 'shift'
             The method of partitioning the dataset into soiling intervals.
             If 'precip_and_shift', only rolling median shifts must coincide
             with precipiation to be a valid cleaning event.
             If 'precip_or_shift', rolling median shifts and precipitation
             events are each sufficient on their own to be a cleaning event.
+            If 'shift', only rolling median shifts are treated as cleaning events.
+            If 'precip', only preciptation events are treated as cleaning events.
         min_interval_length : int, default 2
             The minimum duration for an interval to be considered
             valid.  Cannot be less than 2 (days).
@@ -583,7 +591,7 @@ class SRRAnalysis():
 def soiling_srr(daily_normalized_energy, daily_insolation, reps=1000,
                 precip=None, day_scale=14, clean_threshold='infer',
                 trim=False, method='half_norm_clean',
-                clean_criterion='precip_or_shift', min_interval_length=2,
+                clean_criterion='shift', min_interval_length=2,
                 exceedance_prob=95.0, confidence_level=68.2, recenter=True,
                 max_relative_slope_error=500.0, max_negative_step=0.05,
                 random_seed=None):
@@ -626,13 +634,15 @@ def soiling_srr(daily_normalized_energy, daily_insolation, reps=1000,
         * `half_norm_clean` (default) - The three-sigma lower bound of recovery
           is inferred from the fit of the following interval, the upper bound
           is 1 with the magnitude drawn from a half normal centered at 1
-    clean_criterion : {'precip_and_shift', 'precip_or_shift'}, default \
-            'precip_and_shift'
-        The method of partitioning the dataset into soiling intervals.
-        If 'precip_and_shift', only rolling median shifts must coincide
-        with precipiation to be a valid cleaning event.
-        If 'precip_or_shift', rolling median shifts and precipitation
-        events are each sufficient on their own to be a cleaning event.
+        clean_criterion : {'precip_and_shift', 'precip_or_shift', 'precip', 'shift'} \
+                default 'shift'
+            The method of partitioning the dataset into soiling intervals.
+            If 'precip_and_shift', only rolling median shifts must coincide
+            with precipiation to be a valid cleaning event.
+            If 'precip_or_shift', rolling median shifts and precipitation
+            events are each sufficient on their own to be a cleaning event.
+            If 'shift', only rolling median shifts are treated as cleaning events.
+            If 'precip', only preciptation events are treated as cleaning events.
     min_interval_length : int, default 2
         The minimum duration for an interval to be considered
         valid.  Cannot be less than 2 (days).
