@@ -53,7 +53,7 @@ class SRRAnalysis():
                                  'daily frequency')
 
     def _calc_daily_df(self, day_scale=14, clean_threshold='infer',
-                       recenter=True, clean_criterion='shift'):
+                       recenter=True, clean_criterion='shift', precip_threshold=0.01):
         '''
         Calculates self.daily_df, a pandas dataframe prepared for SRR analysis,
         and self.renorm_factor, the renormalization factor for the daily
@@ -63,26 +63,25 @@ class SRRAnalysis():
         ----------
         day_scale : int, default 14
             The number of days to use in rolling median for cleaning detection
-
         clean_threshold : float or 'infer', default 'infer'
             If float: the fractional positive shift in rolling median for
             cleaning detection.
             If 'infer': automatically use outliers in the shift as the
             threshold
-
         recenter : bool, default True
             Whether to recenter (renormalize) the daily performance to the
             median of the first year
-
         clean_criterion : {'precip_and_shift', 'precip_or_shift', 'precip', 'shift'} \
                 default 'shift'
             The method of partitioning the dataset into soiling intervals.
             If 'precip_and_shift', only rolling median shifts must coincide
-            with precipiation to be a valid cleaning event.
+            with precipitation to be a valid cleaning event.
             If 'precip_or_shift', rolling median shifts and precipitation
             events are each sufficient on their own to be a cleaning event.
             If 'shift', only rolling median shifts are treated as cleaning events.
-            If 'precip', only preciptation events are treated as cleaning events.
+            If 'precip', only precipitation events are treated as cleaning events.
+        precip_threshold : float, default 0.01
+            The daily precipitation threshold for defining precipitation cleaning events.
         '''
 
         df = self.pm.to_frame()
@@ -145,7 +144,7 @@ class SRRAnalysis():
 
         # Detect which cleaning events are associated with rain
         rolling_precip = df.precip.rolling(3, center=True).sum()
-        precip_event = (rolling_precip > 0.01)
+        precip_event = (rolling_precip > precip_threshold)
         if clean_criterion == 'precip_and_shift':
             df['clean_event'] = (df['clean_event_detected'] & precip_event)
         elif clean_criterion == 'precip_or_shift':
@@ -456,7 +455,7 @@ class SRRAnalysis():
 
     def run(self, reps=1000, day_scale=14, clean_threshold='infer',
             trim=False, method='half_norm_clean',
-            clean_criterion='shift', min_interval_length=2,
+            clean_criterion='shift', precip_threshold=0.01, min_interval_length=2,
             exceedance_prob=95.0, confidence_level=68.2, recenter=True,
             max_relative_slope_error=500.0, max_negative_step=0.05,
             random_seed=None):
@@ -495,11 +494,13 @@ class SRRAnalysis():
                 default 'shift'
             The method of partitioning the dataset into soiling intervals.
             If 'precip_and_shift', only rolling median shifts must coincide
-            with precipiation to be a valid cleaning event.
+            with precipitation to be a valid cleaning event.
             If 'precip_or_shift', rolling median shifts and precipitation
             events are each sufficient on their own to be a cleaning event.
             If 'shift', only rolling median shifts are treated as cleaning events.
-            If 'precip', only preciptation events are treated as cleaning events.
+            If 'precip', only precipitation events are treated as cleaning events.
+        precip_threshold : float, default 0.01
+            The daily precipitation threshold for defining precipitation cleaning events.
         min_interval_length : int, default 2
             The minimum duration for an interval to be considered
             valid.  Cannot be less than 2 (days).
@@ -547,7 +548,8 @@ class SRRAnalysis():
         self._calc_daily_df(day_scale=day_scale,
                             clean_threshold=clean_threshold,
                             recenter=recenter,
-                            clean_criterion=clean_criterion)
+                            clean_criterion=clean_criterion,
+                            precip_threshold=precip_threshold)
         self._calc_result_df(trim=trim,
                              max_relative_slope_error=max_relative_slope_error,
                              max_negative_step=max_negative_step,
@@ -591,7 +593,7 @@ class SRRAnalysis():
 def soiling_srr(daily_normalized_energy, daily_insolation, reps=1000,
                 precip=None, day_scale=14, clean_threshold='infer',
                 trim=False, method='half_norm_clean',
-                clean_criterion='shift', min_interval_length=2,
+                clean_criterion='shift', precip_threshold=0.01, min_interval_length=2,
                 exceedance_prob=95.0, confidence_level=68.2, recenter=True,
                 max_relative_slope_error=500.0, max_negative_step=0.05,
                 random_seed=None):
@@ -634,15 +636,17 @@ def soiling_srr(daily_normalized_energy, daily_insolation, reps=1000,
         * `half_norm_clean` (default) - The three-sigma lower bound of recovery
           is inferred from the fit of the following interval, the upper bound
           is 1 with the magnitude drawn from a half normal centered at 1
-        clean_criterion : {'precip_and_shift', 'precip_or_shift', 'precip', 'shift'} \
+    clean_criterion : {'precip_and_shift', 'precip_or_shift', 'precip', 'shift'} \
                 default 'shift'
             The method of partitioning the dataset into soiling intervals.
             If 'precip_and_shift', only rolling median shifts must coincide
-            with precipiation to be a valid cleaning event.
+            with precipitation to be a valid cleaning event.
             If 'precip_or_shift', rolling median shifts and precipitation
             events are each sufficient on their own to be a cleaning event.
             If 'shift', only rolling median shifts are treated as cleaning events.
-            If 'precip', only preciptation events are treated as cleaning events.
+            If 'precip', only precipitation events are treated as cleaning events.
+    precip_threshold : float, default 0.01
+        The daily precipitation threshold for defining precipitation cleaning events.
     min_interval_length : int, default 2
         The minimum duration for an interval to be considered
         valid.  Cannot be less than 2 (days).
@@ -701,6 +705,7 @@ def soiling_srr(daily_normalized_energy, daily_insolation, reps=1000,
         trim=trim,
         method=method,
         clean_criterion=clean_criterion,
+        precip_threshold=precip_threshold,
         exceedance_prob=exceedance_prob,
         confidence_level=confidence_level,
         recenter=recenter,
