@@ -92,12 +92,27 @@ def test_soiling_srr(normalized_daily, insolation, times):
 
 def test_soiling_srr_with_precip(normalized_daily, insolation, times):
     precip = pd.Series(index=times, data=0)
-    precip['2019-02-24 00:00:00-07:00'] = 1
+    precip['2019-01-18 00:00:00-07:00'] = 1
+    precip['2019-02-20 00:00:00-07:00'] = 1
+    sr, sr_ci, soiling_info = soiling_srr(normalized_daily, insolation, reps=10,
+                                          random_seed=1977, precip=precip, clean_criterion='precip_and_shift')
+    assert 0.983270 == pytest.approx(sr, abs=1e-6),\
+        "Soiling ratio with clean_criterion='precip_and_shift' different from expected"
 
     sr, sr_ci, soiling_info = soiling_srr(normalized_daily, insolation, reps=10,
-                                          random_seed=1977, precip=precip, precip_clean_only=True)
-    assert 0.948867 == pytest.approx(sr, abs=1e-6),\
-        'Soiling ratio with precip_clean_only=True different from expected'
+                                          random_seed=1977, precip=precip, clean_criterion='precip_or_shift')
+    assert 0.973228 == pytest.approx(sr, abs=1e-6),\
+        "Soiling ratio with clean_criterion='precip_or_shift' different from expected"
+
+    sr, sr_ci, soiling_info = soiling_srr(normalized_daily, insolation, reps=10,
+                                          random_seed=1977, precip=precip, clean_criterion='precip')
+    assert 0.976196 == pytest.approx(sr, abs=1e-6),\
+        "Soiling ratio with clean_criterion='precip' different from expected"
+
+    sr, sr_ci, soiling_info = soiling_srr(normalized_daily, insolation, reps=10,
+                                          random_seed=1977, precip=precip, clean_criterion='shift')
+    assert 0.963133 == pytest.approx(sr, abs=1e-6),\
+        "Soiling ratio with clean_criterion='shift' different from expected"
 
 
 def test_soiling_srr_confidence_levels(normalized_daily, insolation):
