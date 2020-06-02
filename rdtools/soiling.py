@@ -27,8 +27,7 @@ class SRRAnalysis():
         Daily plane-of-array insolation corresponding to
         `daily_normalized_energy`
     precip : pd.Series, default None
-        Daily total precipitation. (Only used if `precip_clean_only` is True in
-        subsequent calculations)
+        Daily total precipitation. (Ignored if `clean_criterion`='shift' in subsequent calculations.)
     '''
 
     def __init__(self, daily_normalized_energy, daily_insolation, precip=None):
@@ -615,7 +614,7 @@ def soiling_srr(daily_normalized_energy, daily_insolation, reps=1000,
     reps : int, default 1000
         number of Monte Carlo realizations to calculate
     precip : pd.Series, default None
-        Daily total precipitation. (Only used if precip_clean_only=True)
+        Daily total precipitation. (Ignored if `clean_criterion`='shift'.)
     day_scale : int, default 14
         The number of days to use in rolling median for cleaning detection,
         and the maximum number of days of missing data to tolerate in a valid
