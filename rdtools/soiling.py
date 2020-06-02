@@ -141,11 +141,11 @@ class SRRAnalysis():
                 1.5 * (deltas.quantile(0.75) - deltas.quantile(0.25))
 
         df['clean_event_detected'] = (df.delta > clean_threshold)
+        precip_event = (df['precip'] > precip_threshold)
 
-        # Detect which cleaning events are associated with rain
-        rolling_precip = df.precip.rolling(3, center=True).sum()
-        precip_event = (rolling_precip > precip_threshold)
         if clean_criterion == 'precip_and_shift':
+            # Detect which cleaning events are associated with rain within a 3 day window
+            precip_event = precip_event.rolling(3, center=True, min_periods=1).sum() >= 1
             df['clean_event'] = (df['clean_event_detected'] & precip_event)
         elif clean_criterion == 'precip_or_shift':
             df['clean_event'] = (df['clean_event_detected'] | precip_event)
