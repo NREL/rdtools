@@ -27,7 +27,8 @@ class SRRAnalysis():
         Daily plane-of-array insolation corresponding to
         `daily_normalized_energy`
     precip : pd.Series, default None
-        Daily total precipitation. (Ignored if `clean_criterion`='shift' in subsequent calculations.)
+        Daily total precipitation. (Ignored if `clean_criterion`='shift' in
+        subsequent calculations.)
     '''
 
     def __init__(self, daily_normalized_energy, daily_insolation, precip=None):
