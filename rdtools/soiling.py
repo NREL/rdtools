@@ -610,7 +610,7 @@ def soiling_srr(daily_normalized_energy, daily_insolation, reps=1000,
         photocurrent ratio between matched dirty and clean PV reference cells).
         In either case, data should be insolation-weighted daily aggregates.
     daily_insolation : pd.Series
-        Daily plane-of-array insolation corresponding to d
+        Daily plane-of-array insolation corresponding to
         `daily_normalized_energy`
     reps : int, default 1000
         number of Monte Carlo realizations to calculate
