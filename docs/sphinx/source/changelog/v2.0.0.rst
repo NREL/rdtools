@@ -13,7 +13,7 @@ API Changes
 * Rename `soiling.srr_analysis` to :py:class:`~rdtools.soiling.SRRAnalysis` (:pull:`168`).
 * Support varying logic in soiling module for defining cleaning events from shifts and
   precipitation with ``clean_criterion`` parameter. Behavior of ``clean_criterion='precip_and_shift'``
-  has changed relative to prior versions using ``precip_clen_only=True`` (:pull:`176`).
+  has changed relative to prior versions using ``precip_clean_only=True`` (:pull:`176`).
 
 Enhancements
 ------------
