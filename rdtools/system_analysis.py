@@ -208,10 +208,25 @@ class SystemAnalysis():
             calculated cell temperature
         '''
         if self.temperature_model is None:
-            cell_temp = pvlib.pvsystem.sapm_celltemp(poa, windspeed, ambient_temperature)
+            cell_temp = pvlib.pvsystem.sapm_celltemp(poa_global=poa, 
+                                                     wind_speed=windspeed, 
+                                                     temp_air=ambient_temperature)
         else:
-            cell_temp = pvlib.pvsystem.sapm_celltemp(poa, windspeed, ambient_temperature, model=self.temperature_model)
-        cell_temp = cell_temp['temp_cell']
+            #pvlib 0.7+
+            try:
+                model_params = pvlib.temperature.TEMPERATURE_MODEL_PARAMETERS['sapm'][self.temperature_model]
+                cell_temp = pvlib.temperature.sapm_cell(poa_global=poa,
+                                                        temp_air=ambient_temperature,
+                                                        wind_speed=windspeed,
+                                                        a=model_params['a'],
+                                                        b=model_params['b'],
+                                                        deltaT=model_params['deltaT']
+                                                        )
+            except: #pvlib < 0.7
+                cell_temp = pvlib.pvsystem.sapm_celltemp(poa_global=poa, wind_speed=windspeed, 
+                                                         temp_air=ambient_temperature, 
+                                                         model=self.temperature_model)
+                cell_temp = cell_temp['temp_cell']
 
         return cell_temp
 
