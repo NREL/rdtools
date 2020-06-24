@@ -592,7 +592,8 @@ def trapz_aggregate(time_series, target_frequency, max_timedelta=None):
     return aggregated
 
 
-def interpolate_series(time_series, target_index, max_timedelta=None):
+def interpolate_series(time_series, target_index, max_timedelta=None,
+                       warning_threshold=0.1):
     '''
     Returns an interpolation of time_series onto target_index, NaN is returned
     for times associated with gaps in time_series longer `than max_timedelta`.
@@ -606,8 +607,13 @@ def interpolate_series(time_series, target_index, max_timedelta=None):
     max_timedelta : pd.Timedelta, default None
         The maximum allowed gap between values in time_series. Times associated
         with gaps longer than `max_timedelta` are excluded from the output. If
-        omitted, `max_timedelta` is set internally to the median time delta
-        in `time_series`.
+        omitted, `max_timedelta` is set internally to two times the median
+        time delta in `time_series.`
+    warning_threshold : float, default 0.1
+        The fraction of data exclusion above which a warning is raised. With
+        the default value of 0.1, a warning will be raised if the fraction
+        of data excluded because of data gaps longer than `max_timedelta` is
+        above than 10%.
 
     Returns
     -------
@@ -639,7 +645,7 @@ def interpolate_series(time_series, target_index, max_timedelta=None):
     valid_indput_index = df.index.copy()
 
     if max_timedelta is None:
-        max_interval_nanoseconds = df['gapsize_ns'].median()
+        max_interval_nanoseconds = 2 * df['gapsize_ns'].median()
     else:
         max_interval_nanoseconds = max_timedelta.total_seconds() * 10.0**9
 
@@ -659,6 +665,13 @@ def interpolate_series(time_series, target_index, max_timedelta=None):
     df_valid['interpolated_data'] = \
         df_valid['data'].interpolate(method='index')
 
+    fraction_excluded = 1 - len(df_valid) / len(df)
+    if fraction_excluded > warning_threshold:
+        warnings.warn("Fraction of excluded data "
+                      f"({100*fraction_excluded:0.02f}%) "
+                      "exceeded threshold",
+                      UserWarning)
+
     df['interpolated_data'] = df_valid['interpolated_data']
 
     out = pd.Series(df['interpolated_data'])
@@ -670,7 +683,7 @@ def interpolate_series(time_series, target_index, max_timedelta=None):
     return out
 
 
-def interpolate(time_series, target, max_timedelta=None):
+def interpolate(time_series, target, max_timedelta=None, warning_threshold=0.1):
     '''
     Returns an interpolation of time_series, excluding times associated with
     gaps in each column of time_series longer than max_timedelta; NaNs are
@@ -689,8 +702,13 @@ def interpolate(time_series, target, max_timedelta=None):
     max_timedelta : pd.Timedelta, default None
         The maximum allowed gap between values in `time_series`. Times
         associated with gaps longer than `max_timedelta` are excluded from the
-        output. If omitted, `max_timedelta` is set internally to the median
-        time delta in `time_series.`
+        output. If omitted, `max_timedelta` is set internally to two times
+        the median time delta in `time_series`.
+    warning_threshold : float, default 0.1
+        The fraction of data exclusion above which a warning is raised. With
+        the default value of 0.1, a warning will be raised if the fraction
+        of data excluded because of data gaps longer than `max_timedelta` is
+        above than 10%.
 
     Returns
     -------
@@ -701,7 +719,6 @@ def interpolate(time_series, target, max_timedelta=None):
     Timezone information in the DatetimeIndexes is handled automatically,
     however both `time_series` and `target` should be time zone aware or they
     should both be time zone naive.
-
     '''
 
     if isinstance(target, pd.DatetimeIndex):
@@ -717,12 +734,14 @@ def interpolate(time_series, target, max_timedelta=None):
                          'both must be time-zone naive.')
 
     if isinstance(time_series, pd.Series):
-        out = interpolate_series(time_series, target_index, max_timedelta)
+        out = interpolate_series(time_series, target_index, max_timedelta,
+                                 warning_threshold)
     elif isinstance(time_series, pd.DataFrame):
         out_list = []
         for col in time_series.columns:
             ts = time_series[col]
-            series = interpolate_series(ts, target_index, max_timedelta)
+            series = interpolate_series(ts, target_index, max_timedelta,
+                                        warning_threshold)
             out_list.append(series)
         out = pd.concat(out_list, axis=1)
     else:

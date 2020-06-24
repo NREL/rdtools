@@ -55,24 +55,27 @@ def df_expected_result(df_target_index, test_df):
 
 def test_interpolate_freq_specification(time_series, target_index, expected_series):
     # test the string specification
-    interpolated = interpolate(time_series, target_index.freq.freqstr, pd.to_timedelta('15 minutes'))
+    interpolated = interpolate(time_series, target_index.freq.freqstr, pd.to_timedelta('15 minutes'),
+                               warning_threshold=0.15)
     pd.testing.assert_series_equal(interpolated, expected_series)
 
     # test the DateOffset specification
-    interpolated = interpolate(time_series, target_index.freq, pd.to_timedelta('15 minutes'))
+    interpolated = interpolate(time_series, target_index.freq, pd.to_timedelta('15 minutes'),
+                               warning_threshold=0.15)
     pd.testing.assert_series_equal(interpolated, expected_series)
 
 
 def test_interpolate_calculation(time_series, target_index, expected_series):
 
-    interpolated = interpolate(time_series, target_index, pd.to_timedelta('15 minutes'))
+    interpolated = interpolate(time_series, target_index, pd.to_timedelta('15 minutes'),
+                               warning_threshold=0.15)
     pd.testing.assert_series_equal(interpolated, expected_series)
 
 
 def test_interpolate_two_argument(time_series, target_index, expected_series):
 
-    # Test that a warning is raised when max_timedelta is omitted
-    interpolated = interpolate(time_series, target_index)
+    expected_series.iloc[-1] = 6.0
+    interpolated = interpolate(time_series, target_index, warning_threshold=0.15)
     pd.testing.assert_series_equal(interpolated, expected_series)
 
 
@@ -95,7 +98,8 @@ def test_interpolate_same_tz(time_series, target_index, expected_series):
     target_index = target_index.tz_localize('America/Denver')
     expected_series.index = expected_series.index.tz_localize('America/Denver')
 
-    interpolated = interpolate(time_series, target_index, pd.to_timedelta('15 minutes'))
+    interpolated = interpolate(time_series, target_index, pd.to_timedelta('15 minutes'),
+                               warning_threshold=0.15)
     pd.testing.assert_series_equal(interpolated, expected_series)
 
 
@@ -107,10 +111,30 @@ def test_interpolate_different_tz(time_series, target_index, expected_series):
     target_index = target_index.tz_localize('America/Denver')
     expected_series.index = expected_series.index.tz_localize('America/Denver')
 
-    interpolated = interpolate(time_series, target_index, pd.to_timedelta('15 minutes'))
+    interpolated = interpolate(time_series, target_index, pd.to_timedelta('15 minutes'),
+                               warning_threshold=0.15)
     pd.testing.assert_series_equal(interpolated, expected_series)
 
 
 def test_interpolate_dataframe(test_df, df_target_index, df_expected_result):
-    interpolated = interpolate(test_df, df_target_index, pd.to_timedelta('15 minutes'))
+    interpolated = interpolate(test_df, df_target_index, pd.to_timedelta('15 minutes'),
+                               warning_threshold=0.15)
     pd.testing.assert_frame_equal(interpolated, df_expected_result)
+
+
+def test_interpolate_warning(test_df, df_target_index, df_expected_result):
+    N = len(test_df)
+    all_idx = list(range(N))
+    # drop every other value in the first third of the dataset
+    index_with_gaps = all_idx[:N//3][::2] + all_idx[N//3:]
+    test_df = test_df.iloc[index_with_gaps, :]
+    with pytest.warns(UserWarning):
+        interpolate(test_df, df_target_index, pd.to_timedelta('15 minutes'),
+                    warning_threshold=0.1)
+
+    with pytest.warns(None) as record:
+        interpolate(test_df, df_target_index, pd.to_timedelta('15 minutes'),
+                    warning_threshold=0.5)
+        if record:
+            pytest.fail("normalize.interpolate raised a warning about "
+                        "excluded data even though the threshold was high")
