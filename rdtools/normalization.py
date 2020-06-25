@@ -649,6 +649,13 @@ def interpolate_series(time_series, target_index, max_timedelta=None,
     else:
         max_interval_nanoseconds = max_timedelta.total_seconds() * 10.0**9
 
+    fraction_excluded = (df['gapsize_ns'] > max_interval_nanoseconds).mean()
+    if fraction_excluded > warning_threshold:
+        warnings.warn("Fraction of excluded data "
+                      f"({100*fraction_excluded:0.02f}%) "
+                      "exceeded threshold",
+                      UserWarning)
+
     # put data on index that includes both original and target indicies
     target_timestamps = target_index.astype('int64')
     union_index = df.index.append(target_timestamps)
@@ -664,13 +671,6 @@ def interpolate_series(time_series, target_index, max_timedelta=None,
     df_valid = df[df['gapsize_ns'] <= max_interval_nanoseconds].copy()
     df_valid['interpolated_data'] = \
         df_valid['data'].interpolate(method='index')
-
-    fraction_excluded = 1 - len(df_valid) / len(df)
-    if fraction_excluded > warning_threshold:
-        warnings.warn("Fraction of excluded data "
-                      f"({100*fraction_excluded:0.02f}%) "
-                      "exceeded threshold",
-                      UserWarning)
 
     df['interpolated_data'] = df_valid['interpolated_data']
 
