@@ -41,8 +41,8 @@ def insolation(times):
 def test_soiling_srr(normalized_daily, insolation, times):
 
     reps = 10
-    sr, sr_ci, soiling_info = soiling_srr(normalized_daily, insolation, reps=reps,
-                                          random_seed=1977)
+    np.random.seed(1977)
+    sr, sr_ci, soiling_info = soiling_srr(normalized_daily, insolation, reps=reps)
     assert 0.963133 == pytest.approx(sr, abs=1e-6),\
         'Soiling ratio different from expected value'
     assert np.array([0.961054, 0.964019]) == pytest.approx(sr_ci, abs=1e-6),\
@@ -97,22 +97,21 @@ def test_soiling_srr_with_precip(normalized_daily, insolation, times):
 
     kwargs = {
     'reps': 10,
-    'random_seed': 1977,
     'precip': precip
     }
-
+    np.random.seed(1977)
     sr, sr_ci, soiling_info = soiling_srr(normalized_daily, insolation, clean_criterion='precip_and_shift', **kwargs)
     assert 0.983270 == pytest.approx(sr, abs=1e-6),\
         "Soiling ratio with clean_criterion='precip_and_shift' different from expected"
-
+    np.random.seed(1977)    
     sr, sr_ci, soiling_info = soiling_srr(normalized_daily, insolation, clean_criterion='precip_or_shift', **kwargs)
     assert 0.973228 == pytest.approx(sr, abs=1e-6),\
         "Soiling ratio with clean_criterion='precip_or_shift' different from expected"
-
+    np.random.seed(1977)
     sr, sr_ci, soiling_info = soiling_srr(normalized_daily, insolation, clean_criterion='precip', **kwargs)
     assert 0.976196 == pytest.approx(sr, abs=1e-6),\
         "Soiling ratio with clean_criterion='precip' different from expected"
-
+    np.random.seed(1977)
     sr, sr_ci, soiling_info = soiling_srr(normalized_daily, insolation, clean_criterion='shift', **kwargs)
     assert 0.963133 == pytest.approx(sr, abs=1e-6),\
         "Soiling ratio with clean_criterion='shift' different from expected"
@@ -120,8 +119,9 @@ def test_soiling_srr_with_precip(normalized_daily, insolation, times):
 
 def test_soiling_srr_confidence_levels(normalized_daily, insolation):
     'Tests SRR with different confidence level settingsf from above'
+    np.random.seed(1977)
     sr, sr_ci, soiling_info = soiling_srr(normalized_daily, insolation, confidence_level=95, reps=10,
-                                          random_seed=1977, exceedance_prob=80.0)
+                                          exceedance_prob=80.0)
     assert np.array([0.957272, 0.964763]) == pytest.approx(sr_ci, abs=1e-6),\
         'Confidence interval with confidence_level=95 different than expected'
     assert 0.961285 == pytest.approx(soiling_info['exceedance_level'], abs=1e-6),\
@@ -131,26 +131,30 @@ def test_soiling_srr_confidence_levels(normalized_daily, insolation):
 def test_soiling_srr_dayscale(normalized_daily, insolation):
     'Test that a long dayscale can prevent valid intervals from being found'
     with pytest.raises(NoValidIntervalError):
+        np.random.seed(1977)
         sr, sr_ci, soiling_info = soiling_srr(normalized_daily, insolation, confidence_level=68.2,
-                                              reps=10, random_seed=1977, day_scale=90)
+                                              reps=10, day_scale=90)
 
 
 def test_soiling_srr_clean_threshold(normalized_daily, insolation):
     '''Test that clean test_soiling_srr_clean_threshold works with a float and
     can cause no soiling intervals to be found'''
+    np.random.seed(1977)
     sr, sr_ci, soiling_info = soiling_srr(normalized_daily, insolation, reps=10,
-                                          random_seed=1977, clean_threshold=0.01)
+                                          clean_threshold=0.01)
     assert 0.963133 == pytest.approx(sr, abs=1e-6),\
         'Soiling ratio with specified clean_threshold different from expected value'
 
     with pytest.raises(NoValidIntervalError):
+        np.random.seed(1977)
         sr, sr_ci, soiling_info = soiling_srr(normalized_daily, insolation, reps=10,
-                                              random_seed=1977, clean_threshold=0.1)
+                                              clean_threshold=0.1)
 
 
 def test_soiling_srr_trim(normalized_daily, insolation):
+    np.random.seed(1977)
     sr, sr_ci, soiling_info = soiling_srr(normalized_daily, insolation, reps=10,
-                                          random_seed=1977, trim=True)
+                                          trim=True)
 
     assert 0.978369 == pytest.approx(sr, abs=1e-6),\
         'Soiling ratio with trim=True different from expected value'
@@ -159,20 +163,23 @@ def test_soiling_srr_trim(normalized_daily, insolation):
 
 
 def test_soiling_srr_method(normalized_daily, insolation):
+    np.random.seed(1977)
     sr, sr_ci, soiling_info = soiling_srr(normalized_daily, insolation, reps=10,
-                                          random_seed=1977, method='random_clean')
+                                          method='random_clean')
     assert 0.918767 == pytest.approx(sr, abs=1e-6),\
         'Soiling ratio with method="random_clean" different from expected value'
 
+    np.random.seed(1977)
     sr, sr_ci, soiling_info = soiling_srr(normalized_daily, insolation, reps=10,
-                                          random_seed=1977, method='perfect_clean')
+                                          method='perfect_clean')
     assert 0.965653 == pytest.approx(sr, abs=1e-6),\
         'Soiling ratio with method="perfect_clean" different from expected value'
 
 
 def test_soiling_srr_recenter_false(normalized_daily, insolation):
+    np.random.seed(1977)
     sr, sr_ci, soiling_info = soiling_srr(normalized_daily, insolation, reps=10,
-                                          random_seed=1977, recenter=False)
+                                          recenter=False)
     assert 1 == soiling_info['renormalizing_factor'],\
         'Renormalizing factor != 1 with recenter=False'
     assert 0.965158 == pytest.approx(sr, abs=1e-6),\
@@ -183,8 +190,8 @@ def test_soiling_srr_negative_step(normalized_daily, insolation):
     stepped_daily = normalized_daily.copy()
     stepped_daily.iloc[37:] = stepped_daily.iloc[25:] - 0.1
 
-    sr, sr_ci, soiling_info = soiling_srr(stepped_daily, insolation, reps=10,
-                                          random_seed=1977)
+    np.random.seed(1977)
+    sr, sr_ci, soiling_info = soiling_srr(stepped_daily, insolation, reps=10)
 
     assert list(soiling_info['soiling_interval_summary']['valid'].values) == [True, False, True],\
         'Soiling interval validity differs from expected when a large negative step\
@@ -195,8 +202,9 @@ def test_soiling_srr_negative_step(normalized_daily, insolation):
 
 
 def test_soiling_srr_max_negative_slope_error(normalized_daily, insolation):
+    np.random.seed(1977)
     sr, sr_ci, soiling_info = soiling_srr(normalized_daily, insolation, reps=10,
-                                          random_seed=1977, max_relative_slope_error=50.0)
+                                          max_relative_slope_error=50.0)
 
     assert list(soiling_info['soiling_interval_summary']['valid'].values) == [True, True, False],\
         'Soiling interval validity differs from expected when max_relative_slope_error=50.0'
@@ -212,7 +220,7 @@ def test_soiling_srr_with_nan_interval(normalized_daily, insolation, times):
     reps = 10
     normalized_corrupt = normalized_daily.copy()
     normalized_corrupt[26:50] = np.nan
-    sr, sr_ci, soiling_info = soiling_srr(normalized_corrupt, insolation, reps=reps,
-                                          random_seed=1977)
+    np.random.seed(1977)
+    sr, sr_ci, soiling_info = soiling_srr(normalized_corrupt, insolation, reps=reps)
     assert 0.947416 == pytest.approx(sr, abs=1e-6),\
         'Soiling ratio different from expected value when an entire interval was NaN'

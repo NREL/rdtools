@@ -304,8 +304,7 @@ class SRRAnalysis():
         self.result_df = results
         self.analyzed_daily_df = pm_frame_out
 
-    def _calc_monte(self, monte, method='half_norm_clean',
-                    random_seed=None):
+    def _calc_monte(self, monte, method='half_norm_clean'):
         '''
         Runs the Monte Carlo step of the SRR method. Calculates
         self.random_profiles, a list of the random soiling profiles realized in
@@ -324,16 +323,10 @@ class SRRAnalysis():
             * 'half_norm_clean' - The three-sigma lower bound of recovery is
               inferred from the fit of the following interval, the upper bound
               is 1 with the magnitude drawn from a half normal centered at 1
-        random_seed : int, default None
-            Seed for random number generation in the Monte Carlo simulation.
-            Use to ensure identical results on subsequent runs. Not a
-            substitute for doing a sufficient number of Mote Carlo repetitions.
         '''
 
         monte_losses = []
         random_profiles = []
-        if random_seed is not None:
-            np.random.seed(random_seed)
         for _ in range(monte):
             results_rand = self.result_df.copy()
             df_rand = self.analyzed_daily_df.copy()
@@ -458,8 +451,7 @@ class SRRAnalysis():
             trim=False, method='half_norm_clean',
             clean_criterion='shift', precip_threshold=0.01, min_interval_length=2,
             exceedance_prob=95.0, confidence_level=68.2, recenter=True,
-            max_relative_slope_error=500.0, max_negative_step=0.05,
-            random_seed=None):
+            max_relative_slope_error=500.0, max_negative_step=0.05):
         '''
         Run the SRR method from beginning to end.  Perform the stochastic rate
         and recovery soiling loss calculation. Based on the methods presented
@@ -521,10 +513,6 @@ class SRRAnalysis():
             The maximum magnitude of negative discrete steps allowed in an
             interval for the interval to be considered valid (units of
             normalized performance metric).
-        random_seed : int, default None
-            Seed for random number generation in the Monte Carlo simulation.
-            Use to ensure identical results on subsequent runs. Not a
-            substitute for doing a sufficient number of Mote Carlo repetitions.
 
         Returns
         -------
@@ -556,8 +544,7 @@ class SRRAnalysis():
                              max_relative_slope_error=max_relative_slope_error,
                              max_negative_step=max_negative_step,
                              min_interval_length=min_interval_length)
-        self._calc_monte(reps, method=method,
-                         random_seed=random_seed)
+        self._calc_monte(reps, method=method)
 
         # Calculate the P50 and confidence interval
         half_ci = confidence_level / 2.0
@@ -597,8 +584,7 @@ def soiling_srr(daily_normalized_energy, daily_insolation, reps=1000,
                 trim=False, method='half_norm_clean',
                 clean_criterion='shift', precip_threshold=0.01, min_interval_length=2,
                 exceedance_prob=95.0, confidence_level=68.2, recenter=True,
-                max_relative_slope_error=500.0, max_negative_step=0.05,
-                random_seed=None):
+                max_relative_slope_error=500.0, max_negative_step=0.05):
     '''
     Functional wrapper for :py:class:`~rdtools.soiling.SRRAnalysis`. Perform
     the stochastic rate and recovery soiling loss calculation. Based on the
@@ -617,7 +603,7 @@ def soiling_srr(daily_normalized_energy, daily_insolation, reps=1000,
     reps : int, default 1000
         number of Monte Carlo realizations to calculate
     precip : pd.Series, default None
-        Daily total precipitation. Units ambiguous but should be the same as 
+        Daily total precipitation. Units ambiguous but should be the same as
         precip_threshold. Note default behavior of precip_threshold. (Ignored
         if ``clean_criterion='shift'``.)
     day_scale : int, default 14
@@ -670,10 +656,6 @@ def soiling_srr(daily_normalized_energy, daily_insolation, reps=1000,
         The maximum magnitude of negative discrete steps allowed in an interval
         for the interval to be considered valid (units of normalized
         performance metric).
-    random_seed : int, default None
-        Seed for random number generation in the Monte Carlo simulation. Use to
-        ensure identical results on subsequent runs. Not a substitute for doing
-        a sufficient number of Mote Carlo repetitions.
 
     Returns
     -------
@@ -715,7 +697,6 @@ def soiling_srr(daily_normalized_energy, daily_insolation, reps=1000,
         confidence_level=confidence_level,
         recenter=recenter,
         max_relative_slope_error=max_relative_slope_error,
-        max_negative_step=max_negative_step,
-        random_seed=random_seed)
+        max_negative_step=max_negative_step)
 
     return sr, sr_ci, soiling_info
