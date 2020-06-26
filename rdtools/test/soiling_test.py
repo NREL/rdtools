@@ -94,23 +94,26 @@ def test_soiling_srr_with_precip(normalized_daily, insolation, times):
     precip = pd.Series(index=times, data=0)
     precip['2019-01-18 00:00:00-07:00'] = 1
     precip['2019-02-20 00:00:00-07:00'] = 1
-    sr, sr_ci, soiling_info = soiling_srr(normalized_daily, insolation, reps=10,
-                                          random_seed=1977, precip=precip, clean_criterion='precip_and_shift')
+
+    kwargs = {
+    'reps': 10,
+    'random_seed': 1977,
+    'precip': precip
+    }
+
+    sr, sr_ci, soiling_info = soiling_srr(normalized_daily, insolation, clean_criterion='precip_and_shift', **kwargs)
     assert 0.983270 == pytest.approx(sr, abs=1e-6),\
         "Soiling ratio with clean_criterion='precip_and_shift' different from expected"
 
-    sr, sr_ci, soiling_info = soiling_srr(normalized_daily, insolation, reps=10,
-                                          random_seed=1977, precip=precip, clean_criterion='precip_or_shift')
+    sr, sr_ci, soiling_info = soiling_srr(normalized_daily, insolation, clean_criterion='precip_or_shift', **kwargs)
     assert 0.973228 == pytest.approx(sr, abs=1e-6),\
         "Soiling ratio with clean_criterion='precip_or_shift' different from expected"
 
-    sr, sr_ci, soiling_info = soiling_srr(normalized_daily, insolation, reps=10,
-                                          random_seed=1977, precip=precip, clean_criterion='precip')
+    sr, sr_ci, soiling_info = soiling_srr(normalized_daily, insolation, clean_criterion='precip', **kwargs)
     assert 0.976196 == pytest.approx(sr, abs=1e-6),\
         "Soiling ratio with clean_criterion='precip' different from expected"
 
-    sr, sr_ci, soiling_info = soiling_srr(normalized_daily, insolation, reps=10,
-                                          random_seed=1977, precip=precip, clean_criterion='shift')
+    sr, sr_ci, soiling_info = soiling_srr(normalized_daily, insolation, clean_criterion='shift', **kwargs)
     assert 0.963133 == pytest.approx(sr, abs=1e-6),\
         "Soiling ratio with clean_criterion='shift' different from expected"
 
