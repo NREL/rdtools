@@ -27,7 +27,7 @@ class SRRAnalysis():
         Daily plane-of-array insolation corresponding to
         `daily_normalized_energy`
     precip : pd.Series, default None
-        Daily total precipitation. (Ignored if `clean_criterion`='shift' in
+        Daily total precipitation. (Ignored if ``clean_criterion='shift'`` in
         subsequent calculations.)
     '''
 
@@ -74,7 +74,7 @@ class SRRAnalysis():
         clean_criterion : {'precip_and_shift', 'precip_or_shift', 'precip', 'shift'} \
                 default 'shift'
             The method of partitioning the dataset into soiling intervals.
-            If 'precip_and_shift', only rolling median shifts must coincide
+            If 'precip_and_shift', rolling median shifts must coincide
             with precipitation to be a valid cleaning event.
             If 'precip_or_shift', rolling median shifts and precipitation
             events are each sufficient on their own to be a cleaning event.
@@ -82,6 +82,7 @@ class SRRAnalysis():
             If 'precip', only precipitation events are treated as cleaning events.
         precip_threshold : float, default 0.01
             The daily precipitation threshold for defining precipitation cleaning events.
+            Units must be consistent with ``self.precip``.
         '''
 
         df = self.pm.to_frame()
@@ -145,7 +146,7 @@ class SRRAnalysis():
 
         if clean_criterion == 'precip_and_shift':
             # Detect which cleaning events are associated with rain within a 3 day window
-            precip_event = precip_event.rolling(3, center=True, min_periods=1).sum() >= 1
+            precip_event = precip_event.rolling(3, center=True, min_periods=1).apply(any).astype(bool)
             df['clean_event'] = (df['clean_event_detected'] & precip_event)
         elif clean_criterion == 'precip_or_shift':
             df['clean_event'] = (df['clean_event_detected'] | precip_event)
@@ -493,7 +494,7 @@ class SRRAnalysis():
         clean_criterion : {'precip_and_shift', 'precip_or_shift', 'precip', 'shift'} \
                 default 'shift'
             The method of partitioning the dataset into soiling intervals.
-            If 'precip_and_shift', only rolling median shifts must coincide
+            If 'precip_and_shift', rolling median shifts must coincide
             with precipitation to be a valid cleaning event.
             If 'precip_or_shift', rolling median shifts and precipitation
             events are each sufficient on their own to be a cleaning event.
@@ -501,6 +502,7 @@ class SRRAnalysis():
             If 'precip', only precipitation events are treated as cleaning events.
         precip_threshold : float, default 0.01
             The daily precipitation threshold for defining precipitation cleaning events.
+            Units must be consistent with ``self.precip``
         min_interval_length : int, default 2
             The minimum duration for an interval to be considered
             valid.  Cannot be less than 2 (days).
@@ -615,7 +617,9 @@ def soiling_srr(daily_normalized_energy, daily_insolation, reps=1000,
     reps : int, default 1000
         number of Monte Carlo realizations to calculate
     precip : pd.Series, default None
-        Daily total precipitation. (Ignored if `clean_criterion`='shift'.)
+        Daily total precipitation. Units ambiguous but should be the same as 
+        precip_threshold. Note default behavior of precip_threshold. (Ignored
+        if ``clean_criterion='shift'``.)
     day_scale : int, default 14
         The number of days to use in rolling median for cleaning detection,
         and the maximum number of days of missing data to tolerate in a valid
@@ -639,7 +643,7 @@ def soiling_srr(daily_normalized_energy, daily_insolation, reps=1000,
     clean_criterion : {'precip_and_shift', 'precip_or_shift', 'precip', 'shift'} \
                 default 'shift'
             The method of partitioning the dataset into soiling intervals.
-            If 'precip_and_shift', only rolling median shifts must coincide
+            If 'precip_and_shift', rolling median shifts must coincide
             with precipitation to be a valid cleaning event.
             If 'precip_or_shift', rolling median shifts and precipitation
             events are each sufficient on their own to be a cleaning event.
@@ -647,6 +651,7 @@ def soiling_srr(daily_normalized_energy, daily_insolation, reps=1000,
             If 'precip', only precipitation events are treated as cleaning events.
     precip_threshold : float, default 0.01
         The daily precipitation threshold for defining precipitation cleaning events.
+        Units must be consistent with precip.
     min_interval_length : int, default 2
         The minimum duration for an interval to be considered
         valid.  Cannot be less than 2 (days).
