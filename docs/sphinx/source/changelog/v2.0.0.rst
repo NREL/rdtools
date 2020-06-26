@@ -11,6 +11,11 @@ API Changes
   before being used with these normalization functions (:pull:`105`, :pull:`108`).
 * Remove ``low_power_cutoff`` parameter in :py:func:`~rdtools.filtering.clip_filter` (:issue:`84`).
 * Rename `soiling.srr_analysis` to :py:class:`~rdtools.soiling.SRRAnalysis` (:pull:`168`).
+* Support varying logic in soiling module for defining cleaning events from shifts and
+  precipitation with ``clean_criterion`` parameter. Behavior of ``clean_criterion='precip_and_shift'``
+  has changed relative to prior versions using ``precip_clean_only=True`` (:pull:`176`).
+* Remove ``random_seed`` parameter from soiling module. Functionality can be obtained by running
+  ``numpy.random.seed()`` outside of RdTools functions. (:pull:`176`)
 
 Enhancements
 ------------
