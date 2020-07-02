@@ -14,6 +14,11 @@ API Changes
 * Double the default value of the ``max_timedelta`` in :py:func:`~rdtools.normalization.interpolate`
   and :py:func:`~rdtools.normalization.interpolate_series` to be twice the
   median timedelta (:pull:`182`).
+* Support varying logic in soiling module for defining cleaning events from shifts and
+  precipitation with ``clean_criterion`` parameter. Behavior of ``clean_criterion='precip_and_shift'``
+  has changed relative to prior versions using ``precip_clean_only=True`` (:pull:`176`).
+* Remove ``random_seed`` parameter from soiling module. Functionality can be obtained by running
+  ``numpy.random.seed()`` outside of RdTools functions. (:pull:`176`)
 
 Enhancements
 ------------
