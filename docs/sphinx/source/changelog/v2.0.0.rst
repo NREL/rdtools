@@ -11,6 +11,9 @@ API Changes
   before being used with these normalization functions (:pull:`105`, :pull:`108`).
 * Remove ``low_power_cutoff`` parameter in :py:func:`~rdtools.filtering.clip_filter` (:issue:`84`).
 * Rename `soiling.srr_analysis` to :py:class:`~rdtools.soiling.SRRAnalysis` (:pull:`168`).
+* Double the default value of the ``max_timedelta`` in :py:func:`~rdtools.normalization.interpolate`
+  and :py:func:`~rdtools.normalization.interpolate_series` to be twice the
+  median timedelta (:pull:`182`).
 
 Enhancements
 ------------
@@ -23,6 +26,8 @@ Enhancements
 * Add new :py:mod:`~rdtools.plotting` module for generating standard plots.
 * Add parameter ``convergence_threshold`` to
   :py:func:`~rdtools.normalization.irradiance_rescale` (:pull:`152`).
+* Add parameter ``warning_threshold`` to :py:func:`~rdtools.normalization.interpolate`
+  and :py:func:`~rdtools.normalization.interpolate_series` (:pull:`182`).
 
 Bug fixes
 ---------
