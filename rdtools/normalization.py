@@ -11,7 +11,7 @@ class ConvergenceError(Exception):
     '''Rescale optimization did not converge'''
     pass
 
-def normalize_with_expected_power(pv, expected_power, irradiance, pv_input='power'):
+def normalize_with_expected_power(pv, power_sim, irradiance, pv_input='power'):
     '''
     Normalize pv output based on expected PV power.
 
@@ -20,22 +20,22 @@ def normalize_with_expected_power(pv, expected_power, irradiance, pv_input='powe
     pv : pd.Series
         Right-labeled time series PV energy or power. If energy, should *not*
         be cumulative, but only for preceding time step.
-    expected_power : pd.Series
+    power_sim : pd.Series
         Right-labeled time series of expected PV power.
     irradiance : pd.Series
-        Right-labeled time series of plane-of-array irradiance associated with `expected_power`
+        Right-labeled time series of plane-of-array irradiance associated with `power_sim`
     pv_input : str
         'power' or 'energy' to specify type of input used for pv parameter
 
     Returns
     -------
-    normalized_energy : pd.Series
-        Energy normalized based on `expected_power`
+    energy_normalized : pd.Series
+        Energy normalized based on `power_sim`
     insolation : pd.Series
         Insolation associated with each normalized point
 
     '''
-    
+
     freq = check_series_frequency(pv, 'pv')
 
     if pv_input == 'power':
@@ -46,27 +46,28 @@ def normalize_with_expected_power(pv, expected_power, irradiance, pv_input='powe
     else:
         raise ValueError("Unexpected value for pv_input. pv_input should be 'power' or 'energy'.")
 
-    model_tds, mean_model_td = delta_index(expected_power)
+    model_tds, mean_model_td = delta_index(power_sim)
     measure_tds, mean_measure_td = delta_index(energy)
 
     # Case in which the model less frequent than the measurements
     if mean_model_td > mean_measure_td:
-        expected_power = interpolate(expected_power, pv.index)
+        power_sim = interpolate(power_sim, pv.index)
         irradiance = interpolate(irradiance, pv.index)
-        
-    expected_energy = energy_from_power(expected_power, freq)
+
+    energy_sim = energy_from_power(power_sim, freq)
     insolation = energy_from_power(irradiance, freq)
 
-    normalized_energy = energy / expected_energy
+    energy_normalized = energy / energy_sim
 
-    index_union = normalized_energy.index.union(insolation.index)
-    normalized_energy = normalized_energy.reindex(index_union)
+    index_union = energy_normalized.index.union(insolation.index)
+    energy_normalized = energy_normalized.reindex(index_union)
     insolation = insolation.reindex(index_union)
 
-    return normalized_energy, insolation
+    return energy_normalized, insolation
 
-def pvwatts_dc_power(poa_global, P_ref, T_cell=None, G_ref=1000, T_ref=25,
-                     gamma_pdc=None):
+
+def pvwatts_dc_power(poa_global, pmp_ref, temperature_cell=None,
+                     irradiance_ref=1000, temperature_ref=25, gamma_pmp=None):
     '''
     PVWatts v5 Module Model: DC power given effective poa poa_global, module
     nameplate power, and cell temperature. This function differs from the PVLIB
@@ -76,17 +77,17 @@ def pvwatts_dc_power(poa_global, P_ref, T_cell=None, G_ref=1000, T_ref=25,
     ----------
     poa_global : pd.Series
         Total effective plane of array irradiance.
-    P_ref : float
+    pmp_ref : float
         Rated DC power of array in watts
-    T_cell : pd.Series, optional
+    temperature_cell : pd.Series, optional
         Measured or derived cell temperature [degrees celsius].
         Time series assumed to be same frequency as `poa_global`.
         If omitted, the temperature term will be ignored.
-    G_ref : float, default 1000
+    irradiance_ref : float, default 1000
         Reference irradiance at standard test condition [W/m**2].
-    T_ref : float, default 25
+    temperature_ref : float, default 25
         Reference temperature at standard test condition [degrees celsius].
-    gamma_pdc : float, default None
+    gamma_pmp : float, default None
         Linear array efficiency temperature coefficient [1 / degree celsius].
         If omitted, the temperature term will be ignored.
 
@@ -97,14 +98,14 @@ def pvwatts_dc_power(poa_global, P_ref, T_cell=None, G_ref=1000, T_ref=25,
 
     Returns
     -------
-    dc_power : pd.Series
+    power_dc : pd.Series
         DC power in watts determined by PVWatts v5 equation.
     '''
 
-    dc_power = P_ref * poa_global / G_ref
+    dc_power = pmp_ref * poa_global / irradiance_ref
 
-    if T_cell is not None and gamma_pdc is not None:
-        temperature_factor = 1 + gamma_pdc * (T_cell - T_ref)
+    if temperature_cell is not None and gamma_pmp is not None:
+        temperature_factor = 1 + gamma_pmp * (temperature_cell - temperature_ref)
         dc_power = dc_power * temperature_factor
 
     return dc_power
@@ -130,18 +131,18 @@ def normalize_with_pvwatts(energy, pvwatts_kws):
     ------------------
     poa_global : pd.Series
         Total effective plane of array irradiance.
-    P_ref : float
+    pmp_ref : float
         Rated DC power of array in watts
-    T_cell : pd.Series, optional
+    temperature_cell : pd.Series, optional
         Measured or derived cell temperature [degrees celsius].
         Time series assumed to be same frequency as `poa_global`.
         If omitted, the temperature term will be ignored.
-    G_ref : float, default 1000
+    irradiance_ref : float, default 1000
         Reference irradiance at standard test condition [W/m**2].
-    T_ref : float, default 25
+    temperature_ref : float, default 25
         Reference temperature at standard test condition [degrees celsius].
-    gamma_pdc : float, default None
-        Linear array efficiency temperature coefficient [1/degree celsius].
+    gamma_pmp : float, default None
+        Linear array efficiency temperature coefficient [1 / degree celsius].
         If omitted, the temperature term will be ignored.
 
     Note
@@ -151,18 +152,18 @@ def normalize_with_pvwatts(energy, pvwatts_kws):
 
     Returns
     -------
-    normalized_energy : pd.Series
+    energy_normalized : pd.Series
         Energy divided by PVWatts DC energy.
     insolation : pd.Series
         Insolation associated with each normalized point
     '''
 
-    dc_power = pvwatts_dc_power(**pvwatts_kws)
+    power_dc = pvwatts_dc_power(**pvwatts_kws)
     irrad = pvwatts_kws['poa_global']
 
-    normalized_energy, insolation = normalize_with_expected_power(energy, dc_power, irrad, pv_input='energy')
+    energy_normalized, insolation = normalize_with_expected_power(energy, power_dc, irrad, pv_input='energy')
 
-    return normalized_energy, insolation
+    return energy_normalized, insolation
 
 
 def sapm_dc_power(pvlib_pvsystem, met_data):
@@ -191,7 +192,7 @@ def sapm_dc_power(pvlib_pvsystem, met_data):
 
     Returns
     -------
-    dc_power : pd.Series
+    power_dc : pd.Series
         DC power in watts derived using Sandia Array Performance Model and
         PVWatts.
     effective_poa : pd.Series
@@ -214,7 +215,7 @@ def sapm_dc_power(pvlib_pvsystem, met_data):
         .get_airmass(solar_position=solar_position, model='kastenyoung1989')
     airmass_absolute = airmass['airmass_absolute']
 
-    effective_poa = pvlib.pvsystem\
+    effective_irradiance = pvlib.pvsystem\
         .sapm_effective_irradiance(poa_direct=total_irradiance['poa_direct'],
                                    poa_diffuse=total_irradiance['poa_diffuse'],
                                    airmass_absolute=airmass_absolute,
@@ -226,11 +227,11 @@ def sapm_dc_power(pvlib_pvsystem, met_data):
                        met_data['Temperature'],
                        met_data['Wind Speed'])
 
-    dc_power = pvlib_pvsystem\
-        .pvwatts_dc(g_poa_effective=effective_poa,
+    power_dc = pvlib_pvsystem\
+        .pvwatts_dc(g_poa_effective=effective_irradiance,
                     temp_cell=temp_cell)
 
-    return dc_power, effective_poa
+    return power_dc, effective_irradiance
 
 
 def normalize_with_sapm(energy, sapm_kws):
@@ -269,17 +270,17 @@ def normalize_with_sapm(energy, sapm_kws):
 
     Returns
     -------
-    normalized_energy : pd.Series
+    energy_normalized : pd.Series
         Energy divided by Sandia Model DC energy.
     insolation : pd.Series
         Insolation associated with each normalized point
     '''
 
-    dc_power, irrad = sapm_dc_power(**sapm_kws)
+    power_dc, irrad = sapm_dc_power(**sapm_kws)
 
-    normalized_energy, insolation = normalize_with_expected_power(energy, dc_power, irrad, pv_input='energy')
+    energy_normalized, insolation = normalize_with_expected_power(energy, power_dc, irrad, pv_input='energy')
 
-    return normalized_energy, insolation
+    return energy_normalized, insolation
 
 
 def delta_index(series):

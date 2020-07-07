@@ -31,13 +31,14 @@ def normalized_filter(normalized, low_cutoff=0.01, high_cutoff=None):
     return (normalized > low_cutoff) & (normalized < high_cutoff)
 
 
-def poa_filter(poa, low_irradiance_cutoff=200, high_irradiance_cutoff=1200):
+def poa_filter(poa_global, low_irradiance_cutoff=200,
+               high_irradiance_cutoff=1200):
     '''
     Filter POA irradiance readings outside acceptable measurement bounds.
 
     Parameters
     ----------
-    poa : pd.Series
+    poa_global : pd.Series
         POA irradiance measurements.
     low_irradiance_cutoff : float, default 200
         The lower bound of acceptable values.
@@ -50,10 +51,11 @@ def poa_filter(poa, low_irradiance_cutoff=200, high_irradiance_cutoff=1200):
         Boolean Series of whether the given measurement is within acceptable
         bounds.
     '''
-    return (poa > low_irradiance_cutoff) & (poa < high_irradiance_cutoff)
+    return ((poa_global > low_irradiance_cutoff) &
+            (poa_global < high_irradiance_cutoff))
 
 
-def tcell_filter(tcell, low_tcell_cutoff=-50, high_tcell_cutoff=110):
+def tcell_filter(temperature_cell, low_tcell_cutoff=-50, high_tcell_cutoff=110):
     '''
     Filter temperature readings outside acceptable measurement bounds.
 
@@ -72,10 +74,11 @@ def tcell_filter(tcell, low_tcell_cutoff=-50, high_tcell_cutoff=110):
         Boolean Series of whether the given measurement is within acceptable
         bounds.
     '''
-    return (tcell > low_tcell_cutoff) & (tcell < high_tcell_cutoff)
+    return ((temperature_cell > low_tcell_cutoff) &
+            (temperature_cell < high_tcell_cutoff))
 
 
-def clip_filter(power, quant=0.98):
+def clip_filter(power_ac, quant=0.98):
     '''
     Filter data points likely to be affected by clipping
     with power greater than or equal to 99% of the `quant`
@@ -83,7 +86,7 @@ def clip_filter(power, quant=0.98):
 
     Parameters
     ----------
-    power : pd.Series
+    power_ac : pd.Series
         AC power in Watts
     quant : float, default 0.98
         Value for upper threshold quantile
@@ -94,19 +97,19 @@ def clip_filter(power, quant=0.98):
         Boolean Series of whether the given measurement is below 99% of the
         quantile filter.
     '''
-    v = power.quantile(quant)
-    return (power < v * 0.99)
+    v = power_ac.quantile(quant)
+    return (power_ac < v * 0.99)
 
 
-def csi_filter(measured_poa, clearsky_poa, threshold=0.15):
+def csi_filter(poa_global_meas, poa_global_sim, threshold=0.15):
     '''
     Filtering based on clear-sky index (csi)
 
     Parameters
     ----------
-    measured_poa : pd.Series
+    poa_global_meas : pd.Series
         Plane of array irradiance based on measurments
-    clearsky_poa : pd.Series
+    poa_global_sim : pd.Series
         Plane of array irradiance based on a clear sky model
     threshold : float, default 0.15
         threshold for filter
@@ -118,5 +121,5 @@ def csi_filter(measured_poa, clearsky_poa, threshold=0.15):
         around 1.
     '''
 
-    csi = measured_poa / clearsky_poa
+    csi = poa_global_meas / poa_global_sim
     return (csi >= 1.0 - threshold) & (csi <= 1.0 + threshold)

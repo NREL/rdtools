@@ -60,7 +60,8 @@ class PVWattsNormalizationTestCase(unittest.TestCase):
         ''' Test PVWatts DC power caculation. '''
 
         dc_power = pvwatts_dc_power(self.poa_global, self.power,
-                                    T_cell=self.temp, gamma_pdc=self.gamma_pdc)
+                                    temperature_cell=self.temp,
+                                    gamma_pmp=self.gamma_pdc)
 
         # Assert output has same frequency and length as input
         self.assertEqual(self.poa_global.index.freq, dc_power.index.freq)
@@ -74,9 +75,9 @@ class PVWattsNormalizationTestCase(unittest.TestCase):
 
         pvw_kws = {
             'poa_global': self.poa_global,
-            'P_ref': self.power,
-            'T_cell': self.temp,
-            'gamma_pdc': self.gamma_pdc,
+            'pmp_ref': self.power,
+            'temperature_cell': self.temp,
+            'gamma_pmp': self.gamma_pdc,
         }
 
         corr_energy, insolation = normalize_with_pvwatts(self.energy, pvw_kws)
