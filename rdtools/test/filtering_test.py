@@ -33,8 +33,8 @@ class POAFilterTestCase(unittest.TestCase):
 
     def test_poa_filter(self):
         filtered = poa_filter(self.measured_poa,
-                              low_irradiance_cutoff=200,
-                              high_irradiance_cutoff=1200)
+                              poa_global_low=200,
+                              poa_global_high=1200)
 
         # Expect high and low POA cutoffs to be non-inclusive.
         expected_result = np.array([True, True, True, False, False])
@@ -49,8 +49,8 @@ class TcellFilterTestCase(unittest.TestCase):
 
     def test_tcell_filter(self):
         filtered = tcell_filter(self.tcell,
-                                low_tcell_cutoff=-50,
-                                high_tcell_cutoff=110)
+                                temperature_cell_low=-50,
+                                temperature_cell_high=110)
 
         # Expected high and low tcell cutoffs to be non-inclusive.
         expected_result = np.array([False, True, True, True, False])
@@ -66,7 +66,7 @@ class ClipFilterTestCase(unittest.TestCase):
         #       use of the Series.quantile() method.
 
     def test_clip_filter_upper(self):
-        filtered = clip_filter(self.power, quant=0.98)
+        filtered = clip_filter(self.power, quantile=0.98)
 
         # Expect 99% of the 98th quantile to be filtered
         expected_result = self.power < (98 * 0.99)
@@ -77,10 +77,14 @@ def test_normalized_filter_default():
     pd.testing.assert_series_equal(normalized_filter(pd.Series([-5, 5])),
                                    pd.Series([False, True]))
 
-    pd.testing.assert_series_equal(normalized_filter(pd.Series([-1e6, 1e6]), low_cutoff=None, high_cutoff=None),
+    pd.testing.assert_series_equal(normalized_filter(pd.Series([-1e6, 1e6]),
+                                                     energy_normalized_low=None,
+                                                     energy_normalized_high=None),
                                    pd.Series([True, True]))
 
-    pd.testing.assert_series_equal(normalized_filter(pd.Series([-2, 2]), low_cutoff=-1, high_cutoff=1),
+    pd.testing.assert_series_equal(normalized_filter(pd.Series([-2, 2]),
+                                                     energy_normalized_low=-1,
+                                                     energy_normalized_high=1),
                                    pd.Series([False, False]))
 
     pd.testing.assert_series_equal(normalized_filter(pd.Series([0.01 - 1e-16, 0.01 + 1e-16, 1e308])),

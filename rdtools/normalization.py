@@ -11,7 +11,8 @@ class ConvergenceError(Exception):
     '''Rescale optimization did not converge'''
     pass
 
-def normalize_with_expected_power(pv, power_sim, irradiance, pv_input='power'):
+def normalize_with_expected_power(pv, power_expected, poa_global,
+                                  pv_input='power'):
     '''
     Normalize pv output based on expected PV power.
 
@@ -20,9 +21,9 @@ def normalize_with_expected_power(pv, power_sim, irradiance, pv_input='power'):
     pv : pd.Series
         Right-labeled time series PV energy or power. If energy, should *not*
         be cumulative, but only for preceding time step.
-    power_sim : pd.Series
+    power_expected : pd.Series
         Right-labeled time series of expected PV power.
-    irradiance : pd.Series
+    poa_global : pd.Series
         Right-labeled time series of plane-of-array irradiance associated with `power_sim`
     pv_input : str
         'power' or 'energy' to specify type of input used for pv parameter
@@ -46,18 +47,18 @@ def normalize_with_expected_power(pv, power_sim, irradiance, pv_input='power'):
     else:
         raise ValueError("Unexpected value for pv_input. pv_input should be 'power' or 'energy'.")
 
-    model_tds, mean_model_td = delta_index(power_sim)
+    model_tds, mean_model_td = delta_index(power_expected)
     measure_tds, mean_measure_td = delta_index(energy)
 
     # Case in which the model less frequent than the measurements
     if mean_model_td > mean_measure_td:
-        power_sim = interpolate(power_sim, pv.index)
-        irradiance = interpolate(irradiance, pv.index)
+        power_expected = interpolate(power_expected, pv.index)
+        poa_global = interpolate(poa_global, pv.index)
 
-    energy_sim = energy_from_power(power_sim, freq)
-    insolation = energy_from_power(irradiance, freq)
+    energy_expected = energy_from_power(power_expected, freq)
+    insolation = energy_from_power(poa_global, freq)
 
-    energy_normalized = energy / energy_sim
+    energy_normalized = energy / energy_expected
 
     index_union = energy_normalized.index.union(insolation.index)
     energy_normalized = energy_normalized.reindex(index_union)
@@ -66,8 +67,9 @@ def normalize_with_expected_power(pv, power_sim, irradiance, pv_input='power'):
     return energy_normalized, insolation
 
 
-def pvwatts_dc_power(poa_global, pmp_ref, temperature_cell=None,
-                     irradiance_ref=1000, temperature_ref=25, gamma_pmp=None):
+def pvwatts_dc_power(poa_global, power_dc_rated, temperature_cell=None,
+                     poa_global_ref=1000, temperature_cell_ref=25,
+                     gamma_pmp=None):
     '''
     PVWatts v5 Module Model: DC power given effective poa poa_global, module
     nameplate power, and cell temperature. This function differs from the PVLIB
@@ -77,15 +79,15 @@ def pvwatts_dc_power(poa_global, pmp_ref, temperature_cell=None,
     ----------
     poa_global : pd.Series
         Total effective plane of array irradiance.
-    pmp_ref : float
+    power_dc_rated : float
         Rated DC power of array in watts
     temperature_cell : pd.Series, optional
         Measured or derived cell temperature [degrees celsius].
         Time series assumed to be same frequency as `poa_global`.
         If omitted, the temperature term will be ignored.
-    irradiance_ref : float, default 1000
+    poa_global_ref : float, default 1000
         Reference irradiance at standard test condition [W/m**2].
-    temperature_ref : float, default 25
+    temperature_cell_ref : float, default 25
         Reference temperature at standard test condition [degrees celsius].
     gamma_pmp : float, default None
         Linear array efficiency temperature coefficient [1 / degree celsius].
@@ -102,10 +104,12 @@ def pvwatts_dc_power(poa_global, pmp_ref, temperature_cell=None,
         DC power in watts determined by PVWatts v5 equation.
     '''
 
-    dc_power = pmp_ref * poa_global / irradiance_ref
+    dc_power = power_dc_rated * poa_global / poa_global_ref
 
     if temperature_cell is not None and gamma_pmp is not None:
-        temperature_factor = 1 + gamma_pmp * (temperature_cell - temperature_ref)
+        temperature_factor = (
+            1 + gamma_pmp * (temperature_cell - temperature_cell_ref)
+        )
         dc_power = dc_power * temperature_factor
 
     return dc_power
@@ -137,9 +141,9 @@ def normalize_with_pvwatts(energy, pvwatts_kws):
         Measured or derived cell temperature [degrees celsius].
         Time series assumed to be same frequency as `poa_global`.
         If omitted, the temperature term will be ignored.
-    irradiance_ref : float, default 1000
+    poa_global_ref : float, default 1000
         Reference irradiance at standard test condition [W/m**2].
-    temperature_ref : float, default 25
+    temperature_cell_ref : float, default 25
         Reference temperature at standard test condition [degrees celsius].
     gamma_pmp : float, default None
         Linear array efficiency temperature coefficient [1 / degree celsius].

@@ -19,6 +19,8 @@ API Changes
   has changed relative to prior versions using ``precip_clean_only=True`` (:pull:`176`).
 * Remove ``random_seed`` parameter from soiling module. Functionality can be obtained by running
   ``numpy.random.seed()`` outside of RdTools functions. (:pull:`176`)
+* TODO: list changes in (:pull:`185`)
+
 
 Enhancements
 ------------
