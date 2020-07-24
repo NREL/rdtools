@@ -24,14 +24,15 @@ def normalize_with_expected_power(pv, power_expected, poa_global,
     power_expected : pd.Series
         Right-labeled time series of expected PV power.
     poa_global : pd.Series
-        Right-labeled time series of plane-of-array irradiance associated with `power_sim`
+        Right-labeled time series of plane-of-array irradiance associated with
+        `expected_power`
     pv_input : str
         'power' or 'energy' to specify type of input used for pv parameter
 
     Returns
     -------
     energy_normalized : pd.Series
-        Energy normalized based on `power_sim`
+        Energy normalized based on `expected_power`
     insolation : pd.Series
         Insolation associated with each normalized point
 
