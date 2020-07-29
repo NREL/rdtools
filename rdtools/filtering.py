@@ -11,7 +11,7 @@ def normalized_filter(energy_normalized, energy_normalized_low=0.01,
     Parameters
     ----------
     energy_normalized : pd.Series
-        Normalized power measurements.
+        Normalized energy measurements.
     energy_normalized_low : float, default 0.01
         The lower bound of acceptable values.
     energy_normalized_high : float, optional
