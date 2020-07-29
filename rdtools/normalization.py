@@ -334,7 +334,7 @@ def irradiance_rescale(irrad, irrad_sim, max_iterations=100,
     irrad : pd.Series
         measured irradiance time series
     irrad_sim : pd.Series
-        modeled irradiance time series
+        modeled/simulated irradiance time series
     max_iterations : int, default 100
         The maximum number of times to attempt rescale optimization.
         Ignored if `method` = 'single_opt'
