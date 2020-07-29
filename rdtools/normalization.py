@@ -457,7 +457,7 @@ def t_step_nanoseconds(time_series):
     return t_steps
 
 
-def energy_from_power(time_series, target_frequency=None, max_timedelta=None):
+def energy_from_power(power, target_frequency=None, max_timedelta=None):
     '''
     Returns a regular right-labeled energy time series in units of Wh per
     interval from an instantaneous power time series. NaN is filled where the
@@ -466,16 +466,16 @@ def energy_from_power(time_series, target_frequency=None, max_timedelta=None):
 
     Parameters
     ----------
-    time_series : pd.Series
+    power : pd.Series
         Instantaneous time series of power in Watts
     target_frequency : DatetimeOffset or frequency string, default None
         The frequency of the energy time series to be returned.
-        If omitted, use the median timestep of `time_series`
+        If omitted, use the median timestep of `power`
     max_timedelta : pd.Timedelta, default None
         The maximum allowed gap between power measurements. If the gap between
         consecutive power measurements exceeds `max_timedelta`, NaN will be
         returned for that interval. If omitted, `max_timedelta` is set
-        internally to the median time delta in `time_series`.
+        internally to the median time delta in `power`.
 
     Returns
     -------
@@ -483,11 +483,11 @@ def energy_from_power(time_series, target_frequency=None, max_timedelta=None):
         right-labeled energy in Wh per interval
     '''
 
-    if not isinstance(time_series.index, pd.DatetimeIndex):
-        raise ValueError('time_series must be a pandas series with a '
+    if not isinstance(power.index, pd.DatetimeIndex):
+        raise ValueError('power must be a pandas series with a '
                          'DatetimeIndex')
 
-    t_steps = t_step_nanoseconds(time_series)
+    t_steps = t_step_nanoseconds(power)
     median_step_ns = t_steps.median()
 
     if target_frequency is None:
@@ -504,8 +504,8 @@ def energy_from_power(time_series, target_frequency=None, max_timedelta=None):
             pd.tseries.frequencies.to_offset(target_frequency).nanos
     except ValueError as e:
         if 'is a non-fixed frequency' in str(e):
-            temp_ind = pd.date_range(time_series.index[0],
-                                     time_series.index[-1],
+            temp_ind = pd.date_range(power.index[0],
+                                     power.index[-1],
                                      freq=target_frequency)
             temp_series = pd.Series(data=1, index=temp_ind)
             temp_diffs = t_step_nanoseconds(temp_series)
@@ -515,7 +515,7 @@ def energy_from_power(time_series, target_frequency=None, max_timedelta=None):
 
     # Upsampling case
     if freq_interval_size_ns <= median_step_ns:
-        resampled = interpolate(time_series, target_frequency, max_timedelta)
+        resampled = interpolate(power, target_frequency, max_timedelta)
 
         moving_average = (resampled + resampled.shift()) / 2.0
 
@@ -533,7 +533,7 @@ def energy_from_power(time_series, target_frequency=None, max_timedelta=None):
 
     # Downsampling case
     elif freq_interval_size_ns > median_step_ns:
-        energy = trapz_aggregate(time_series, target_frequency, max_timedelta)
+        energy = trapz_aggregate(power, target_frequency, max_timedelta)
 
     # Set the frequency if we can
     try:
