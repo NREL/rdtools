@@ -105,15 +105,15 @@ def pvwatts_dc_power(poa_global, power_dc_rated, temperature_cell=None,
         DC power in watts determined by PVWatts v5 equation.
     '''
 
-    dc_power = power_dc_rated * poa_global / poa_global_ref
+    power_dc = power_dc_rated * poa_global / poa_global_ref
 
     if temperature_cell is not None and gamma_pdc is not None:
         temperature_factor = (
             1 + gamma_pdc * (temperature_cell - temperature_cell_ref)
         )
-        dc_power = dc_power * temperature_factor
+        power_dc = power_dc * temperature_factor
 
-    return dc_power
+    return power_dc
 
 
 def normalize_with_pvwatts(energy, pvwatts_kws):
