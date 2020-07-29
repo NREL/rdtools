@@ -83,15 +83,15 @@ def pvwatts_dc_power(poa_global, power_dc_rated, temperature_cell=None,
     power_dc_rated : float
         Rated DC power of array in watts
     temperature_cell : pd.Series, optional
-        Measured or derived cell temperature [degrees celsius].
+        Measured or derived cell temperature [degrees Celsius].
         Time series assumed to be same frequency as `poa_global`.
         If omitted, the temperature term will be ignored.
     poa_global_ref : float, default 1000
         Reference irradiance at standard test condition [W/m**2].
     temperature_cell_ref : float, default 25
-        Reference temperature at standard test condition [degrees celsius].
+        Reference temperature at standard test condition [degrees Celsius].
     gamma_pdc : float, default None
-        Linear array efficiency temperature coefficient [1 / degree celsius].
+        Linear array efficiency temperature coefficient [1 / degree Celsius].
         If omitted, the temperature term will be ignored.
 
     Note
@@ -139,15 +139,15 @@ def normalize_with_pvwatts(energy, pvwatts_kws):
     pmp_ref : float
         Rated DC power of array in watts
     temperature_cell : pd.Series, optional
-        Measured or derived cell temperature [degrees celsius].
+        Measured or derived cell temperature [degrees Celsius].
         Time series assumed to be same frequency as `poa_global`.
         If omitted, the temperature term will be ignored.
     poa_global_ref : float, default 1000
         Reference irradiance at standard test condition [W/m**2].
     temperature_cell_ref : float, default 25
-        Reference temperature at standard test condition [degrees celsius].
+        Reference temperature at standard test condition [degrees Celsius].
     gamma_pdc : float, default None
-        Linear array efficiency temperature coefficient [1 / degree celsius].
+        Linear array efficiency temperature coefficient [1 / degree Celsius].
         If omitted, the temperature term will be ignored.
 
     Note
