@@ -323,7 +323,7 @@ def delta_index(series):
     return deltas, np.mean(deltas.dropna())
 
 
-def irradiance_rescale(irrad, modeled_irrad, max_iterations=100,
+def irradiance_rescale(irrad, irrad_sim, max_iterations=100,
                        method='iterative', convergence_threshold=1e-6):
     '''
     Attempt to rescale modeled irradiance to match measured irradiance on
@@ -333,7 +333,7 @@ def irradiance_rescale(irrad, modeled_irrad, max_iterations=100,
     ----------
     irrad : pd.Series
         measured irradiance time series
-    modeled_irrad : pd.Series
+    irrad_sim : pd.Series
         modeled irradiance time series
     max_iterations : int, default 100
         The maximum number of times to attempt rescale optimization.
@@ -362,15 +362,15 @@ def irradiance_rescale(irrad, modeled_irrad, max_iterations=100,
             Calculates RMSE with a given rescale fact(or) according to global
             filt(er)
             """
-            rescaled_modeled_irrad = fact * modeled_irrad
-            difference = rescaled_modeled_irrad[filt] - irrad[filt]
+            rescaled_irrad_sim = fact * irrad_sim
+            difference = rescaled_irrad_sim[filt] - irrad[filt]
             rmse = np.sqrt((difference**2.0).mean())
             return rmse
 
-        def _single_rescale(irrad, modeled_irrad, guess):
+        def _single_rescale(irrad, irrad_sim, guess):
             "Optimizes rescale factor once"
             global filt
-            csi = irrad / (guess * modeled_irrad)  # clear sky index
+            csi = irrad / (guess * irrad_sim)  # clear sky index
             filt = (csi >= 0.8) & (csi <= 1.2) & (irrad > 200)
             min_result = minimize(_rmse, guess, method='Nelder-Mead')
 
@@ -379,7 +379,7 @@ def irradiance_rescale(irrad, modeled_irrad, max_iterations=100,
 
         # Calculate an initial guess for the rescale factor
         factor = (np.percentile(irrad.dropna(), 90) /
-                  np.percentile(modeled_irrad.dropna(), 90))
+                  np.percentile(irrad_sim.dropna(), 90))
         prev_factor = 1.0
 
         # Iteratively run the optimization,
@@ -391,25 +391,25 @@ def irradiance_rescale(irrad, modeled_irrad, max_iterations=100,
                 msg = 'Rescale did not converge within max_iterations'
                 raise ConvergenceError(msg)
             prev_factor = factor
-            factor = _single_rescale(irrad, modeled_irrad, factor)
+            factor = _single_rescale(irrad, irrad_sim, factor)
 
-        return factor * modeled_irrad
+        return factor * irrad_sim
 
     elif method == 'single_opt':
         def _rmse(fact):
-            rescaled_modeled_irrad = fact * modeled_irrad
-            csi = irrad / rescaled_modeled_irrad
+            rescaled_irrad_sim = fact * irrad_sim
+            csi = irrad / rescaled_irrad_sim
             filt = (csi >= 0.8) & (csi <= 1.2)
-            difference = rescaled_modeled_irrad[filt] - irrad[filt]
+            difference = rescaled_irrad_sim[filt] - irrad[filt]
             rmse = np.sqrt((difference**2.0).mean())
             return rmse
 
         guess = np.percentile(irrad.dropna(), 90) / \
-                np.percentile(modeled_irrad.dropna(), 90)
+                np.percentile(irrad_sim.dropna(), 90)
         min_result = minimize(_rmse, guess, method='Nelder-Mead')
         factor = min_result['x'][0]
 
-        out_irrad = factor * modeled_irrad
+        out_irrad = factor * irrad_sim
         return out_irrad
 
     else:
