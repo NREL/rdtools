@@ -70,7 +70,7 @@ def normalize_with_expected_power(pv, power_expected, poa_global,
 
 def pvwatts_dc_power(poa_global, power_dc_rated, temperature_cell=None,
                      poa_global_ref=1000, temperature_cell_ref=25,
-                     gamma_pmp=None):
+                     gamma_pdc=None):
     '''
     PVWatts v5 Module Model: DC power given effective poa poa_global, module
     nameplate power, and cell temperature. This function differs from the PVLIB
@@ -90,7 +90,7 @@ def pvwatts_dc_power(poa_global, power_dc_rated, temperature_cell=None,
         Reference irradiance at standard test condition [W/m**2].
     temperature_cell_ref : float, default 25
         Reference temperature at standard test condition [degrees celsius].
-    gamma_pmp : float, default None
+    gamma_pdc : float, default None
         Linear array efficiency temperature coefficient [1 / degree celsius].
         If omitted, the temperature term will be ignored.
 
@@ -107,9 +107,9 @@ def pvwatts_dc_power(poa_global, power_dc_rated, temperature_cell=None,
 
     dc_power = power_dc_rated * poa_global / poa_global_ref
 
-    if temperature_cell is not None and gamma_pmp is not None:
+    if temperature_cell is not None and gamma_pdc is not None:
         temperature_factor = (
-            1 + gamma_pmp * (temperature_cell - temperature_cell_ref)
+            1 + gamma_pdc * (temperature_cell - temperature_cell_ref)
         )
         dc_power = dc_power * temperature_factor
 
@@ -146,7 +146,7 @@ def normalize_with_pvwatts(energy, pvwatts_kws):
         Reference irradiance at standard test condition [W/m**2].
     temperature_cell_ref : float, default 25
         Reference temperature at standard test condition [degrees celsius].
-    gamma_pmp : float, default None
+    gamma_pdc : float, default None
         Linear array efficiency temperature coefficient [1 / degree celsius].
         If omitted, the temperature term will be ignored.
 
