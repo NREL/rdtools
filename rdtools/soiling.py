@@ -34,8 +34,8 @@ class SRRAnalysis():
     def __init__(self, energy_normalized_daily, insolation_daily,
                  precipitation_daily=None):
         self.pm = energy_normalized_daily  # daily performance metric
-        self.insol = insolation_daily
-        self.precip = precipitation_daily  # daily precipitation
+        self.insolation_daily = insolation_daily
+        self.precipitation_daily = precipitation_daily  # daily precipitation
         self.random_profiles = []  # random soiling profiles in _calc_monte
         # insolation-weighted soiling ratios in _calc_monte:
         self.monte_losses = []
@@ -44,12 +44,12 @@ class SRRAnalysis():
             raise ValueError('Daily performance metric series must have '
                              'daily frequency')
 
-        if self.insol.index.freq != 'D':
+        if self.insolation_daily.index.freq != 'D':
             raise ValueError('Daily insolation series must have '
                              'daily frequency')
 
-        if self.precip is not None:
-            if self.precip.index.freq != 'D':
+        if self.precipitation_daily is not None:
+            if self.precipitation_daily.index.freq != 'D':
                 raise ValueError('Precipitation series must have '
                                  'daily frequency')
 
@@ -83,16 +83,16 @@ class SRRAnalysis():
             If 'precip', only precipitation events are treated as cleaning events.
         precip_threshold : float, default 0.01
             The daily precipitation threshold for defining precipitation cleaning events.
-            Units must be consistent with ``self.precip``.
+            Units must be consistent with ``self.precipitation_daily``.
         '''
 
         df = self.pm.to_frame()
         df.columns = ['pi']
-        df_insol = self.insol.to_frame()
+        df_insol = self.insolation_daily.to_frame()
         df_insol.columns = ['insol']
 
         df = df.join(df_insol)
-        precip = self.precip
+        precip = self.precipitation_daily
         if precip is not None:
             df_precip = precip.to_frame()
             df_precip.columns = ['precip']
@@ -495,7 +495,7 @@ class SRRAnalysis():
             If 'precip', only precipitation events are treated as cleaning events.
         precip_threshold : float, default 0.01
             The daily precipitation threshold for defining precipitation cleaning events.
-            Units must be consistent with ``self.precip``
+            Units must be consistent with ``self.precipitation_daily``
         min_interval_length : int, default 2
             The minimum duration for an interval to be considered
             valid.  Cannot be less than 2 (days).
