@@ -136,7 +136,7 @@ def normalize_with_pvwatts(energy, pvwatts_kws):
     ------------------
     poa_global : pd.Series
         Total effective plane of array irradiance.
-    pmp_ref : float
+    power_dc_rated : float
         Rated DC power of array in watts
     temperature_cell : pd.Series, optional
         Measured or derived cell temperature [degrees Celsius].
