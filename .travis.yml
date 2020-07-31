@@ -15,6 +15,11 @@ env:
   - REQ_ENV='-r requirements.txt .'
   - REQ_ENV='--upgrade --upgrade-strategy=eager .'
 
+jobs:
+  exclude:
+  - python: 2.7
+    env: REQ_ENV='--upgrade --upgrade-strategy=eager .'
+
 install:
   - pip install $REQ_ENV
 
@@ -35,3 +40,4 @@ deploy:
     condition: $REQ_ENV == '--upgrade --upgrade-strategy=eager .'
   distributions: "sdist bdist_wheel"
   skip_cleanup: true
+  skip_existing: true
