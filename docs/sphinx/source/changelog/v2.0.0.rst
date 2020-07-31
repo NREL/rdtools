@@ -32,10 +32,7 @@ API Changes
    * :py:func:`~rdtools.filtering.clip_filter` input kwargs are now ``power_ac`` and ``quantile``.
    * :py:func:`~rdtools.filtering.csi_filter` first two kwargs are now ``poa_global_measured``, ``poa_global_clearsky``.
    * :py:func:`~rdtools.normalization.normalize_with_pvwatts` pvwatts_kws dictionary keys have been renamed.
-   * :py:func:`~rdtools.normalization.normalize_with_expected_power` input kwargs are now ``pv``, ``power_expected``, ``poa_global``.
    * :py:func:`~rdtools.normalization.pvwatts_dc_power` input kwargs are now ``poa_global``, ``power_dc_rated``, ``temperature_cell``, ``poa_global_ref``, ``temperature_cell_ref``, ``gamma_pdc``.
-   * :py:func:`~rdtools.normalization.irradiance_rescale` second kwarg is now ``irrad_sim``.
-   * :py:func:`~rdtools.soiling.soiling_srr` first four kwargs are now ``energy_normalized_daily``, ``insolation_daily``, ``reps``, ``precipitation_daily``.
 
 Enhancements
 ------------
