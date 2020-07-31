@@ -19,8 +19,20 @@ API Changes
   has changed relative to prior versions using ``precip_clean_only=True`` (:pull:`176`).
 * Remove ``random_seed`` parameter from soiling module. Functionality can be obtained by running
   ``numpy.random.seed()`` outside of RdTools functions. (:pull:`176`)
-* TODO: list changes in (:pull:`185`)
-
+* Many kwargs have changed name (but not input order) to bring nomenclature into 
+  closer alignment with the `DuraMAT pv-terms project <https://duramat.github.io/pv-terms>`_: (:pull:`185`)
+   * :py:func:`~rdtools.aggregation.aggregation_insol` input kwarg has been renamed.
+   * :py:func:`~rdtools.degradation.degradation_year_on_year` input kwarg has been renamed.
+   * :py:func:`~rdtools.filtering.normalized_filter` input kwargs have been renamed.
+   * :py:func:`~rdtools.filtering.poa_filter` input kwargs have been renamed.
+   * :py:func:`~rdtools.filtering.tcell_filter` input kwargs have been renamed.
+   * :py:func:`~rdtools.filtering.clip_filter` input kwargs have been renamed.
+   * :py:func:`~rdtools.filtering.csi_filter` input kwargs have been renamed.
+   * :py:func:`~rdtools.normalization.normalize_with_pvwatts` pvwatts_kws dictionary keys have been renamed.
+   * :py:func:`~rdtools.normalization.normalize_with_expected_power` input kwargs have been renamed.
+   * :py:func:`~rdtools.normalization.pvwatts_dc_power` input kwargs have been renamed.
+   * :py:func:`~rdtools.normalization.irradiance_rescale` input kwargs have been renamed.
+   * :py:func:`~rdtools.soiling.soiling_srr` input kwargs have been renamed.
 
 Enhancements
 ------------
@@ -69,6 +81,8 @@ Example Updates
   variable names (:pull:`139`).
 * Add a new example notebook that analyzes data from a PV system located at
   NREL's South Table Mountain campus (PVDAQ system #4) (:pull:`171`).
+* Explicitly register pandas datetime converters which were `deprecated <https://github.com/pandas-dev/pandas/issues/18301>`_.
+  
 
 Contributors
 ------------
