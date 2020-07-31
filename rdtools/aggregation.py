@@ -1,25 +1,26 @@
-'''
-Aggregation Helper Functions
-'''
+'''Functions for calculating weighted aggregates of PV system data.'''
 
-def aggregation_insol(normalized_energy, insolation, frequency='D'):
+
+def aggregation_insol(energy_normalized, insolation, frequency='D'):
     '''
     Insolation weighted aggregation
 
     Parameters
     ----------
-    normalized_energy: Pandas series (numeric)
+    energy_normalized : pd.Series
         Normalized energy time series
-    insolation: Pandas series (numeric)
-        Time series of insolation associated with each normalize_energy point
-    frequency: Pandas offset string
+    insolation : pd.Series
+        Time series of insolation associated with each `energy_normalized`
+        point
+    frequency : Pandas offset string, default 'D'
         Target frequency at which to aggregate
 
     Returns
     -------
-    aggregated: Pandas Series (numeric)
+    aggregated : pd.Series
         Insolation weighted average, aggregated at frequency
     '''
-    aggregated = (insolation * normalized_energy).resample(frequency).sum() / insolation.resample(frequency).sum()
+    aggregated = (insolation * energy_normalized).resample(frequency).sum() / \
+        insolation.resample(frequency).sum()
 
     return aggregated

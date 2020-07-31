@@ -1,0 +1,6 @@
+python:
+    version: 3.6
+    use_system_site_packages: true
+    pip_install: true
+    extra_requirements:
+        - doc

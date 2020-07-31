@@ -60,7 +60,8 @@ class PVWattsNormalizationTestCase(unittest.TestCase):
         ''' Test PVWatts DC power caculation. '''
 
         dc_power = pvwatts_dc_power(self.poa_global, self.power,
-                                    T_cell=self.temp, gamma_pdc=self.gamma_pdc)
+                                    temperature_cell=self.temp,
+                                    gamma_pdc=self.gamma_pdc)
 
         # Assert output has same frequency and length as input
         self.assertEqual(self.poa_global.index.freq, dc_power.index.freq)
@@ -74,8 +75,8 @@ class PVWattsNormalizationTestCase(unittest.TestCase):
 
         pvw_kws = {
             'poa_global': self.poa_global,
-            'P_ref': self.power,
-            'T_cell': self.temp,
+            'power_dc_rated': self.power,
+            'temperature_cell': self.temp,
             'gamma_pdc': self.gamma_pdc,
         }
 
@@ -86,12 +87,15 @@ class PVWattsNormalizationTestCase(unittest.TestCase):
         self.assertEqual(len(corr_energy), 12)
 
         # Test corrected energy is equal to 1.0
-        self.assertTrue((corr_energy == 1.0).all())
+        # first value should be nan because we have no irradiance
+        # data prior to the first energy point
+        self.assertTrue(np.isnan(corr_energy.iloc[0]))
+        self.assertTrue((corr_energy.iloc[1:] == 1.0).all())  # rest should be 1
 
         # Test expected behavior when energy has no explicit frequency
         self.energy.index.freq = None
         corr_energy, insolation = normalize_with_pvwatts(self.energy, pvw_kws)
-        self.assertTrue(np.isnan(corr_energy.iloc[0]))  # first valye should be nan
+        self.assertTrue(np.isnan(corr_energy.iloc[0]))  # first value should be nan
         self.assertTrue((corr_energy.iloc[1:] == 1.0).all())  # rest should be 1
 
         # Test for valueError when energy frequency can't be inferred

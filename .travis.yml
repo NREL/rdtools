@@ -3,8 +3,9 @@ sudo: false
 language: python
 
 python:
-  - "2.7"
   - "3.6"
+  - "3.7"
+  - "3.8"
 
 # Test two environments:
 # 1) dependencies with pinned versions from requirements.txt
@@ -25,6 +26,8 @@ install:
 script:
   - pytest
 
+# Deploy to pypi on the python 3.6 build with upgraded dependencies when 
+# a new version is tagged on github from the master branch
 deploy:
   provider: pypi
   user: RdTools
@@ -33,6 +36,8 @@ deploy:
   on:
     tags: true
     branch: master
+    python: 3.6
+    condition: $REQ_ENV == '--upgrade --upgrade-strategy=eager .'
   distributions: "sdist bdist_wheel"
   skip_cleanup: true
   skip_existing: true

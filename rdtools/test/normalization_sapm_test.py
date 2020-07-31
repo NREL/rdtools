@@ -31,7 +31,7 @@ class SapmNormalizationTestCase(unittest.TestCase):
         module_parameters = {
             'pdc0': 2.1,
             'gamma_pdc': -0.0045
-            }
+        }
 
         # define location
         test_location = pvlib.location\
@@ -43,7 +43,8 @@ class SapmNormalizationTestCase(unittest.TestCase):
                                surface_azimuth=180,
                                module=module,
                                module_parameters=module_parameters,
-                               racking_model='insulated_back_polymerback',
+                               racking_model='insulated_back',
+                               module_type='glass_polymer',
                                modules_per_string=6)
 
         # define dummy energy data
@@ -60,12 +61,8 @@ class SapmNormalizationTestCase(unittest.TestCase):
         # define dummy meteorological data
         irrad_columns = ['DNI', 'GHI', 'DHI', 'Temperature', 'Wind Speed']
         irrad_freq = 'D'
-        irrad_periods = 31 * energy_periods
-        irrad_index = pd.date_range(start='2012-01-01',
-                                    periods=irrad_periods,
-                                    freq=irrad_freq)
-        irrad_index = pd.date_range(start='2012-01-01',
-                                    periods=irrad_periods,
+        irrad_index = pd.date_range(start=energy_index[0],
+                                    end=energy_index[-1] - pd.to_timedelta('1 nanosecond'),
                                     freq=irrad_freq)
         self.irrad = pd.DataFrame([[100, 45, 30, 25, 10]],
                                   index=irrad_index,
