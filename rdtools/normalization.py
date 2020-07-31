@@ -11,7 +11,8 @@ class ConvergenceError(Exception):
     '''Rescale optimization did not converge'''
     pass
 
-def normalize_with_expected_power(pv, expected_power, irradiance, pv_input='power'):
+def normalize_with_expected_power(pv, power_expected, poa_global,
+                                  pv_input='power'):
     '''
     Normalize pv output based on expected PV power.
 
@@ -20,22 +21,23 @@ def normalize_with_expected_power(pv, expected_power, irradiance, pv_input='powe
     pv : pd.Series
         Right-labeled time series PV energy or power. If energy, should *not*
         be cumulative, but only for preceding time step.
-    expected_power : pd.Series
+    power_expected : pd.Series
         Right-labeled time series of expected PV power.
-    irradiance : pd.Series
-        Right-labeled time series of plane-of-array irradiance associated with `expected_power`
+    poa_global : pd.Series
+        Right-labeled time series of plane-of-array irradiance associated with
+        `expected_power`
     pv_input : str
         'power' or 'energy' to specify type of input used for pv parameter
 
     Returns
     -------
-    normalized_energy : pd.Series
+    energy_normalized : pd.Series
         Energy normalized based on `expected_power`
     insolation : pd.Series
         Insolation associated with each normalized point
 
     '''
-    
+
     freq = check_series_frequency(pv, 'pv')
 
     if pv_input == 'power':
@@ -46,26 +48,28 @@ def normalize_with_expected_power(pv, expected_power, irradiance, pv_input='powe
     else:
         raise ValueError("Unexpected value for pv_input. pv_input should be 'power' or 'energy'.")
 
-    model_tds, mean_model_td = delta_index(expected_power)
+    model_tds, mean_model_td = delta_index(power_expected)
     measure_tds, mean_measure_td = delta_index(energy)
 
     # Case in which the model less frequent than the measurements
     if mean_model_td > mean_measure_td:
-        expected_power = interpolate(expected_power, pv.index)
-        irradiance = interpolate(irradiance, pv.index)
-        
-    expected_energy = energy_from_power(expected_power, freq)
-    insolation = energy_from_power(irradiance, freq)
+        power_expected = interpolate(power_expected, pv.index)
+        poa_global = interpolate(poa_global, pv.index)
 
-    normalized_energy = energy / expected_energy
+    energy_expected = energy_from_power(power_expected, freq)
+    insolation = energy_from_power(poa_global, freq)
 
-    index_union = normalized_energy.index.union(insolation.index)
-    normalized_energy = normalized_energy.reindex(index_union)
+    energy_normalized = energy / energy_expected
+
+    index_union = energy_normalized.index.union(insolation.index)
+    energy_normalized = energy_normalized.reindex(index_union)
     insolation = insolation.reindex(index_union)
 
-    return normalized_energy, insolation
+    return energy_normalized, insolation
 
-def pvwatts_dc_power(poa_global, P_ref, T_cell=None, G_ref=1000, T_ref=25,
+
+def pvwatts_dc_power(poa_global, power_dc_rated, temperature_cell=None,
+                     poa_global_ref=1000, temperature_cell_ref=25,
                      gamma_pdc=None):
     '''
     PVWatts v5 Module Model: DC power given effective poa poa_global, module
@@ -76,18 +80,18 @@ def pvwatts_dc_power(poa_global, P_ref, T_cell=None, G_ref=1000, T_ref=25,
     ----------
     poa_global : pd.Series
         Total effective plane of array irradiance.
-    P_ref : float
+    power_dc_rated : float
         Rated DC power of array in watts
-    T_cell : pd.Series, optional
-        Measured or derived cell temperature [degrees celsius].
+    temperature_cell : pd.Series, optional
+        Measured or derived cell temperature [degrees Celsius].
         Time series assumed to be same frequency as `poa_global`.
         If omitted, the temperature term will be ignored.
-    G_ref : float, default 1000
+    poa_global_ref : float, default 1000
         Reference irradiance at standard test condition [W/m**2].
-    T_ref : float, default 25
-        Reference temperature at standard test condition [degrees celsius].
+    temperature_cell_ref : float, default 25
+        Reference temperature at standard test condition [degrees Celsius].
     gamma_pdc : float, default None
-        Linear array efficiency temperature coefficient [1 / degree celsius].
+        Linear array efficiency temperature coefficient [1 / degree Celsius].
         If omitted, the temperature term will be ignored.
 
     Note
@@ -97,17 +101,19 @@ def pvwatts_dc_power(poa_global, P_ref, T_cell=None, G_ref=1000, T_ref=25,
 
     Returns
     -------
-    dc_power : pd.Series
+    power_dc : pd.Series
         DC power in watts determined by PVWatts v5 equation.
     '''
 
-    dc_power = P_ref * poa_global / G_ref
+    power_dc = power_dc_rated * poa_global / poa_global_ref
 
-    if T_cell is not None and gamma_pdc is not None:
-        temperature_factor = 1 + gamma_pdc * (T_cell - T_ref)
-        dc_power = dc_power * temperature_factor
+    if temperature_cell is not None and gamma_pdc is not None:
+        temperature_factor = (
+            1 + gamma_pdc * (temperature_cell - temperature_cell_ref)
+        )
+        power_dc = power_dc * temperature_factor
 
-    return dc_power
+    return power_dc
 
 
 def normalize_with_pvwatts(energy, pvwatts_kws):
@@ -130,18 +136,18 @@ def normalize_with_pvwatts(energy, pvwatts_kws):
     ------------------
     poa_global : pd.Series
         Total effective plane of array irradiance.
-    P_ref : float
+    power_dc_rated : float
         Rated DC power of array in watts
-    T_cell : pd.Series, optional
-        Measured or derived cell temperature [degrees celsius].
+    temperature_cell : pd.Series, optional
+        Measured or derived cell temperature [degrees Celsius].
         Time series assumed to be same frequency as `poa_global`.
         If omitted, the temperature term will be ignored.
-    G_ref : float, default 1000
+    poa_global_ref : float, default 1000
         Reference irradiance at standard test condition [W/m**2].
-    T_ref : float, default 25
-        Reference temperature at standard test condition [degrees celsius].
+    temperature_cell_ref : float, default 25
+        Reference temperature at standard test condition [degrees Celsius].
     gamma_pdc : float, default None
-        Linear array efficiency temperature coefficient [1/degree celsius].
+        Linear array efficiency temperature coefficient [1 / degree Celsius].
         If omitted, the temperature term will be ignored.
 
     Note
@@ -151,18 +157,18 @@ def normalize_with_pvwatts(energy, pvwatts_kws):
 
     Returns
     -------
-    normalized_energy : pd.Series
+    energy_normalized : pd.Series
         Energy divided by PVWatts DC energy.
     insolation : pd.Series
         Insolation associated with each normalized point
     '''
 
-    dc_power = pvwatts_dc_power(**pvwatts_kws)
+    power_dc = pvwatts_dc_power(**pvwatts_kws)
     irrad = pvwatts_kws['poa_global']
 
-    normalized_energy, insolation = normalize_with_expected_power(energy, dc_power, irrad, pv_input='energy')
+    energy_normalized, insolation = normalize_with_expected_power(energy, power_dc, irrad, pv_input='energy')
 
-    return normalized_energy, insolation
+    return energy_normalized, insolation
 
 
 def sapm_dc_power(pvlib_pvsystem, met_data):
@@ -191,7 +197,7 @@ def sapm_dc_power(pvlib_pvsystem, met_data):
 
     Returns
     -------
-    dc_power : pd.Series
+    power_dc : pd.Series
         DC power in watts derived using Sandia Array Performance Model and
         PVWatts.
     effective_poa : pd.Series
@@ -214,7 +220,7 @@ def sapm_dc_power(pvlib_pvsystem, met_data):
         .get_airmass(solar_position=solar_position, model='kastenyoung1989')
     airmass_absolute = airmass['airmass_absolute']
 
-    effective_poa = pvlib.pvsystem\
+    effective_irradiance = pvlib.pvsystem\
         .sapm_effective_irradiance(poa_direct=total_irradiance['poa_direct'],
                                    poa_diffuse=total_irradiance['poa_diffuse'],
                                    airmass_absolute=airmass_absolute,
@@ -226,11 +232,11 @@ def sapm_dc_power(pvlib_pvsystem, met_data):
                        met_data['Temperature'],
                        met_data['Wind Speed'])
 
-    dc_power = pvlib_pvsystem\
-        .pvwatts_dc(g_poa_effective=effective_poa,
+    power_dc = pvlib_pvsystem\
+        .pvwatts_dc(g_poa_effective=effective_irradiance,
                     temp_cell=temp_cell)
 
-    return dc_power, effective_poa
+    return power_dc, effective_irradiance
 
 
 def normalize_with_sapm(energy, sapm_kws):
@@ -269,17 +275,17 @@ def normalize_with_sapm(energy, sapm_kws):
 
     Returns
     -------
-    normalized_energy : pd.Series
+    energy_normalized : pd.Series
         Energy divided by Sandia Model DC energy.
     insolation : pd.Series
         Insolation associated with each normalized point
     '''
 
-    dc_power, irrad = sapm_dc_power(**sapm_kws)
+    power_dc, irrad = sapm_dc_power(**sapm_kws)
 
-    normalized_energy, insolation = normalize_with_expected_power(energy, dc_power, irrad, pv_input='energy')
+    energy_normalized, insolation = normalize_with_expected_power(energy, power_dc, irrad, pv_input='energy')
 
-    return normalized_energy, insolation
+    return energy_normalized, insolation
 
 
 def delta_index(series):
@@ -317,7 +323,7 @@ def delta_index(series):
     return deltas, np.mean(deltas.dropna())
 
 
-def irradiance_rescale(irrad, modeled_irrad, max_iterations=100,
+def irradiance_rescale(irrad, irrad_sim, max_iterations=100,
                        method='iterative', convergence_threshold=1e-6):
     '''
     Attempt to rescale modeled irradiance to match measured irradiance on
@@ -327,8 +333,8 @@ def irradiance_rescale(irrad, modeled_irrad, max_iterations=100,
     ----------
     irrad : pd.Series
         measured irradiance time series
-    modeled_irrad : pd.Series
-        modeled irradiance time series
+    irrad_sim : pd.Series
+        modeled/simulated irradiance time series
     max_iterations : int, default 100
         The maximum number of times to attempt rescale optimization.
         Ignored if `method` = 'single_opt'
@@ -356,15 +362,15 @@ def irradiance_rescale(irrad, modeled_irrad, max_iterations=100,
             Calculates RMSE with a given rescale fact(or) according to global
             filt(er)
             """
-            rescaled_modeled_irrad = fact * modeled_irrad
-            difference = rescaled_modeled_irrad[filt] - irrad[filt]
+            rescaled_irrad_sim = fact * irrad_sim
+            difference = rescaled_irrad_sim[filt] - irrad[filt]
             rmse = np.sqrt((difference**2.0).mean())
             return rmse
 
-        def _single_rescale(irrad, modeled_irrad, guess):
+        def _single_rescale(irrad, irrad_sim, guess):
             "Optimizes rescale factor once"
             global filt
-            csi = irrad / (guess * modeled_irrad)  # clear sky index
+            csi = irrad / (guess * irrad_sim)  # clear sky index
             filt = (csi >= 0.8) & (csi <= 1.2) & (irrad > 200)
             min_result = minimize(_rmse, guess, method='Nelder-Mead')
 
@@ -373,7 +379,7 @@ def irradiance_rescale(irrad, modeled_irrad, max_iterations=100,
 
         # Calculate an initial guess for the rescale factor
         factor = (np.percentile(irrad.dropna(), 90) /
-                  np.percentile(modeled_irrad.dropna(), 90))
+                  np.percentile(irrad_sim.dropna(), 90))
         prev_factor = 1.0
 
         # Iteratively run the optimization,
@@ -385,25 +391,25 @@ def irradiance_rescale(irrad, modeled_irrad, max_iterations=100,
                 msg = 'Rescale did not converge within max_iterations'
                 raise ConvergenceError(msg)
             prev_factor = factor
-            factor = _single_rescale(irrad, modeled_irrad, factor)
+            factor = _single_rescale(irrad, irrad_sim, factor)
 
-        return factor * modeled_irrad
+        return factor * irrad_sim
 
     elif method == 'single_opt':
         def _rmse(fact):
-            rescaled_modeled_irrad = fact * modeled_irrad
-            csi = irrad / rescaled_modeled_irrad
+            rescaled_irrad_sim = fact * irrad_sim
+            csi = irrad / rescaled_irrad_sim
             filt = (csi >= 0.8) & (csi <= 1.2)
-            difference = rescaled_modeled_irrad[filt] - irrad[filt]
+            difference = rescaled_irrad_sim[filt] - irrad[filt]
             rmse = np.sqrt((difference**2.0).mean())
             return rmse
 
         guess = np.percentile(irrad.dropna(), 90) / \
-                np.percentile(modeled_irrad.dropna(), 90)
+                np.percentile(irrad_sim.dropna(), 90)
         min_result = minimize(_rmse, guess, method='Nelder-Mead')
         factor = min_result['x'][0]
 
-        out_irrad = factor * modeled_irrad
+        out_irrad = factor * irrad_sim
         return out_irrad
 
     else:
@@ -451,7 +457,7 @@ def t_step_nanoseconds(time_series):
     return t_steps
 
 
-def energy_from_power(time_series, target_frequency=None, max_timedelta=None):
+def energy_from_power(power, target_frequency=None, max_timedelta=None):
     '''
     Returns a regular right-labeled energy time series in units of Wh per
     interval from an instantaneous power time series. NaN is filled where the
@@ -460,16 +466,16 @@ def energy_from_power(time_series, target_frequency=None, max_timedelta=None):
 
     Parameters
     ----------
-    time_series : pd.Series
+    power : pd.Series
         Instantaneous time series of power in Watts
     target_frequency : DatetimeOffset or frequency string, default None
         The frequency of the energy time series to be returned.
-        If omitted, use the median timestep of `time_series`
+        If omitted, use the median timestep of `power`
     max_timedelta : pd.Timedelta, default None
         The maximum allowed gap between power measurements. If the gap between
         consecutive power measurements exceeds `max_timedelta`, NaN will be
         returned for that interval. If omitted, `max_timedelta` is set
-        internally to the median time delta in `time_series`.
+        internally to the median time delta in `power`.
 
     Returns
     -------
@@ -477,11 +483,11 @@ def energy_from_power(time_series, target_frequency=None, max_timedelta=None):
         right-labeled energy in Wh per interval
     '''
 
-    if not isinstance(time_series.index, pd.DatetimeIndex):
-        raise ValueError('time_series must be a pandas series with a '
+    if not isinstance(power.index, pd.DatetimeIndex):
+        raise ValueError('power must be a pandas series with a '
                          'DatetimeIndex')
 
-    t_steps = t_step_nanoseconds(time_series)
+    t_steps = t_step_nanoseconds(power)
     median_step_ns = t_steps.median()
 
     if target_frequency is None:
@@ -498,8 +504,8 @@ def energy_from_power(time_series, target_frequency=None, max_timedelta=None):
             pd.tseries.frequencies.to_offset(target_frequency).nanos
     except ValueError as e:
         if 'is a non-fixed frequency' in str(e):
-            temp_ind = pd.date_range(time_series.index[0],
-                                     time_series.index[-1],
+            temp_ind = pd.date_range(power.index[0],
+                                     power.index[-1],
                                      freq=target_frequency)
             temp_series = pd.Series(data=1, index=temp_ind)
             temp_diffs = t_step_nanoseconds(temp_series)
@@ -509,7 +515,7 @@ def energy_from_power(time_series, target_frequency=None, max_timedelta=None):
 
     # Upsampling case
     if freq_interval_size_ns <= median_step_ns:
-        resampled = interpolate(time_series, target_frequency, max_timedelta)
+        resampled = interpolate(power, target_frequency, max_timedelta)
 
         moving_average = (resampled + resampled.shift()) / 2.0
 
@@ -527,7 +533,7 @@ def energy_from_power(time_series, target_frequency=None, max_timedelta=None):
 
     # Downsampling case
     elif freq_interval_size_ns > median_step_ns:
-        energy = trapz_aggregate(time_series, target_frequency, max_timedelta)
+        energy = trapz_aggregate(power, target_frequency, max_timedelta)
 
     # Set the frequency if we can
     try:

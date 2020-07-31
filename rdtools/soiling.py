@@ -18,23 +18,24 @@ class SRRAnalysis():
 
     Parameters
     ----------
-    daily_normalized_energy : pd.Series
+    energy_normalized_daily : pd.Series
         Daily performance metric (i.e. performance index, yield, etc.)
         Alternatively, the soiling ratio output of a soiling sensor (e.g. the
         photocurrent ratio between matched dirty and clean PV reference cells).
         In either case, data should be insolation-weighted daily aggregates.
-    daily_insolation : pd.Series
+    insolation_daily : pd.Series
         Daily plane-of-array insolation corresponding to
-        `daily_normalized_energy`
-    precip : pd.Series, default None
+        `energy_normalized_daily`
+    precipitation_daily : pd.Series, default None
         Daily total precipitation. (Ignored if ``clean_criterion='shift'`` in
         subsequent calculations.)
     '''
 
-    def __init__(self, daily_normalized_energy, daily_insolation, precip=None):
-        self.pm = daily_normalized_energy  # daily performance metric
-        self.insol = daily_insolation
-        self.precip = precip  # daily precipitation
+    def __init__(self, energy_normalized_daily, insolation_daily,
+                 precipitation_daily=None):
+        self.pm = energy_normalized_daily  # daily performance metric
+        self.insolation_daily = insolation_daily
+        self.precipitation_daily = precipitation_daily  # daily precipitation
         self.random_profiles = []  # random soiling profiles in _calc_monte
         # insolation-weighted soiling ratios in _calc_monte:
         self.monte_losses = []
@@ -43,12 +44,12 @@ class SRRAnalysis():
             raise ValueError('Daily performance metric series must have '
                              'daily frequency')
 
-        if self.insol.index.freq != 'D':
+        if self.insolation_daily.index.freq != 'D':
             raise ValueError('Daily insolation series must have '
                              'daily frequency')
 
-        if self.precip is not None:
-            if self.precip.index.freq != 'D':
+        if self.precipitation_daily is not None:
+            if self.precipitation_daily.index.freq != 'D':
                 raise ValueError('Precipitation series must have '
                                  'daily frequency')
 
@@ -82,16 +83,16 @@ class SRRAnalysis():
             If 'precip', only precipitation events are treated as cleaning events.
         precip_threshold : float, default 0.01
             The daily precipitation threshold for defining precipitation cleaning events.
-            Units must be consistent with ``self.precip``.
+            Units must be consistent with ``self.precipitation_daily``.
         '''
 
         df = self.pm.to_frame()
         df.columns = ['pi']
-        df_insol = self.insol.to_frame()
+        df_insol = self.insolation_daily.to_frame()
         df_insol.columns = ['insol']
 
         df = df.join(df_insol)
-        precip = self.precip
+        precip = self.precipitation_daily
         if precip is not None:
             df_precip = precip.to_frame()
             df_precip.columns = ['precip']
@@ -494,7 +495,7 @@ class SRRAnalysis():
             If 'precip', only precipitation events are treated as cleaning events.
         precip_threshold : float, default 0.01
             The daily precipitation threshold for defining precipitation cleaning events.
-            Units must be consistent with ``self.precip``
+            Units must be consistent with ``self.precipitation_daily``
         min_interval_length : int, default 2
             The minimum duration for an interval to be considered
             valid.  Cannot be less than 2 (days).
@@ -579,8 +580,8 @@ class SRRAnalysis():
         return (result[0], result[1:3], calc_info)
 
 
-def soiling_srr(daily_normalized_energy, daily_insolation, reps=1000,
-                precip=None, day_scale=14, clean_threshold='infer',
+def soiling_srr(energy_normalized_daily, insolation_daily, reps=1000,
+                precipitation_daily=None, day_scale=14, clean_threshold='infer',
                 trim=False, method='half_norm_clean',
                 clean_criterion='shift', precip_threshold=0.01, min_interval_length=2,
                 exceedance_prob=95.0, confidence_level=68.2, recenter=True,
@@ -592,17 +593,17 @@ def soiling_srr(daily_normalized_energy, daily_insolation, reps=1000,
 
     Parameters
     ----------
-    daily_normalized_energy : pd.Series
+    energy_normalized_daily : pd.Series
         Daily performance metric (i.e. performance index, yield, etc.)
         Alternatively, the soiling ratio output of a soiling sensor (e.g. the
         photocurrent ratio between matched dirty and clean PV reference cells).
         In either case, data should be insolation-weighted daily aggregates.
-    daily_insolation : pd.Series
+    insolation_daily : pd.Series
         Daily plane-of-array insolation corresponding to
-        `daily_normalized_energy`
+        `energy_normalized_daily`
     reps : int, default 1000
         number of Monte Carlo realizations to calculate
-    precip : pd.Series, default None
+    precipitation_daily : pd.Series, default None
         Daily total precipitation. Units ambiguous but should be the same as
         precip_threshold. Note default behavior of precip_threshold. (Ignored
         if ``clean_criterion='shift'``.)
@@ -681,9 +682,9 @@ def soiling_srr(daily_normalized_energy, daily_insolation, reps=1000,
           and P50 slopes.
     '''
 
-    srr = SRRAnalysis(daily_normalized_energy,
-                      daily_insolation,
-                      precip=precip)
+    srr = SRRAnalysis(energy_normalized_daily,
+                      insolation_daily,
+                      precipitation_daily=precipitation_daily)
 
     sr, sr_ci, soiling_info = srr.run(
         reps=reps,

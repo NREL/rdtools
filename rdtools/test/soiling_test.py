@@ -96,8 +96,8 @@ def test_soiling_srr_with_precip(normalized_daily, insolation, times):
     precip['2019-02-20 00:00:00-07:00'] = 1
 
     kwargs = {
-    'reps': 10,
-    'precip': precip
+        'reps': 10,
+        'precipitation_daily': precip
     }
     np.random.seed(1977)
     sr, sr_ci, soiling_info = soiling_srr(normalized_daily, insolation, clean_criterion='precip_and_shift', **kwargs)
