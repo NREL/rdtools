@@ -99,10 +99,10 @@ def soiling_info(soiling_normalized_daily, soiling_insolation):
         'soiling_ratio_perfect_clean']
     '''
     reps = 10
+    np.random.seed(1977)
     sr, sr_ci, calc_info = soiling_srr(soiling_normalized_daily,
                                        soiling_insolation,
-                                       reps=reps,
-                                       random_seed=1977)
+                                       reps=reps)
     return calc_info
 
 

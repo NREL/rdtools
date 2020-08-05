@@ -45,8 +45,8 @@ Functions for estimating soiling rates from PV system data.
    :toctree: generated/
 
    soiling.soiling_srr
-   soiling.srr_analysis
-   soiling.srr_analysis.run
+   soiling.SRRAnalysis
+   soiling.SRRAnalysis.run
 
 
 Filtering
@@ -61,6 +61,7 @@ Functions to perform filtering on PV system data.
    filtering.csi_filter
    filtering.poa_filter
    filtering.tcell_filter
+   filtering.normalized_filter
 
 
 Normalization
@@ -77,6 +78,7 @@ Functions for normalizing power measurements for further analysis.
    normalization.interpolate
    normalization.interpolate_series
    normalization.irradiance_rescale
+   normalization.normalize_with_expected_power
    normalization.normalize_with_pvwatts
    normalization.normalize_with_sapm
    normalization.pvwatts_dc_power

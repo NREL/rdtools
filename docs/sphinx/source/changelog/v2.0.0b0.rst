@@ -1,0 +1,93 @@
+************************
+v2.0.0b0 (July 31, 2020)
+************************
+
+API Changes
+-----------
+* The calculations internal to :py:func:`~rdtools.normalization.normalize_with_pvwatts`
+  and :py:func:`~rdtools.normalization.normalize_with_sapm` have changed.
+  Generally, when working with raw power data it should be converted to
+  right-labeled energy with :py:func:`~rdtools.normalization.energy_from_power`
+  before being used with these normalization functions (:pull:`105`, :pull:`108`).
+* Remove ``low_power_cutoff`` parameter in :py:func:`~rdtools.filtering.clip_filter` (:issue:`84`).
+* Rename `soiling.srr_analysis` to :py:class:`~rdtools.soiling.SRRAnalysis` (:pull:`168`).
+* Double the default value of the ``max_timedelta`` in :py:func:`~rdtools.normalization.interpolate`
+  and :py:func:`~rdtools.normalization.interpolate_series` to be twice the
+  median timedelta (:pull:`182`).
+* Support varying logic in soiling module for defining cleaning events from shifts and
+  precipitation with ``clean_criterion`` parameter. Behavior of ``clean_criterion='precip_and_shift'``
+  has changed relative to prior versions using ``precip_clean_only=True`` (:pull:`176`).
+* Remove ``random_seed`` parameter from soiling module. Functionality can be obtained by running
+  ``numpy.random.seed()`` outside of RdTools functions. (:pull:`176`)
+* Many kwargs have changed name (but not input order) to bring nomenclature into 
+  closer alignment with the `DuraMAT pv-terms project <https://duramat.github.io/pv-terms>`_: (:pull:`185`)
+
+  * :py:func:`~rdtools.aggregation.aggregation_insol` first kwarg is now ``energy_normalized``.
+  * :py:func:`~rdtools.degradation.degradation_year_on_year`, 
+    :py:func:`~rdtools.degradation.degradation_ols` and 
+    :py:func:`~rdtools.degradation.degradation_classical_decomposition`
+    first kwarg is now ``energy_normalized``.
+  * :py:func:`~rdtools.filtering.normalized_filter` input kwargs are now ``energy_normalized``, ``energy_normalized_low`` and ``energy_normalized_high``.
+  * :py:func:`~rdtools.filtering.poa_filter` input kwargs are now ``poa_global``, ``poa_global_low`` and ``poa_global_high``.
+  * :py:func:`~rdtools.filtering.tcell_filter` input kwargs are now ``temperature_cell``, ``temperature_cell_low`` and ``temperature_cell_high``.
+  * :py:func:`~rdtools.filtering.clip_filter` input kwargs are now ``power_ac`` and ``quantile``.
+  * :py:func:`~rdtools.filtering.csi_filter` first two kwargs are now ``poa_global_measured``, ``poa_global_clearsky``.
+  * :py:func:`~rdtools.normalization.normalize_with_pvwatts` pvwatts_kws dictionary keys have been renamed.
+  * :py:func:`~rdtools.normalization.pvwatts_dc_power` input kwargs are now ``poa_global``, ``power_dc_rated``, ``temperature_cell``, ``poa_global_ref``, ``temperature_cell_ref``, ``gamma_pdc``.
+
+Enhancements
+------------
+* Add new :py:mod:`~rdtools.soiling` module to implement the stochastic rate and
+  recovery method (:pull:`112`).
+* Add new function :py:func:`~rdtools.normalization.normalize_with_expected_power` (:pull:`173`).
+* Add new functions :py:func:`~rdtools.normalization.energy_from_power` and
+  :py:func:`~rdtools.normalization.interpolate` (:pull:`105`, :pull:`108`).
+* Add new function :py:func:`~rdtools.filtering.normalized_filter`.
+* Add new :py:mod:`~rdtools.plotting` module for generating standard plots.
+* Add parameter ``convergence_threshold`` to
+  :py:func:`~rdtools.normalization.irradiance_rescale` (:pull:`152`).
+* Add parameter ``warning_threshold`` to :py:func:`~rdtools.normalization.interpolate`
+  and :py:func:`~rdtools.normalization.interpolate_series` (:pull:`182`).
+
+Bug fixes
+---------
+* Allow ``max_iterations=0`` in
+  :py:func:`~rdtools.normalization.irradiance_rescale` (:pull:`152`).
+* Fix a bug in :py:mod:`~rdtools.soiling` code that caused problems for soiling intervals
+  consisting solely of invalid data. (:pull:`169`)
+
+
+Testing
+-------
+* Add Python 3.7 and 3.8 to CI testing (:pull:`135`).
+
+Documentation
+-------------
+* Create sphinx documentation and set up ReadTheDocs (:pull:`125`).
+* Add guides on running tests and building sphinx docs (:pull:`136`).
+* Improve module-level docstrings (:pull:`137`).
+
+Requirements
+------------
+* Drop support for Python 2.7, minimum supported version is now 3.6 (:pull:`135`).
+* Increase minimum pvlib version to 0.7.0.
+* Update requirements.txt and notebook_requirements.txt to avoid conflicting specifications. Taken together,
+  they represent the complete environment for the notebook example (:pull:`164`).
+
+Example Updates
+---------------
+* Seed ``numpy.random`` to ensure repeatable results (:pull:`164`).
+* Use :py:func:`~rdtools.filtering.normalized_filter` instead of manually
+  filtering the normalized energy timeseries.  Also updated the associated mask
+  variable names (:pull:`139`).
+* Add a new example notebook that analyzes data from a PV system located at
+  NREL's South Table Mountain campus (PVDAQ system #4) (:pull:`171`).
+* Explicitly register pandas datetime converters which were `deprecated <https://github.com/pandas-dev/pandas/issues/18301>`_.
+  
+
+Contributors
+------------
+* Mike Deceglie (:ghuser:`mdeceglie`)
+* Kevin Anderson (:ghuser:`kanderso-nrel`)
+* Chris Deline (:ghuser:`cdeline`)
+

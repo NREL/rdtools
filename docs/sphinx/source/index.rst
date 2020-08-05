@@ -3,6 +3,12 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
+.. image:: _images/logo_horizontal_highres.png
+   :width: 600
+
+.. pipe character renders as a blank line, used as spacer after the logo
+  |
+
 RdTools Overview
 ================
 
@@ -10,7 +16,7 @@ RdTools is an open-source library to support reproducible technical analysis of
 time series data from photovoltaic energy systems. The library aims to provide
 best practice analysis routines along with the building blocks for users to
 tailor their own analyses.
-In particular, PV production data is evaluated over several years to obtain
+Current applications include the evaluation of PV production over several years to obtain
 rates of performance degradation and soiling loss. RdTools can handle
 both high frequency (hourly or better) or low frequency (daily, weekly,
 etc.) datasets. Best results are obtained with higher frequency data.
@@ -140,14 +146,15 @@ The most frequently used functions are:
    normalization.normalize_with_pvwatts(energy, pvwatts_kws)
      '''
      Inputs: Pandas time series of raw energy, PVwatts dict for system analysis 
-       (poa_global, P_ref, T_cell, G_ref, T_ref, gamma_pdc)
+       (poa_global, power_dc_rated, temperature_cell, poa_global_ref, temperature_cell_ref, gamma_pdc)
      Outputs: Pandas time series of normalized energy and POA insolation
      '''
 
 .. code:: python
 
-   filtering.poa_filter(poa); filtering.tcell_filter(Tcell); filtering.clip_filter(power); 
-   filtering.csi_filter(insolation, clearsky_insolation); filtering.normalized_filter(normalized_power)
+   filtering.poa_filter(poa_global); filtering.tcell_filter(temperature_cell); 
+   filtering.clip_filter(power_ac); filtering.normalized_filter(energy_normalized);
+   filtering.csi_filter(poa_global_measured, poa_global_clearsky); 
      '''
      Inputs: Pandas time series of raw data to be filtered.
      Output: Boolean mask where `True` indicates acceptable data
@@ -155,7 +162,7 @@ The most frequently used functions are:
 
 .. code:: python
 
-   aggregation.aggregation_insol(normalized, insolation, frequency='D')
+   aggregation.aggregation_insol(energy_normalized, insolation, frequency='D')
      '''
      Inputs: Normalized energy and insolation
      Output: Aggregated data, weighted by the insolation.
@@ -163,7 +170,7 @@ The most frequently used functions are:
 
 .. code:: python
 
-   degradation.degradation_year_on_year(aggregated)
+   degradation.degradation_year_on_year(energy_normalized)
      '''
      Inputs: Aggregated, normalized, filtered time series data
      Outputs: Tuple: `yoy_rd`: Degradation rate 
@@ -172,7 +179,7 @@ The most frequently used functions are:
 
 .. code:: python
 
-   soiling.soiling_srr(aggregated, aggregated_insolation)
+   soiling.soiling_srr(energy_normalized_daily, insolation_daily)
      '''
      Inputs: Daily aggregated, normalized, filtered time series data for normalized performance and insolation
      Outputs: Tuple: `sr`: Insolation-weighted soiling ratio 

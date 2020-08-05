@@ -62,6 +62,7 @@ def test_energy_from_power_downsample():
 
     expected_energy_series = pd.Series(index=[pd.to_datetime('2018-04-01 13:00:00')],
                                        data=3.0, name='energy_Wh')
+    expected_energy_series.index.freq = '60T'
     result = energy_from_power(time_series, '60T')
     pd.testing.assert_series_equal(result, expected_energy_series)
 
@@ -72,6 +73,7 @@ def test_energy_from_power_downsample_max_timedelta_exceeded():
 
     expected_energy_series = pd.Series(index=[pd.to_datetime('2018-04-01 13:00:00')],
                                        data=1.5, name='energy_Wh')
+    expected_energy_series.index.freq = '60T'
     result = energy_from_power(time_series.drop(time_series.index[2]), '60T', pd.to_timedelta('15 minutes'))
     pd.testing.assert_series_equal(result, expected_energy_series)
 
@@ -82,6 +84,7 @@ def test_energy_from_power_downsample_max_timedelta_not_exceeded():
 
     expected_energy_series = pd.Series(index=[pd.to_datetime('2018-04-01 13:00:00')],
                                        data=3.0, name='energy_Wh')
+    expected_energy_series.index.freq = '60T'
     result = energy_from_power(time_series.drop(time_series.index[2]), '60T', pd.to_timedelta('60 minutes'))
     pd.testing.assert_series_equal(result, expected_energy_series)
 
