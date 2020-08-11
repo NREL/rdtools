@@ -50,6 +50,18 @@ Functions for estimating soiling rates from PV system data.
    soiling.SRRAnalysis.run
 
 
+System Availability
+===================
+
+Functions for estimating production loss from PV system outages.
+
+.. autosummary::
+   :toctree: generated/
+   
+   availability.loss_from_power
+   availability.loss_from_energy
+
+
 Filtering
 =========
 
@@ -109,19 +121,6 @@ Functions for modeling ambient temperature.
 
    clearsky_temperature.get_clearsky_tamb
 
-
-Production Losses
-=================
-
-Functions for quantifying short-term PV system performance.
-
-.. autosummary::
-   :toctree: generated/
-   
-   losses.is_online
-   losses.downtime_loss
-   losses.profile_to_signal
-   losses.signal_to_profile
 
 Plotting
 ========
