@@ -4,6 +4,8 @@ language: python
 
 python:
   - "3.6"
+  - "3.7"
+  - "3.8"
 
 # Test two environments:
 # 1) dependencies with pinned versions from requirements.txt
@@ -12,6 +14,11 @@ python:
 env:
   - REQ_ENV='-r requirements.txt .'
   - REQ_ENV='--upgrade --upgrade-strategy=eager .'
+
+jobs:
+  exclude:
+  - python: 2.7
+    env: REQ_ENV='--upgrade --upgrade-strategy=eager .'
 
 install:
   - pip install $REQ_ENV
@@ -33,3 +40,4 @@ deploy:
     condition: $REQ_ENV == '--upgrade --upgrade-strategy=eager .'
   distributions: "sdist bdist_wheel"
   skip_cleanup: true
+  skip_existing: true
