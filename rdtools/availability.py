@@ -1,5 +1,5 @@
 """
-Functions for quantifying short-term PV system performance.
+Functions for detecting and quantifying photovoltaic system downtime.
 """
 
 
