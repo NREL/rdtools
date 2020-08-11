@@ -16,11 +16,11 @@ analysis workflow.
 
    degradation
    soiling   
+   availability
    filtering
    normalization
    aggregation
    clearsky_temperature
-   losses
    plotting
 
 
