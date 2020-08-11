@@ -35,7 +35,7 @@ def loss_from_power(subsystem_power, system_power, low_limit=None):
         with index values matching the columns in ``subsystem_power``. Units
         must match ``subsystem_power`` and ``system_power``.
         If omitted, the limit is calculated for each subsystem independently
-        as 0.001 times the 99th percentile of its power data. 
+        as 0.001 times the 99th percentile of its power data.
 
     Returns
     -------
@@ -72,7 +72,8 @@ def loss_from_power(subsystem_power, system_power, low_limit=None):
     looks_online = subsystem_power > low_limit
     reporting = subsystem_power[looks_online]
     relative_sizes = reporting.divide(reporting.mean(axis=1), axis=0).median()
-    mean_subsystem_power = reporting.divide(relative_sizes, axis=1).mean(axis=1)
+    normalized_subsystem_powers = reporting.divide(relative_sizes, axis=1)
+    mean_subsystem_power = normalized_subsystem_powers.mean(axis=1)
 
     virtual_full_power = mean_subsystem_power * subsystem_power.shape[1]
 
@@ -217,19 +218,18 @@ def loss_from_energy(power, energy, subsystem_power, expected_power):
         return interp1d(series.index, series.values,
                         fill_value=(series.values[0], series.values[-1]),
                         bounds_error=False)
-
+    # functions mapping number of intervals (outage length) to error bounds
     predict_upper = interp(upper)
     predict_lower = interp(lower)
 
     # Calculate boolean series to indicate full outages.
     # done this way so that outages can bridge across nighttime
-    #full_outage = ~online_mask.loc[df['Expected Power'] > 0, :].any(axis=1)
     full_outage = ~(df['Meter_kWh'] > 0)
-    full_outage = full_outage.reindex(df.index).ffill().fillna(False).astype(int)
+    full_outage = full_outage.reindex(df.index).ffill().fillna(False)
 
     # Find expected production and associated uncertainty for each outage
     # TODO: handle "starting in an outage"
-    diff = full_outage.diff()
+    diff = full_outage.astype(int).diff()
     starts = df.index[diff == 1]
     ends = df.index[diff == -1]
     energy_ffill = df['Meter_kWh'].ffill()
@@ -240,8 +240,6 @@ def loss_from_energy(power, energy, subsystem_power, expected_power):
         df_outage = df.loc[start:end, :]
 
         daylight_intervals = (df_outage['Expected Power'] > 0).sum()
-        # df.loc[start, :] is nan since that's the first timestamp of the outage.  need to get previous value:
-        start_minus_one = df.index[df.index.get_loc(start)-1]
         data = {
             'start': start,
             'end': end,
@@ -260,14 +258,23 @@ def loss_from_energy(power, energy, subsystem_power, expected_power):
     # pandas < 0.25.0 sorts columns alphabetically.  revert to dict order:
     df_outages = df_outages[data.keys()]
 
-    df_outages['actual_energy'] = df_outages['end_energy'] - df_outages['start_energy']
-    df_outages['ci_lower'] = (1 + df_outages['error_lower']) * df_outages['expected_energy']
-    df_outages['ci_upper'] = (1 + df_outages['error_upper']) * df_outages['expected_energy']
-
-    df_outages['type'] = np.where(df_outages['actual_energy'] < df_outages['ci_lower'], 'real', 'comms')
-    df_outages['loss'] = np.where(df_outages['type'] == 'real',
-                                  1 - df_outages['actual_energy'] / df_outages['expected_energy'],
-                                  0)
+    df_outages['actual_energy'] = (
+            df_outages['end_energy'] - df_outages['start_energy']
+    )
+    df_outages['ci_lower'] = (
+        (1 + df_outages['error_lower']) * df_outages['expected_energy']
+    )
+    df_outages['ci_upper'] = (
+        (1 + df_outages['error_upper']) * df_outages['expected_energy']
+    )
+    df_outages['type'] = np.where(
+        df_outages['actual_energy'] < df_outages['ci_lower'],
+        'real',
+        'comms')
+    df_outages['loss'] = np.where(
+        df_outages['type'] == 'real',
+        1 - df_outages['actual_energy'] / df_outages['expected_energy'],
+        0)
 
     return df_outages, df['Expected Power']
 
