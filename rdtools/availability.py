@@ -46,10 +46,6 @@ def loss_from_power(subsystem_power, system_power, low_threshold=None,
 
     Returns
     -------
-    is_downtime : pd.Series
-        Boolean series with True for one or more subsystems offline and False
-        otherwise. The index matches the input power data.
-
     p_loss : pd.Series
         Estimated timeseries power loss due to subsystem downtime. The index
         matches the input power data.
@@ -108,9 +104,10 @@ def loss_from_power(subsystem_power, system_power, low_threshold=None,
 
     if system_power_limit is not None:
         limit_exceeded = p_loss + system_power > system_power_limit
-        p_loss.loc[limit_exceeded] = system_power_limit - system_power
+        loss = system_power_limit - system_power[limit_exceeded]
+        p_loss.loc[limit_exceeded] = loss.clip(lower=0)
 
-    return is_downtime, p_loss.fillna(0)
+    return p_loss.fillna(0)
 
 
 def loss_from_energy(power, energy, subsystem_power, expected_power):

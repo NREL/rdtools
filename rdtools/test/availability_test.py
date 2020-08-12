@@ -88,7 +88,7 @@ def test_loss_from_power(power_data):
     # implicitly sweeps across the parameter space because power_data is
     # parametrized
     inverter_power, meter_power, expected_loss = power_data
-    is_downtime, actual_loss = loss_from_power(inverter_power, meter_power)
+    actual_loss = loss_from_power(inverter_power, meter_power)
     # pandas <1.1.0 as no atol/rtol parameters, so just use np.round instead:
     assert_series_equal(np.round(expected_loss, 1),
                         np.round(actual_loss, 1))
