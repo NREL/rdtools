@@ -35,6 +35,10 @@ def power_data(request):
     and data artifacts caused by outages. This fixture is parametrized across
     many of combinations (~hundreds) in the PARAMETER_SPACE list.
 
+    The method is to generate some inverter power signals of varying scales,
+    introduce power outages to some of them, calculate the system meter power
+    as the summed inverter power, and then add inverter communication outages.
+
     Returns a tuple:
         - inverter_power, dataframe
         - meter_power, series
@@ -92,4 +96,35 @@ def test_loss_from_power(power_data):
     # pandas <1.1.0 as no atol/rtol parameters, so just use np.round instead:
     assert_series_equal(np.round(expected_loss, 1),
                         np.round(actual_loss, 1))
+
+
+@pytest.fixture
+def dummy_power_data():
+    # one inverter off half the time, one always online
+    N = 10
+    df = pd.DataFrame({
+        'inv1': [0] * (N//2) + [1] * (N//2),
+        'inv2': [1] * N,
+    }, index=pd.date_range('2019-01-01', freq='h', periods=N))
+    return df, df.sum(axis=1)
+
+
+def test_loss_from_power_threshold(dummy_power_data):
+    # test low_threshold parameter.
+    # negative threshold means the inverter is never classified as offline
+    inverter_power, meter_power = dummy_power_data
+    actual_loss = loss_from_power(inverter_power, meter_power,
+                                  low_threshold=-1)
+    assert actual_loss.sum() == 0
+
+
+def test_loss_from_power_limit(dummy_power_data):
+    # test system_power_limit parameter.
+    # set it unrealistically low to verify it constrains the loss.
+    # real max power is 2, real max loss is 1, so setting limit=1.5 sets max
+    # loss to 0.5
+    inverter_power, meter_power = dummy_power_data
+    actual_loss = loss_from_power(inverter_power, meter_power,
+                                  system_power_limit=1.5)
+    assert actual_loss.max() == pytest.approx(0.5, abs=0.01)
 
