@@ -11,6 +11,7 @@ import pvlib
 import pandas as pd
 import numpy as np
 import itertools
+import datetime
 
 # Values to parametrize power tests across.  One test will be run for each
 # combination. Can't be careless about expanding this list because of
@@ -174,6 +175,9 @@ def energy_data(request):
     inverter_power.iloc[power_outage, :] = 0
     meter_power = inverter_power.sum(axis=1)
     meter_energy = meter_power.cumsum() / 4
+    # add an offset because in practice cumulative meter data never
+    # actually starts at 0:
+    meter_energy += 100
 
     meter_power[comms_outage] = outage_value
     meter_energy[comms_outage] = outage_value
@@ -190,6 +194,7 @@ def energy_data(request):
 
 
 def test_loss_from_energy(energy_data):
+    # test single outage
     (meter_power,
      meter_energy,
      inverter_power,
@@ -207,5 +212,54 @@ def test_loss_from_energy(energy_data):
     # outage was correctly classified:
     assert outage_info['type'] == expected_type
 
-    # outage loss is accurate:
+    # outage loss is accurate to 5% of the true value:
     assert outage_info['loss'] == pytest.approx(expected_loss, rel=0.05)
+
+
+def test_loss_from_energy_multiple(energy_data):
+    # test multiple outages
+    (meter_power,
+     meter_energy,
+     inverter_power,
+     expected_power,
+     _, _) = energy_data
+
+    date = '2019-01-08'
+    meter_power.loc[date] = 0
+    meter_energy.loc[date] = 0
+    inverter_power.loc[date] = 0
+    outage_info = loss_from_energy(meter_power, meter_energy, inverter_power,
+                                   expected_power)
+    assert len(outage_info) == 2
+
+
+@pytest.mark.parametrize('side', ['start', 'end'])
+def test_loss_from_energy_startend(side, energy_data):
+    # data starts or ends in an outage
+    (meter_power,
+     meter_energy,
+     inverter_power,
+     expected_power,
+     _, _) = energy_data
+
+    if side == 'start':
+        # an outage all day on the 1st, so technically the outage extends to
+        # sunrise on the 2nd
+        date = '2019-01-01'
+        expected_start = datetime.date(2019, 1, 1)
+        expected_end = datetime.date(2019, 1, 2)
+        idx = 0
+    else:
+        # last day doesn't have a "sunrise on the next day", so start==end
+        date = meter_power.index[-1].strftime('%Y-%m-%d')
+        expected_start = meter_power.index[-1].date()
+        expected_end = expected_start
+        idx = -1
+
+    meter_power.loc[date] = 0
+    meter_energy.loc[date] = 0
+    inverter_power.loc[date] = 0
+    outage_info = loss_from_energy(meter_power, meter_energy, inverter_power,
+                                   expected_power)
+    assert outage_info['start'].iloc[idx].date() == expected_start
+    assert outage_info['end'].iloc[idx].date() == expected_end

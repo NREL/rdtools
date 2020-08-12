@@ -248,10 +248,10 @@ def loss_from_energy(power, energy, subsystem_power, expected_power):
     steps = diff[~diff.isnull() & (diff != 0)]
     if steps[0] == -1:
         # data starts in an outage
-        ends = ends[1:]
+        starts.insert(0, df.index[0])
     if steps[-1] == 1:
         # data ends in an outage
-        starts.append(df.index[-1])
+        ends.append(df.index[-1])
 
     outage_data = []
     for start, end in zip(starts, ends):
