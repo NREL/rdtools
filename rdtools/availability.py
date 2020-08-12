@@ -293,30 +293,4 @@ def loss_from_energy(power, energy, subsystem_power, expected_power):
         1 - df_outages['actual_energy'] / df_outages['expected_energy'],
         0)
 
-    return df_outages, df['Expected Power']
-
-
-def profile_to_signal(profile, times):
-    """Convert a 12x24 to a timeseries"""
-    aux = pd.DataFrame(index=times)
-    aux['Hour'] = aux.index.hour
-    aux['Month'] = aux.index.month
-
-    profile = profile.copy()
-    months = profile.columns
-    profile['Hour'] = profile.index
-    profile = profile.melt(id_vars=['Hour'], value_vars=months)
-    profile['Month'] = profile['Month'].astype(int)
-
-    signal = pd.merge(aux, profile, on=['Month', 'Hour'], how='left')
-    signal.index = times
-    return signal['value']
-
-
-def signal_to_profile(signal):
-    """Convert a timeseries to a 12x24"""
-    aux = pd.DataFrame({'value': signal})
-    aux['Hour'] = aux.index.hour
-    aux['Month'] = aux.index.month
-    profile = aux.pivot_table(values='value', index='Hour', columns='Month')
-    return profile
+    return df_outages
