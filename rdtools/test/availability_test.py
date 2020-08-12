@@ -1,5 +1,5 @@
 """
-Test suite for inverter availability code.
+Test suite for inverter availability functions.
 """
 
 import pytest
@@ -128,3 +128,84 @@ def test_loss_from_power_limit(dummy_power_data):
                                   system_power_limit=1.5)
     assert actual_loss.max() == pytest.approx(0.5, abs=0.01)
 
+
+# %%
+
+ENERGY_PARAMETER_SPACE = list(itertools.product(
+    [0, np.nan],  # outage value
+    [0, 0.25, 0.5, 0.75, 1.0],  # fraction of comms outage that is power outage
+))
+# display names for the test cases.  default is just 0..N
+ENERGY_PARAMETER_IDS = ["_".join(map(str, p)) for p in ENERGY_PARAMETER_SPACE]
+
+
+@pytest.fixture(params=ENERGY_PARAMETER_SPACE, ids=ENERGY_PARAMETER_IDS)
+def energy_data(request):
+    """
+    Generate an artificial mixed communication/power outage.
+    """
+    outage_value, outage_fraction = request.param
+
+    # a few days of clearsky irradiance for creating a plausible power signal
+    times = pd.date_range('2019-01-01', '2019-01-15 23:59', freq='15min',
+                          tz='US/Eastern')
+    location = pvlib.location.Location(40, -80)
+    clearsky = location.get_clearsky(times)
+
+    # just set base inverter power = ghi+clipping for simplicity
+    base_power = clearsky['ghi'].clip(upper=0.8*clearsky['ghi'].max())
+
+    inverter_power = pd.DataFrame({
+        'inv0': base_power,
+        'inv1': base_power*0.7,
+        'inv2': base_power*1.3,
+    })
+    expected_power = inverter_power.sum(axis=1)
+    # add noise and bias to the expected power signal
+    np.random.seed(2020)
+    expected_power *= 1.05 + np.random.normal(0, scale=0.05, size=len(times))
+
+    # calculate what part of the comms outage is a power outage
+    comms_outage = slice('2019-01-03 00:00', '2019-01-06 00:00')
+    start = times.get_loc(comms_outage.start)
+    stop = times.get_loc(comms_outage.stop)
+    power_outage = slice(start, int(start + outage_fraction * (stop-start)))
+    expected_loss = inverter_power.iloc[power_outage, :].sum().sum() / 4
+    inverter_power.iloc[power_outage, :] = 0
+    meter_power = inverter_power.sum(axis=1)
+    meter_energy = meter_power.cumsum() / 4
+
+    meter_power[comms_outage] = outage_value
+    meter_energy[comms_outage] = outage_value
+    inverter_power.loc[comms_outage, :] = outage_value
+
+    expected_type = 'real' if outage_fraction > 0 else 'comms'
+
+    return (meter_power,
+            meter_energy,
+            inverter_power,
+            expected_power,
+            expected_loss,
+            expected_type)
+
+
+def test_loss_from_energy(energy_data):
+    (meter_power,
+     meter_energy,
+     inverter_power,
+     expected_power,
+     expected_loss,
+     expected_type) = energy_data
+
+    outage_info = loss_from_energy(meter_power, meter_energy, inverter_power,
+                                   expected_power)
+
+    # only one outage
+    assert len(outage_info) == 1
+    outage_info = outage_info.iloc[0, :]
+
+    # outage was correctly classified:
+    assert outage_info['type'] == expected_type
+
+    # outage loss is accurate:
+    assert outage_info['loss'] == pytest.approx(expected_loss, rel=0.05)
