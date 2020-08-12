@@ -8,7 +8,8 @@ import numpy as np
 from scipy.interpolate import interp1d
 
 
-def loss_from_power(subsystem_power, system_power, low_limit=None):
+def loss_from_power(subsystem_power, system_power, low_threshold=None,
+                    system_power_limit=None):
     """
     Estimate timeseries production loss from system downtime events by
     comparing subsystem power data to total system power (e.g. inverter power
@@ -28,7 +29,7 @@ def loss_from_power(subsystem_power, system_power, low_limit=None):
         Timeseries total system power. In the typical case, this is meter
         power data. The index must match ``subsystem_power``.
 
-    low_limit : float or pd.Series, optional
+    low_threshold : float or pd.Series, optional
         An optional threshold used to naively classify subsystems as online.
         If the threshold is a scalar, it will be used for all subsystems. For
         subsystems with different capacities, a pandas Series may be passed
@@ -36,6 +37,12 @@ def loss_from_power(subsystem_power, system_power, low_limit=None):
         must match ``subsystem_power`` and ``system_power``.
         If omitted, the limit is calculated for each subsystem independently
         as 0.001 times the 99th percentile of its power data.
+
+    system_power_limit : float or pd.Series, optional
+        An optional maximum system power used as an upper limit for
+        (system_power + lost_power) so that the maximum system capacity or
+        interconnection limit is not exceeded. If omitted, that check is
+        skipped.
 
     Returns
     -------
@@ -66,10 +73,10 @@ def loss_from_power(subsystem_power, system_power, low_limit=None):
     system_power = system_power.clip(lower=0)
 
     # Part A
-    if low_limit is None:
-        low_limit = subsystem_power.quantile(0.99) / 1000
+    if low_threshold is None:
+        low_threshold = subsystem_power.quantile(0.99) / 1000
 
-    looks_online = subsystem_power > low_limit
+    looks_online = subsystem_power > low_threshold
     reporting = subsystem_power[looks_online]
     relative_sizes = reporting.divide(reporting.mean(axis=1), axis=0).median()
     normalized_subsystem_powers = reporting.divide(relative_sizes, axis=1)
@@ -80,7 +87,7 @@ def loss_from_power(subsystem_power, system_power, low_limit=None):
     system_delta = 1 - system_power / virtual_full_power
 
     subsystem_fraction = relative_sizes / relative_sizes.sum()
-    smallest_delta = subsystem_power.le(low_limit) \
+    smallest_delta = subsystem_power.le(low_threshold) \
                                     .replace(False, np.nan) \
                                     .multiply(subsystem_fraction) \
                                     .min(axis=1) \
@@ -94,6 +101,11 @@ def loss_from_power(subsystem_power, system_power, low_limit=None):
                                                         upper=1)
     p_loss = (1 - f_online) / f_online * system_power
     p_loss[~is_downtime] = 0
+
+    if system_power_limit is not None:
+        limit_exceeded = p_loss + system_power > system_power_limit
+        p_loss.loc[limit_exceeded] = system_power_limit - system_power
+
     return p_loss.fillna(0)
 
 
