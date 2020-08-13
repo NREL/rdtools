@@ -112,7 +112,8 @@ def loss_from_power(subsystem_power, system_power, low_threshold=None,
     return p_loss.fillna(0)
 
 
-def loss_from_energy(power, energy, subsystem_power, expected_power):
+def loss_from_energy(power, energy, subsystem_power, expected_power,
+                     quantiles=(0.01, 0.99)):
     """
     Estimate total production loss from system downtime events by
     comparing system production recovered from cumulative production data with
@@ -148,6 +149,12 @@ def loss_from_energy(power, energy, subsystem_power, expected_power):
         system outages often cause weather data to be lost as well, it may
         be more useful to use data from an independent weather station or
         satellite-based weather provider.
+
+    quantiles : 2-element tuple, default (0.01, 0.99)
+        The quantiles of the error distribution used for the expected energy
+        confidence interval. The lower bound is used to classify outages as
+        either (1) a simple communication interruption with no production loss
+        or (2) a power outage with an associated production loss estimate.
 
     Returns
     -------
@@ -225,8 +232,8 @@ def loss_from_energy(power, energy, subsystem_power, expected_power):
     df_error = pd.concat(results_list)
     df_error['error'] = df_error['actual'] / df_error['expected'] - 1
 
-    upper = df_error.groupby('window length')['error'].quantile(0.99)
-    lower = df_error.groupby('window length')['error'].quantile(0.01)
+    upper = df_error.groupby('window length')['error'].quantile(quantiles[1])
+    lower = df_error.groupby('window length')['error'].quantile(quantiles[0])
 
     # functions to predict the confidence interval for a given outage length.
     # linear interp inside the range, nearest neighbor outside the range

@@ -198,9 +198,18 @@ def energy_data(request):
 
 
 @pytest.fixture
-def energy_data_single():
-    # fixture only using a single parameter combination, for simpler tests
+def energy_data_outage_single():
+    # fixture only using a single parameter combination, for simpler tests.
+    # has one real outage.
     outage_value, outage_fraction = np.nan, 0.25
+    return _generate_energy_data(outage_value, outage_fraction)
+
+
+@pytest.fixture
+def energy_data_comms_single():
+    # fixture only using a single parameter combination, for simpler tests.
+    # has one comms outage.
+    outage_value, outage_fraction = np.nan, 0
     return _generate_energy_data(outage_value, outage_fraction)
 
 
@@ -245,13 +254,13 @@ def test_loss_from_energy_multiple(energy_data):
 
 
 @pytest.mark.parametrize('side', ['start', 'end'])
-def test_loss_from_energy_startend(side, energy_data_single):
+def test_loss_from_energy_startend(side, energy_data_outage_single):
     # data starts or ends in an outage
     (meter_power,
      meter_energy,
      inverter_power,
      expected_power,
-     _, _) = energy_data_single
+     _, _) = energy_data_outage_single
 
     if side == 'start':
         # an outage all day on the 1st, so technically the outage extends to
@@ -274,3 +283,23 @@ def test_loss_from_energy_startend(side, energy_data_single):
                                    expected_power)
     assert outage_info['start'].iloc[idx].date() == expected_start
     assert outage_info['end'].iloc[idx].date() == expected_end
+
+
+def test_loss_from_energy_quantiles(energy_data_comms_single):
+    # exercise the quantiles parameter
+    (meter_power,
+     meter_energy,
+     inverter_power,
+     expected_power,
+     _, _) = energy_data_comms_single
+
+    # first make sure it gets picked up as a comms outage with normal quantiles
+    outage_info = loss_from_energy(meter_power, meter_energy, inverter_power,
+                                   expected_power, quantiles=(0.01, 0.99))
+    assert outage_info['type'].values[0] == 'comms'
+
+    # set the lower quantile very high so that the comms outage gets
+    # classified as a real outage
+    outage_info = loss_from_energy(meter_power, meter_energy, inverter_power,
+                                   expected_power, quantiles=(0.999, 0.9999))
+    assert outage_info['type'].values[0] == 'real'

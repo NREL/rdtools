@@ -22,7 +22,7 @@ from soiling_test import (
 )
 
 # availability pytest fixture
-from availability_test import energy_data_single
+from availability_test import energy_data_outage_single
 
 
 def assert_isinstance(obj, klass):
@@ -171,7 +171,7 @@ def test_soiling_rate_histogram_kwargs(soiling_info):
 
 
 @pytest.fixture
-def outage_info(energy_data_single):
+def outage_info(energy_data_outage_single):
     '''
     Return results of running loss_from_energy.
 
@@ -185,7 +185,7 @@ def outage_info(energy_data_single):
      inverter_power,
      expected_power,
      expected_loss,
-     expected_type) = energy_data_single
+     expected_type) = energy_data_outage_single
 
     outage_info = loss_from_energy(meter_power,
                                    meter_energy,
@@ -194,8 +194,8 @@ def outage_info(energy_data_single):
     return outage_info
 
 
-def test_availability_cumulative_plot(energy_data_single, outage_info):
-    (_, meter_energy, _, expected_power, _, _) = energy_data_single
+def test_availability_cumulative_plot(energy_data_outage_single, outage_info):
+    (_, meter_energy, _, expected_power, _, _) = energy_data_outage_single
 
     result = availability_cumulative_plot(
             outage_info,
