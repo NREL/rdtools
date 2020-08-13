@@ -19,6 +19,7 @@ from rdtools.plotting import degradation_summary_plots
 from rdtools.plotting import soiling_monte_carlo_plot
 from rdtools.plotting import soiling_interval_plot
 from rdtools.plotting import soiling_rate_histogram
+from rdtools.plotting import availability_cumulative_plot
 from rdtools.availability import loss_from_power
 from rdtools.availability import loss_from_energy
 

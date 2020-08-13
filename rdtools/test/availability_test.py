@@ -251,7 +251,7 @@ def test_loss_from_energy_startend(side, energy_data_single):
      meter_energy,
      inverter_power,
      expected_power,
-     _, _) = energy_data
+     _, _) = energy_data_single
 
     if side == 'start':
         # an outage all day on the 1st, so technically the outage extends to
