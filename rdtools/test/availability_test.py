@@ -140,13 +140,10 @@ ENERGY_PARAMETER_SPACE = list(itertools.product(
 ENERGY_PARAMETER_IDS = ["_".join(map(str, p)) for p in ENERGY_PARAMETER_SPACE]
 
 
-@pytest.fixture(params=ENERGY_PARAMETER_SPACE, ids=ENERGY_PARAMETER_IDS)
-def energy_data(request):
+def _generate_energy_data(outage_value, outage_fraction):
     """
     Generate an artificial mixed communication/power outage.
     """
-    outage_value, outage_fraction = request.param
-
     # a few days of clearsky irradiance for creating a plausible power signal
     times = pd.date_range('2019-01-01', '2019-01-15 23:59', freq='15min',
                           tz='US/Eastern')
@@ -193,6 +190,20 @@ def energy_data(request):
             expected_type)
 
 
+@pytest.fixture(params=ENERGY_PARAMETER_SPACE, ids=ENERGY_PARAMETER_IDS)
+def energy_data(request):
+    # fixture sweeping across the entire parameter space
+    outage_value, outage_fraction = request.param
+    return _generate_energy_data(outage_value, outage_fraction)
+
+
+@pytest.fixture
+def energy_data_single():
+    # fixture only using a single parameter combination, for simpler tests
+    outage_value, outage_fraction = np.nan, 0.25
+    return _generate_energy_data(outage_value, outage_fraction)
+
+
 def test_loss_from_energy(energy_data):
     # test single outage
     (meter_power,
@@ -234,7 +245,7 @@ def test_loss_from_energy_multiple(energy_data):
 
 
 @pytest.mark.parametrize('side', ['start', 'end'])
-def test_loss_from_energy_startend(side, energy_data):
+def test_loss_from_energy_startend(side, energy_data_single):
     # data starts or ends in an outage
     (meter_power,
      meter_energy,

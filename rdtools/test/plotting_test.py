@@ -2,11 +2,14 @@ import pandas as pd
 import numpy as np
 from rdtools.degradation import degradation_year_on_year
 from rdtools.soiling import soiling_srr
+from rdtools.availability import loss_from_energy
+from rdtools.normalization import energy_from_power
 from rdtools.plotting import (
     degradation_summary_plots,
     soiling_monte_carlo_plot,
     soiling_interval_plot,
-    soiling_rate_histogram
+    soiling_rate_histogram,
+    availability_cumulative_plot
 )
 import matplotlib.pyplot as plt
 import pytest
@@ -17,6 +20,9 @@ from soiling_test import (
     normalized_daily as soiling_normalized_daily,
     insolation as soiling_insolation,
 )
+
+# availability pytest fixture
+from availability_test import energy_data_single
 
 
 def assert_isinstance(obj, klass):
@@ -161,4 +167,38 @@ def test_soiling_rate_histogram_kwargs(soiling_info):
         bins=10,
     )
     result = soiling_rate_histogram(soiling_info, **kwargs)
+    assert_isinstance(result, plt.Figure)
+
+
+@pytest.fixture
+def outage_info(energy_data_single):
+    '''
+    Return results of running loss_from_energy.
+
+    Returns
+    -------
+    outage_info : pd.DataFrame
+    '''
+
+    (meter_power,
+     meter_energy,
+     inverter_power,
+     expected_power,
+     expected_loss,
+     expected_type) = energy_data_single
+
+    outage_info = loss_from_energy(meter_power,
+                                   meter_energy,
+                                   inverter_power,
+                                   expected_power)
+    return outage_info
+
+
+def test_availability_cumulative_plot(energy_data_single, outage_info):
+    (_, meter_energy, _, expected_power, _, _) = energy_data_single
+
+    result = availability_cumulative_plot(
+            outage_info,
+            meter_energy,
+            energy_from_power(expected_power))
     assert_isinstance(result, plt.Figure)
