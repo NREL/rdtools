@@ -1,6 +1,7 @@
 '''Functions for plotting degradation and soiling analysis results.'''
 
 import matplotlib.pyplot as plt
+import numpy as np
 
 
 def degradation_summary_plots(yoy_rd, yoy_ci, yoy_info, normalized_yield,
@@ -228,5 +229,41 @@ def soiling_rate_histogram(soiling_info, bins=None):
             bins=bins)
     ax.set_xlabel('Soiling rate (%/day)')
     ax.set_ylabel('Count')
+
+    return fig
+
+
+def availability_cumulative_plot(outage_info, cumulative_energy,
+                                 expected_energy):
+    """
+    Visualize detected outages and expected energy confidence intervals.
+
+    Parameters
+    ----------
+    outage_info : pd.DataFrame
+        The output dataframe of :py:func:`.availability.loss_from_energy`
+    cumulative_energy : pd.Series
+        The system's cumulative production timeseries
+    expected_energy : pd.Series
+        The system's expected energy timeseries
+
+    Returns
+    -------
+    fig: matplotlib Figure
+    """
+    fig, ax = plt.subplots()
+    cumulative_energy.plot(ax=ax, label='Cumulative Energy')
+    for i, row in outage_info.iterrows():
+        start, end = row[['start', 'end']]
+        start_energy = row['start_energy']
+        expected_production = row['expected_energy']
+        lo, hi = np.abs(expected_production - row[['ci_lower', 'ci_upper']])
+        raw_expected_energy = expected_energy.loc[start:end].sum()
+        scale_factor = expected_production / raw_expected_energy
+        expected_curve = expected_energy.loc[start:end].cumsum() * scale_factor
+        expected_curve += start_energy
+        expected_curve.plot(ax=ax, label='Expected Energy', c='tab:orange')
+        energy_end = expected_curve.iloc[-1]
+        ax.errorbar([end], [energy_end], [[lo], [hi]], c='k')
 
     return fig
