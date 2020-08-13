@@ -3,6 +3,8 @@ Functions for detecting and quantifying production loss from photovoltaic
 system downtime events.
 """
 
+import rdtools
+
 import pandas as pd
 import numpy as np
 from scipy.interpolate import interp1d
@@ -195,8 +197,8 @@ def loss_from_energy(power, energy, subsystem_power, expected_power):
         scaling_subset['Expected Power'] / scaling_subset['Meter_kW']
     )
     df['Expected Power'] /= scaling_factor
-    df['Expected Energy'] = df['Expected Power'] / 4
-    df['Meter_kWh_interval'] = df['Meter_kW'] / 4
+    df['Expected Energy'] = rdtools.energy_from_power(df['Expected Power'])
+    df['Meter_kWh_interval'] = rdtools.energy_from_power(df['Meter_kW'])
 
     df_subset = df.loc[subset, :]
 
@@ -233,8 +235,8 @@ def loss_from_energy(power, energy, subsystem_power, expected_power):
                         fill_value=(series.values[0], series.values[-1]),
                         bounds_error=False)
     # functions mapping number of intervals (outage length) to error bounds
-    predict_upper = interp(upper)
-    predict_lower = interp(lower)
+    predict_upper = lambda x: float(interp(upper)(x))
+    predict_lower = lambda x: float(interp(lower)(x))
 
     # Calculate boolean series to indicate full outages.
     # done this way (instead of inspecting power data, e.g.) so that outages
@@ -276,6 +278,7 @@ def loss_from_energy(power, energy, subsystem_power, expected_power):
             'end_energy': df.loc[end, 'Meter_kWh'],
         }
         outage_data.append(data)
+
 
     df_outages = pd.DataFrame(outage_data)
     # pandas < 0.25.0 sorts columns alphabetically.  revert to dict order:
