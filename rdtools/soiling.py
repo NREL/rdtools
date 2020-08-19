@@ -774,6 +774,7 @@ class cods_analysis():
             The number of iterations to perform (each iteration fits only 1
             component)
         detection_tuner : float, default .5
+            Higher value gives lower cleaning event detection sensitivity.
             Should be between 0.1 and 2
         convergence_criterium : float, default 1e-3
             the relative change in the convergence metric required for
@@ -1037,7 +1038,7 @@ class cods_analysis():
                                           ['SC', 'SR', 'Rd']],
                                          [.25, .75],
                                          [1/1.5, 1.5],
-                                         [True, False]]):
+                                         [True, False]], **kwargs):
         '''
         Boottrapping of iterative signal decomposition alforithm for
         uncertainty analysis.
@@ -1128,7 +1129,7 @@ class cods_analysis():
                      max_iterations=18, order=order, clip_soiling=True,
                      detection_tuner=dt, pruning_iterations=1,
                      pruning_tuner=pt, process_noise=process_noise, ffill=ff,
-                     degradation_method=degradation_method)
+                     degradation_method=degradation_method, **kwargs)
 
                 # Save results
                 results.append(result)
@@ -1258,7 +1259,7 @@ class cods_analysis():
                         detection_tuner=dt, pruning_iterations=1,
                         pruning_tuner=pt, process_noise=pn,
                         renormalize_SR=renormalize_SR, ffill=ffill,
-                        degradation_method=degradation_method)
+                        degradation_method=degradation_method, **kwargs)
     
                 # If we can reject the null-hypothesis that there is a unit
                 # root in the residuals:
