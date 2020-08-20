@@ -45,6 +45,7 @@ Functions for estimating soiling rates from PV system data.
    :toctree: generated/
 
    soiling.soiling_srr
+   soiling.monthly_soiling_rates
    soiling.SRRAnalysis
    soiling.SRRAnalysis.run
 
