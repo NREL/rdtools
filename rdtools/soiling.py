@@ -731,7 +731,7 @@ def monthly_soiling_rates(soiling_interval_summary, min_length=14,
         DataFrame describing soiling intervals. Typically from
         soiling_interval_summary['confidence_interval'] obtained with
         soiling_srr() or SRRAnalysis.run() Must have columns 'slope_high',
-        'slope_low', 'slope' 'length', 'valid', 'start', and 'end'.
+        'slope_low', 'slope', 'length', 'valid', 'start', and 'end'.
 
     min_length : int, default 14
         The minimum number of days a soiling interval must contain to be
@@ -749,18 +749,18 @@ def monthly_soiling_rates(soiling_interval_summary, min_length=14,
     pd.DataFrame
         DataFrame describing monthly soiling rates.
         Columns:
+
         * `month` - Integer month, January (1) to December (12)
         * `soiling_rate_median` - The median soiling rate for the month over the
-                                  entire dataset. Negative indicates soiling is
-                                  occurring.
+          entire dataset. Negative indicates soiling is occurring
         * `soiling_rate_low` - The lower edge of the 95% confidence interval for
-                               the monthly soiling rate.
+          the monthly soiling rate.
         * `soiling_rate_high` - The upper edge of the 95% confidence interval
-                                for the monthly soiling rate.
+          for the monthly soiling rate.
         * `interval_count` - The number of soiling intervals contributing to the
-                             monthly calculation. If this number is low, the
-                             confidence interval is likely to underestimate the
-                             true uncertainty.
+          monthly calculation. If this number is low, the
+          confidence interval is likely to underestimate the
+          true uncertainty.
     '''
 
     # filter to intervals of interest
