@@ -301,8 +301,14 @@ def loss_from_energy(power, energy, subsystem_power, expected_power,
             df_outages['end_energy'] - df_outages['start_energy']
     )
     # poor-quality cumulative meter data can create "negative production"
-    # outages.  Set to nan so that negative value doesn't pollute other calcs:
-    df_outages.loc[df_outages['actual_energy'] < 0, 'actual_energy'] = np.nan
+    # outages.  Set to nan so that negative value doesn't pollute other calcs.
+    # However, if using a net meter (instead of delivered), system consumption
+    # creates a legitimate decrease during some outages. Rule of thumb is that
+    # system consumption is about 0.5% of system production, but it'll be
+    # larger during winter. Choose 5% to be safer.
+    lower_limit = -0.05 * df_outages['expected_energy']  # Note the negative
+    below_limit = df_outages['actual_energy'] < lower_limit
+    df_outages.loc[below_limit, 'actual_energy'] = np.nan
 
     df_outages['ci_lower'] = (
         (1 + df_outages['error_lower']) * df_outages['expected_energy']
