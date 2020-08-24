@@ -251,7 +251,7 @@ def loss_from_energy(power, energy, subsystem_power, expected_power,
     #   meter can either drop out or stay constant depending on the case
     # During a full outage, no inverters will report production:
     low_threshold = subsystem_power.quantile(0.99) / 1000
-    looks_offline = ~(subsystem_power > low_threshold).all(axis=1)
+    looks_offline = ~(subsystem_power > low_threshold).any(axis=1)
     # Now span across nights:
     masked = looks_offline[expected_power > 0].reindex(df.index)
     full_outage = masked.ffill() | masked.bfill()
