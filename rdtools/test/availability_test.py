@@ -133,14 +133,15 @@ def test_loss_from_power_limit(dummy_power_data):
 # %%
 
 ENERGY_PARAMETER_SPACE = list(itertools.product(
-    [0, np.nan],  # outage value
+    [0, np.nan],  # outage value for power
+    [0, np.nan, None],  # value for cumulative energy (None means real value)
     [0, 0.25, 0.5, 0.75, 1.0],  # fraction of comms outage that is power outage
 ))
 # display names for the test cases.  default is just 0..N
 ENERGY_PARAMETER_IDS = ["_".join(map(str, p)) for p in ENERGY_PARAMETER_SPACE]
 
 
-def _generate_energy_data(outage_value, outage_fraction):
+def _generate_energy_data(power_value, energy_value, outage_fraction):
     """
     Generate an artificial mixed communication/power outage.
     """
@@ -159,6 +160,8 @@ def _generate_energy_data(outage_value, outage_fraction):
         'inv2': base_power*1.3,
     })
     expected_power = inverter_power.sum(axis=1)
+    # dawn/dusk points
+    expected_power[expected_power < 10] = 0
     # add noise and bias to the expected power signal
     np.random.seed(2020)
     expected_power *= 1.05 + np.random.normal(0, scale=0.05, size=len(times))
@@ -176,9 +179,10 @@ def _generate_energy_data(outage_value, outage_fraction):
     # actually starts at 0:
     meter_energy += 100
 
-    meter_power[comms_outage] = outage_value
-    meter_energy[comms_outage] = outage_value
-    inverter_power.loc[comms_outage, :] = outage_value
+    meter_power[comms_outage] = power_value
+    if energy_value is not None:
+        meter_energy[comms_outage] = energy_value
+    inverter_power.loc[comms_outage, :] = power_value
 
     expected_type = 'real' if outage_fraction > 0 else 'comms'
 
@@ -193,8 +197,8 @@ def _generate_energy_data(outage_value, outage_fraction):
 @pytest.fixture(params=ENERGY_PARAMETER_SPACE, ids=ENERGY_PARAMETER_IDS)
 def energy_data(request):
     # fixture sweeping across the entire parameter space
-    outage_value, outage_fraction = request.param
-    return _generate_energy_data(outage_value, outage_fraction)
+    power_value, energy_value, outage_fraction = request.param
+    return _generate_energy_data(power_value, energy_value, outage_fraction)
 
 
 @pytest.fixture
@@ -202,7 +206,7 @@ def energy_data_outage_single():
     # fixture only using a single parameter combination, for simpler tests.
     # has one real outage.
     outage_value, outage_fraction = np.nan, 0.25
-    return _generate_energy_data(outage_value, outage_fraction)
+    return _generate_energy_data(outage_value, outage_value, outage_fraction)
 
 
 @pytest.fixture
@@ -210,7 +214,7 @@ def energy_data_comms_single():
     # fixture only using a single parameter combination, for simpler tests.
     # has one comms outage.
     outage_value, outage_fraction = np.nan, 0
-    return _generate_energy_data(outage_value, outage_fraction)
+    return _generate_energy_data(outage_value, outage_value, outage_fraction)
 
 
 def test_loss_from_energy(energy_data):
@@ -264,16 +268,17 @@ def test_loss_from_energy_startend(side, energy_data_outage_single):
 
     if side == 'start':
         # an outage all day on the 1st, so technically the outage extends to
-        # sunrise on the 2nd
+        # sunrise on the 2nd, but it doesn't wrap around to the previous dusk
         date = '2019-01-01'
-        expected_start = datetime.date(2019, 1, 1)
-        expected_end = datetime.date(2019, 1, 2)
+        expected_start = '2019-01-01 08:00'
+        expected_end = '2019-01-02 08:00'
         idx = 0
     else:
-        # last day doesn't have a "sunrise on the next day", so start==end
-        date = meter_power.index[-1].strftime('%Y-%m-%d')
-        expected_start = meter_power.index[-1].date()
-        expected_end = expected_start
+        # last day doesn't have a "sunrise on the next day", so it doesn't
+        # wrap around
+        date = '2019-01-15'
+        expected_start = '2019-01-14 17:15'
+        expected_end = '2019-01-15 23:45'
         idx = -1
 
     meter_power.loc[date] = 0
@@ -281,8 +286,10 @@ def test_loss_from_energy_startend(side, energy_data_outage_single):
     inverter_power.loc[date] = 0
     outage_info = loss_from_energy(meter_power, meter_energy, inverter_power,
                                    expected_power)
-    assert outage_info['start'].iloc[idx].date() == expected_start
-    assert outage_info['end'].iloc[idx].date() == expected_end
+    actual_start = outage_info['start'].iloc[idx].strftime('%Y-%m-%d %H:%M')
+    actual_end = outage_info['end'].iloc[idx].strftime('%Y-%m-%d %H:%M')
+    assert actual_start == expected_start
+    assert actual_end == expected_end
 
 
 def test_loss_from_energy_quantiles(energy_data_comms_single):

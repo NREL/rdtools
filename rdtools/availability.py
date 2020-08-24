@@ -245,10 +245,17 @@ def loss_from_energy(power, energy, subsystem_power, expected_power,
     predict_upper = lambda x: float(interp(upper)(x))
     predict_lower = lambda x: float(interp(lower)(x))
 
-    # Calculate boolean series to indicate full outages.
-    # done this way (instead of inspecting power data, e.g.) so that outages
-    # can span across nights.
-    full_outage = ~(df['Meter_kWh'] > 0).fillna(False)
+    # Calculate boolean series to indicate full outages. Considerations:
+    # - Multi-day outages need to span across nights
+    # - Full outages don't always take out communications, so the cumulative
+    #   meter can either drop out or stay constant depending on the case
+    # During a full outage, no inverters will report production:
+    low_threshold = subsystem_power.quantile(0.99) / 1000
+    looks_offline = ~(subsystem_power > low_threshold).all(axis=1)
+    # Now span across nights:
+    masked = looks_offline[expected_power > 0].reindex(df.index)
+    full_outage = masked.ffill() | masked.bfill()
+    full_outage = full_outage.fillna(False)
 
     # Find expected production and associated uncertainty for each outage
     diff = full_outage.astype(int).diff()
@@ -285,7 +292,6 @@ def loss_from_energy(power, energy, subsystem_power, expected_power,
             'end_energy': df.loc[end, 'Meter_kWh'],
         }
         outage_data.append(data)
-
 
     df_outages = pd.DataFrame(outage_data)
     # pandas < 0.25.0 sorts columns alphabetically.  revert to dict order:
