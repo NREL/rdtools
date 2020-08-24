@@ -300,6 +300,10 @@ def loss_from_energy(power, energy, subsystem_power, expected_power,
     df_outages['actual_energy'] = (
             df_outages['end_energy'] - df_outages['start_energy']
     )
+    # poor-quality cumulative meter data can create "negative production"
+    # outages.  Set to nan so that negative value doesn't pollute other calcs:
+    df_outages.loc[df_outages['actual_energy'] < 0, 'actual_energy'] = np.nan
+
     df_outages['ci_lower'] = (
         (1 + df_outages['error_lower']) * df_outages['expected_energy']
     )
@@ -310,9 +314,11 @@ def loss_from_energy(power, energy, subsystem_power, expected_power,
         df_outages['actual_energy'] < df_outages['ci_lower'],
         'real',
         'comms')
+    df_outages.loc[df_outages['actual_energy'].isnull(), 'type'] = 'unknown'
     df_outages['loss'] = np.where(
         df_outages['type'] == 'real',
         df_outages['expected_energy'] - df_outages['actual_energy'],
         0)
+    df_outages.loc[df_outages['type'] == 'unknown', 'loss'] = np.nan
 
     return df_outages
