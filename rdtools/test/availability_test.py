@@ -53,7 +53,8 @@ def power_data(request):
     times = pd.date_range('2019-01-01', '2019-01-05 23:59', freq='15min',
                           tz='US/Eastern')
     location = pvlib.location.Location(40, -80)
-    clearsky = location.get_clearsky(times)
+    # use haurwitz to avoid dependency on `tables`
+    clearsky = location.get_clearsky(times, model='haurwitz')
 
     # just set base inverter power = ghi+clipping for simplicity
     base_power = clearsky['ghi'].clip(upper=0.8*clearsky['ghi'].max())
@@ -149,7 +150,8 @@ def _generate_energy_data(power_value, energy_value, outage_fraction):
     times = pd.date_range('2019-01-01', '2019-01-15 23:59', freq='15min',
                           tz='US/Eastern')
     location = pvlib.location.Location(40, -80)
-    clearsky = location.get_clearsky(times)
+    # use haurwitz to avoid dependency on `tables`
+    clearsky = location.get_clearsky(times, model='haurwitz')
 
     # just set base inverter power = ghi+clipping for simplicity
     base_power = clearsky['ghi'].clip(upper=0.8*clearsky['ghi'].max())
