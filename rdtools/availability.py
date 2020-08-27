@@ -178,6 +178,10 @@ def loss_from_energy(power, energy, subsystem_power, expected_power,
     Additionally, the loss at the edges of an outage may be underestimated
     because of masking by the interval averages.
 
+    The outage detection routine assumes that the input timeseries are
+    continuous, so any data gaps should be filled with nan before using
+    this function.  See :py:func:`rdtools.normalization.interpolate`.
+
     References
     ----------
     .. [1] Anderson K. and Blumenthal R. "Overcoming communications outages in
