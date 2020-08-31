@@ -717,7 +717,7 @@ def _count_month_days(start, end):
     return out_dict
 
 
-def annual_soiling_ratios(stochastic_soiling_profiles):
+def annual_soiling_ratios(stochastic_soiling_profiles, confidence_level=68.2):
     '''
     Return annualized soiling ratios and associated confidence intervals based
     on stochastic soiling profiles from SRR. Note that each year may be affected
@@ -731,6 +731,11 @@ def annual_soiling_ratios(stochastic_soiling_profiles):
         Typically soiling_interval_summary['stochastic_soiling_profiles'] obtained with
         soiling_srr() or SRRAnalysis.run()
 
+    confidence_level : float, default 68.2
+        The size of the confidence interval to use in determining the upper and lower
+        quantiles reported in the returned DataFrame. (The median is always included in
+        the result.)
+
     Returns
     -------
     pd.DataFrame
@@ -740,7 +745,9 @@ def annual_soiling_ratios(stochastic_soiling_profiles):
     '''
 
     df = pd.DataFrame(pd.concat(stochastic_soiling_profiles))
-    annual_soiling = df.groupby(df.index.year).quantile([0.5, 0.0225, 0.975])
+
+    ci_quantiles = [0.5 - confidence_level/2/100, 0.5 + confidence_level/2/100]
+    annual_soiling = df.groupby(df.index.year).quantile([0.5, ci_quantiles[0], ci_quantiles[1]])
     annual_soiling.index.rename(['year', 'quantile'], inplace=True)
     annual_soiling.columns = ['insolation_weighted_soiling_ratio']
 
@@ -748,7 +755,8 @@ def annual_soiling_ratios(stochastic_soiling_profiles):
 
 
 def monthly_soiling_rates(soiling_interval_summary, min_length=14,
-                          max_relative_slope_error=500.0, reps=100000):
+                          max_relative_slope_error=500.0, reps=100000,
+                          confidence_level=68.2):
     '''
     Use Monte Carlo to calculate typical monthly soiling rates. Samples possible
     soiling rates from soiling rate confidence intervals associated with soiling
@@ -774,6 +782,11 @@ def monthly_soiling_rates(soiling_interval_summary, min_length=14,
     reps : int, default 100000
         The number of Monte Carlo samples to take for each month.
 
+    confidence_level : float, default 68.2
+        The size of the confidence interval to use in determining the upper and lower
+        quantiles reported in the returned DataFrame. (The median is always included in
+        the result.)
+
     Returns
     -------
     pd.DataFrame
@@ -783,9 +796,9 @@ def monthly_soiling_rates(soiling_interval_summary, min_length=14,
         * `month` - Integer month, January (1) to December (12)
         * `soiling_rate_median` - The median soiling rate for the month over the
           entire dataset. Negative indicates soiling is occurring
-        * `soiling_rate_low` - The lower edge of the 95% confidence interval for
+        * `soiling_rate_low` - The lower edge of the confidence interval for
           the monthly soiling rate.
-        * `soiling_rate_high` - The upper edge of the 95% confidence interval
+        * `soiling_rate_high` - The upper edge of the confidence interval
           for the monthly soiling rate.
         * `interval_count` - The number of soiling intervals contributing to the
           monthly calculation. If this number is low, the
@@ -815,6 +828,7 @@ def monthly_soiling_rates(soiling_interval_summary, min_length=14,
             int)
 
     # perform the monte carlo month by month
+    ci_quantiles = [0.5 - confidence_level/2/100, 0.5 + confidence_level/2/100]
     monthly_rate_data = []
     relevant_interval_count = []
     for month in range(1, 13):
@@ -828,7 +842,7 @@ def monthly_soiling_rates(soiling_interval_summary, min_length=14,
 
         rates = [x for sublist in rates for x in sublist]
 
-        monthly_rate_data.append(np.quantile(rates, [0.5, 0.025, 0.975]))
+        monthly_rate_data.append(np.quantile(rates, [0.5, ci_quantiles[0], ci_quantiles[1]]))
         relevant_interval_count.append(len(relevant_intervals))
     monthly_rate_data = np.array(monthly_rate_data)
 
