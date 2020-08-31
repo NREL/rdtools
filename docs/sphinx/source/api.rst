@@ -46,6 +46,7 @@ Functions for estimating soiling rates from PV system data.
 
    soiling.soiling_srr
    soiling.monthly_soiling_rates
+   soiling.annual_soiling_ratios
    soiling.SRRAnalysis
    soiling.SRRAnalysis.run
 
