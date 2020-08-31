@@ -717,6 +717,36 @@ def _count_month_days(start, end):
     return out_dict
 
 
+def annual_soiling_ratios(stochastic_soiling_profiles):
+    '''
+    Return annualized soiling ratios and associated confidence intervals based
+    on stochastic soiling profiles from SRR. Note that each year may be affected
+    by previous years' profiles for all SRR cleaning assumptions (i.e. method) except
+    perfect_clean.
+
+    Parameters
+    ----------
+    stochastic_soiling_profiles : list
+        List of pd.Series representing profile realizations from the SRR monte carlo.
+        Typically soiling_interval_summary['stochastic_soiling_profiles'] obtained with
+        soiling_srr() or SRRAnalysis.run()
+
+    Returns
+    -------
+    pd.DataFrame
+        DataFrame describing annual insolation-wighted soiling ratios. The multi-index
+        is (year, quantile)
+
+    '''
+
+    df = pd.DataFrame(pd.concat(stochastic_soiling_profiles))
+    annual_soiling = df.groupby(df.index.year).quantile([0.5, 0.0225, 0.975])
+    annual_soiling.index.rename(['year', 'quantile'], inplace=True)
+    annual_soiling.columns = ['insolation_weighted_soiling_ratio']
+
+    return annual_soiling
+
+
 def monthly_soiling_rates(soiling_interval_summary, min_length=14,
                           max_relative_slope_error=500.0, reps=100000):
     '''
