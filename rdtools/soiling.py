@@ -822,10 +822,12 @@ def monthly_soiling_rates(soiling_interval_summary, min_length=14,
     # divy up the monte carlo reps based on overlap
     for month in range(1, 13):
         days_in_month = np.array([x[month] for x in month_counts])
-        intervals[f'samples_for_month_{month}'] = np.ceil(
-            days_in_month / days_in_month.sum() * reps)
-        intervals[f'samples_for_month_{month}'] = intervals[f'samples_for_month_{month}'].astype(
-            int)
+        if days_in_month.sum() > 0:
+            intervals[f'samples_for_month_{month}'] = np.ceil(
+                days_in_month / days_in_month.sum() * reps)
+        else:
+            intervals[f'samples_for_month_{month}'] = 0
+        intervals[f'samples_for_month_{month}'] = intervals[f'samples_for_month_{month}'].astype(int)
 
     # perform the monte carlo month by month
     ci_quantiles = [0.5 - confidence_level/2/100, 0.5 + confidence_level/2/100]
