@@ -103,7 +103,7 @@ def test_soiling_srr_with_precip(normalized_daily, insolation, times):
     sr, sr_ci, soiling_info = soiling_srr(normalized_daily, insolation, clean_criterion='precip_and_shift', **kwargs)
     assert 0.983270 == pytest.approx(sr, abs=1e-6),\
         "Soiling ratio with clean_criterion='precip_and_shift' different from expected"
-    np.random.seed(1977)    
+    np.random.seed(1977)
     sr, sr_ci, soiling_info = soiling_srr(normalized_daily, insolation, clean_criterion='precip_or_shift', **kwargs)
     assert 0.973228 == pytest.approx(sr, abs=1e-6),\
         "Soiling ratio with clean_criterion='precip_or_shift' different from expected"
@@ -211,6 +211,7 @@ def test_soiling_srr_max_negative_slope_error(normalized_daily, insolation):
 
     assert 0.952995 == pytest.approx(sr, abs=1e-6),\
         'Soiling ratio different from expected when max_relative_slope_error=50.0'
+
 
 def test_soiling_srr_with_nan_interval(normalized_daily, insolation, times):
     '''
