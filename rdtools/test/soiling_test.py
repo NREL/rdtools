@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 from rdtools import soiling_srr
+from rdtools import annual_soiling_ratios
 from rdtools.soiling import NoValidIntervalError
 import pytest
 
@@ -37,6 +38,14 @@ def insolation(times):
 
     return insolation
 
+
+@pytest.fixture()
+def srr_profiles():
+    times = pd.date_range('01-01-2018', '12-31-2019', freq='D')
+    data = np.array([0]*365 + [10]*365)
+    profiles = [pd.Series(x + data, times) for x in range(10)]
+
+    return profiles
 
 def test_soiling_srr(normalized_daily, insolation, times):
 
@@ -225,3 +234,33 @@ def test_soiling_srr_with_nan_interval(normalized_daily, insolation, times):
     sr, sr_ci, soiling_info = soiling_srr(normalized_corrupt, insolation, reps=reps)
     assert 0.947416 == pytest.approx(sr, abs=1e-6),\
         'Soiling ratio different from expected value when an entire interval was NaN'
+
+
+def test_annual_soiling_ratios(srr_profiles):
+    expected_data = [4.5, 1.0, 8.0, 14.5, 11.0, 18.0]
+
+    mi = pd.MultiIndex.from_product([[2018, 2019], [0.5, 0.159, 0.841]],
+                                    names=['year', 'quantile'])
+
+    expected = pd.DataFrame(data=expected_data,
+                            index=mi,
+                            columns=['insolation_weighted_soiling_ratio']
+                            )
+    result = annual_soiling_ratios(srr_profiles)
+
+    pd.testing.assert_frame_equal(result, expected, atol=1e-8)
+
+
+def test_annual_soiling_ratios_confidence_interval(srr_profiles):
+    expected_data = [4.5, 0.0, 9.0, 14.5, 10.0, 19.0]
+
+    mi = pd.MultiIndex.from_product([[2018, 2019], [0.5, 0.025, 0.975]],
+                                    names=['year', 'quantile'])
+
+    expected = pd.DataFrame(data=expected_data,
+                            index=mi,
+                            columns=['insolation_weighted_soiling_ratio']
+                            )
+    result = annual_soiling_ratios(srr_profiles, confidence_level=95)
+
+    pd.testing.assert_frame_equal(result, expected, atol=1e-8)
