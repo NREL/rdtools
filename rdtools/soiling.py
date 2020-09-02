@@ -844,7 +844,11 @@ def monthly_soiling_rates(soiling_interval_summary, min_length=14,
 
         rates = [x for sublist in rates for x in sublist]
 
-        monthly_rate_data.append(np.quantile(rates, [0.5, ci_quantiles[0], ci_quantiles[1]]))
+        if rates:
+            monthly_rate_data.append(np.quantile(rates, [0.5, ci_quantiles[0], ci_quantiles[1]]))
+        else:
+            monthly_rate_data.append(np.array([np.nan]*3))
+
         relevant_interval_count.append(len(relevant_intervals))
     monthly_rate_data = np.array(monthly_rate_data)
 
