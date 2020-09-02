@@ -1,87 +1,126 @@
-import pandas as pd
+'''Functions for filtering and subsetting PV system data.'''
+
 import numpy as np
 
 
-def normalized_filter(normalized, low_cutoff=0, high_cutoff=None):
+def normalized_filter(energy_normalized, energy_normalized_low=0.01,
+                      energy_normalized_high=None):
     '''
-    Filter to retain normalized yield between low_cutoff and high_cutoff
-    
+    Select normalized yield between ``low_cutoff`` and ``high_cutoff``
+
     Parameters
     ----------
-    normalized : pandas.Series
-        Time series of normalized energy yield
-    low_cutoff : numeric
-        Low value for normalized, below which to filter out points
-    high_cutoff : numeric
-        High value for normalized, above which to filter out points
+    energy_normalized : pd.Series
+        Normalized energy measurements.
+    energy_normalized_low : float, default 0.01
+        The lower bound of acceptable values.
+    energy_normalized_high : float, optional
+        The upper bound of acceptable values.
 
     Returns
     -------
     pd.Series
-        Boolean series of whether the given point is between the high
-        and low cutoff
+        Boolean Series of whether the given measurement is within acceptable
+        bounds.
     '''
 
-    if low_cutoff is None:
-        low_cutoff = -np.inf
-    if high_cutoff is None:
-        high_cutoff = np.inf
+    if energy_normalized_low is None:
+        energy_normalized_low = -np.inf
+    if energy_normalized_high is None:
+        energy_normalized_high = np.inf
 
-    return (normalized > low_cutoff) & (normalized < high_cutoff)
-
-
-def poa_filter(poa, low_irradiance_cutoff=200, high_irradiance_cutoff=1200):
-    # simple filter based on irradiance sensors
-    return (poa > low_irradiance_cutoff) & (poa < high_irradiance_cutoff)
+    return ((energy_normalized > energy_normalized_low) &
+            (energy_normalized < energy_normalized_high))
 
 
-def tcell_filter(tcell, low_tcell_cutoff=-50, high_tcell_cutoff=110):
-    # simple filter based on temperature sensors
-    return (tcell > low_tcell_cutoff) & (tcell < high_tcell_cutoff)
-
-
-def clip_filter(power, quant=0.98, low_power_cutoff=0.01):
+def poa_filter(poa_global, poa_global_low=200, poa_global_high=1200):
     '''
-    Filter data points likely to be affected by clipping
-    with power greater than or equal to 99% of the 'quant'
-    quantile and less than 'low_power_cutoff'
+    Filter POA irradiance readings outside acceptable measurement bounds.
 
     Parameters
     ----------
-    power: Pandas series (numeric)
-        AC power
-    quant: float
-        threshold for quantile
-    low_power_cutoff
+    poa_global : pd.Series
+        POA irradiance measurements.
+    poa_global_low : float, default 200
+        The lower bound of acceptable values.
+    poa_global_high : float, default 1200
+        The upper bound of acceptable values.
 
     Returns
     -------
-    Pandas Series (boolean)
-        mask to exclude points equal to and
-        above 99% of the percentile threshold
+    pd.Series
+        Boolean Series of whether the given measurement is within acceptable
+        bounds.
     '''
-    v = power.quantile(quant)
-    return (power < v * 0.99) & (power > low_power_cutoff)
+    return (poa_global > poa_global_low) & (poa_global < poa_global_high)
 
 
-def csi_filter(measured_poa, clearsky_poa, threshold=0.15):
+def tcell_filter(temperature_cell, temperature_cell_low=-50,
+                 temperature_cell_high=110):
     '''
-    Filtering based on clear sky index (csi)
+    Filter temperature readings outside acceptable measurement bounds.
 
     Parameters
     ----------
-    measured_poa: Pandas series (numeric)
+    temperature_cell : pd.Series
+        Cell temperature measurements.
+    temperature_cell_low : float, default -50
+        The lower bound of acceptable values.
+    temperature_cell_high : float, default 110
+        The upper bound of acceptable values.
+
+    Returns
+    -------
+    pd.Series
+        Boolean Series of whether the given measurement is within acceptable
+        bounds.
+    '''
+    return ((temperature_cell > temperature_cell_low) &
+            (temperature_cell < temperature_cell_high))
+
+
+def clip_filter(power_ac, quantile=0.98):
+    '''
+    Filter data points likely to be affected by clipping
+    with power greater than or equal to 99% of the `quant`
+    quantile.
+
+    Parameters
+    ----------
+    power_ac : pd.Series
+        AC power in Watts
+    quantile : float, default 0.98
+        Value for upper threshold quantile
+
+    Returns
+    -------
+    pd.Series
+        Boolean Series of whether the given measurement is below 99% of the
+        quantile filter.
+    '''
+    v = power_ac.quantile(quantile)
+    return (power_ac < v * 0.99)
+
+
+def csi_filter(poa_global_measured, poa_global_clearsky, threshold=0.15):
+    '''
+    Filtering based on clear-sky index (csi)
+
+    Parameters
+    ----------
+    poa_global_measured : pd.Series
         Plane of array irradiance based on measurments
-    clearsky_poa: Pandas series (numeric)
+    poa_global_clearsky : pd.Series
         Plane of array irradiance based on a clear sky model
-    threshold: float
+    threshold : float, default 0.15
         threshold for filter
 
     Returns
     -------
-    Pandas Series (boolean)
-        mask to exclude points below the threshold
+    pd.Series
+        Boolean Series of whether the clear-sky index is within the threshold
+        around 1.
     '''
 
-    csi = measured_poa / clearsky_poa
+    csi = poa_global_measured / poa_global_clearsky
     return (csi >= 1.0 - threshold) & (csi <= 1.0 + threshold)
