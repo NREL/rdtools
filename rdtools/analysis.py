@@ -214,13 +214,22 @@ class RdAnalysis():
         else:
             #pvlib 0.7+
             try:
-                model_params = pvlib.temperature.TEMPERATURE_MODEL_PARAMETERS['sapm'][self.temperature_model]
+                # check to make sure self.temperature_model contains keys 'a', 'b' and 'deltaT'
+                if isinstance(self.temperature_model,str):
+                    model_params = pvlib.temperature.TEMPERATURE_MODEL_PARAMETERS['sapm'][self.temperature_model]
+                elif (isinstance(self.temperature_model,dict) & 
+                      ('a' in self.temperature_model) & 
+                      ('b' in self.temperature_model) & 
+                      ('deltaT' in self.temperature_model)):
+                    model_params = self.temperature_model
+                else:
+                    raise Exception('pvlib temperature_model entry is neither '
+                                    'a string nor a dictionary with correct '
+                                    'entries. Try "open_rack_glass_polymer"')
                 cell_temp = pvlib.temperature.sapm_cell(poa_global=poa,
                                                         temp_air=ambient_temperature,
                                                         wind_speed=windspeed,
-                                                        a=model_params['a'],
-                                                        b=model_params['b'],
-                                                        deltaT=model_params['deltaT']
+                                                        **model_params
                                                         )
             except: #pvlib < 0.7
                 cell_temp = pvlib.pvsystem.sapm_celltemp(poa_global=poa, wind_speed=windspeed, 
