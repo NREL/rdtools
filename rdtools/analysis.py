@@ -5,13 +5,9 @@ import pvlib
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-from rdtools import normalization
-from rdtools import filtering
-from rdtools import aggregation
-from rdtools import degradation
-from rdtools import soiling
-from rdtools import clearsky_temperature
-from rdtools import plotting
+from rdtools import normalization, filtering, aggregation, degradation
+from rdtools import soiling, clearsky_temperature, plotting
+
 
 
 class RdAnalysis():
@@ -273,6 +269,7 @@ class RdAnalysis():
         pandas.Series
             Associated insolation
         '''
+        import warnings
         if self.pv_nameplate is None:
             renorm = True
             pv_nameplate = 1.0
@@ -281,8 +278,9 @@ class RdAnalysis():
             pv_nameplate = self.pv_nameplate
 
         if self.temperature_coefficient is None:
-            raise ValueError('Temperature coeffcient must be available to perform pvwatts_norm')
-
+            #raise ValueError('Temperature coefficient must be available to perform pvwatts_norm')
+            warnings.warn('Temperature coefficient not passed in to RdAnalysis'
+                          '. No temperature correction will be conducted.')
         pvwatts_kws = {"poa_global": poa,
                        "power_dc_rated": pv_nameplate,
                        "temperature_cell": cell_temperature,
