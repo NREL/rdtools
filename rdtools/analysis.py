@@ -5,18 +5,18 @@ import pvlib
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-from . import normalization
-from . import filtering
-from . import aggregation
-from . import degradation
-from . import soiling
-from . import clearsky_temperature
-from . import plotting
+from rdtools import normalization
+from rdtools import filtering
+from rdtools import aggregation
+from rdtools import degradation
+from rdtools import soiling
+from rdtools import clearsky_temperature
+from rdtools import plotting
 
 
-class SystemAnalysis():
+class RdAnalysis():
     '''
-    Class for end-to-end analysis
+    Class for end-to-end degradation and soiling analysis
 
     Parameters
     ----------
@@ -272,10 +272,10 @@ class SystemAnalysis():
             raise ValueError('Temperature coeffcient must be available to perform pvwatts_norm')
 
         pvwatts_kws = {"poa_global": poa,
-                       "P_ref": pv_nameplate,
-                       "T_cell": cell_temperature,
-                       "G_ref": 1000,
-                       "T_ref": 25,
+                       "power_dc_rated": pv_nameplate,
+                       "temperature_cell": cell_temperature,
+                       "poa_global_ref": 1000,
+                       "temperature_cell_ref": 25,
                        "gamma_pdc": self.temperature_coefficient}
 
         normalized, insolation = normalization.normalize_with_pvwatts(self.pv_energy, pvwatts_kws)
