@@ -17,11 +17,6 @@ env:
   - REQ_ENV='-r requirements-min.txt .'
   - REQ_ENV='--upgrade --upgrade-strategy=eager .'
 
-jobs:
-  exclude:
-  - python: 2.7
-    env: REQ_ENV='--upgrade --upgrade-strategy=eager .'
-
 install:
   - pip install $REQ_ENV
 
