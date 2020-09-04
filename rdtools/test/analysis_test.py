@@ -231,3 +231,16 @@ def test_plot_soiling_cs(getRdSoiling):
     assert_isinstance(getRdSoiling.plot_soiling_interval('clearsky'), plt.Figure)    
     assert_isinstance(getRdSoiling.plot_soiling_rate_histogram('clearsky'), plt.Figure) 
     
+def test_errors(get_energy, getRdCS):
+    # clearsky analysis with no pvlib.loc or tilt or azimuth
+    power = get_energy.tz_localize(meta['timezone'])
+    rdtemp = analysis.RdAnalysis(power)
+    with pytest.raises(ValueError):
+        rdtemp.sensor_preprocess() # no POA error
+    rdtemp = analysis.RdAnalysis(power,power*1000)
+    with pytest.raises(ValueError):
+        rdtemp.sensor_preprocess() # no temperature error
+    getRdCS.pvlib_location=None
+    with pytest.raises(ValueError):
+        getRdCS.clearsky_preprocess() #pvlib location must be provided
+        
