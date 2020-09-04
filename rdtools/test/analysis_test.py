@@ -33,17 +33,25 @@ def normalized_daily(times):
 
     return normalized_daily
 
+@pytest.fixture()
+def times_fixture():
+    tz = 'Etc/GMT+7'
+    times = pd.date_range('2019/01/01', '2019/03/16', freq='D', tz=tz)
+    return times
 
-#@pytest.fixture()
-def insolation(times):
-    insolation = np.empty((75,))
-    insolation[:30] = 8000
-    insolation[30:45] = 6000
-    insolation[45:] = 7000
+@pytest.fixture()
+def normalized_daily_fixture(times_fixture):
+    interval_1 = 1 - 0.005 * np.arange(0, 25, 1)
+    interval_2 = 1 - 0.002 * np.arange(0, 25, 1)
+    interval_3 = 1 - 0.001 * np.arange(0, 25, 1)
+    profile = np.concatenate((interval_1, interval_2, interval_3))
+    np.random.seed(1977)
+    noise = 0.01 * np.random.rand(75)
+    normalized_daily = pd.Series(data=profile, index=times)
+    normalized_daily = normalized_daily + noise
 
-    insolation = pd.Series(data=insolation, index=times)
+    return normalized_daily
 
-    return insolation
 
 #@pytest.fixture()
 def get_energy(rd = -0.05):
@@ -110,7 +118,6 @@ def test_srr_soiling():
     
     srr_results = rd.results['sensor']['srr_soiling']
    
-    #sr, sr_ci, soiling_info = soiling_srr(normalized_daily, insolation, reps=reps)
     assert 0.9583 == pytest.approx(srr_results['p50_sratio'], abs=1e-4),\
         'Soiling ratio different from expected value in RdAnalysis.srr_soiling'  
     assert [0.9552, 0.9607] == pytest.approx(srr_results['sratio_confidence_interval'], abs=1e-4),\
@@ -119,4 +126,25 @@ def test_srr_soiling():
         'Renormalization factor different from expected value in RdAnalysis.srr_soiling' 
 
 
+def test_srr_soiling_fixture(normalized_daily_fixture):  
+    reps = 10
+    np.random.seed(1977)
+    
+    loc = pvlib.location.Location(meta['latitude'], meta['longitude'], tz = meta['timezone'])
+    power = normalized_daily_fixture.resample('1h').interpolate()
+    poa = power*0+1000
+
+    rd = analysis.RdAnalysis(power,poa,ambient_temperature = power*0+25, pvlib_location=loc,
+                        temperature_coefficient=0, interp_freq='D' ) 
+
+    rd.sensor_analysis(analyses=['srr_soiling'], srr_kwargs={'reps':reps})
+    
+    srr_results = rd.results['sensor']['srr_soiling']
+   
+    assert 0.9583 == pytest.approx(srr_results['p50_sratio'], abs=1e-4),\
+        'Soiling ratio different from expected value in RdAnalysis.srr_soiling'  
+    assert [0.9552, 0.9607] == pytest.approx(srr_results['sratio_confidence_interval'], abs=1e-4),\
+        'Soiling confidence interval different from expected value in RdAnalysis.srr_soiling' 
+    assert 0.97417 == pytest.approx(srr_results['calc_info']['renormalizing_factor'], abs=1e-4),\
+        'Renormalization factor different from expected value in RdAnalysis.srr_soiling' 
 
