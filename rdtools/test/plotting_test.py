@@ -1,8 +1,3 @@
-import matplotlib
-# Travis can fail due to not being able to spawn Tkinter windows with the
-# default backend, so set Agg before importing anything else:
-matplotlib.use('Agg')
-
 import pandas as pd
 import numpy as np
 from rdtools.degradation import degradation_year_on_year
