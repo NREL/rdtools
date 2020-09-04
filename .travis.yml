@@ -13,9 +13,9 @@ python:
 # 3) 'pip install --upgrade --upgrade-strategy=eager .' to install upgraded
 #    dependencies from PyPi using version ranges defined within setup.py
 env:
-  - REQ_ENV='-r requirements.txt .'
-  - REQ_ENV='-r requirements-min.txt .'
-  - REQ_ENV='--upgrade --upgrade-strategy=eager .'
+  - REQ_ENV='-r requirements.txt .[test]'
+  - REQ_ENV='-r requirements-min.txt .[test]'
+  - REQ_ENV='--upgrade --upgrade-strategy=eager .[test]'
 
 install:
   - pip install $REQ_ENV
