@@ -1107,20 +1107,33 @@ class CODSAnalysis():
 
         result_df : pandas.DataFrame with pandas datetimeindex
             Contains the columns/keys:
-                * `total_model` : the total model fit, i.e. SR * SC * Dtrend *rs,
-                    where SR is the soiling ratio, SC is the seasonal component,
-                    Dtrend is the degradation trend, and rs is the residual,
-                    i.e. the mean of the residuals (adjusting the position of
-                    the model fit to the position of the input data)
-                * `total_model_high` : upper bound of 95 % confidence interval
-                    of the model fit
-                * `total_model_low` : low bound of 95 % confidence interval of
-                    the model fit
-                * `soiling_ratio` : soiling ratio (SR)
-                * `SR_high` : upper bound of 95 % confidence interval of SR
-                * `SR_low` : low bound of 95 % confidence interval of SR
-                * `seasonal_component` : seasonal component (SC)
-                * `degradation_trend` : degradation trend (Dtrend)
+            * `soiling_ratio` : soiling ratio (SR) (-)
+            * `soiling_rates` : soiling rates (1/day)
+            * `cleaning_events` : True at cleaning events
+            * `total_model` : the total model fit, i.e. SR * SC * Dtrend *rs,
+                where SR is the soiling ratio, SC is the seasonal component,
+                Dtrend is the degradation trend, and rs is the residual,
+                i.e. the mean of the residuals (adjusting the position of
+                the model fit to the position of the input data)
+            * `model_high` : upper bound of 95 % confidence interval
+                of the model fit
+            * `model_low` : low bound of 95 % confidence interval of
+                the model fit
+            * `residuals` : residuals
+            * `SR_high` : upper bound of 95 % confidence interval of SR
+            * `SR_low` : lower bound of 95 % confidence interval of SR
+            * `rates_low` : lower bound of 95 % confidence interval of soiling
+                rates
+            * `rates_high` : upper bound of 95 % confidence interval of soiling
+                rates
+            * `bt_soiling_ratio` : bootstrapped median of soiling ratio
+            * `bt_soiling_rates` : bootstrapped median of soiling rates
+            * `seasonal_component` : seasonal component (SC)
+            * `seasonal_low` : lower bound of 95 % confidence interval of
+                seasonal component
+            * `seasonal_high` : upper bound of 95 % confidence interval of
+                seasonal component
+            * `degradation_trend` : degradation trend (Dtrend)
         degradation : list
             List of linear degradation rate of system in %/year, lower and
             upper bound of 95% confidence interval
@@ -1291,8 +1304,8 @@ class CODSAnalysis():
                 bootstrap_sample = \
                     all_bootstrap_samples[b] / seasonal_samples[b]
     
-                # Set up a temprary instance of the cods_analysis object
-                temporary_cods_instance = cods_analysis(bootstrap_sample)
+                # Set up a temprary instance of the CODSAnalysis object
+                temporary_cods_instance = CODSAnalysis(bootstrap_sample)
                 
                 # Do Signal decomposition for soiling and degradation component
                 kdf, deg, SL, rs, RMSE, sss, adf = \
@@ -1728,29 +1741,42 @@ def soiling_cods(energy_normalized_daily, reps=512, verbose=False,
     Returns
     -------
     soiling_loss : float
-        Average soiling loss based on CODS analysis
+        Average soiling loss based on CODS analysis (%)
     soiling_loss_confidence_interval : np.array
-        95 % confidence interval of soiling loss estimate
+        95 % confidence interval of soiling loss estimate (%)
     degradation_rate : float
         Estimated degradation rate (%/year)
-    degradation_rate_confidence_interval
-        95 % confidence interval for degradation rate estimate
+    degradation_rate_confidence_interval : np.array
+        95 % confidence interval for degradation rate estimate (%/year)
     result_df : pandas dataframe
         Time series results from the CODS algorithm. Contains the following
         columns:
+        * `soiling_ratio` : soiling ratio (SR) (-)
+        * `soiling_rates` : soiling rates (1/day)
+        * `cleaning_events` : True at cleaning events
         * `total_model` : the total model fit, i.e. SR * SC * Dtrend *rs,
             where SR is the soiling ratio, SC is the seasonal component,
             Dtrend is the degradation trend, and rs is the residual,
             i.e. the mean of the residuals (adjusting the position of
             the model fit to the position of the input data)
-        * `total_model_high` : upper bound of 95 % confidence interval
+        * `model_high` : upper bound of 95 % confidence interval
             of the model fit
-        * `total_model_low` : low bound of 95 % confidence interval of
+        * `model_low` : low bound of 95 % confidence interval of
             the model fit
-        * `soiling_ratio` : soiling ratio (SR)
+        * `residuals` : residuals
         * `SR_high` : upper bound of 95 % confidence interval of SR
-        * `SR_low` : low bound of 95 % confidence interval of SR
+        * `SR_low` : lower bound of 95 % confidence interval of SR
+        * `rates_low` : lower bound of 95 % confidence interval of soiling
+            rates
+        * `rates_high` : upper bound of 95 % confidence interval of soiling
+            rates
+        * `bt_soiling_ratio` : bootstrapped median of soiling ratio
+        * `bt_soiling_rates` : bootstrapped median of soiling rates
         * `seasonal_component` : seasonal component (SC)
+        * `seasonal_low` : lower bound of 95 % confidence interval of seasonal
+         component
+        * `seasonal_high` : upper bound of 95 % confidence interval of seasonal
+         component
         * `degradation_trend` : degradation trend (Dtrend)
     '''
 
@@ -1764,9 +1790,10 @@ def soiling_cods(energy_normalized_daily, reps=512, verbose=False,
         knob_alternatives=knob_alternatives)
 
     sr = 1 - CODS.soiling_loss[0] / 100
-    sr_ci = 1 - CODS.soiling_loss[1:3] / 100
+    sr_ci = 1 - np.array(CODS.soiling_loss[1:3]) / 100
 
-    return sr, sr_ci, CODS.degradation[0], CODS.degradation[1:3], CODS.result_df
+    return sr, sr_ci, CODS.degradation[0], np.array(CODS.degradation[1:3]), \
+        CODS.result_df
 
 
 

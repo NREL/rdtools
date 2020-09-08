@@ -15,6 +15,7 @@ from rdtools.filtering import tcell_filter
 from rdtools.filtering import clip_filter
 from rdtools.filtering import normalized_filter
 from rdtools.soiling import soiling_srr
+from rdtools.soiling import soiling_cods
 from rdtools.plotting import degradation_summary_plots
 from rdtools.plotting import soiling_monte_carlo_plot
 from rdtools.plotting import soiling_interval_plot
