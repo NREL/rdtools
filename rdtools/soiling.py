@@ -160,7 +160,6 @@ class SRRAnalysis():
                              '{"precip_and_shift", "precip_or_shift", "precip", "shift"}')
 
         df['clean_event'] = df.clean_event | out_start | out_end
-        df['clean_event'] = (df.clean_event) & (~df.clean_event.shift(-1).fillna(False))
 
         df = df.fillna(0)
 
