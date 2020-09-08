@@ -31,23 +31,24 @@ class SRRAnalysis():
 
     Parameters
     ----------
-    daily_normalized_energy : pd.Series
+    energy_normalized_daily : pd.Series
         Daily performance metric (i.e. performance index, yield, etc.)
         Alternatively, the soiling ratio output of a soiling sensor (e.g. the
         photocurrent ratio between matched dirty and clean PV reference cells).
         In either case, data should be insolation-weighted daily aggregates.
-    daily_insolation : pd.Series
+    insolation_daily : pd.Series
         Daily plane-of-array insolation corresponding to
-        `daily_normalized_energy`
-    precip : pd.Series, default None
-        Daily total precipitation. (Only used if `precip_clean_only` is True in
-        subsequent calculations)
+        `energy_normalized_daily`
+    precipitation_daily : pd.Series, default None
+        Daily total precipitation. (Ignored if ``clean_criterion='shift'`` in
+        subsequent calculations.)
     '''
 
-    def __init__(self, daily_normalized_energy, daily_insolation, precip=None):
-        self.pm = daily_normalized_energy  # daily performance metric
-        self.insol = daily_insolation
-        self.precip = precip  # daily precipitation
+    def __init__(self, energy_normalized_daily, insolation_daily,
+                 precipitation_daily=None):
+        self.pm = energy_normalized_daily  # daily performance metric
+        self.insolation_daily = insolation_daily
+        self.precipitation_daily = precipitation_daily  # daily precipitation
         self.random_profiles = []  # random soiling profiles in _calc_monte
         # insolation-weighted soiling ratios in _calc_monte:
         self.monte_losses = []
@@ -56,17 +57,17 @@ class SRRAnalysis():
             raise ValueError('Daily performance metric series must have '
                              'daily frequency')
 
-        if self.insol.index.freq != 'D':
+        if self.insolation_daily.index.freq != 'D':
             raise ValueError('Daily insolation series must have '
                              'daily frequency')
 
-        if self.precip is not None:
-            if self.precip.index.freq != 'D':
+        if self.precipitation_daily is not None:
+            if self.precipitation_daily.index.freq != 'D':
                 raise ValueError('Precipitation series must have '
                                  'daily frequency')
 
     def _calc_daily_df(self, day_scale=14, clean_threshold='infer',
-                       recenter=True):
+                       recenter=True, clean_criterion='shift', precip_threshold=0.01):
         '''
         Calculates self.daily_df, a pandas dataframe prepared for SRR analysis,
         and self.renorm_factor, the renormalization factor for the daily
@@ -76,25 +77,35 @@ class SRRAnalysis():
         ----------
         day_scale : int, default 14
             The number of days to use in rolling median for cleaning detection
-
         clean_threshold : float or 'infer', default 'infer'
             If float: the fractional positive shift in rolling median for
             cleaning detection.
             If 'infer': automatically use outliers in the shift as the
             threshold
-
         recenter : bool, default True
             Whether to recenter (renormalize) the daily performance to the
             median of the first year
+        clean_criterion : {'precip_and_shift', 'precip_or_shift', 'precip', 'shift'} \
+                default 'shift'
+            The method of partitioning the dataset into soiling intervals.
+            If 'precip_and_shift', rolling median shifts must coincide
+            with precipitation to be a valid cleaning event.
+            If 'precip_or_shift', rolling median shifts and precipitation
+            events are each sufficient on their own to be a cleaning event.
+            If 'shift', only rolling median shifts are treated as cleaning events.
+            If 'precip', only precipitation events are treated as cleaning events.
+        precip_threshold : float, default 0.01
+            The daily precipitation threshold for defining precipitation cleaning events.
+            Units must be consistent with ``self.precipitation_daily``.
         '''
 
         df = self.pm.to_frame()
         df.columns = ['pi']
-        df_insol = self.insol.to_frame()
+        df_insol = self.insolation_daily.to_frame()
         df_insol.columns = ['insol']
 
         df = df.join(df_insol)
-        precip = self.precip
+        precip = self.precipitation_daily
         if precip is not None:
             df_precip = precip.to_frame()
             df_precip.columns = ['precip']
@@ -144,33 +155,37 @@ class SRRAnalysis():
             clean_threshold = deltas.quantile(0.75) + \
                 1.5 * (deltas.quantile(0.75) - deltas.quantile(0.25))
 
-        df['clean_event'] = (df.delta > clean_threshold)
-        df['clean_event'] = df.clean_event | out_start | out_end
-        df['clean_event'] = (df.clean_event) & \
-                            (~df.clean_event.shift(-1).fillna(False))
+        df['clean_event_detected'] = (df.delta > clean_threshold)
+        precip_event = (df['precip'] > precip_threshold)
 
-        # Detect which cleaning events are associated with rain
-        rolling_precip = df.precip.rolling(3, center=True).sum()
-        df['clean_wo_precip'] = ~(rolling_precip > 0.01) & (df.clean_event)
+        if clean_criterion == 'precip_and_shift':
+            # Detect which cleaning events are associated with rain within a 3 day window
+            precip_event = precip_event.rolling(3, center=True, min_periods=1).apply(any).astype(bool)
+            df['clean_event'] = (df['clean_event_detected'] & precip_event)
+        elif clean_criterion == 'precip_or_shift':
+            df['clean_event'] = (df['clean_event_detected'] | precip_event)
+        elif clean_criterion == 'precip':
+            df['clean_event'] = precip_event
+        elif clean_criterion == 'shift':
+            df['clean_event'] = df['clean_event_detected']
+        else:
+            raise ValueError('clean_criterion must be one of '
+                             '{"precip_and_shift", "precip_or_shift", "precip", "shift"}')
+
+        df['clean_event'] = df.clean_event | out_start | out_end
+        df['clean_event'] = (df.clean_event) & (~df.clean_event.shift(-1).fillna(False))
 
         df = df.fillna(0)
 
         # Give an index to each soiling interval/run
-        run_list = []
-        run = 0
-        for x in df.clean_event:
-            if x:
-                run += 1
-            run_list.append(run)
-
-        df['run'] = run_list
+        df['run'] = df.clean_event.cumsum()
         df.index.name = 'date'  # this gets used by name
 
         self.renorm_factor = renorm
         self.daily_df = df
 
     def _calc_result_df(self, trim=False, max_relative_slope_error=500.0,
-                        max_negative_step=0.05):
+                        max_negative_step=0.05, min_interval_length=2):
         '''
         Calculates self.result_df, a pandas dataframe summarizing the soiling
         intervals identified and self.analyzed_daily_df, a version of
@@ -188,6 +203,9 @@ class SRRAnalysis():
             The maximum magnitude of negative discrete steps allowed in an
             interval for the interval to be considered valid (units of
             normalized performance metric).
+        min_interval_length : int, default 2
+            The minimum duration for an interval to be considered
+            valid.  Cannot be less than 2 (days).
         '''
 
         daily_df = self.daily_df
@@ -221,12 +239,11 @@ class SRRAnalysis():
                 'run_slope_high': 0,
                 'max_neg_step': min(run.delta),
                 'start_loss': 1,
-                'clean_wo_precip': run.clean_wo_precip[0],
                 'inferred_start_loss': run.pi_norm.mean(),
                 'inferred_end_loss': run.pi_norm.mean(),
                 'valid': False
             }
-            if len(run) > 2 and run.pi_norm.sum() > 0:
+            if len(run) > min_interval_length and run.pi_norm.sum() > 0:
                 fit = theilslopes(run.pi_norm, run.day)
                 fit_poly = np.poly1d(fit[0:2])
                 result_dict['run_slope'] = fit[0]
@@ -244,8 +261,7 @@ class SRRAnalysis():
 
         # Filter results for each interval,
         # setting invalid interval to slope of 0
-        results['slope_err'] = (results.run_slope_high-results.run_slope_low) \
-            / abs(results.run_slope)
+        results['slope_err'] = (results.run_slope_high-results.run_slope_low)/abs(results.run_slope)
         # critera for exclusions
         filt = (
             (results.run_slope > 0) |
@@ -260,12 +276,12 @@ class SRRAnalysis():
 
         # Calculate the next inferred start loss from next valid interval
         results['next_inferred_start_loss'] = np.clip(
-                results[results.valid].inferred_start_loss.shift(-1),
-                0, 1)
+            results[results.valid].inferred_start_loss.shift(-1),
+            0, 1)
         # Calculate the inferred recovery at the end of each interval
         results['inferred_recovery'] = np.clip(
-                results.next_inferred_start_loss - results.inferred_end_loss,
-                0, 1)
+            results.next_inferred_start_loss - results.inferred_end_loss,
+            0, 1)
 
         # Don't consider data outside of first and last valid interverals
         if len(results[results.valid]) == 0:
@@ -302,8 +318,7 @@ class SRRAnalysis():
         self.result_df = results
         self.analyzed_daily_df = pm_frame_out
 
-    def _calc_monte(self, monte, method='half_norm_clean',
-                    precip_clean_only=False, random_seed=None):
+    def _calc_monte(self, monte, method='half_norm_clean'):
         '''
         Runs the Monte Carlo step of the SRR method. Calculates
         self.random_profiles, a list of the random soiling profiles realized in
@@ -322,19 +337,10 @@ class SRRAnalysis():
             * 'half_norm_clean' - The three-sigma lower bound of recovery is
               inferred from the fit of the following interval, the upper bound
               is 1 with the magnitude drawn from a half normal centered at 1
-        precip_clean_only : bool, default False
-            If True, only consider cleaning events valid if they coincide with
-            precipitation events
-        random_seed : int, default None
-            Seed for random number generation in the Monte Carlo simulation.
-            Use to ensure identical results on subsequent runs. Not a
-            substitute for doing a sufficient number of Mote Carlo repetitions.
         '''
 
         monte_losses = []
         random_profiles = []
-        if random_seed is not None:
-            np.random.seed(random_seed)
         for _ in range(monte):
             results_rand = self.result_df.copy()
             df_rand = self.analyzed_daily_df.copy()
@@ -375,14 +381,10 @@ class SRRAnalysis():
                     end = inter_start + row.run_loss
                     end_list.append(end)
 
-                    if row.clean_wo_precip and precip_clean_only:
-                        # don't allow recovery if there was no precipitation
-                        inter_start = end
-                    else:
-                        # Use a half normal with the infered clean at the
-                        # 3sigma point
-                        x = np.clip(end + row.inferred_recovery, 0, 1)
-                        inter_start = 1 - abs(np.random.normal(0.0, (1 - x)/3))
+                    # Use a half normal with the infered clean at the
+                    # 3sigma point
+                    x = np.clip(end + row.inferred_recovery, 0, 1)
+                    inter_start = 1 - abs(np.random.normal(0.0, (1 - x)/3))
 
                 # Update the valid rows in results_rand
                 valid_update = pd.DataFrame()
@@ -427,22 +429,14 @@ class SRRAnalysis():
                 for i, row in results_rand.iterrows():
                     start_list.append(inter_start)
                     end = inter_start + row.run_loss
-                    if row.clean_wo_precip and precip_clean_only:
-                        # don't allow recovery if there was no precipitation
-                        inter_start = end
-                    else:
-                        inter_start = np.random.uniform(end, 1)
+                    inter_start = np.random.uniform(end, 1)
                 results_rand['start_loss'] = start_list
 
             elif method == 'perfect_clean':
                 for i, row in results_rand.iterrows():
                     start_list.append(inter_start)
                     end = inter_start + row.run_loss
-                    if row.clean_wo_precip and precip_clean_only:
-                        # don't allow recovery if there was no precipitation
-                        inter_start = end
-                    else:
-                        inter_start = 1
+                    inter_start = 1
                 results_rand['start_loss'] = start_list
 
             else:
@@ -468,10 +462,10 @@ class SRRAnalysis():
         self.monte_losses = monte_losses
 
     def run(self, reps=1000, day_scale=14, clean_threshold='infer',
-            trim=False, method='half_norm_clean', precip_clean_only=False,
+            trim=False, method='half_norm_clean',
+            clean_criterion='shift', precip_threshold=0.01, min_interval_length=2,
             exceedance_prob=95.0, confidence_level=68.2, recenter=True,
-            max_relative_slope_error=500.0, max_negative_step=0.05,
-            random_seed=None):
+            max_relative_slope_error=500.0, max_negative_step=0.05):
         '''
         Run the SRR method from beginning to end.  Perform the stochastic rate
         and recovery soiling loss calculation. Based on the methods presented
@@ -503,9 +497,21 @@ class SRRAnalysis():
               upper bound is 1 with the magnitude drawn from a half normal
               centered at 1
 
-        precip_clean_only : bool, default False
-            If True, only consider cleaning events valid if they coincide with
-            precipitation events
+        clean_criterion : {'precip_and_shift', 'precip_or_shift', 'precip', 'shift'} \
+                default 'shift'
+            The method of partitioning the dataset into soiling intervals.
+            If 'precip_and_shift', rolling median shifts must coincide
+            with precipitation to be a valid cleaning event.
+            If 'precip_or_shift', rolling median shifts and precipitation
+            events are each sufficient on their own to be a cleaning event.
+            If 'shift', only rolling median shifts are treated as cleaning events.
+            If 'precip', only precipitation events are treated as cleaning events.
+        precip_threshold : float, default 0.01
+            The daily precipitation threshold for defining precipitation cleaning events.
+            Units must be consistent with ``self.precipitation_daily``
+        min_interval_length : int, default 2
+            The minimum duration for an interval to be considered
+            valid.  Cannot be less than 2 (days).
         exceedance_prob : float, default 95.0
             The probability level to use for exceedance value calculation in
             percent
@@ -521,10 +527,6 @@ class SRRAnalysis():
             The maximum magnitude of negative discrete steps allowed in an
             interval for the interval to be considered valid (units of
             normalized performance metric).
-        random_seed : int, default None
-            Seed for random number generation in the Monte Carlo simulation.
-            Use to ensure identical results on subsequent runs. Not a
-            substitute for doing a sufficient number of Mote Carlo repetitions.
 
         Returns
         -------
@@ -533,7 +535,7 @@ class SRRAnalysis():
             recovery analysis
         confidence_interval : np.array
             confidence interval (size specified by confidence_level) of
-            degradation rate estimate
+            soiling ratio estimate
         calc_info : dict
             * `renormalizing_factor` - value used to recenter data
             * `exceedance_level` - the insolation-weighted soiling ratio that
@@ -549,13 +551,14 @@ class SRRAnalysis():
         '''
         self._calc_daily_df(day_scale=day_scale,
                             clean_threshold=clean_threshold,
-                            recenter=recenter)
+                            recenter=recenter,
+                            clean_criterion=clean_criterion,
+                            precip_threshold=precip_threshold)
         self._calc_result_df(trim=trim,
                              max_relative_slope_error=max_relative_slope_error,
-                             max_negative_step=max_negative_step)
-        self._calc_monte(reps, method=method,
-                         precip_clean_only=precip_clean_only,
-                         random_seed=random_seed)
+                             max_negative_step=max_negative_step,
+                             min_interval_length=min_interval_length)
+        self._calc_monte(reps, method=method)
 
         # Calculate the P50 and confidence interval
         half_ci = confidence_level / 2.0
@@ -569,9 +572,9 @@ class SRRAnalysis():
         # Construct calc_info output
 
         intervals_out = self.result_df[
-                ['start', 'end', 'run_slope', 'run_slope_low',
-                 'run_slope_high', 'inferred_start_loss', 'inferred_end_loss',
-                 'length', 'valid']].copy()
+            ['start', 'end', 'run_slope', 'run_slope_low',
+                'run_slope_high', 'inferred_start_loss', 'inferred_end_loss',
+                'length', 'valid']].copy()
         intervals_out.rename(columns={'run_slope': 'slope',
                                       'run_slope_high': 'slope_high',
                                       'run_slope_low': 'slope_low',
@@ -590,12 +593,12 @@ class SRRAnalysis():
         return (result[0], result[1:3], calc_info)
 
 
-def soiling_srr(daily_normalized_energy, daily_insolation, reps=1000,
-                precip=None, day_scale=14, clean_threshold='infer',
-                trim=False, method='half_norm_clean', precip_clean_only=False,
+def soiling_srr(energy_normalized_daily, insolation_daily, reps=1000,
+                precipitation_daily=None, day_scale=14, clean_threshold='infer',
+                trim=False, method='half_norm_clean',
+                clean_criterion='shift', precip_threshold=0.01, min_interval_length=2,
                 exceedance_prob=95.0, confidence_level=68.2, recenter=True,
-                max_relative_slope_error=500.0, max_negative_step=0.05,
-                random_seed=None):
+                max_relative_slope_error=500.0, max_negative_step=0.05):
     '''
     Functional wrapper for :py:class:`~rdtools.soiling.SRRAnalysis`. Perform
     the stochastic rate and recovery soiling loss calculation. Based on the
@@ -603,18 +606,20 @@ def soiling_srr(daily_normalized_energy, daily_insolation, reps=1000,
 
     Parameters
     ----------
-    daily_normalized_energy : pd.Series
+    energy_normalized_daily : pd.Series
         Daily performance metric (i.e. performance index, yield, etc.)
         Alternatively, the soiling ratio output of a soiling sensor (e.g. the
         photocurrent ratio between matched dirty and clean PV reference cells).
         In either case, data should be insolation-weighted daily aggregates.
-    daily_insolation : pd.Series
-        Daily plane-of-array insolation corresponding to d
-        `daily_normalized_energy`
+    insolation_daily : pd.Series
+        Daily plane-of-array insolation corresponding to
+        `energy_normalized_daily`
     reps : int, default 1000
         number of Monte Carlo realizations to calculate
-    precip : pd.Series, default None
-        Daily total precipitation. (Only used if precip_clean_only=True)
+    precipitation_daily : pd.Series, default None
+        Daily total precipitation. Units ambiguous but should be the same as
+        precip_threshold. Note default behavior of precip_threshold. (Ignored
+        if ``clean_criterion='shift'``.)
     day_scale : int, default 14
         The number of days to use in rolling median for cleaning detection,
         and the maximum number of days of missing data to tolerate in a valid
@@ -635,9 +640,21 @@ def soiling_srr(daily_normalized_energy, daily_insolation, reps=1000,
         * `half_norm_clean` (default) - The three-sigma lower bound of recovery
           is inferred from the fit of the following interval, the upper bound
           is 1 with the magnitude drawn from a half normal centered at 1
-    precip_clean_only : bool, default False
-        If True, only consider cleaning events valid if they coincide with
-        precipitation events
+    clean_criterion : {'precip_and_shift', 'precip_or_shift', 'precip', 'shift'} \
+                default 'shift'
+            The method of partitioning the dataset into soiling intervals.
+            If 'precip_and_shift', rolling median shifts must coincide
+            with precipitation to be a valid cleaning event.
+            If 'precip_or_shift', rolling median shifts and precipitation
+            events are each sufficient on their own to be a cleaning event.
+            If 'shift', only rolling median shifts are treated as cleaning events.
+            If 'precip', only precipitation events are treated as cleaning events.
+    precip_threshold : float, default 0.01
+        The daily precipitation threshold for defining precipitation cleaning events.
+        Units must be consistent with precip.
+    min_interval_length : int, default 2
+        The minimum duration for an interval to be considered
+        valid.  Cannot be less than 2 (days).
     exceedance_prob : float, default 95.0
         the probability level to use for exceedance value calculation in
         percent
@@ -653,10 +670,6 @@ def soiling_srr(daily_normalized_energy, daily_insolation, reps=1000,
         The maximum magnitude of negative discrete steps allowed in an interval
         for the interval to be considered valid (units of normalized
         performance metric).
-    random_seed : int, default None
-        Seed for random number generation in the Monte Carlo simulation. Use to
-        ensure identical results on subsequent runs. Not a substitute for doing
-        a sufficient number of Mote Carlo repetitions.
 
     Returns
     -------
@@ -665,7 +678,7 @@ def soiling_srr(daily_normalized_energy, daily_insolation, reps=1000,
         recovery analysis
     confidence_interval : np.array
         confidence interval (size specified by `confidence_level`) of
-        degradation rate estimate
+        soiling ratio estimate
     calc_info : dict
         Calculation information from the SRR process.
 
@@ -682,28 +695,29 @@ def soiling_srr(daily_normalized_energy, daily_insolation, reps=1000,
           and P50 slopes.
     '''
 
-    srr = SRRAnalysis(daily_normalized_energy,
-                      daily_insolation,
-                      precip=precip)
+    srr = SRRAnalysis(energy_normalized_daily,
+                      insolation_daily,
+                      precipitation_daily=precipitation_daily)
 
     sr, sr_ci, soiling_info = srr.run(
-            reps=reps,
-            day_scale=day_scale,
-            clean_threshold=clean_threshold,
-            trim=trim,
-            method=method,
-            precip_clean_only=precip_clean_only,
-            exceedance_prob=exceedance_prob,
-            confidence_level=confidence_level,
-            recenter=recenter,
-            max_relative_slope_error=max_relative_slope_error,
-            max_negative_step=max_negative_step,
-            random_seed=random_seed)
+        reps=reps,
+        day_scale=day_scale,
+        clean_threshold=clean_threshold,
+        trim=trim,
+        method=method,
+        clean_criterion=clean_criterion,
+        precip_threshold=precip_threshold,
+        exceedance_prob=exceedance_prob,
+        confidence_level=confidence_level,
+        recenter=recenter,
+        max_relative_slope_error=max_relative_slope_error,
+        max_negative_step=max_negative_step)
 
     return sr, sr_ci, soiling_info
 
 
-class cods_analysis():
+
+class CODSAnalysis():
     '''
     Class for running the Combined Degradation and Soling (CODS) algorithm
     for degradation and soiling loss analysis presented in 
@@ -802,8 +816,21 @@ class cods_analysis():
         Returns
         -------
         df_out : pandas.DataFrame
-            Contains the estimated values of soiling ratio, soiling rates,
-            seasonal component and degradation trend
+            Contains the followig columns/keys:
+            * `total_model` : the total model fit, i.e. SR * SC * Dtrend * rs,
+                where SR is the soiling ratio, SC is the seasonal component,
+                Dtrend is the degradation trend, and rs is the residual,
+                i.e. the mean of the residuals (adjusting the position of
+                the model fit to the position of the input data)
+            * `total_model_high` : upper bound of 95 % confidence interval
+                of the model fit
+            * `total_model_low` : low bound of 95 % confidence interval of
+                the model fit
+            * `soiling_ratio` : soiling ratio (SR)
+            * `SR_high` : upper bound of 95 % confidence interval of SR
+            * `SR_low` : low bound of 95 % confidence interval of SR
+            * `seasonal_component` : seasonal component (SC)
+            * `degradation_trend` : degradation trend (Dtrend)
         degradation : list
             List of linear degradation rate of system in %/year, lower and
             upper bound of 95% confidence interval
@@ -1032,7 +1059,7 @@ class cods_analysis():
             small_soiling_signal, adf_res
 
 
-    def run_bootstrap(self, bootstrap_nr=512, verbose=False,
+    def run_bootstrap(self, reps=512, verbose=False,
                       degradation_method='YoY', process_noise=1e-4,
                       knob_alternatives=[[['SR', 'SC', 'Rd'],
                                           ['SC', 'SR', 'Rd']],
@@ -1057,7 +1084,7 @@ class cods_analysis():
 
         Parameters
         ----------
-        bootstrap_nr : int, default 512,
+        reps : int, default 512,
             Number of bootstrap realizations to be run
             minimum N, where N is the possible combinations of model
             knobs/parameters defined in knob_alternatives
@@ -1077,8 +1104,23 @@ class cods_analysis():
 
         Returns
         -------
-        df_out : pandas.DataFrame
-            Contains the columns/keys
+
+        result_df : pandas.DataFrame with pandas datetimeindex
+            Contains the columns/keys:
+                * `total_model` : the total model fit, i.e. SR * SC * Dtrend *rs,
+                    where SR is the soiling ratio, SC is the seasonal component,
+                    Dtrend is the degradation trend, and rs is the residual,
+                    i.e. the mean of the residuals (adjusting the position of
+                    the model fit to the position of the input data)
+                * `total_model_high` : upper bound of 95 % confidence interval
+                    of the model fit
+                * `total_model_low` : low bound of 95 % confidence interval of
+                    the model fit
+                * `soiling_ratio` : soiling ratio (SR)
+                * `SR_high` : upper bound of 95 % confidence interval of SR
+                * `SR_low` : low bound of 95 % confidence interval of SR
+                * `seasonal_component` : seasonal component (SC)
+                * `degradation_trend` : degradation trend (Dtrend)
         degradation : list
             List of linear degradation rate of system in %/year, lower and
             upper bound of 95% confidence interval
@@ -1116,8 +1158,8 @@ class cods_analysis():
         bootstrap_samples_list, results = [], []
 
         # Check boostrap number
-        if bootstrap_nr % nr_models != 0:
-            bootstrap_nr += nr_models - bootstrap_nr % nr_models
+        if reps % nr_models != 0:
+            reps += nr_models - reps % nr_models
 
         if verbose:
             print('Initially fitting {:} models'.format(nr_models))
@@ -1141,7 +1183,7 @@ class cods_analysis():
                     bootstrap_samples_list.append(
                         make_bootstrap_samples(
                             pi, result[0].total_model,
-                            sample_nr=int(bootstrap_nr / nr_models)))
+                            sample_nr=int(reps / nr_models)))
 
                 # Print progress
                 if verbose:
@@ -1212,7 +1254,7 @@ class cods_analysis():
         # Seasonal samples are generated from previously fitted seasonal
         # components, by perturbing amplitude and phase shift
         # Number of samples per fit:
-        sample_nr = int(bootstrap_nr / nr_models)
+        sample_nr = int(reps / nr_models)
         list_of_SCs = [results[m][0].seasonal_component
                        for m in range(nr_models) if weights[m] > 0]
         seasonal_samples = make_seasonal_samples(list_of_SCs,
@@ -1225,14 +1267,14 @@ class cods_analysis():
         ####### STAGE 2 ########
         ########################
 
-        if verbose and bootstrap_nr > 0:
+        if verbose and reps > 0:
             print('\nBootstrapping for uncertainty analysis',
-                  '({:} realizations):'.format(bootstrap_nr))
+                  '({:} realizations):'.format(reps))
         order = ['SR', 'SC' if degradation_method == 'STL' else 'Rd']
         t0 = time.time()
         bt_kdfs, bt_SL, bt_deg, knobs, adfs, RMSEs, SR_is_1, rss, errors = \
             [], [], [], [], [], [], [], [], ['Bootstrapping errors']
-        for b in range(bootstrap_nr):
+        for b in range(reps):
             try:
                 # randomly choose model knobs
                 dt = np.random.uniform(knob_alternatives[1][0],
@@ -1280,8 +1322,7 @@ class cods_analysis():
 
             # Print progress
             if verbose:
-                progressBarWithETA(b+1, bootstrap_nr, time.time()-t0,
-                                   bar_length=30)
+                progressBarWithETA(b+1, reps, time.time()-t0, bar_length=30)
 
         # Reweight and save weights
         weights = 1 / np.array(RMSEs) / (1 + np.array(SR_is_1))
@@ -1648,6 +1689,87 @@ class cods_analysis():
         return f
 
 
+def soiling_cods(energy_normalized_daily, reps=512, verbose=False, 
+                 degradation_method='YoY', process_noise=1e-4,
+                 knob_alternatives=[[['SR', 'SC', 'Rd'],
+                                    ['SC', 'SR', 'Rd']],
+                                    [.25, .75],
+                                    [1/1.5, 1.5],
+                                    [True, False]], 
+                 **kwargs):
+    '''
+    Functional wrapper for :py:class:`~rdtools.soiling.CODSAnalysis`. Run
+    the combined degradation and soiling algorithm. Based on the
+    methods presented in Skomedal et al. JPV TODO 2020.
+
+    Parameters
+    ----------
+    energy_normalized_daily : pd.Series
+        Daily performance metric (i.e. performance index, yield, etc.)
+        Alternatively, the soiling ratio output of a soiling sensor (e.g. the
+        photocurrent ratio between matched dirty and clean PV reference cells).
+        In either case, data should be insolation-weighted daily aggregates.
+    reps : int, default 512
+        number of bootstrap realizations to calculate
+    verbose : bool, default False
+        Wheter or not to print information about progress
+    degradation_method : string, default 'YoY'
+        Either 'YoY' or 'STL'. If anything else, 'YoY' will be assumed.
+        Decides whether to use the YoY method [3] for estimating the
+        degradation trend (assumes linear trend), or the STL-method (does
+        not assume linear trend). The latter is slower.
+    knob_alternatives : list of lists, default [[['SR', 'SC', 'Rd'],
+                                                 ['SC', 'SR', 'Rd']],
+                                                [.4, .8],
+                                                [.75, 1.25],
+                                                [True, False]]
+        List of model knobs/parameters for the initial N model fits
+
+    Returns
+    -------
+    soiling_loss : float
+        Average soiling loss based on CODS analysis
+    soiling_loss_confidence_interval : np.array
+        95 % confidence interval of soiling loss estimate
+    degradation_rate : float
+        Estimated degradation rate (%/year)
+    degradation_rate_confidence_interval
+        95 % confidence interval for degradation rate estimate
+    result_df : pandas dataframe
+        Time series results from the CODS algorithm. Contains the following
+        columns:
+        * `total_model` : the total model fit, i.e. SR * SC * Dtrend *rs,
+            where SR is the soiling ratio, SC is the seasonal component,
+            Dtrend is the degradation trend, and rs is the residual,
+            i.e. the mean of the residuals (adjusting the position of
+            the model fit to the position of the input data)
+        * `total_model_high` : upper bound of 95 % confidence interval
+            of the model fit
+        * `total_model_low` : low bound of 95 % confidence interval of
+            the model fit
+        * `soiling_ratio` : soiling ratio (SR)
+        * `SR_high` : upper bound of 95 % confidence interval of SR
+        * `SR_low` : low bound of 95 % confidence interval of SR
+        * `seasonal_component` : seasonal component (SC)
+        * `degradation_trend` : degradation trend (Dtrend)
+    '''
+
+    CODS = CODSAnalysis(energy_normalized_daily)
+
+    CODS.run_bootstrap(
+        reps=reps,
+        verbose=verbose,
+        degradation_method=degradation_method,
+        process_noise=process_noise,
+        knob_alternatives=knob_alternatives)
+
+    sr = 1 - CODS.soiling_loss[0] / 100
+    sr_ci = 1 - CODS.soiling_loss[1:3] / 100
+
+    return sr, sr_ci, CODS.degradation[0], CODS.degradation[1:3], CODS.result_df
+
+
+
 def collapse_cleaning_events(inferred_ce_in, metric, f=4):
     ''' A function for replacing quick successive cleaning events with one
         (most probable) cleaning event.
@@ -1866,3 +1988,5 @@ def progressBarWithETA(value, endvalue, time, bar_length=20):
         "\r# {:} | Used: {:.1f} min | Left: {:.1f}".format(value, used, left) 
         + " min | Progress: [{:}] {:.0f} %".format(arrow + spaces, percent))
     sys.stdout.flush()
+
+

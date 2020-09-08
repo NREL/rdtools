@@ -46,7 +46,8 @@ def irradiance_30(times_30):
 
 
 def test_normalize_with_expected_power_uniform_frequency(pv_15, expected_15, irradiance_15):
-    norm, insol = normalize_with_expected_power(pv_15, expected_15, irradiance_15)
+    norm, insol = normalize_with_expected_power(
+        pv_15, expected_15, irradiance_15)
     expected_norm = pd.Series(
         {Timestamp('2020-01-01 12:15:00', freq='15T'): 1.0,
          Timestamp('2020-01-01 12:30:00', freq='15T'): 1.0784313725490198,
@@ -54,6 +55,7 @@ def test_normalize_with_expected_power_uniform_frequency(pv_15, expected_15, irr
          Timestamp('2020-01-01 13:00:00', freq='15T'): 1.0487804878048783}
     )
     expected_norm.name = 'energy_Wh'
+    expected_norm.index.freq = '15T'
 
     expected_insol = pd.Series(
         {Timestamp('2020-01-01 12:15:00', freq='15T'): 231.25,
@@ -63,13 +65,15 @@ def test_normalize_with_expected_power_uniform_frequency(pv_15, expected_15, irr
     )
 
     expected_insol.name = 'energy_Wh'
+    expected_insol.index.freq = '15T'
 
     pd.testing.assert_series_equal(norm, expected_norm)
     pd.testing.assert_series_equal(insol, expected_insol)
 
 
 def test_normalize_with_expected_power_energy_option(pv_15, expected_15, irradiance_15):
-    norm, insol = normalize_with_expected_power(pv_15, expected_15, irradiance_15, pv_input='energy')
+    norm, insol = normalize_with_expected_power(
+        pv_15, expected_15, irradiance_15, pv_input='energy')
     expected_norm = pd.Series(
         {Timestamp('2020-01-01 12:00:00', freq='15T'): np.nan,
          Timestamp('2020-01-01 12:15:00', freq='15T'): 5.714285714285714,
@@ -79,6 +83,7 @@ def test_normalize_with_expected_power_energy_option(pv_15, expected_15, irradia
     )
 
     expected_norm.name = 'energy_Wh'
+    expected_norm.index.freq = '15T'
 
     expected_insol = pd.Series(
         {Timestamp('2020-01-01 12:00:00', freq='15T'): np.nan,
@@ -89,13 +94,15 @@ def test_normalize_with_expected_power_energy_option(pv_15, expected_15, irradia
     )
 
     expected_insol.name = 'energy_Wh'
+    expected_insol.index.freq = '15T'
 
     pd.testing.assert_series_equal(norm, expected_norm)
     pd.testing.assert_series_equal(insol, expected_insol)
 
 
 def test_normalize_with_expected_power_low_freq_pv(pv_30, expected_15, irradiance_15):
-    norm, insol = normalize_with_expected_power(pv_30, expected_15, irradiance_15)
+    norm, insol = normalize_with_expected_power(
+        pv_30, expected_15, irradiance_15)
 
     expected_norm = pd.Series(
         {Timestamp('2020-01-01 12:30:00', freq='30T'): 0.9302325581395349,
@@ -103,6 +110,7 @@ def test_normalize_with_expected_power_low_freq_pv(pv_30, expected_15, irradianc
     )
 
     expected_norm.name = 'energy_Wh'
+    expected_norm.index.freq = '30T'
 
     expected_insol = pd.Series(
         {Timestamp('2020-01-01 12:30:00', freq='30T'): 456.25,
@@ -110,13 +118,15 @@ def test_normalize_with_expected_power_low_freq_pv(pv_30, expected_15, irradianc
     )
 
     expected_insol.name = 'energy_Wh'
+    expected_insol.index.freq = '30T'
 
     pd.testing.assert_series_equal(norm, expected_norm)
     pd.testing.assert_series_equal(insol, expected_insol)
 
 
 def test_normalized_with_expected_power_low_freq_expected(pv_15, expected_30, irradiance_30):
-    norm, insol = normalize_with_expected_power(pv_15, expected_30, irradiance_30)
+    norm, insol = normalize_with_expected_power(
+        pv_15, expected_30, irradiance_30)
 
     expected_norm = pd.Series(
         {Timestamp('2020-01-01 12:15:00', freq='15T'): 1.09375,
@@ -126,6 +136,7 @@ def test_normalized_with_expected_power_low_freq_expected(pv_15, expected_30, ir
     )
 
     expected_norm.name = 'energy_Wh'
+    expected_norm.index.freq = '15T'
 
     expected_insol = pd.Series(
         {Timestamp('2020-01-01 12:15:00', freq='15T'): 246.875,
@@ -135,6 +146,7 @@ def test_normalized_with_expected_power_low_freq_expected(pv_15, expected_30, ir
     )
 
     expected_insol.name = 'energy_Wh'
+    expected_insol.index.freq = '15T'
 
     pd.testing.assert_series_equal(norm, expected_norm)
     pd.testing.assert_series_equal(insol, expected_insol)

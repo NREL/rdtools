@@ -5,7 +5,7 @@ import numpy as np
 import statsmodels.api as sm
 
 
-def degradation_ols(normalized_energy, confidence_level=68.2):
+def degradation_ols(energy_normalized, confidence_level=68.2):
     '''
     Estimate the trend of a timeseries using ordinary least-squares regression
     and calculate various statistics including a Monte Carlo-derived confidence
@@ -13,7 +13,7 @@ def degradation_ols(normalized_energy, confidence_level=68.2):
 
     Parameters
     ----------
-    normalized_energy: pd.Series
+    energy_normalized: pd.Series
         Daily or lower frequency time series of normalized system ouput.
     confidence_level: float, default 68.2
         The size of the confidence interval to return, in percent.
@@ -31,8 +31,8 @@ def degradation_ols(normalized_energy, confidence_level=68.2):
         and least squares RegressionResults object ('ols_results')
     '''
 
-    normalized_energy.name = 'normalized_energy'
-    df = normalized_energy.to_frame()
+    energy_normalized.name = 'energy_normalized'
+    df = energy_normalized.to_frame()
 
     # calculate a years column as x value for regression, ignoring leap years
     day_diffs = (df.index - df.index[0])
@@ -43,7 +43,7 @@ def degradation_ols(normalized_energy, confidence_level=68.2):
     df = sm.add_constant(df)
 
     # perform regression
-    ols_model = sm.OLS(endog=df.normalized_energy,
+    ols_model = sm.OLS(endog=df.energy_normalized,
                        exog=df.loc[:, ['const', 'years']],
                        hasconst=True, missing='drop')
 
@@ -76,7 +76,7 @@ def degradation_ols(normalized_energy, confidence_level=68.2):
     return (Rd_pct, Rd_CI, calc_info)
 
 
-def degradation_classical_decomposition(normalized_energy,
+def degradation_classical_decomposition(energy_normalized,
                                         confidence_level=68.2):
     '''
     Estimate the trend of a timeseries using a classical decomposition approach
@@ -85,7 +85,7 @@ def degradation_classical_decomposition(normalized_energy,
 
     Parameters
     ----------
-    normalized_energy: pd.Series
+    energy_normalized: pd.Series
         Daily or lower frequency time series of normalized system ouput.
         Must be regular time series.
     confidence_level: float, default 68.2
@@ -106,8 +106,8 @@ def degradation_classical_decomposition(normalized_energy,
         Mann-Kendall test trend ('mk_test_trend')
     '''
 
-    normalized_energy.name = 'normalized_energy'
-    df = normalized_energy.to_frame()
+    energy_normalized.name = 'energy_normalized'
+    df = energy_normalized.to_frame()
 
     df_check_freq = df.copy()
 
@@ -133,7 +133,7 @@ def degradation_classical_decomposition(normalized_energy,
            row.years + 0.5 <= max(df.years):
             roll = df[(df.years <= row.years + 0.5) &
                       (df.years >= row.years - 0.5)]
-            energy_ma.append(roll.normalized_energy.mean())
+            energy_ma.append(roll.energy_normalized.mean())
         else:
             energy_ma.append(np.nan)
 
@@ -180,7 +180,7 @@ def degradation_classical_decomposition(normalized_energy,
     return (Rd_pct, Rd_CI, calc_info)
 
 
-def degradation_year_on_year(normalized_energy, recenter=True,
+def degradation_year_on_year(energy_normalized, recenter=True,
                              exceedance_prob=95, confidence_level=68.2):
     '''
     Estimate the trend of a timeseries using the year-on-year decomposition
@@ -188,7 +188,7 @@ def degradation_year_on_year(normalized_energy, recenter=True,
 
     Parameters
     ----------
-    normalized_energy: pd.Series
+    energy_normalized: pd.Series
         Daily or lower frequency time series of normalized system ouput.
     recenter : bool, default True
         Specify whether data is centered to normalized yield of 1 based on
@@ -215,46 +215,46 @@ def degradation_year_on_year(normalized_energy, recenter=True,
     '''
 
     # Ensure the data is in order
-    normalized_energy = normalized_energy.sort_index()
-    normalized_energy.name = 'energy'
-    normalized_energy.index.name = 'dt'
+    energy_normalized = energy_normalized.sort_index()
+    energy_normalized.name = 'energy'
+    energy_normalized.index.name = 'dt'
 
     # Detect sub-daily data:
-    if min(np.diff(normalized_energy.index.values, n=1)) < \
+    if min(np.diff(energy_normalized.index.values, n=1)) < \
             np.timedelta64(23, 'h'):
-        raise ValueError('normalized_energy must not be '
+        raise ValueError('energy_normalized must not be '
                          'more frequent than daily')
 
     # Detect less than 2 years of data
-    if normalized_energy.index[-1] - normalized_energy.index[0] < \
+    if energy_normalized.index[-1] - energy_normalized.index[0] < \
             pd.Timedelta('730d'):
         raise ValueError('must provide at least two years of '
                          'normalized energy')
 
     # Auto center
     if recenter:
-        start = normalized_energy.index[0]
+        start = energy_normalized.index[0]
         oneyear = start + pd.Timedelta('364d')
-        renorm = normalized_energy[start:oneyear].median()
+        renorm = energy_normalized[start:oneyear].median()
     else:
         renorm = 1.0
 
-    normalized_energy = normalized_energy.reset_index()
-    normalized_energy['energy'] = normalized_energy['energy'] / renorm
+    energy_normalized = energy_normalized.reset_index()
+    energy_normalized['energy'] = energy_normalized['energy'] / renorm
 
-    normalized_energy['dt_shifted'] = \
-        normalized_energy.dt + pd.DateOffset(years=1)
+    energy_normalized['dt_shifted'] = energy_normalized.dt + \
+                                      pd.DateOffset(years=1)
 
     # Merge with what happened one year ago, use tolerance of 8 days to allow
     # for weekly aggregated data
-    df = pd.merge_asof(normalized_energy[['dt', 'energy']], normalized_energy,
+    df = pd.merge_asof(energy_normalized[['dt', 'energy']], energy_normalized,
                        left_on='dt', right_on='dt_shifted',
                        suffixes=['', '_right'],
                        tolerance=pd.Timedelta('8D')
                        )
 
-    df['time_diff_years'] = (
-        df.dt - df.dt_right).astype('timedelta64[h]') / 8760.0
+    df['time_diff_years'] = (df.dt - df.dt_right).astype('timedelta64[h]') / \
+                            8760.0
     df['yoy'] = 100.0 * (df.energy - df.energy_right) / (df.time_diff_years)
     df.index = df.dt
 
@@ -383,15 +383,16 @@ def _degradation_CI(results, confidence_level):
     return Rd_CI
 
 
-def naive_YOY(normalized_energy, recenter=True):
+def naive_YOY(energy_normalized, recenter=True):
     '''
     Description
     -----------
-    Year-on-year decomposition method, without bootstrapping
+    Year-on-year decomposition method, without the Monte Carlo-approach to find
+    cinfidence intervals
 
     Parameters
     ----------
-    normalized_energy: Pandas Time Series (numeric)
+    energy_normalized: Pandas Time Series (numeric)
         Daily or lower frequency time series of normalized system ouput.
     recenter (bool): default value True
         specify whether data is centered to normalized yield of 1 based on
@@ -406,49 +407,49 @@ def naive_YOY(normalized_energy, recenter=True):
 
 
     # Ensure index is DatetimeIndex (if not, just make it so)
-    if not isinstance(normalized_energy.index,
+    if not isinstance(energy_normalized.index,
                       pd.core.indexes.datetimes.DatetimeIndex):
         end_date = '2020-01-01'
-        normalized_energy = normalized_energy.copy()
-        normalized_energy.index = pd.DatetimeIndex(
+        energy_normalized = energy_normalized.copy()
+        energy_normalized.index = pd.DatetimeIndex(
                                 pd.date_range(end=end_date,
-                                              periods=len(normalized_energy),
+                                              periods=len(energy_normalized),
                                               freq='D'))
 
     # Ensure the data is in order
-    normalized_energy = normalized_energy.sort_index()
-    normalized_energy.name = 'energy'
-    normalized_energy.index.name = 'dt'
+    energy_normalized = energy_normalized.sort_index()
+    energy_normalized.name = 'energy'
+    energy_normalized.index.name = 'dt'
 
     # Detect sub-daily data:
-    if min(np.diff(normalized_energy.index.values, n=1)) < \
+    if min(np.diff(energy_normalized.index.values, n=1)) < \
             np.timedelta64(23, 'h'):
-        raise ValueError('normalized_energy must not be'
+        raise ValueError('energy_normalized must not be'
                          'more frequent than daily')
 
     # Detect less than 2 years of data
-    if normalized_energy.index[-1] - normalized_energy.index[0] < \
+    if energy_normalized.index[-1] - energy_normalized.index[0] < \
             pd.Timedelta('730d'):
         raise ValueError('must provide at least two years'
                          'of normalized energy')
 
     # Auto center
     if recenter:
-        start = normalized_energy.index[0]
+        start = energy_normalized.index[0]
         oneyear = start + pd.Timedelta('364d')
-        renorm = normalized_energy[start:oneyear].median()
+        renorm = energy_normalized[start:oneyear].median()
     else:
         renorm = 1.0
 
-    normalized_energy = normalized_energy.reset_index()
-    normalized_energy['energy'] = normalized_energy['energy'] / renorm
+    energy_normalized = energy_normalized.reset_index()
+    energy_normalized['energy'] = energy_normalized['energy'] / renorm
 
-    normalized_energy['dt_shifted'] = \
-        normalized_energy.dt + pd.DateOffset(years=1)
+    energy_normalized['dt_shifted'] = \
+        energy_normalized.dt + pd.DateOffset(years=1)
 
     # Merge with what happened one year ago, use tolerance of 8 days to allow
     # for weekly aggregated data
-    df = pd.merge_asof(normalized_energy[['dt', 'energy']], normalized_energy,
+    df = pd.merge_asof(energy_normalized[['dt', 'energy']], energy_normalized,
                        left_on='dt', right_on='dt_shifted',
                        suffixes=['', '_right'],
                        tolerance=pd.Timedelta('8D')

@@ -1,4 +1,4 @@
-# About RdTools
+<img src="./docs/sphinx/source/_images/logo_horizontal_highres.png" width="500" alt="RdTools logo"/>
 
 Master branch: 
 [![Build Status](https://travis-ci.org/NREL/rdtools.svg?branch=master)](https://travis-ci.org/NREL/rdtools)  
@@ -10,10 +10,10 @@ RdTools is an open-source library to support reproducible technical analysis of
 time series data from photovoltaic energy systems. The library aims to provide
 best practice analysis routines along with the building blocks for users to
 tailor their own analyses.
-In particular, PV production data is evaluated over several years
-to obtain rates of performance degradation and soiling loss. RdTools can
-handle both high frequency (hourly or better) or low frequency (daily, weekly, etc.)
-datasets. Best results are obtained with higher frequency data.
+Current applications include the evaluation of PV production over several years to obtain
+rates of performance degradation and soiling loss. RdTools can handle
+both high frequency (hourly or better) or low frequency (daily, weekly,
+etc.) datasets. Best results are obtained with higher frequency data.
 
 RdTools can be installed automatically into Python from PyPI using the
 command line:
