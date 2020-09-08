@@ -1,5 +1,6 @@
 '''Functions for calculating soiling metrics from photovoltaic system data.'''
 
+import warnings
 import pandas as pd
 import numpy as np
 from scipy.stats.mstats import theilslopes
@@ -53,7 +54,7 @@ class SRRAnalysis():
                 raise ValueError('Precipitation series must have '
                                  'daily frequency')
 
-    def _calc_daily_df(self, day_scale=14, clean_threshold='infer',
+    def _calc_daily_df(self, day_scale=13, clean_threshold='infer',
                        recenter=True, clean_criterion='shift', precip_threshold=0.01):
         '''
         Calculates self.daily_df, a pandas dataframe prepared for SRR analysis,
@@ -62,8 +63,9 @@ class SRRAnalysis():
 
         Parameters
         ----------
-        day_scale : int, default 14
-            The number of days to use in rolling median for cleaning detection
+        day_scale : int, default 13
+            The number of days to use in rolling median for cleaning detection.
+            An odd value is recommended.
         clean_threshold : float or 'infer', default 'infer'
             If float: the fractional positive shift in rolling median for
             cleaning detection.
@@ -85,6 +87,11 @@ class SRRAnalysis():
             The daily precipitation threshold for defining precipitation cleaning events.
             Units must be consistent with ``self.precipitation_daily``.
         '''
+        if (day_scale % 2 == 0) and ('shift' in clean_criterion):
+            warnings.warn('An even value of day_scale was passed. An odd value is '
+                          'recommended, otherwise, consecutive days may be erronsiously '
+                          'flagged as cleaning events. '
+                          'See https://github.com/NREL/rdtools/issues/189')
 
         df = self.pm.to_frame()
         df.columns = ['pi']
@@ -447,7 +454,7 @@ class SRRAnalysis():
         self.random_profiles = random_profiles
         self.monte_losses = monte_losses
 
-    def run(self, reps=1000, day_scale=14, clean_threshold='infer',
+    def run(self, reps=1000, day_scale=13, clean_threshold='infer',
             trim=False, method='half_norm_clean',
             clean_criterion='shift', precip_threshold=0.01, min_interval_length=2,
             exceedance_prob=95.0, confidence_level=68.2, recenter=True,
@@ -461,10 +468,10 @@ class SRRAnalysis():
         ----------
         reps : int, default 1000
             number of Monte Carlo realizations to calculate
-        day_scale : int, default 14
+        day_scale : int, default 13
             The number of days to use in rolling median for cleaning detection,
             and the maximum number of days of missing data to tolerate in a
-            valid interval
+            valid interval. An odd value is recommended.
         clean_threshold : float or 'infer', default 'infer'
             The fractional positive shift in rolling median for cleaning
             detection. Or specify 'infer' to automatically use outliers in the
@@ -580,7 +587,7 @@ class SRRAnalysis():
 
 
 def soiling_srr(energy_normalized_daily, insolation_daily, reps=1000,
-                precipitation_daily=None, day_scale=14, clean_threshold='infer',
+                precipitation_daily=None, day_scale=13, clean_threshold='infer',
                 trim=False, method='half_norm_clean',
                 clean_criterion='shift', precip_threshold=0.01, min_interval_length=2,
                 exceedance_prob=95.0, confidence_level=68.2, recenter=True,
@@ -606,10 +613,10 @@ def soiling_srr(energy_normalized_daily, insolation_daily, reps=1000,
         Daily total precipitation. Units ambiguous but should be the same as
         precip_threshold. Note default behavior of precip_threshold. (Ignored
         if ``clean_criterion='shift'``.)
-    day_scale : int, default 14
+    day_scale : int, default 13
         The number of days to use in rolling median for cleaning detection,
         and the maximum number of days of missing data to tolerate in a valid
-        interval
+        interval. An odd value is recommended.
     clean_threshold : float or 'infer', default 'infer'
         The fractional positive shift in rolling median for cleaning detection.
         Or specify 'infer' to automatically use outliers in the shift as the
