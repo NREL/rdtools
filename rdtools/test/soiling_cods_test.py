@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
-from rdtools import soiling_srr, soiling_cods
-from rdtools.soiling import NoValidIntervalError
+from rdtools import soiling_srr, soiling_cods 
+from rdtools.soiling import NoValidIntervalError, CODSAnalysis
 import pytest
 
 
@@ -19,75 +19,89 @@ def normalized_daily(times):
     interval_2 = 1 - 0.002 * np.arange(0, 25, 1)
     interval_3 = 1 - 0.001 * np.arange(0, 25, 1)
     profile = np.concatenate((interval_1, interval_2, interval_3))
-    repeated_profile = np.concatenate([profile for _ in range(np.ceil(N / 75))])
+    repeated_profile = np.concatenate([profile for _ in range(int(np.ceil(N / 75)))])
     np.random.seed(1977)
-    noise = 0.01 * np.random.rand(N)
+    noise = 1 + 0.02 * (np.random.rand(N) - 0.5)
     normalized_daily = pd.Series(data=repeated_profile[:N], index=times)
-    normalized_daily = normalized_daily + noise
+    normalized_daily = normalized_daily * noise
 
     return normalized_daily
 
-# def test_soiling_cods(normalized_daily, insolation, times):
+def test_iterative_signal_decomposition(normalized_daily):
+    np.random.seed(1977)
+    cods = CODSAnalysis(normalized_daily)
+    df_out, degradation, soiling_loss, rs, RMSE, sss, adf_res = \
+        cods.iterative_signal_decomposition()
+    assert 0.080563 == pytest.approx(degradation, abs=1e-6),\
+        'Degradation rate different from expected value'
+    assert 3.305137 == pytest.approx(soiling_loss, abs=1e-6),\
+        'Soiling loss different from expected value'
+    assert 0.999359 == pytest.approx(rs, abs=1e-6),\
+        'Residual shift different from expected value'
+    assert 0.008144 == pytest.approx(RMSE, abs=1e-6),\
+        'RMSE different from expected value'
+    assert False == pytest.approx(sss, abs=1e-6),\
+        'Small soiling signal assertion different from expected value'
+    assert 7.019626e-11 == pytest.approx(adf_res[1], abs=1e-6),\
+        'p-value of Augmented Dickey-Fuller test different from expected value'
 
-#     reps = 16
-#     np.random.seed(1977)
-#     sr, sr_ci, deg, deg_ci, result_df = soiling_cods(normalized_daily, reps=reps)
-#     print(sr, sr_ci, deg, deg_ci)
-#     assert 0.963133 == pytest.approx(sr, abs=1e-6),\
-#         'Soiling ratio different from expected value'
-#     assert np.array([0.961054, 0.964019]) == pytest.approx(sr_ci, abs=1e-6),\
-#         'Confidence interval different from expected value'
-#     assert 0.958292 == pytest.approx(soiling_info['exceedance_level'], abs=1e-6),\
-#         'Exceedance level different from expected value'
-#     assert 0.984079 == pytest.approx(soiling_info['renormalizing_factor'], abs=1e-6),\
-#         'Renormalizing factor different from expected value'
-#     assert len(soiling_info['stochastic_soiling_profiles']) == reps,\
-#         'Length of soiling_info["stochastic_soiling_profiles"] different than expected'
-#     assert isinstance(soiling_info['stochastic_soiling_profiles'], list),\
-#         'soiling_info["stochastic_soiling_profiles"] is not a list'
+    # Check result dataframe
+    expected_columns = \
+        ['soiling_ratio', 'soiling_rates', 'cleaning_events',
+         'seasonal_component', 'degradation_trend', 'total_model', 'residuals']
+    actual_columns = df_out.columns.values
+    for x in actual_columns:
+        assert x in expected_columns,\
+            "'{}' not an expected column in result_df]".format(x)
+    for x in expected_columns:
+        assert x in actual_columns,\
+            "'{}' was expected as a column, but not in result_df".format(x)
+    assert isinstance(df_out, pd.DataFrame), 'result_df not a dataframe'
+    expected_means = pd.Series({'soiling_ratio': 0.9669486267086722,
+                                'soiling_rates': -0.0024630658969236213,
+                                'cleaning_events': 0.04644808743169399,
+                                'seasonal_component': 1.0001490302365126,
+                                'degradation_trend': 1.0008062064560372,
+                                'total_model': 0.9672468949656685,
+                                'residuals': 0.9993594568230086})
+    expected_means = expected_means[
+        ['soiling_ratio', 'soiling_rates', 'cleaning_events',
+         'seasonal_component', 'degradation_trend', 'total_model', 'residuals']]
+    pd.testing.assert_series_equal(expected_means, df_out.mean(),
+                                   check_exact=False, check_less_precise=6)
 
-#     # Check soiling_info['soiling_interval_summary']
-#     expected_summary_columns = ['start', 'end', 'slope', 'slope_low', 'slope_high',
-#                                 'inferred_start_loss', 'inferred_end_loss', 'length', 'valid']
-#     actual_summary_columns = soiling_info['soiling_interval_summary'].columns.values
+def test_soiling_cods(normalized_daily):
+    reps = 16
+    np.random.seed(1977)
+    sr, sr_ci, deg, deg_ci, result_df = soiling_cods(normalized_daily, reps=reps)
+    assert 0.962207 == pytest.approx(sr, abs=1e-1),\
+        'Soiling ratio different from expected value'
+    assert np.array([0.96662419, 0.95692131]) == pytest.approx(sr_ci, abs=1e-1),\
+        'Confidence interval of SR different from expected value'
 
-#     for x in actual_summary_columns:
-#         assert x in expected_summary_columns,\
-#             "'{}' not an expected column in soiling_info['soiling_interval_summary']".format(x)
-#     for x in expected_summary_columns:
-#         assert x in actual_summary_columns,\
-#             "'{}' was expected as a column, but not in soiling_info['soiling_interval_summary']".format(x)
-#     assert isinstance(soiling_info['soiling_interval_summary'], pd.DataFrame),\
-#         'soiling_info["soiling_interval_summary"] not a dataframe'
-#     expected_means = pd.Series({'slope': -0.002617290,
-#                                 'slope_low': -0.002828525,
-#                                 'slope_high': -0.002396639,
-#                                 'inferred_start_loss': 1.021514,
-#                                 'inferred_end_loss': 0.9572880,
-#                                 'length': 24.0,
-#                                 'valid': 1.0})
-#     expected_means = expected_means[['slope', 'slope_low', 'slope_high',
-#                                      'inferred_start_loss', 'inferred_end_loss',
-#                                      'length', 'valid']]
-#     pd.testing.assert_series_equal(expected_means, soiling_info['soiling_interval_summary'].mean(),
-#                                    check_exact=False, check_less_precise=6)
+    # Check result dataframe
+    expected_summary_columns = \
+        ['soiling_ratio', 'soiling_rates', 'cleaning_events',
+         'seasonal_component', 'degradation_trend', 'total_model', 'residuals',
+         'SR_low', 'SR_high', 'rates_low', 'rates_high', 'bt_soiling_ratio',
+         'bt_soiling_rates', 'seasonal_low', 'seasonal_high', 'model_low',
+         'model_high']
+    actual_summary_columns = result_df.columns.values
+    for x in actual_summary_columns:
+        assert x in expected_summary_columns,\
+            "'{}' not an expected column in result_df]".format(x)
+    for x in expected_summary_columns:
+        assert x in actual_summary_columns,\
+            "'{}' was expected as a column, but not in result_df".format(x)
 
-#     # Check soiling_info['soiling_ratio_perfect_clean']
-#     pd.testing.assert_index_equal(soiling_info['soiling_ratio_perfect_clean'].index, times, check_names=False)
-#     assert 0.967170 == pytest.approx(soiling_info['soiling_ratio_perfect_clean'].mean(), abs=1e-6),\
-#         "The mean of soiling_info['soiling_ratio_perfect_clean'] differs from expected"
-#     assert isinstance(soiling_info['soiling_ratio_perfect_clean'], pd.Series),\
-#         'soiling_info["soiling_ratio_perfect_clean"] not a pandas series'
-
-# def test_soiling_cods_with_nan_interval(normalized_daily, insolation, times):
-#     '''
-#     Previous versions had a bug which would have raised an error when an entire interval
-#     was NaN. See https://github.com/NREL/rdtools/issues/129
-#     '''
-#     reps = 10
-#     normalized_corrupt = normalized_daily.copy()
-#     normalized_corrupt[26:50] = np.nan
-#     np.random.seed(1977)
-#     sr, sr_ci, soiling_info = soiling_srr(normalized_corrupt, insolation, reps=reps)
-#     assert 0.947416 == pytest.approx(sr, abs=1e-6),\
-#         'Soiling ratio different from expected value when an entire interval was NaN'
+def test_soiling_cods_with_nan_interval(normalized_daily):
+    reps = 16
+    normalized_corrupt = normalized_daily.copy()
+    normalized_corrupt[26:50] = np.nan
+    np.random.seed(1977)
+    sr, sr_ci, deg, deg_ci, result_df = soiling_cods(normalized_corrupt, reps=reps)
+    assert 0.9626787 == pytest.approx(sr, abs=1e-1),\
+        'Soiling ratio different from expected value when an entire interval was NaN'
+    assert np.array([0.96626472, 0.95986474]) == pytest.approx(sr_ci, abs=1e-1),\
+        'Confidence interval of SR different from expected value when an '\
+        + 'entire interval was NaN'
