@@ -34,6 +34,7 @@ Functions for estimating degradation rates from PV system data.
    degradation.degradation_classical_decomposition
    degradation.degradation_ols
    degradation.degradation_year_on_year
+   degradation.bootstrap_YOY
 
 
 Soiling
@@ -47,6 +48,10 @@ Functions for estimating soiling rates from PV system data.
    soiling.soiling_srr
    soiling.SRRAnalysis
    soiling.SRRAnalysis.run
+   soiling.soiling_cods
+   soiling.CODSAnalysis
+   soiling.CODSAnalysis.iterative_signal_decomposition
+   soiling.CODSAnalysis.run_bootstrap
 
 
 Filtering

@@ -7,7 +7,8 @@ def make_time_series_bootstrap_samples(
     signal: pd.Series, model_fit: pd.Series, sample_nr: int = 1000,
     block_length: int = 90, decomposition_type: str = 'multiplicative'
     ) -> pd.DataFrame:
-    ''' Generate bootstrap samples based a time series signal and its model fit 
+    ''' Generate bootstrap samples based a time series signal and its model fit
+        using circular block bootstrapping 
     
     Parameters
     ----------
@@ -16,7 +17,7 @@ def make_time_series_bootstrap_samples(
     model_fit : pd.Series
         A model fit to the signal
     sample_nr : int, default 10
-        The number of samples that you want to generate
+        The number of bootstrap samples that you want to generate
     block_length : int, default 90
         Length of blocks to shuffle in block bootstrapping
     decomposition_type : string, default 'multiplicative'

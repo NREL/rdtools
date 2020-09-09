@@ -399,7 +399,8 @@ def bootstrap_YOY(
     energy_normalized: pd.Series, reps: int = 1000, block_length: int = 30,
     exceedance_prob: float = 95, confidence_level: float = 68.2 
     ) -> Tuple[float, np.array, dict]:
-    ''' Generate bootstrap samples based a time series signal and its model fit 
+    ''' Run `degradation_year_on_year` and construct confidence intervals and
+        exceedance probability based on circular block bootstrapping 
     
     Parameters
     ----------
@@ -407,7 +408,7 @@ def bootstrap_YOY(
         Daily or lower frequency time series of normalized system ouput. Must
         have a DatetimeIndex with fixed frequency.
     reps : int, default 1000
-        The number of samples that you want to generate
+        The number of s samples that you want to generate
     block_length : int, default 30
         Length of blocks to shuffle in block bootstrapping
     exceedance_prob : float, default 95
