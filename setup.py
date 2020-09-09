@@ -39,10 +39,12 @@ INSTALL_REQUIRES = [
     'matplotlib >= 2.2.2',
     'numpy >= 1.12',
     'pandas >= 0.23.0,!=1.0.0,!=1.0.1',  # exclude 1.0.0 & 1.0.1 for GH142
-    'statsmodels >= 0.8.0',
+    'statsmodels >= 0.11.1',
     'scipy >= 0.19.1',
     'h5py >= 2.7.1',
     'pvlib >= 0.7.0, <0.8.0',
+    'arch >= 4.11',
+    'filterpy >= 1.4.5',
 ]
 
 EXTRAS_REQUIRE = {
@@ -54,6 +56,7 @@ EXTRAS_REQUIRE = {
         'pvlib==0.7.1',
         'sphinx_rtd_theme==0.4.3',
         'ipython',
+        'scipy==1.3.2',
     ],
     'test': [
         'pytest',
