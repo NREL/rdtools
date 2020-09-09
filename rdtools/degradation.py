@@ -3,6 +3,9 @@
 import pandas as pd
 import numpy as np
 import statsmodels.api as sm
+from typing import Tuple
+from rdtools.bootstrap import make_time_series_bootstrap_samples, \
+    construct_confidence_intervals
 
 
 def degradation_ols(energy_normalized, confidence_level=68.2):
@@ -468,3 +471,81 @@ def naive_YOY(energy_normalized, recenter=True):
     Rd_pct = yoy_result.median()
 
     return Rd_pct
+
+
+def bootstrap_YOY(
+    energy_normalized: pd.Series, reps: int = 1000, block_length: int = 30,
+    exceedance_prob: float = 95, confidence_level: float = 68.2 
+    ) -> Tuple[float, np.array, dict]:
+    ''' Generate bootstrap samples based a time series signal and its model fit 
+    
+    Parameters
+    ----------
+    energy_normalized: pd.Series
+        Daily or lower frequency time series of normalized system ouput. Must
+        have a DatetimeIndex with fixed frequency.
+    reps : int, default 1000
+        The number of samples that you want to generate
+    block_length : int, default 30
+        Length of blocks to shuffle in block bootstrapping
+    exceedance_prob : float, default 95
+        The probability level to use for exceedance value calculation,
+        in percent.
+    confidence_level : float, default 68.2
+        The size of the confidence interval to return, in percent.
+    
+    Returns
+    -------
+    degradation_rate : float
+        rate of relative performance change in %/yr
+    confidence_interval : np.array
+        confidence interval (size specified by `confidence_level`) of
+        degradation rate estimate
+    calc_info : dict
+        * `YoY_values` - pandas series of right-labeled year on year slopes
+        * `renormalizing_factor` - float of value used to recenter data
+        * `exceedance_level` - the degradation rate that was outperformed with
+          probability of `exceedance_prob`
+    '''
+    # Check for regular logging frequency
+    freq = pd.infer_freq(energy_normalized.index)
+    if isinstance(freq, type(None)):
+        raise ValueError('energy_normalized must have a fixed frequency')
+
+    # Renormalize energy
+    start = energy_normalized.index[0]
+    oneyear = start + pd.Timedelta('364d')
+    renorm = energy_normalized[start:oneyear].median()
+    energy_renormalized = energy_normalized / renorm
+
+    # Estimate degradation rate
+    degradation_rate = naive_YOY(energy_renormalized, recenter=False)
+
+    # Construct degradation trend time series
+    N = len(energy_renormalized)
+    numeric_index = np.arange(N)
+    days_per_index = \
+        (energy_renormalized.index[-1] - energy_renormalized.index[0]).days / N
+    degradation_trend = 1 + (degradation_rate / 100 / 365.24 * numeric_index
+                        * days_per_index)
+    degradation_trend = pd.Series(
+        index=energy_renormalized.index, data=degradation_trend)
+
+    # Generate bootstrap_samples
+    bootstrap_samples = make_time_series_bootstrap_samples(
+        energy_renormalized, degradation_trend, sample_nr=reps,
+        block_length=block_length)
+    
+    # Construct confidence interval
+    confidence_interval, exceedance_level, bootstrap_rates = \
+        construct_confidence_intervals(
+            bootstrap_samples, naive_YOY, exceedance_prob=exceedance_prob,
+            confidence_level=confidence_level, recenter=False)
+    
+    # Save calculation information
+    calc_info = {
+        'renormalizing_factor': renorm,
+        'exceedance_level' : exceedance_level,
+        'bootstrap_rates' : bootstrap_rates}
+    
+    return degradation_rate, confidence_interval, calc_info
