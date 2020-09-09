@@ -154,7 +154,8 @@ class SRRAnalysis():
 
         if clean_criterion == 'precip_and_shift':
             # Detect which cleaning events are associated with rain within a 3 day window
-            precip_event = precip_event.rolling(3, center=True, min_periods=1).apply(any).astype(bool)
+            precip_event = precip_event.rolling(
+                3, center=True, min_periods=1).apply(any).astype(bool)
             df['clean_event'] = (df['clean_event_detected'] & precip_event)
         elif clean_criterion == 'precip_or_shift':
             df['clean_event'] = (df['clean_event_detected'] | precip_event)
@@ -254,7 +255,8 @@ class SRRAnalysis():
 
         # Filter results for each interval,
         # setting invalid interval to slope of 0
-        results['slope_err'] = (results.run_slope_high-results.run_slope_low)/abs(results.run_slope)
+        results['slope_err'] = (
+            results.run_slope_high - results.run_slope_low) / abs(results.run_slope)
         # critera for exclusions
         filt = (
             (results.run_slope > 0) |
@@ -377,7 +379,7 @@ class SRRAnalysis():
                     # Use a half normal with the infered clean at the
                     # 3sigma point
                     x = np.clip(end + row.inferred_recovery, 0, 1)
-                    inter_start = 1 - abs(np.random.normal(0.0, (1 - x)/3))
+                    inter_start = 1 - abs(np.random.normal(0.0, (1 - x) / 3))
 
                 # Update the valid rows in results_rand
                 valid_update = pd.DataFrame()
@@ -707,3 +709,158 @@ def soiling_srr(energy_normalized_daily, insolation_daily, reps=1000,
         max_negative_step=max_negative_step)
 
     return sr, sr_ci, soiling_info
+
+
+def _count_month_days(start, end):
+    '''Return a dict of number of days between start and end (inclusive) in each month'''
+    days = pd.date_range(start, end)
+    months = [x.month for x in days]
+    out_dict = {}
+    for month in range(1, 13):
+        out_dict[month] = months.count(month)
+
+    return out_dict
+
+
+def annual_soiling_ratios(stochastic_soiling_profiles, confidence_level=68.2):
+    '''
+    Return annualized soiling ratios and associated confidence intervals based
+    on stochastic soiling profiles from SRR. Note that each year may be affected
+    by previous years' profiles for all SRR cleaning assumptions (i.e. method) except
+    perfect_clean.
+
+    Parameters
+    ----------
+    stochastic_soiling_profiles : list
+        List of pd.Series representing profile realizations from the SRR monte carlo.
+        Typically soiling_interval_summary['stochastic_soiling_profiles'] obtained with
+        soiling_srr() or SRRAnalysis.run()
+
+    confidence_level : float, default 68.2
+        The size of the confidence interval to use in determining the upper and lower
+        quantiles reported in the returned DataFrame. (The median is always included in
+        the result.)
+
+    Returns
+    -------
+    pd.DataFrame
+        DataFrame describing annual insolation-wighted soiling ratios. The multi-index
+        is (year, quantile)
+
+    '''
+
+    df = pd.DataFrame(pd.concat(stochastic_soiling_profiles))
+
+    ci_quantiles = [0.5 - confidence_level/2/100, 0.5 + confidence_level/2/100]
+    annual_soiling = df.groupby(df.index.year).quantile([0.5, ci_quantiles[0], ci_quantiles[1]])
+    annual_soiling.index.rename(['year', 'quantile'], inplace=True)
+    annual_soiling.columns = ['insolation_weighted_soiling_ratio']
+
+    return annual_soiling
+
+
+def monthly_soiling_rates(soiling_interval_summary, min_length=14,
+                          max_relative_slope_error=500.0, reps=100000,
+                          confidence_level=68.2):
+    '''
+    Use Monte Carlo to calculate typical monthly soiling rates. Samples possible
+    soiling rates from soiling rate confidence intervals associated with soiling
+    intervals assuming a uniform distribution. Soiling intervals get samples
+    proportionally to their overlap with each calendar month.
+
+    Parameters
+    ----------
+    soiling_interval_summary : pd.DataFrame
+        DataFrame describing soiling intervals. Typically from
+        soiling_interval_summary['confidence_interval'] obtained with
+        soiling_srr() or SRRAnalysis.run() Must have columns 'slope_high',
+        'slope_low', 'slope', 'length', 'valid', 'start', and 'end'.
+
+    min_length : int, default 14
+        The minimum number of days a soiling interval must contain to be
+        included in the calculation
+
+    max_relative_slope_error : float, default 500.0
+        the maximum relative size of the slope confidence interval for an
+        interval to be considered valid (percentage).
+
+    reps : int, default 100000
+        The number of Monte Carlo samples to take for each month.
+
+    confidence_level : float, default 68.2
+        The size of the confidence interval to use in determining the upper and lower
+        quantiles reported in the returned DataFrame. (The median is always included in
+        the result.)
+
+    Returns
+    -------
+    pd.DataFrame
+        DataFrame describing monthly soiling rates.
+        Columns:
+
+        * `month` - Integer month, January (1) to December (12)
+        * `soiling_rate_median` - The median soiling rate for the month over the
+          entire dataset. Negative indicates soiling is occurring
+        * `soiling_rate_low` - The lower edge of the confidence interval for
+          the monthly soiling rate.
+        * `soiling_rate_high` - The upper edge of the confidence interval
+          for the monthly soiling rate.
+        * `interval_count` - The number of soiling intervals contributing to the
+          monthly calculation. If this number is low, the
+          confidence interval is likely to underestimate the
+          true uncertainty.
+    '''
+
+    # filter to intervals of interest
+    rel_error = 100 * abs((soiling_interval_summary['slope_high'] -
+                           soiling_interval_summary['slope_low']) / soiling_interval_summary['slope'])
+    intervals = soiling_interval_summary[(soiling_interval_summary['length'] >= min_length) &
+                                         (soiling_interval_summary['valid']) &
+                                         (rel_error <= max_relative_slope_error)
+                                         ].copy()
+
+    # count the overlap of each interval with each month
+    month_counts = []
+    for _, row in intervals.iterrows():
+        month_counts.append(_count_month_days(row['start'], row['end']))
+
+    # divy up the monte carlo reps based on overlap
+    for month in range(1, 13):
+        days_in_month = np.array([x[month] for x in month_counts])
+        if days_in_month.sum() > 0:
+            intervals[f'samples_for_month_{month}'] = np.ceil(
+                days_in_month / days_in_month.sum() * reps)
+        else:
+            intervals[f'samples_for_month_{month}'] = 0
+        intervals[f'samples_for_month_{month}'] = intervals[f'samples_for_month_{month}'].astype(int)
+
+    # perform the monte carlo month by month
+    ci_quantiles = [0.5 - confidence_level/2/100, 0.5 + confidence_level/2/100]
+    monthly_rate_data = []
+    relevant_interval_count = []
+    for month in range(1, 13):
+        rates = []
+        sample_col = f'samples_for_month_{month}'
+
+        relevant_intervals = intervals[intervals[sample_col] > 0]
+        for _, row in relevant_intervals.iterrows():
+            rates.append(np.random.uniform(
+                row['slope_low'], row['slope_high'], row[sample_col]))
+
+        rates = [x for sublist in rates for x in sublist]
+
+        if rates:
+            monthly_rate_data.append(np.quantile(rates, [0.5, ci_quantiles[0], ci_quantiles[1]]))
+        else:
+            monthly_rate_data.append(np.array([np.nan]*3))
+
+        relevant_interval_count.append(len(relevant_intervals))
+    monthly_rate_data = np.array(monthly_rate_data)
+
+    # make a dataframe out of the results
+    monthly_soiling_df = pd.DataFrame(data=monthly_rate_data,
+                                      columns=['soiling_rate_median', 'soiling_rate_low', 'soiling_rate_high'])
+    monthly_soiling_df.insert(0, 'month', range(1, 13))
+    monthly_soiling_df['interval_count'] = relevant_interval_count
+
+    return monthly_soiling_df

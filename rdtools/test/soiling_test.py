@@ -1,6 +1,8 @@
 import pandas as pd
 import numpy as np
 from rdtools import soiling_srr
+from rdtools import annual_soiling_ratios
+from rdtools import monthly_soiling_rates
 from rdtools.soiling import NoValidIntervalError
 import pytest
 
@@ -103,7 +105,7 @@ def test_soiling_srr_with_precip(normalized_daily, insolation, times):
     sr, sr_ci, soiling_info = soiling_srr(normalized_daily, insolation, clean_criterion='precip_and_shift', **kwargs)
     assert 0.982546 == pytest.approx(sr, abs=1e-6),\
         "Soiling ratio with clean_criterion='precip_and_shift' different from expected"
-    np.random.seed(1977)    
+    np.random.seed(1977)
     sr, sr_ci, soiling_info = soiling_srr(normalized_daily, insolation, clean_criterion='precip_or_shift', **kwargs)
     assert 0.973433 == pytest.approx(sr, abs=1e-6),\
         "Soiling ratio with clean_criterion='precip_or_shift' different from expected"
@@ -212,6 +214,7 @@ def test_soiling_srr_max_negative_slope_error(normalized_daily, insolation):
     assert 0.954569 == pytest.approx(sr, abs=1e-6),\
         'Soiling ratio different from expected when max_relative_slope_error=45.0'
 
+
 def test_soiling_srr_with_nan_interval(normalized_daily, insolation, times):
     '''
     Previous versions had a bug which would have raised an error when an entire interval
@@ -224,3 +227,157 @@ def test_soiling_srr_with_nan_interval(normalized_daily, insolation, times):
     sr, sr_ci, soiling_info = soiling_srr(normalized_corrupt, insolation, reps=reps)
     assert 0.948792 == pytest.approx(sr, abs=1e-6),\
         'Soiling ratio different from expected value when an entire interval was NaN'
+
+# ###########################
+# annual_soiling_ratios tests
+# ###########################
+
+
+@pytest.fixture()
+def srr_profiles():
+    times = pd.date_range('01-01-2018', '12-31-2019', freq='D')
+    data = np.array([0]*365 + [10]*365)
+    profiles = [pd.Series(x + data, times) for x in range(10)]
+
+    return profiles
+
+
+def test_annual_soiling_ratios(srr_profiles):
+    expected_data = [4.5, 1.0, 8.0, 14.5, 11.0, 18.0]
+
+    mi = pd.MultiIndex.from_product([[2018, 2019], [0.5, 0.159, 0.841]],
+                                    names=['year', 'quantile'])
+
+    expected = pd.DataFrame(data=expected_data,
+                            index=mi,
+                            columns=['insolation_weighted_soiling_ratio']
+                            )
+    result = annual_soiling_ratios(srr_profiles)
+
+    pd.testing.assert_frame_equal(result, expected, atol=1e-8)
+
+
+def test_annual_soiling_ratios_confidence_interval(srr_profiles):
+    expected_data = [4.5, 0.0, 9.0, 14.5, 10.0, 19.0]
+
+    mi = pd.MultiIndex.from_product([[2018, 2019], [0.5, 0.025, 0.975]],
+                                    names=['year', 'quantile'])
+
+    expected = pd.DataFrame(data=expected_data,
+                            index=mi,
+                            columns=['insolation_weighted_soiling_ratio']
+                            )
+    result = annual_soiling_ratios(srr_profiles, confidence_level=95)
+
+    pd.testing.assert_frame_equal(result, expected, atol=1e-8)
+
+# ###########################
+# monthly_soiling_rates tests
+# ###########################
+
+
+@pytest.fixture()
+def soiling_interval_summary():
+    starts = ['2019/01/01', '2019/01/16', '2019/02/08', '2019/03/06']
+    starts = pd.to_datetime(starts).tz_localize('America/Denver')
+    ends = ['2019/01/15', '2019/02/07', '2019/03/05', '2019/04/07']
+    ends = pd.to_datetime(ends).tz_localize('America/Denver')
+    slopes = [-0.005, -0.002, -0.001, -0.002]
+    slopes_low = [-0.0055, -0.0025, -0.0015, -0.003]
+    slopes_high = [-0.004, 0, 0, -0.001]
+    valids = [True, True, False, True]
+
+    soiling_interval_summary = pd.DataFrame()
+    soiling_interval_summary['start'] = starts
+    soiling_interval_summary['end'] = ends
+    soiling_interval_summary['slope'] = slopes
+    soiling_interval_summary['slope_low'] = slopes_low
+    soiling_interval_summary['slope_high'] = slopes_high
+    soiling_interval_summary['inferred_start_loss'] = np.nan
+    soiling_interval_summary['inferred_end_loss'] = np.nan
+    soiling_interval_summary['length'] = (ends - starts).days
+    soiling_interval_summary['valid'] = valids
+
+    return soiling_interval_summary
+
+
+def _build_monthly_summary(top_rows):
+    '''
+    Convienience function to build a full monthly soiling summary
+    dataframe from the expected_top_rows which summarize Jan-April
+    '''
+
+    all_rows = np.vstack((top_rows, [[1, np.nan, np.nan, np.nan, 0]]*8))
+
+    df = pd.DataFrame(data=all_rows,
+                      columns=['month', 'soiling_rate_median', 'soiling_rate_low', 'soiling_rate_high', 'interval_count'])
+    df['month'] = range(1, 13)
+
+    return df
+
+
+def test_monthly_soiling_rates(soiling_interval_summary):
+    np.random.seed(1977)
+    result = monthly_soiling_rates(soiling_interval_summary)
+
+    expected = np.array([[1.00000000e+00, -2.42103810e-03, -5.00912766e-03, -7.68551806e-04, 2.00000000e+00],
+                        [2.00000000e+00, -1.25092837e-03, -2.10091842e-03, -3.97354321e-04, 1.00000000e+00],
+                        [3.00000000e+00, -2.00313359e-03, -2.68359541e-03, -1.31927678e-03, 1.00000000e+00],
+                        [4.00000000e+00, -1.99729563e-03, -2.68067699e-03, -1.31667446e-03, 1.00000000e+00]])
+    expected = _build_monthly_summary(expected)
+
+    pd.testing.assert_frame_equal(result, expected, check_dtype=False)
+
+
+def test_monthly_soiling_rates_min_length(soiling_interval_summary):
+    np.random.seed(1977)
+    result = monthly_soiling_rates(soiling_interval_summary, min_length=20)
+
+    expected = np.array([[1.00000000e+00, -1.24851539e-03, -2.10394564e-03, -3.98358211e-04, 1.00000000e+00],
+                        [2.00000000e+00, -1.25092837e-03, -2.10091842e-03, -3.97330424e-04, 1.00000000e+00],
+                        [3.00000000e+00, -2.00309454e-03, -2.68359541e-03, -1.31927678e-03, 1.00000000e+00],
+                        [4.00000000e+00, -1.99729563e-03, -2.68067699e-03, -1.31667446e-03, 1.00000000e+00]])
+    expected = _build_monthly_summary(expected)
+
+    pd.testing.assert_frame_equal(result, expected, check_dtype=False)
+
+
+def test_monthly_soiling_rates_max_slope_err(soiling_interval_summary):
+    np.random.seed(1977)
+    result = monthly_soiling_rates(soiling_interval_summary, max_relative_slope_error=120)
+
+    expected = np.array([[1.00000000e+00, -4.74910923e-03, -5.26236739e-03, -4.23901493e-03, 1.00000000e+00],
+                        [2.00000000e+00, np.nan, np.nan, np.nan, 0.00000000e+00],
+                        [3.00000000e+00, -2.00074270e-03, -2.68073474e-03, -1.31786434e-03, 1.00000000e+00],
+                        [4.00000000e+00, -2.00309454e-03, -2.68359541e-03, -1.31927678e-03, 1.00000000e+00]])
+    expected = _build_monthly_summary(expected)
+
+    pd.testing.assert_frame_equal(result, expected, check_dtype=False)
+
+
+def test_monthly_soiling_rates_confidence_level(soiling_interval_summary):
+    np.random.seed(1977)
+    result = monthly_soiling_rates(soiling_interval_summary, confidence_level=95)
+
+    expected = np.array([[1.00000000e+00, -2.42103810e-03, -5.42313113e-03, -1.21156562e-04, 2.00000000e+00],
+                        [2.00000000e+00, -1.25092837e-03, -2.43731574e-03, -6.23842627e-05, 1.00000000e+00],
+                        [3.00000000e+00, -2.00313359e-03, -2.94998476e-03, -1.04988760e-03, 1.00000000e+00],
+                        [4.00000000e+00, -1.99729563e-03, -2.95063841e-03, -1.04869949e-03, 1.00000000e+00]])
+
+    expected = _build_monthly_summary(expected)
+
+    pd.testing.assert_frame_equal(result, expected, check_dtype=False)
+
+
+def test_monthly_soiling_rates_reps(soiling_interval_summary):
+    np.random.seed(1977)
+    result = monthly_soiling_rates(soiling_interval_summary, reps=3)
+
+    expected = np.array([[1.00000000e+00, -2.88594088e-03, -5.03736679e-03, -6.47391131e-04, 2.00000000e+00],
+                        [2.00000000e+00, -1.67359565e-03, -2.00504171e-03, -1.33240044e-03, 1.00000000e+00],
+                        [3.00000000e+00, -1.22306993e-03, -2.19274892e-03, -1.11793240e-03, 1.00000000e+00],
+                        [4.00000000e+00, -1.94675549e-03, -2.42574164e-03, -1.54850795e-03, 1.00000000e+00]])
+
+    expected = _build_monthly_summary(expected)
+
+    pd.testing.assert_frame_equal(result, expected, check_dtype=False)
