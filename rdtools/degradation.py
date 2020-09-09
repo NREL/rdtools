@@ -184,7 +184,8 @@ def degradation_classical_decomposition(energy_normalized,
 
 
 def degradation_year_on_year(energy_normalized, recenter=True,
-                             exceedance_prob=95, confidence_level=68.2):
+                             exceedance_prob=95, confidence_level=68.2,
+                             full_calc=True):
     '''
     Estimate the trend of a timeseries using the year-on-year decomposition
     approach and calculate a Monte Carlo-derived confidence interval of slope.
@@ -201,6 +202,10 @@ def degradation_year_on_year(energy_normalized, recenter=True,
         in percent.
     confidence_level : float, default 68.2
         The size of the confidence interval to return, in percent.
+    full_calc : bool, default True
+        Determines whether or not confidence intervals and exceedance levels
+        should be calculated (If False, the algorithm is considerably faster,
+        and only returns the `degradation_rate`)
 
     Returns
     -------
@@ -263,30 +268,34 @@ def degradation_year_on_year(energy_normalized, recenter=True,
 
     yoy_result = df.yoy.dropna()
 
-    calc_info = {
-        'YoY_values': yoy_result,
-        'renormalizing_factor': renorm
-    }
-
     if not len(yoy_result):
         raise ValueError('no year-over-year aggregated data pairs found')
 
     Rd_pct = yoy_result.median()
 
-    # bootstrap to determine 68% CI and exceedance probability
-    n1 = len(yoy_result)
-    reps = 10000
-    xb1 = np.random.choice(yoy_result, (n1, reps), replace=True)
-    mb1 = np.median(xb1, axis=0)
+    if full_calc:  # If we need the full results
+        calc_info = {
+            'YoY_values': yoy_result,
+            'renormalizing_factor': renorm
+        }
 
-    half_ci = confidence_level / 2.0
-    Rd_CI = np.percentile(mb1, [50.0 - half_ci, 50.0 + half_ci])
+        # bootstrap to determine 68% CI and exceedance probability
+        n1 = len(yoy_result)
+        reps = 10000
+        xb1 = np.random.choice(yoy_result, (n1, reps), replace=True)
+        mb1 = np.median(xb1, axis=0)
 
-    P_level = np.percentile(mb1, 100.0 - exceedance_prob)
+        half_ci = confidence_level / 2.0
+        Rd_CI = np.percentile(mb1, [50.0 - half_ci, 50.0 + half_ci])
 
-    calc_info['exceedance_level'] = P_level
+        P_level = np.percentile(mb1, 100.0 - exceedance_prob)
 
-    return (Rd_pct, Rd_CI, calc_info)
+        calc_info['exceedance_level'] = P_level
+
+        return (Rd_pct, Rd_CI, calc_info)
+    
+    else:  # If we do not need confidence intervals and exceedance level
+        return Rd_pct
 
 
 def _mk_test(x, alpha=0.05):
@@ -386,93 +395,6 @@ def _degradation_CI(results, confidence_level):
     return Rd_CI
 
 
-def naive_YOY(energy_normalized, recenter=True):
-    '''
-    Description
-    -----------
-    Year-on-year decomposition method, without the Monte Carlo-approach to find
-    cinfidence intervals
-
-    Parameters
-    ----------
-    energy_normalized: Pandas Time Series (numeric)
-        Daily or lower frequency time series of normalized system ouput.
-    recenter (bool): default value True
-        specify whether data is centered to normalized yield of 1 based on
-        first year
-
-    Returns
-    -------
-    tuple of (degradation_rate, confidence_interval, calc_info)
-        degradation_rate:  float
-            rate of relative performance change in %/yr
-    '''
-
-
-    # Ensure index is DatetimeIndex (if not, just make it so)
-    if not isinstance(energy_normalized.index,
-                      pd.core.indexes.datetimes.DatetimeIndex):
-        end_date = '2020-01-01'
-        energy_normalized = energy_normalized.copy()
-        energy_normalized.index = pd.DatetimeIndex(
-                                pd.date_range(end=end_date,
-                                              periods=len(energy_normalized),
-                                              freq='D'))
-
-    # Ensure the data is in order
-    energy_normalized = energy_normalized.sort_index()
-    energy_normalized.name = 'energy'
-    energy_normalized.index.name = 'dt'
-
-    # Detect sub-daily data:
-    if min(np.diff(energy_normalized.index.values, n=1)) < \
-            np.timedelta64(23, 'h'):
-        raise ValueError('energy_normalized must not be'
-                         'more frequent than daily')
-
-    # Detect less than 2 years of data
-    if energy_normalized.index[-1] - energy_normalized.index[0] < \
-            pd.Timedelta('730d'):
-        raise ValueError('must provide at least two years'
-                         'of normalized energy')
-
-    # Auto center
-    if recenter:
-        start = energy_normalized.index[0]
-        oneyear = start + pd.Timedelta('364d')
-        renorm = energy_normalized[start:oneyear].median()
-    else:
-        renorm = 1.0
-
-    energy_normalized = energy_normalized.reset_index()
-    energy_normalized['energy'] = energy_normalized['energy'] / renorm
-
-    energy_normalized['dt_shifted'] = \
-        energy_normalized.dt + pd.DateOffset(years=1)
-
-    # Merge with what happened one year ago, use tolerance of 8 days to allow
-    # for weekly aggregated data
-    df = pd.merge_asof(energy_normalized[['dt', 'energy']], energy_normalized,
-                       left_on='dt', right_on='dt_shifted',
-                       suffixes=['', '_right'],
-                       tolerance=pd.Timedelta('8D')
-                       )
-
-    df['time_diff_years'] = (
-        df.dt - df.dt_right).astype('timedelta64[h]') / 8760.0
-    df['yoy'] = 100.0 * (df.energy - df.energy_right) / (df.time_diff_years)
-    df.index = df.dt
-
-    yoy_result = df.yoy.dropna()
-
-    if not len(yoy_result):
-        raise ValueError('no year-over-year aggregated data pairs found')
-
-    Rd_pct = yoy_result.median()
-
-    return Rd_pct
-
-
 def bootstrap_YOY(
     energy_normalized: pd.Series, reps: int = 1000, block_length: int = 30,
     exceedance_prob: float = 95, confidence_level: float = 68.2 
@@ -519,7 +441,8 @@ def bootstrap_YOY(
     energy_renormalized = energy_normalized / renorm
 
     # Estimate degradation rate
-    degradation_rate = naive_YOY(energy_renormalized, recenter=False)
+    degradation_rate = degradation_year_on_year(
+        energy_renormalized, recenter=False, full_calc=False)
 
     # Construct degradation trend time series
     N = len(energy_renormalized)
@@ -539,8 +462,9 @@ def bootstrap_YOY(
     # Construct confidence interval
     confidence_interval, exceedance_level, bootstrap_rates = \
         construct_confidence_intervals(
-            bootstrap_samples, naive_YOY, exceedance_prob=exceedance_prob,
-            confidence_level=confidence_level, recenter=False)
+            bootstrap_samples, degradation_year_on_year,
+            exceedance_prob=exceedance_prob, confidence_level=confidence_level,
+            recenter=False, full_calc=False)
     
     # Save calculation information
     calc_info = {

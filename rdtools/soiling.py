@@ -2,6 +2,7 @@
 
 from __future__ import division
 from rdtools import degradation as RdToolsDeg
+from rdtools.bootstrap import make_time_series_bootstrap_samples
 import pandas as pd
 import numpy as np
 from scipy.stats.mstats import theilslopes
@@ -720,9 +721,9 @@ def soiling_srr(energy_normalized_daily, insolation_daily, reps=1000,
 class CODSAnalysis():
     '''
     Class for running the Combined Degradation and Soling (CODS) algorithm
-    for degradation and soiling loss analysis presented in 
-    Skomedal and Deceglie. [JPV 8(2) p547] 2020
-    The promary function to use is run_boostrap()
+    for degradation and soiling loss analysis. Based on the
+    method presented in Skomedal, Å. and Deceglie, M. G., IEEE Journal of
+    Photovoltaics, Sept. 2020. doi: 10.1109/JPHOTOV.2020.3018219
 
     Parameters
     ----------
@@ -740,7 +741,8 @@ class CODSAnalysis():
 
         if self.pm.index.freq != 'D':
             raise ValueError('Daily performance metric series must have '
-                             'daily frequency')
+                             'daily frequency (missing dates should be '
+                             'represented by NaNs)')
 
     def iterative_signal_decomposition(
         self, order=['SR', 'SC', 'Rd'], degradation_method='YoY',
@@ -953,8 +955,8 @@ class CODSAnalysis():
                     deg_trend = pd.Series(index=pi.index,
                                           data=STL_res.trend.apply(np.exp))
                     degradation_trend.append(deg_trend / deg_trend.iloc[0])
-                    yoy_save.append(RdToolsDeg.naive_YOY(
-                        degradation_trend[-1]))
+                    yoy_save.append(RdToolsDeg.degradation_year_on_year(
+                        degradation_trend[-1], full_calc=False))
 
             # Find degradation component
             if order[(ic-1) % n_steps] == 'Rd':
@@ -962,7 +964,9 @@ class CODSAnalysis():
                 trend_dummy = (pi
                                / seasonal_component[-1]
                                / soiling_ratio[-1])
-                yoy = RdToolsDeg.naive_YOY(trend_dummy)  # Run YoY
+                # Run YoY
+                yoy = RdToolsDeg.degradation_year_on_year(
+                    trend_dummy, full_calc=False)
                 # Convert degradation rate to trend
                 degradation_trend.append(pd.Series(
                     index=pi.index, data=(1 + day * yoy / 100 / 365.24)))
@@ -1101,6 +1105,9 @@ class CODSAnalysis():
                                                     [.75, 1.25],
                                                     [True, False]]
             List of model knobs/parameters for the initial N model fits
+        kwargs
+            keyword arguments that are passed on to
+            `iterative_signal_decomposition`
 
         Returns
         -------
@@ -1194,7 +1201,7 @@ class CODSAnalysis():
                 if adf[1] < .05:
                     # ... generate bootstrap samples based on the fit:
                     bootstrap_samples_list.append(
-                        make_bootstrap_samples(
+                        make_time_series_bootstrap_samples(
                             pi, result[0].total_model,
                             sample_nr=int(reps / nr_models)))
 
@@ -1708,12 +1715,12 @@ def soiling_cods(energy_normalized_daily, reps=512, verbose=False,
                                     ['SC', 'SR', 'Rd']],
                                     [.25, .75],
                                     [1/1.5, 1.5],
-                                    [True, False]], 
-                 **kwargs):
+                                    [True, False]], **kwargs):
     '''
     Functional wrapper for :py:class:`~rdtools.soiling.CODSAnalysis`. Run
     the combined degradation and soiling algorithm. Based on the
-    methods presented in Skomedal et al. JPV TODO 2020.
+    methods presented in Skomedal, Å. and Deceglie, M. G., IEEE Journal of
+    Photovoltaics, Sept. 2020. doi: 10.1109/JPHOTOV.2020.3018219
 
     Parameters
     ----------
@@ -1737,6 +1744,8 @@ def soiling_cods(energy_normalized_daily, reps=512, verbose=False,
                                                 [.75, 1.25],
                                                 [True, False]]
         List of model knobs/parameters for the initial N model fits
+    kwargs
+        keyword arguments that are passed on to `iterative_signal_decomposition`
 
     Returns
     -------
@@ -1794,7 +1803,6 @@ def soiling_cods(energy_normalized_daily, reps=512, verbose=False,
 
     return sr, sr_ci, CODS.degradation[0], np.array(CODS.degradation[1:3]), \
         CODS.result_df
-
 
 
 def collapse_cleaning_events(inferred_ce_in, metric, f=4):
@@ -1868,6 +1876,7 @@ def rolling_median_ce_detection(x, y, ffill=True, rolling_window=9, tuner=1.5):
     cleaning_events = rm.diff() > limit
     return cleaning_events, rm
 
+
 def soiling_event_detection(x, y, ffill=True, tuner=5):
     ''' Finds cleaning events in a time series of performance index (y) '''
     y = pd.Series(index=x, data=y)
@@ -1880,21 +1889,6 @@ def soiling_event_detection(x, y, ffill=True, tuner=5):
     limit = Q1 - tuner * (Q3 - Q1)
     soiling_events = rm.diff() < limit
     return soiling_events
-
-def make_bootstrap_samples(pi, model, sample_nr=10):
-    ''' Generate bootstrap samples based on a CODS model fit '''
-    residuals = pi / model
-    # Remove NaNs in residuals
-    residuals = residuals.apply(
-        lambda x: np.random.choice(
-            [x for x in residuals.dropna().values]) if (np.isnan(x)) else x)
-    bs = CircularBlockBootstrap(90, residuals)
-    bootstrap_samples = pd.DataFrame(index=model.index,
-                                     columns=range(sample_nr))
-    for b, bootstrapped_residuals in enumerate(bs.bootstrap(sample_nr)):
-        bootstrap_samples.loc[:, b] = \
-            model * bootstrapped_residuals[0][0].values
-    return bootstrap_samples
 
 
 def make_seasonal_samples(list_of_SCs, sample_nr=10, min_multiplier=0.5,
