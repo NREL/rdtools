@@ -1,7 +1,7 @@
 '''Functions for filtering and subsetting PV system data.'''
 
 import numpy as np
-
+import pandas as pd
 
 def normalized_filter(energy_normalized, energy_normalized_low=0.01,
                       energy_normalized_high=None):

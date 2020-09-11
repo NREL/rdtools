@@ -13,6 +13,7 @@ from rdtools.filtering import csi_filter
 from rdtools.filtering import poa_filter
 from rdtools.filtering import tcell_filter
 from rdtools.filtering import clip_filter
+from rdtools.filtering import geometric_clip_filter
 from rdtools.filtering import normalized_filter
 from rdtools.soiling import soiling_srr
 from rdtools.plotting import degradation_summary_plots

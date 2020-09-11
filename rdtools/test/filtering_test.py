@@ -5,7 +5,7 @@ import unittest
 import pandas as pd
 import numpy as np
 
-from rdtools import csi_filter, poa_filter, tcell_filter, clip_filter, normalized_filter
+from rdtools import csi_filter, poa_filter, tcell_filter, clip_filter, normalized_filter, geometric_clip_filter
 
 
 class CSIFilterTestCase(unittest.TestCase):
