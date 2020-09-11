@@ -48,6 +48,7 @@ Enhancements
   :py:func:`~rdtools.normalization.irradiance_rescale` (:pull:`152`).
 * Add parameter ``warning_threshold`` to :py:func:`~rdtools.normalization.interpolate`
   and :py:func:`~rdtools.normalization.interpolate_series` (:pull:`182`).
+* Add new function :py:func:`~rdtools.filtering.geometric_clip_filter` (:pull:`200`).
 
 Bug fixes
 ---------

@@ -58,6 +58,7 @@ Functions to perform filtering on PV system data.
    :toctree: generated/
     
    filtering.clip_filter
+   filtering.geometric_clip_filter
    filtering.csi_filter
    filtering.poa_filter
    filtering.tcell_filter
