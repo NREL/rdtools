@@ -71,6 +71,25 @@ class ClipFilterTestCase(unittest.TestCase):
         # Expect 99% of the 98th quantile to be filtered
         expected_result = self.power < (98 * 0.99)
         self.assertTrue((expected_result == filtered).all())
+        
+
+class GeometricClipFilterTestCase(unittest.TestCase):
+    ''' Unit tests for geometric clipping filter.'''
+
+    def setUp(self):
+        self.power_no_datetime_index = pd.Series(np.arange(1, 101))
+        self.power_datetime_index = pd.Series(np.arange(1, 101))
+        #Add datetime index to second series
+        time_range = pd.date_range('2016-12-02T11:00:00.000Z', '2017-06-06T07:00:00.000Z', freq='H')
+        self.power_datetime_index.index = pd.to_datetime(time_range[:100])
+        # Note: Power is expected to be Series object with a datetime index.
+
+    def test_clip_filter(self):
+        #Test that a Type Error is raised when a pandas series without a datetime index is used.
+        self.assertRaises(TypeError,  geometric_clip_filter, self.power_no_datetime_index)
+        # Expect none of the sequence to be clipped (as it's constantly increasing)
+        filtered, mask = geometric_clip_filter(self.power_datetime_index)
+        self.assertTrue(mask.all() == False)
 
 
 def test_normalized_filter_default():
