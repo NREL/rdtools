@@ -120,7 +120,7 @@ def geometric_clip_filter(power_ac, clipping_percentile_cutoff = 0.8,
     #Generate a dataframe for the series
     dataframe = pd.DataFrame(power_ac)
     #Set all negative values in the data stream to 0
-    dataframe[dataframe[power_ac.name]<0][column_name] = 0
+    dataframe.loc[dataframe[power_ac.name]<0, column_name] = 0
     #Remove anything more than 3 standard deviations from the mean (outliers)
     #OR use IQR calculation to remove outliers (Q1 - 5*IQR) or (Q3 - 5*IQR)
     mean = np.mean(dataframe[column_name], axis=0)
@@ -143,19 +143,14 @@ def geometric_clip_filter(power_ac, clipping_percentile_cutoff = 0.8,
     #Daily max calculations
     dataframe['daily_max_' + scaled_column] = dataframe.groupby('date')[scaled_column].transform("max")   
     dataframe['daily_max_difference_' + scaled_column] = dataframe['daily_max_' + scaled_column] - dataframe[scaled_column]  
-    #7 day rolling max calculations
-    dataframe['seven_day_rolling_max_daily_value_' + scaled_column] = dataframe.groupby('date')[scaled_column].rolling(min_periods = 1, center = True,  window = 7).max().reset_index(0, drop=True)    
-    dataframe['seven_day_max_difference_' + scaled_column] = dataframe['seven_day_rolling_max_daily_value_' + scaled_column] - dataframe[scaled_column]  
     ##############################################
     #Logic for clipping:
     #-Normalized value must be greater than or equal to clipping_percentile_cutoff value
     #-First-order derivative (either backward- or forward-calculated) less than 
     #   first_order_derivative_threshold value
     #-Value within 0.02 normalized units of max daily value
-    #-Value within 0.02 normalized units of max 7-day value
     ##############################################
     dataframe['daily_max_difference_threshold'] =  (dataframe['daily_max_difference_' + scaled_column] <= 0.02)
-    dataframe['seven_day_max_difference_threshold'] =  (dataframe['seven_day_max_difference_' + scaled_column] <= 0.02)
     dataframe['top_percentile_threshold_value'] = (dataframe[scaled_column] >= clipping_percentile_cutoff)
     #First order derivative--compare to hourly average
     dataframe['low_val_threshold_first_order_derivative_forward'] =  abs(dataframe['first_order_derivative_backward']) <= first_order_derivative_threshold 
@@ -164,7 +159,6 @@ def geometric_clip_filter(power_ac, clipping_percentile_cutoff = 0.8,
     dataframe[scaled_column +"_clipping_mask"] = False
     #Boolean statement for detecting clipping sequences
     dataframe.loc[((dataframe['daily_max_difference_threshold'] == True) & 
-                   (dataframe['seven_day_max_difference_threshold'] == True) & 
                    (dataframe['top_percentile_threshold_value'] == True) & 
                    ((dataframe['low_val_threshold_first_order_derivative_forward'] == True) | 
                     (dataframe['low_val_threshold_first_order_derivative_backward'] == True))), scaled_column +"_clipping_mask"] = True
