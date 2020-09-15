@@ -79,8 +79,9 @@ def tcell_filter(temperature_cell, temperature_cell_low=-50,
             (temperature_cell < temperature_cell_high))
 
 
-def geometric_clip_filter(power_ac, clipping_percentile_cutoff = 0.8, 
-                          first_order_derivative_threshold = 0.0045):
+def geometric_clip_filter(power_ac, clipping_percentile_cutoff = 0.8,
+                          daily_max_percentile_cutoff = 0.9,
+                          first_order_derivative_threshold = None):
     """
     Mask a time series, delineating clipping and non-clipping periods.
     Returns the time series with clipping periods omitted, as well as a boolean mask, 
@@ -91,13 +92,20 @@ def geometric_clip_filter(power_ac, clipping_percentile_cutoff = 0.8,
     power_ac : pd.Series
         AC power in Watts. Index of the Pandas series is a Pandas datetime index.
     clipping_percentile_cutoff: float, default 0.8
-        Cutoff value for the percentile for where clipping takes place. So, for example,
-        if the cutoff is set to 0.8, then any value in the normalized time series less than 
-        0.8 will not be considered clipping.
-    derivative_threshold : float, default 0.0045
+        Cutoff value for the percentile (for the whole time series) where clipping takes place. 
+        So, for example, if the cutoff is set to 0.8, then any value in the normalized time series less than 
+        0.8 will not be considered clipping. The higher the threshold, the more data omitted.
+    daily_max_percentile_cutoff: float, default 0.9
+        Cutoff value for the the daily percentile where clipping takes place. So, for example,
+        if the cutoff is set to 0.9, then any value in a normalized daily time series that is 
+        less than 90% the max daily value will not be considered clipping. The higher the threshold,
+        the more data omitted.
+    first_order_derivative_threshold : float, default None,
         Cutoff value for the derivative threshold. The higher the value, the less stringent 
         the function is on defining clipping periods. Represents the cutoff for the first-order
-        derivative across two data points.
+        derivative across two data points. Default is set to None, where the threshold is derived 
+        based on an experimental equation, which varies threshold by sampling frequency.
+        
     
     Returns
     -------
@@ -117,6 +125,13 @@ def geometric_clip_filter(power_ac, clipping_percentile_cutoff = 0.8,
     if index_name is None:
         index_name = 'datetime'
         power_ac = power_ac.rename_axis(index_name)   
+    #Get the sampling frequency of the time series
+    time_series_sampling_frequency = power_ac.index.to_series().diff().astype('timedelta64[m]').mode()[0]
+    #Based on the sampling frequency, adjust the first order derivative threshold. This is a 
+    #default equation that is experimentally derived from PV Fleets data. Value can also be
+    #manually set by the user.
+    if first_order_derivative_threshold == None:
+        first_order_derivative_threshold = (0.00005 * time_series_sampling_frequency) + 0.0009
     #Generate a dataframe for the series
     dataframe = pd.DataFrame(power_ac)
     #Set all negative values in the data stream to 0
@@ -142,15 +157,15 @@ def geometric_clip_filter(power_ac, clipping_percentile_cutoff = 0.8,
     dataframe['date'] = pd.to_datetime(dataframe.index).date
     #Daily max calculations
     dataframe['daily_max_' + scaled_column] = dataframe.groupby('date')[scaled_column].transform("max")   
-    dataframe['daily_max_difference_' + scaled_column] = dataframe['daily_max_' + scaled_column] - dataframe[scaled_column]  
+    dataframe['daily_max_percentile_' + scaled_column] = dataframe[scaled_column] / dataframe['daily_max_' + scaled_column]   
     ##############################################
     #Logic for clipping:
     #-Normalized value must be greater than or equal to clipping_percentile_cutoff value
     #-First-order derivative (either backward- or forward-calculated) less than 
     #   first_order_derivative_threshold value
-    #-Value within 0.02 normalized units of max daily value
+    #-Value within X percentile of daily max value
     ##############################################
-    dataframe['daily_max_difference_threshold'] =  (dataframe['daily_max_difference_' + scaled_column] <= 0.02)
+    dataframe['daily_max_percentile_threshold'] =  (dataframe['daily_max_percentile_' + scaled_column] >= daily_max_percentile_cutoff)
     dataframe['top_percentile_threshold_value'] = (dataframe[scaled_column] >= clipping_percentile_cutoff)
     #First order derivative--compare to hourly average
     dataframe['low_val_threshold_first_order_derivative_forward'] =  abs(dataframe['first_order_derivative_backward']) <= first_order_derivative_threshold 
@@ -158,7 +173,7 @@ def geometric_clip_filter(power_ac, clipping_percentile_cutoff = 0.8,
     #Set default mask to False
     dataframe[scaled_column +"_clipping_mask"] = False
     #Boolean statement for detecting clipping sequences
-    dataframe.loc[((dataframe['daily_max_difference_threshold'] == True) & 
+    dataframe.loc[((dataframe['daily_max_percentile_threshold'] == True) & 
                    (dataframe['top_percentile_threshold_value'] == True) & 
                    ((dataframe['low_val_threshold_first_order_derivative_forward'] == True) | 
                     (dataframe['low_val_threshold_first_order_derivative_backward'] == True))), scaled_column +"_clipping_mask"] = True
