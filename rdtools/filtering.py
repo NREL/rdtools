@@ -104,8 +104,7 @@ def geometric_clip_filter(power_ac, clipping_percentile_cutoff = 0.8,
         Cutoff value for the derivative threshold. The higher the value, the less stringent 
         the function is on defining clipping periods. Represents the cutoff for the first-order
         derivative across two data points. Default is set to None, where the threshold is derived 
-        based on an experimental equation, which varies threshold by sampling frequency.
-        
+        based on an experimental equation, which varies threshold by sampling frequency.        
     
     Returns
     -------
@@ -126,7 +125,7 @@ def geometric_clip_filter(power_ac, clipping_percentile_cutoff = 0.8,
         index_name = 'datetime'
         power_ac = power_ac.rename_axis(index_name)   
     #Get the sampling frequency of the time series
-    time_series_sampling_frequency = power_ac.index.to_series().diff().astype('timedelta64[m]').mode()[0]
+    time_series_sampling_frequency = power_ac.index.to_series(keep_tz=True).diff().astype('timedelta64[m]').mode()[0]
     #Based on the sampling frequency, adjust the first order derivative threshold. This is a 
     #default equation that is experimentally derived from PV Fleets data. Value can also be
     #manually set by the user.
@@ -140,13 +139,13 @@ def geometric_clip_filter(power_ac, clipping_percentile_cutoff = 0.8,
     #OR use IQR calculation to remove outliers (Q1 - 5*IQR) or (Q3 - 5*IQR)
     mean = np.mean(dataframe[column_name], axis=0)
     std = np.std(dataframe[column_name], axis=0)
-    Q1 = np.quantile(dataframe[column_name], 0.25)
-    Q3 = np.quantile(dataframe[column_name], 0.75)
+    Q1 = np.quantile(dataframe[dataframe[column_name]>0][column_name], 0.25)
+    Q3 = np.quantile(dataframe[dataframe[column_name]>0][column_name], 0.75)
     IQR = Q3 - Q1
     #Outlier removal statement
     dataframe = dataframe[(abs(mean - dataframe[column_name]) < (3*std)) &
-                          (dataframe[column_name] > (Q1 - 5*IQR)) & 
-                          (dataframe[column_name] < (Q3 + 5*IQR))]
+                          (dataframe[column_name] >= 0) & 
+                          (dataframe[column_name] <= (Q3 + 5*IQR))]
     #Min-max normalize the time series
     scaled_column = 'scaled_' + column_name
     dataframe[scaled_column] = (dataframe[column_name] - dataframe[column_name].min()) / (dataframe[column_name].max() - dataframe[column_name].min())
