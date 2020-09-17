@@ -372,8 +372,10 @@ class AvailabilityAnalysis:
         # Now span across nights:
         all_times = self.power_system.index
         masked = looks_offline[self.power_expected > 0].reindex(all_times)
-        full_outage = masked.ffill() | masked.bfill()
-        full_outage = full_outage.fillna(False)
+        # Note: in Series, (nan | True) is False, but (True | nan) is True
+        full_outage = (
+            masked.ffill().fillna(False) | masked.bfill().fillna(False)
+        )
 
         # Find expected production and associated uncertainty for each outage
         diff = full_outage.astype(int).diff()
