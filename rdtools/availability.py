@@ -25,7 +25,8 @@ def loss_from_power(subsystem_power, system_power, low_threshold=None,
     ----------
     subsystem_power : pd.DataFrame
         Timeseries power data, one column per subsystem. In the typical case,
-        this is inverter AC power data.
+        this is inverter AC power data. Each column is assumed to represent
+        a subsystem, so no extra columns may be included.
 
     system_power : pd.Series
         Timeseries total system power. In the typical case, this is meter
@@ -128,13 +129,13 @@ def loss_from_energy(power, energy, subsystem_power, expected_power,
     Parameters
     ----------
     power : pd.Series
-        Timeseries power data for a system.
+        Timeseries power data for entire system (e.g. meter).
 
     energy : pd.Series
-        Timeseries cumulative energy data for the system. These values
-        must be recorded at the device level (rather than summed by a
-        downstream device like a datalogger or DAS provider) to preserve its
-        integrity across communication interruptions. Units must match
+        Timeseries cumulative energy data for the entire system (e.g. meter).
+        These values must be recorded at the device itself (rather than summed
+        by a downstream device like a datalogger or DAS provider) to preserve
+        its integrity across communication interruptions. Units must match
         ``power`` integrated to hourly energy (e.g. if ``power`` is in kW then
         ``energy`` must be in kWh).
 
@@ -164,7 +165,8 @@ def loss_from_energy(power, energy, subsystem_power, expected_power,
         ``'real'`` or ``'comms'`` and reports whether the outage was determined
         to be a real outage with lost production or just a communications
         interruption with no production impact; and ``loss`` which reports
-        the estimated production loss for the outage.
+        the estimated production loss for the outage. See ``Notes`` for
+        further details.
 
     See Also
     --------
@@ -181,6 +183,51 @@ def loss_from_energy(power, energy, subsystem_power, expected_power,
     The outage detection routine assumes that the input timeseries are
     continuous, so any data gaps should be filled with nan before using
     this function.  See :py:func:`rdtools.normalization.interpolate`.
+
+    The columns in the returned dataframe are as follows:
+
+    +----------------------+------------------------------------------------+
+    | Column Name          | Description                                    |
+    +======================+================================================+
+    | `start`              | Timestamp of the outage start.                 |
+    +----------------------+------------------------------------------------+
+    | `end`                | Timestamp of the outage end.                   |
+    +----------------------+------------------------------------------------+
+    | `duration`           | Length of the outage (*i.e.*, `end - start`).  |
+    +----------------------+------------------------------------------------+
+    | `intervals`          | Total count of data intervals contained in the |
+    |                      | outage.                                        |
+    +----------------------+------------------------------------------------+
+    | `daylight_intervals` | Count of data intervals contained in the       |
+    |                      | outage occurring during the day.               |
+    +----------------------+------------------------------------------------+
+    | `error_lower`        | Lower error bound as a fraction of expected    |
+    |                      | energy.                                        |
+    +----------------------+------------------------------------------------+
+    | `error_upper`        | Upper error bound as a fraction of expected    |
+    |                      | energy.                                        |
+    +----------------------+------------------------------------------------+
+    | `expected_energy`    | Total expected production for the outage       |
+    |                      | duration.                                      |
+    +----------------------+------------------------------------------------+
+    | `start_energy`       | System cumulative production at the outage     |
+    |                      | start.                                         |
+    +----------------------+------------------------------------------------+
+    | `end_energy`         | System cumulative production at the outage end.|
+    +----------------------+------------------------------------------------+
+    | `actual_energy`      | System production during the outage (*i.e.*,   |
+    |                      | `end_energy - start_energy`).                  |
+    +----------------------+------------------------------------------------+
+    | `ci_lower`           | Lower bound for the expected energy confidence |
+    |                      | interval.                                      |
+    +----------------------+------------------------------------------------+
+    | `ci_upper`           | Lower bound for the expected energy confidence |
+    |                      | interval.                                      |
+    +----------------------+------------------------------------------------+
+    | `type`               | Type of the outage (`'real'` or `'comms'`).    |
+    +----------------------+------------------------------------------------+
+    | `loss`               | Estimated production loss.                     |
+    +----------------------+------------------------------------------------+
 
     References
     ----------
@@ -302,7 +349,7 @@ def loss_from_energy(power, energy, subsystem_power, expected_power,
     df_outages = df_outages[data.keys()]
 
     df_outages['actual_energy'] = (
-            df_outages['end_energy'] - df_outages['start_energy']
+        df_outages['end_energy'] - df_outages['start_energy']
     )
     # poor-quality cumulative meter data can create "negative production"
     # outages.  Set to nan so that negative value doesn't pollute other calcs.
