@@ -58,8 +58,9 @@ Functions for estimating production loss from PV system outages.
 .. autosummary::
    :toctree: generated/
    
-   availability.loss_from_power
-   availability.loss_from_energy
+   availability.AvailabilityAnalysis
+   availability.AvailabilityAnalysis.run
+   availability.AvailabilityAnalysis.plot
 
 
 Filtering
@@ -134,5 +135,4 @@ Functions to visualize degradation and soiling analysis results.
    plotting.soiling_monte_carlo_plot
    plotting.soiling_interval_plot
    plotting.soiling_rate_histogram
-   plotting.availability_cumulative_plot
 

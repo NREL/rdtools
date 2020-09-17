@@ -5,7 +5,7 @@ Test suite for inverter availability functions.
 import pytest
 from pandas.testing import assert_series_equal
 
-from rdtools.availability import loss_from_power, loss_from_energy
+from rdtools.availability import AvailabilityAnalysis
 
 import pvlib
 import pandas as pd
@@ -34,7 +34,7 @@ def power_data(request):
     """
     Generate power test cases corresponding to cover different system designs
     and data artifacts caused by outages. This fixture is parametrized across
-    many of combinations (~hundreds) in the PARAMETER_SPACE list.
+    many (~hundreds) combinations in the PARAMETER_SPACE list.
 
     The method is to generate some inverter power signals of varying scales,
     introduce power outages to some of them, calculate the system meter power
@@ -90,11 +90,17 @@ def power_data(request):
     return inverter_power, meter_power, expected_loss
 
 
-def test_loss_from_power(power_data):
+def test__loss_from_power(power_data):
     # implicitly sweeps across the parameter space because power_data is
     # parametrized
     inverter_power, meter_power, expected_loss = power_data
-    actual_loss = loss_from_power(inverter_power, meter_power)
+    aa = AvailabilityAnalysis(meter_power,
+                              inverter_power,
+                              cumulative_energy=None,
+                              expected_power=None)
+    aa._loss_from_power(low_threshold=None, relative_sizes=None,
+                        system_power_limit=None)
+    actual_loss = aa.subsystem_loss
     # pandas <1.1.0 as no atol/rtol parameters, so just use np.round instead:
     assert_series_equal(np.round(expected_loss, 1),
                         np.round(actual_loss, 1))
@@ -111,23 +117,33 @@ def dummy_power_data():
     return df, df.sum(axis=1)
 
 
-def test_loss_from_power_threshold(dummy_power_data):
+def test__loss_from_power_threshold(dummy_power_data):
     # test low_threshold parameter.
     # negative threshold means the inverter is never classified as offline
     inverter_power, meter_power = dummy_power_data
-    actual_loss = loss_from_power(inverter_power, meter_power,
-                                  low_threshold=-1)
+    aa = AvailabilityAnalysis(meter_power,
+                              inverter_power,
+                              cumulative_energy=None,
+                              expected_power=None)
+    aa._loss_from_power(low_threshold=-1, relative_sizes=None,
+                        system_power_limit=None)
+    actual_loss = aa.subsystem_loss
     assert actual_loss.sum() == 0
 
 
-def test_loss_from_power_limit(dummy_power_data):
+def test__loss_from_power_limit(dummy_power_data):
     # test system_power_limit parameter.
     # set it unrealistically low to verify it constrains the loss.
     # real max power is 2, real max loss is 1, so setting limit=1.5 sets max
     # loss to 0.5
     inverter_power, meter_power = dummy_power_data
-    actual_loss = loss_from_power(inverter_power, meter_power,
-                                  system_power_limit=1.5)
+    aa = AvailabilityAnalysis(meter_power,
+                              inverter_power,
+                              cumulative_energy=None,
+                              expected_power=None)
+    aa._loss_from_power(low_threshold=None, relative_sizes=None,
+                        system_power_limit=1.5)
+    actual_loss = aa.subsystem_loss
     assert actual_loss.max() == pytest.approx(0.5, abs=0.01)
 
 
@@ -219,7 +235,7 @@ def energy_data_comms_single():
     return _generate_energy_data(outage_value, outage_value, outage_fraction)
 
 
-def test_loss_from_energy(energy_data):
+def test__loss_from_energy(energy_data):
     # test single outage
     (meter_power,
      meter_energy,
@@ -228,8 +244,10 @@ def test_loss_from_energy(energy_data):
      expected_loss,
      expected_type) = energy_data
 
-    outage_info = loss_from_energy(meter_power, meter_energy, inverter_power,
-                                   expected_power)
+    aa = AvailabilityAnalysis(meter_power, inverter_power,
+                              meter_energy, expected_power)
+    aa.run()
+    outage_info = aa.outage_info
 
     # only one outage
     assert len(outage_info) == 1
@@ -242,7 +260,7 @@ def test_loss_from_energy(energy_data):
     assert outage_info['loss'] == pytest.approx(expected_loss, rel=0.05)
 
 
-def test_loss_from_energy_multiple(energy_data):
+def test__loss_from_energy_multiple(energy_data):
     # test multiple outages
     (meter_power,
      meter_energy,
@@ -254,13 +272,15 @@ def test_loss_from_energy_multiple(energy_data):
     meter_power.loc[date] = 0
     meter_energy.loc[date] = 0
     inverter_power.loc[date] = 0
-    outage_info = loss_from_energy(meter_power, meter_energy, inverter_power,
-                                   expected_power)
+    aa = AvailabilityAnalysis(meter_power, inverter_power,
+                              meter_energy, expected_power)
+    aa.run()
+    outage_info = aa.outage_info
     assert len(outage_info) == 2
 
 
 @pytest.mark.parametrize('side', ['start', 'end'])
-def test_loss_from_energy_startend(side, energy_data_outage_single):
+def test__loss_from_energy_startend(side, energy_data_outage_single):
     # data starts or ends in an outage
     (meter_power,
      meter_energy,
@@ -286,15 +306,18 @@ def test_loss_from_energy_startend(side, energy_data_outage_single):
     meter_power.loc[date] = 0
     meter_energy.loc[date] = 0
     inverter_power.loc[date] = 0
-    outage_info = loss_from_energy(meter_power, meter_energy, inverter_power,
-                                   expected_power)
+
+    aa = AvailabilityAnalysis(meter_power, inverter_power,
+                              meter_energy, expected_power)
+    aa.run()
+    outage_info = aa.outage_info
     actual_start = outage_info['start'].iloc[idx].strftime('%Y-%m-%d %H:%M')
     actual_end = outage_info['end'].iloc[idx].strftime('%Y-%m-%d %H:%M')
     assert actual_start == expected_start
     assert actual_end == expected_end
 
 
-def test_loss_from_energy_quantiles(energy_data_comms_single):
+def test__loss_from_energy_quantiles(energy_data_comms_single):
     # exercise the quantiles parameter
     (meter_power,
      meter_energy,
@@ -303,12 +326,16 @@ def test_loss_from_energy_quantiles(energy_data_comms_single):
      _, _) = energy_data_comms_single
 
     # first make sure it gets picked up as a comms outage with normal quantiles
-    outage_info = loss_from_energy(meter_power, meter_energy, inverter_power,
-                                   expected_power, quantiles=(0.01, 0.99))
+    aa = AvailabilityAnalysis(meter_power, inverter_power,
+                              meter_energy, expected_power)
+    aa.run(quantiles=(0.01, 0.99))
+    outage_info = aa.outage_info
     assert outage_info['type'].values[0] == 'comms'
 
     # set the lower quantile very high so that the comms outage gets
     # classified as a real outage
-    outage_info = loss_from_energy(meter_power, meter_energy, inverter_power,
-                                   expected_power, quantiles=(0.999, 0.9999))
+    aa = AvailabilityAnalysis(meter_power, inverter_power,
+                              meter_energy, expected_power)
+    aa.run(quantiles=(0.999, 0.9999))
+    outage_info = aa.outage_info
     assert outage_info['type'].values[0] == 'real'
