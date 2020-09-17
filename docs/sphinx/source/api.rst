@@ -135,4 +135,4 @@ Functions to visualize degradation and soiling analysis results.
    plotting.soiling_monte_carlo_plot
    plotting.soiling_interval_plot
    plotting.soiling_rate_histogram
-
+   plotting.availability_summary_plots
