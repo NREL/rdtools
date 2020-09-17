@@ -276,8 +276,8 @@ def availability_summary_plots(power_system, power_subsystem, loss_total,
     >>> aa = AvailabilityAnalysis(...)
     >>> aa.run()
     >>> fig = rdtools.plotting.availability_summary_plots(aa.power_system,
-            aa.power_subsystem, aa.loss_total, aa.energy_cumulative,
-            aa.energy_expected_rescaled, aa.outage_info)
+    ...     aa.power_subsystem, aa.loss_total, aa.energy_cumulative,
+    ...     aa.energy_expected_rescaled, aa.outage_info)
     """
     fig = plt.figure(figsize=(16, 8))
     gs = fig.add_gridspec(3, 2)

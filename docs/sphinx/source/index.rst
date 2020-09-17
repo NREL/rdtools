@@ -96,6 +96,22 @@ identified soiling rates for the dataset.
    :width: 320
    :height: 216
 
+Availability Results
+--------------------
+
+Evaluating system availability can be confounded by data loss from interrupted
+datalogger or system communications. RdTools implements two methods of
+distinguishing nuisance communication interruptions from true production outages
+with the :py:class:`.availability.AvailabilityAnalysis` class. In addition to
+classifying data outages, it estimates lost production and calculates
+energy-weighted system availability.
+
+.. image:: _images/availability_summary.png
+   :alt: RdTools availability analysis plot
+   :width: 696
+   :height: 288
+
+
 Install RdTools using pip
 -------------------------
 
@@ -186,6 +202,15 @@ The most frequently used functions are:
        `sr_ci`: Confidence interval `soiling_info`: associated analysis data
      '''
 
+.. code:: python
+
+   availability.AvailabilityAnalysis(power_system, power_subsystem,
+                                     energy_cumulative, power_expected)
+     '''
+     Inputs: Pandas time series system and subsystem power and energy data
+     Outputs: DataFrame of production loss and availability metrics
+     '''
+
 Citing RdTools
 --------------
 
@@ -200,6 +225,10 @@ appropriate:
 -  M. G. Deceglie, L. Micheli and M. Muller, "Quantifying Soiling Loss
    Directly From PV Yield," in IEEE Journal of Photovoltaics, 8(2),
    pp. 547-551, 2018
+
+-  K. Anderson and R. Blumenthal, "Overcoming Communications Outages in
+   Inverter Downtime Analysis", 2020 IEEE 47th Photovoltaic Specialists
+   Conference (PVSC)."
    ‌‌
 -  RdTools, version x.x.x, https://github.com/NREL/rdtools,
    https://doi.org/10.5281/zenodo.1210316
