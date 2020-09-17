@@ -48,7 +48,21 @@ class AvailabilityAnalysis:
     Attributes
     ----------
     results : pd.DataFrame
-        Rolled-up production, loss, and availability metrics. TODO: col table
+        Rolled-up production, loss, and availability metrics. The index is
+        a datetime index of the period passed to
+        :py:meth:`AvailabilityAnalysis.run`. The columns of the dataframe are
+        as follows:
+
+        +----------------------+----------------------------------------------+
+        | Column Name          | Description                                  |
+        +======================+==============================================+
+        | `lost_production`    | Production loss from outages                 |
+        +----------------------+----------------------------------------------+
+        | `actual_production`  | System energy production.                    |
+        +----------------------+----------------------------------------------+
+        | `availability`       | Energy-weighted system availability as a     |
+        |                      | fraction (0-1).                              |
+        +----------------------+----------------------------------------------+
 
     system_loss : pd.Series
         Estimated timeseries lost power from system outages.
@@ -203,6 +217,9 @@ class AvailabilityAnalysis:
             # normalize by mean power and take the median across the timeseries
             normalized = reporting.divide(reporting.mean(axis=1), axis=0)
             relative_sizes = normalized.median()
+        else:
+            # convert dict to Series (no effect if already Series)
+            relative_sizes = pd.Series(relative_sizes)
 
         normalized_subsystem_powers = reporting.divide(relative_sizes, axis=1)
         mean_subsystem_power = normalized_subsystem_powers.mean(axis=1)
@@ -278,10 +295,10 @@ class AvailabilityAnalysis:
         df_subset = df.loc[subset, :]
 
         # window length is "number of daytime intervals".
-        # Note: the logspace bounds are currently kind of arbitrary
-        window_lengths = np.logspace(np.log10(12),
-                                     np.log10(0.75*len(df_subset)),
-                                     10).astype(int)
+        # Note: these bounds are intended to provide good resolution
+        # across many dataset lengths
+        window_lengths = 2**np.arange(1, int(np.log2(len(df_subset))), 1)
+
         results_list = []
         for window_length in window_lengths:
             rolling = df_subset.rolling(window=window_length, center=True)
@@ -361,12 +378,13 @@ class AvailabilityAnalysis:
         starts = all_times[diff == 1].tolist()
         ends = all_times[diff == -1].tolist()
         steps = diff[~diff.isnull() & (diff != 0)]
-        if steps[0] == -1:
-            # data starts in an outage
-            starts.insert(0, all_times[0])
-        if steps[-1] == 1:
-            # data ends in an outage
-            ends.append(all_times[-1])
+        if not steps.empty:
+            if steps[0] == -1:
+                # data starts in an outage
+                starts.insert(0, all_times[0])
+            if steps[-1] == 1:
+                # data ends in an outage
+                ends.append(all_times[-1])
 
         outage_data = []
         for start, end in zip(starts, ends):
@@ -392,9 +410,12 @@ class AvailabilityAnalysis:
             }
             outage_data.append(data)
 
-        df_outages = pd.DataFrame(outage_data)
-        # pandas < 0.25.0 sorts columns alphabetically.  revert to dict order:
-        df_outages = df_outages[data.keys()]
+        # specify columns in case no outages are found. Also specifies
+        # the order for pandas < 0.25.0
+        cols = ['start', 'end', 'duration', 'intervals', 'daylight_intervals',
+                'error_lower', 'error_upper', 'expected_energy',
+                'start_energy', 'end_energy']
+        df_outages = pd.DataFrame(outage_data, columns=cols)
 
         df_outages['actual_energy'] = (
             df_outages['end_energy'] - df_outages['start_energy']
@@ -528,12 +549,11 @@ class AvailabilityAnalysis:
 
     def plot(self):
         """
-        pass.
+        Create a figure summarizing the availability analysis results.
 
         Returns
         -------
-        fig : TYPE
-            DESCRIPTION.
+        fig : matplotlib Figure
         """
         fig = plt.figure(figsize=(16, 8))
         gs = fig.add_gridspec(3, 2)
@@ -565,9 +585,11 @@ class AvailabilityAnalysis:
             energy_end = expected_curve.iloc[-1]
             uncertainty_artist = ax4.errorbar([end], [energy_end],
                                               [[lo], [hi]], c='k')
-
-        artists = [measured_artist[0], expected_artist[0], uncertainty_artist]
-        labels = ['Reported Production', 'Expected Production', 'Uncertainty']
-        ax4.legend(artists, labels, loc='upper left')
+        if not self.outage_info.empty:
+            artists = [
+                measured_artist[0], expected_artist[0], uncertainty_artist]
+            labels = [
+                'Reported Production', 'Expected Production', 'Uncertainty']
+            ax4.legend(artists, labels, loc='upper left')
         ax4.set_ylabel('Cumulative Energy [kWh]')
         return fig
