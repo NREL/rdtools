@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import rdtools
 from rdtools.degradation import degradation_year_on_year
 from rdtools.soiling import soiling_srr
 from rdtools.normalization import energy_from_power
@@ -8,9 +9,12 @@ from rdtools.plotting import (
     soiling_monte_carlo_plot,
     soiling_interval_plot,
     soiling_rate_histogram,
+    availability_summary_plots,
 )
 import matplotlib.pyplot as plt
 import pytest
+
+from conftest import assert_isinstance
 
 # bring in soiling pytest fixtures
 from soiling_test import (
@@ -20,12 +24,10 @@ from soiling_test import (
 )
 
 # availability pytest fixture
-from availability_test import energy_data_outage_single
-
-
-def assert_isinstance(obj, klass):
-    assert isinstance(obj, klass), f'got {type(obj)}, expected {klass}'
-
+from availability_test import (
+    energy_data_outage_single,
+    availability_analysis_object
+)
 
 # can't import degradation fixtures because it's a unittest file.
 # roll our own here instead:
@@ -166,3 +168,24 @@ def test_soiling_rate_histogram_kwargs(soiling_info):
     )
     result = soiling_rate_histogram(soiling_info, **kwargs)
     assert_isinstance(result, plt.Figure)
+
+
+def test_availability_summary_plots(availability_analysis_object):
+    aa = availability_analysis_object
+    result = availability_summary_plots(
+        aa.power_system, aa.power_subsystem, aa.loss_total,
+        aa.energy_cumulative, aa.energy_expected_rescaled,
+        aa.outage_info)
+    assert_isinstance(result, plt.Figure)
+
+
+def test_availability_summary_plots_empty(availability_analysis_object):
+    # empty outage_info
+    aa = availability_analysis_object
+    empty = aa.outage_info.iloc[:0, :]
+    result = availability_summary_plots(
+        aa.power_system, aa.power_subsystem, aa.loss_total,
+        aa.energy_cumulative, aa.energy_expected_rescaled,
+        empty)
+    assert_isinstance(result, plt.Figure)
+

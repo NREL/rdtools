@@ -4,6 +4,7 @@ Test suite for inverter availability functions.
 
 import pytest
 from pandas.testing import assert_series_equal
+from conftest import assert_isinstance
 
 from rdtools.availability import AvailabilityAnalysis
 
@@ -12,6 +13,7 @@ import pandas as pd
 import numpy as np
 import itertools
 import datetime
+import matplotlib.pyplot as plt
 
 # Values to parametrize power tests across.  One test will be run for each
 # combination. Can't be careless about expanding this list because of
@@ -349,7 +351,7 @@ def test__loss_from_energy_startend(side, energy_data_outage_single):
         # an outage all day on the 1st, so technically the outage extends to
         # sunrise on the 2nd, but it doesn't wrap around to the previous dusk
         date = '2019-01-01'
-        expected_start = '2019-01-01 08:00'
+        expected_start = '2019-01-01 00:00'
         expected_end = '2019-01-02 08:00'
         idx = 0
     else:
@@ -396,3 +398,24 @@ def test__loss_from_energy_quantiles(energy_data_comms_single):
     aa.run(quantiles=(0.999, 0.9999))
     outage_info = aa.outage_info
     assert outage_info['type'].values[0] == 'real'
+
+
+# %% plotting
+
+@pytest.fixture
+def availability_analysis_object(energy_data_outage_single):
+    (meter_power,
+     meter_energy,
+     inverter_power,
+     expected_power,
+     _, _) = energy_data_outage_single
+
+    aa = AvailabilityAnalysis(meter_power, inverter_power, meter_energy,
+                              expected_power)
+    aa.run()
+    return aa
+
+
+def test_plot(availability_analysis_object):
+    result = availability_analysis_object.plot()
+    assert_isinstance(result, plt.Figure)
