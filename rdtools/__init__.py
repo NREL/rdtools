@@ -19,6 +19,7 @@ from rdtools.plotting import degradation_summary_plots
 from rdtools.plotting import soiling_monte_carlo_plot
 from rdtools.plotting import soiling_interval_plot
 from rdtools.plotting import soiling_rate_histogram
+from rdtools.plotting import availability_summary_plots
 from rdtools.availability import AvailabilityAnalysis
 
 
