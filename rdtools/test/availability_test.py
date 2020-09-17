@@ -147,6 +147,63 @@ def test__loss_from_power_limit(dummy_power_data):
     assert actual_loss.max() == pytest.approx(0.5, abs=0.01)
 
 
+@pytest.fixture
+def difficult_data():
+    # a nasty dataset with lots of downtime and almost no periods where
+    # the two inverters are online simultaneously, so calculating the
+    # relative sizes automatically gives the wrong answer.
+
+    # generate a plausible clear-sky power signal
+    times = pd.date_range('2019-01-01', '2019-01-06', freq='15min',
+                          tz='US/Eastern', closed='left')
+    location = pvlib.location.Location(40, -80)
+    clearsky = location.get_clearsky(times, model='haurwitz')
+    # just scale GHI to power for simplicity
+    base_power = 2.5*clearsky['ghi']
+    # but require a minimum irradiance to turn on, simulating start-up voltage
+    base_power[clearsky['ghi'] < 20] = 0
+
+    # 1 and 3, so the relative sizing is 0.5 and 1.5 (1/2 and 3/2)
+    df = pd.DataFrame({
+        'inv1_power': base_power,
+        'inv2_power': base_power * 3,
+    })
+    relative_sizes = {'inv1_power': 0.5, 'inv2_power': 1.5}
+
+    # inv1 offline days 1 & 2; inv2 offline days 3 & 4.  Both online on day 5
+    df.loc['2019-01-01', 'inv1_power'] = 0
+    df.loc['2019-01-02', 'inv1_power'] = 0
+    df.loc['2019-01-03', 'inv2_power'] = 0
+    df.loc['2019-01-04', 'inv2_power'] = 0
+
+    # no need for communication outages here, so just take meter=inv sum
+    expected_power = meter_power = df.sum(axis=1)
+
+    return df, meter_power, expected_power, relative_sizes
+
+def test__loss_from_power_relative_sizes(difficult_data):
+    # test that manually passing in relative_sizes improves the results
+    # for pathological datasets with tons of downtime
+    invs, meter, expected, relative_sizes = difficult_data
+    aa = AvailabilityAnalysis(meter,
+                              invs,
+                              cumulative_energy=meter.cumsum()/4,
+                              expected_power=expected)
+    # verify that results are bad by default -- without the correction, the
+    # two inverters are weighted equally, so availability will be 50% when
+    # only one is online
+    aa.run(rollup_period='d')
+    ava = aa.results['availability']
+    assert np.allclose(ava.iloc[0:4], 0.5)
+    assert np.allclose(ava.iloc[4], 1.0)
+
+    # now use the correct relative_sizes
+    aa.run(rollup_period='d', relative_sizes=relative_sizes)
+    ava = aa.results['availability']
+    assert np.allclose(ava.iloc[0:2], 0.75)
+    assert np.allclose(ava.iloc[2:4], 0.25)
+    assert np.allclose(ava.iloc[4], 1.0)
+
 # %%
 
 ENERGY_PARAMETER_SPACE = list(itertools.product(
