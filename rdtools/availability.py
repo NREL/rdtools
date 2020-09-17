@@ -189,8 +189,8 @@ class AvailabilityAnalysis:
             online. If the threshold is a scalar, it will be used for all
             subsystems. For subsystems with different capacities, a pandas
             Series may be passed with index values matching the columns in
-            ``subsystem_power``. Units must match ``subsystem_power`` and
-            ``system_power``. If omitted, the limit is calculated for each
+            ``power_subsystem``. Units must match ``power_subsystem`` and
+            ``power_system``. If omitted, the limit is calculated for each
             subsystem independently as 0.001 times the 99th percentile of its
             power data.
 
@@ -201,7 +201,7 @@ class AvailabilityAnalysis:
 
         power_system_limit : float or pd.Series
             An optional maximum system power used as an upper limit for
-            (system_power + lost_power) so that the maximum system capacity or
+            (power_system + power_lost) so that the maximum system capacity or
             interconnection limit is not exceeded. If omitted, that check is
             skipped.
         """
@@ -518,8 +518,8 @@ class AvailabilityAnalysis:
             online. If the threshold is a scalar, it will be used for all
             subsystems. For subsystems with different capacities, a pandas
             Series may be passed with index values matching the columns in
-            ``subsystem_power``. Units must match ``subsystem_power`` and
-            ``system_power``. If omitted, the limit is calculated for each
+            ``power_subsystem``. Units must match ``power_subsystem`` and
+            ``power_system``. If omitted, the limit is calculated for each
             subsystem independently as 0.001 times the 99th percentile of its
             power data.
 
@@ -530,7 +530,7 @@ class AvailabilityAnalysis:
 
         power_system_limit : float or pd.Series, optional
             An optional maximum system power used as an upper limit for
-            (system_power + lost_power) so that the maximum system capacity or
+            (power_system + lost_power) so that the maximum system capacity or
             interconnection limit is not exceeded. If omitted, that check is
             skipped.
 
