@@ -8,7 +8,6 @@ import rdtools
 import pandas as pd
 import numpy as np
 from scipy.interpolate import interp1d
-import matplotlib.pyplot as plt
 
 
 class AvailabilityAnalysis:
@@ -558,41 +557,7 @@ class AvailabilityAnalysis:
         -------
         fig : matplotlib Figure
         """
-        fig = plt.figure(figsize=(16, 8))
-        gs = fig.add_gridspec(3, 2)
-        ax1 = fig.add_subplot(gs[0, 0])
-        ax2 = fig.add_subplot(gs[1, 0], sharex=ax1)
-        ax3 = fig.add_subplot(gs[2, 0], sharex=ax1)
-        ax4 = fig.add_subplot(gs[:, 1], sharex=ax1)
-
-        # inverter power
-        self.subsystem_power.plot(ax=ax1)
-        ax1.set_ylabel('Inverter Power [kW]')
-        # meter power
-        self.system_power.plot(ax=ax2)
-        ax2.set_ylabel('System power [kW]')
-        # lost power
-        self.total_loss.plot(ax=ax3)
-        ax3.set_ylabel('Estimated lost power [kW]')
-
-        # cumulative energy
-        measured_artist = ax4.plot(self.cumulative_energy)
-        for i, row in self.outage_info.iterrows():
-            start, end = row[['start', 'end']]
-            start_energy = row['start_energy']
-            expected_energy = row['expected_energy']
-            lo, hi = np.abs(expected_energy - row[['ci_lower', 'ci_upper']])
-            expected_curve = self.rescaled_expected_energy[start:end].cumsum()
-            expected_curve += start_energy
-            expected_artist = ax4.plot(expected_curve, c='tab:orange')
-            energy_end = expected_curve.iloc[-1]
-            uncertainty_artist = ax4.errorbar([end], [energy_end],
-                                              [[lo], [hi]], c='k')
-        if not self.outage_info.empty:
-            artists = [
-                measured_artist[0], expected_artist[0], uncertainty_artist]
-            labels = [
-                'Reported Production', 'Expected Production', 'Uncertainty']
-            ax4.legend(artists, labels, loc='upper left')
-        ax4.set_ylabel('Cumulative Energy [kWh]')
-        return fig
+        return rdtools.plotting.availability_summary_plots(
+            self.power_system, self.power_subsystem, self.loss_total,
+            self.energy_cumulative, self.energy_expected_rescaled,
+            self.outage_info)

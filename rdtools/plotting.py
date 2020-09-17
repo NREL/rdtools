@@ -3,7 +3,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
-
 def degradation_summary_plots(yoy_rd, yoy_ci, yoy_info, normalized_yield,
                               hist_xmin=None, hist_xmax=None, bins=None,
                               scatter_ymin=None, scatter_ymax=None,
@@ -230,4 +229,87 @@ def soiling_rate_histogram(soiling_info, bins=None):
     ax.set_xlabel('Soiling rate (%/day)')
     ax.set_ylabel('Count')
 
+    return fig
+
+
+def availability_summary_plots(power_system, power_subsystem, loss_total,
+                               energy_cumulative, energy_expected_rescaled,
+                               outage_info):
+    """
+    Create a figure summarizing the availability analysis results.
+
+    Because all of the parameters to this function are products of an
+    AvailabilityAnalysis object, it is usually easier to use
+    :py:meth:`.availability.AvailabilityAnalysis.plot` instead of running
+    this function manually.
+
+    Parameters
+    ----------
+    power_system : pd.Series
+        Timeseries total system power.
+
+    power_subsystem : pd.DataFrame
+        Timeseries power data, one column per subsystem.
+
+    loss_total : pd.Series
+        Timeseries system lost power.
+
+    energy_cumulative : pd.Series
+        Timeseries system cumulative energy.
+
+    energy_expected_rescaled : pd.Series
+        Timeseries expected energy, rescaled to match actual energy.
+
+    outage_info : pd.DataFrame
+        A dataframe with information about system outages.
+
+    Returns
+    -------
+    fig : matplotlib Figure
+
+    See Also
+    --------
+    rdtools.availability.AvailabilityAnalysis.plot
+
+    Example
+    -------
+
+    """
+    fig = plt.figure(figsize=(16, 8))
+    gs = fig.add_gridspec(3, 2)
+    ax1 = fig.add_subplot(gs[0, 0])
+    ax2 = fig.add_subplot(gs[1, 0], sharex=ax1)
+    ax3 = fig.add_subplot(gs[2, 0], sharex=ax1)
+    ax4 = fig.add_subplot(gs[:, 1], sharex=ax1)
+
+    # inverter power
+    power_system.plot(ax=ax1)
+    ax1.set_ylabel('Inverter Power [kW]')
+    # meter power
+    power_subsystem.plot(ax=ax2)
+    ax2.set_ylabel('System power [kW]')
+    # lost power
+    loss_total.plot(ax=ax3)
+    ax3.set_ylabel('Estimated lost power [kW]')
+
+    # cumulative energy
+    measured_artist = ax4.plot(energy_cumulative)
+    for i, row in outage_info.iterrows():
+        start, end = row[['start', 'end']]
+        start_energy = row['energy_start']
+        expected_energy = row['energy_expected']
+        lo, hi = np.abs(expected_energy - row[['ci_lower', 'ci_upper']])
+        expected_curve = energy_expected_rescaled[start:end].cumsum()
+        expected_curve += start_energy
+        expected_artist = ax4.plot(expected_curve, c='tab:orange')
+        energy_end = expected_curve.iloc[-1]
+        uncertainty_artist = ax4.errorbar([end], [energy_end],
+                                          [[lo], [hi]], c='k')
+    if not outage_info.empty:
+        artists = [
+            measured_artist[0], expected_artist[0], uncertainty_artist]
+        labels = [
+            'Reported Production', 'Expected Production', 'Uncertainty']
+        ax4.legend(artists, labels, loc='upper left')
+    ax4.set_ylabel('Cumulative Energy [kWh]')
     return fig
