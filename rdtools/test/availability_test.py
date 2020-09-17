@@ -96,11 +96,11 @@ def test__loss_from_power(power_data):
     inverter_power, meter_power, expected_loss = power_data
     aa = AvailabilityAnalysis(meter_power,
                               inverter_power,
-                              cumulative_energy=None,
-                              expected_power=None)
+                              energy_cumulative=None,
+                              power_expected=None)
     aa._loss_from_power(low_threshold=None, relative_sizes=None,
-                        system_power_limit=None)
-    actual_loss = aa.subsystem_loss
+                        power_system_limit=None)
+    actual_loss = aa.loss_subsystem
     # pandas <1.1.0 as no atol/rtol parameters, so just use np.round instead:
     assert_series_equal(np.round(expected_loss, 1),
                         np.round(actual_loss, 1))
@@ -123,11 +123,11 @@ def test__loss_from_power_threshold(dummy_power_data):
     inverter_power, meter_power = dummy_power_data
     aa = AvailabilityAnalysis(meter_power,
                               inverter_power,
-                              cumulative_energy=None,
-                              expected_power=None)
+                              energy_cumulative=None,
+                              power_expected=None)
     aa._loss_from_power(low_threshold=-1, relative_sizes=None,
-                        system_power_limit=None)
-    actual_loss = aa.subsystem_loss
+                        power_system_limit=None)
+    actual_loss = aa.loss_subsystem
     assert actual_loss.sum() == 0
 
 
@@ -139,11 +139,11 @@ def test__loss_from_power_limit(dummy_power_data):
     inverter_power, meter_power = dummy_power_data
     aa = AvailabilityAnalysis(meter_power,
                               inverter_power,
-                              cumulative_energy=None,
-                              expected_power=None)
+                              energy_cumulative=None,
+                              power_expected=None)
     aa._loss_from_power(low_threshold=None, relative_sizes=None,
-                        system_power_limit=1.5)
-    actual_loss = aa.subsystem_loss
+                        power_system_limit=1.5)
+    actual_loss = aa.loss_subsystem
     assert actual_loss.max() == pytest.approx(0.5, abs=0.01)
 
 
@@ -187,8 +187,8 @@ def test__loss_from_power_relative_sizes(difficult_data):
     invs, meter, expected, relative_sizes = difficult_data
     aa = AvailabilityAnalysis(meter,
                               invs,
-                              cumulative_energy=meter.cumsum()/4,
-                              expected_power=expected)
+                              energy_cumulative=meter.cumsum()/4,
+                              power_expected=expected)
     # verify that results are bad by default -- without the correction, the
     # two inverters are weighted equally, so availability will be 50% when
     # only one is online
