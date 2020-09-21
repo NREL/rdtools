@@ -197,9 +197,7 @@ def geometric_clip_filter(power_ac, clipping_percentile_cutoff = 0.8,
     return pd.Series(dataframe[dataframe[scaled_column +'_clipping_mask'] == False][column_name]), pd.Series(dataframe[scaled_column +'_clipping_mask'])
 
 
-def tune_geometric_clip_filter_plot(power_ac, clipping_percentile_cutoff = 0.8,
-                                    daily_max_percentile_cutoff = 0.9,
-                                    first_order_derivative_threshold = None,
+def tune_geometric_clip_filter_plot(power_ac, clipping_mask,
                                     display_web_browser = True):
     """
     This function allows the user to visualize a clipping filter in a matplotlib plot, after tweaking 
@@ -229,10 +227,6 @@ def tune_geometric_clip_filter_plot(power_ac, clipping_percentile_cutoff = 0.8,
     ---------
     Interactive Plotly graph, with the masked time series for clipping. Returned via web browser.
     """
-    #First run the time series through the geometric_clip_filter mask.
-    filtered_power_ac, clipping_mask = geometric_clip_filter(power_ac, clipping_percentile_cutoff,
-                                                             daily_max_percentile_cutoff,
-                                                             first_order_derivative_threshold)
     #Get the names of the series and the datetime index
     column_name = power_ac.name
     if column_name is None:
