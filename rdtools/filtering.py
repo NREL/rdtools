@@ -108,7 +108,8 @@ def geometric_clip_filter(power_ac, clipping_percentile_cutoff = 0.8,
         Cutoff value for the derivative threshold. The higher the value, the less stringent 
         the function is on defining clipping periods. Represents the cutoff for the first-order
         derivative across two data points. Default is set to None, where the threshold is derived 
-        based on an experimental equation, which varies threshold by sampling frequency.        
+        based on an experimental equation, which varies threshold by sampling frequency.
+        
     
     Returns
     -------
@@ -146,10 +147,10 @@ def geometric_clip_filter(power_ac, clipping_percentile_cutoff = 0.8,
     Q1 = np.quantile(dataframe[dataframe[column_name]>0][column_name], 0.25)
     Q3 = np.quantile(dataframe[dataframe[column_name]>0][column_name], 0.75)
     IQR = Q3 - Q1
-    #Outlier removal statement
-    dataframe = dataframe[(abs(mean - dataframe[column_name]) < (3*std)) &
-                          (dataframe[column_name] >= 0) & 
-                          (dataframe[column_name] <= (Q3 + 5*IQR))]
+    #Outlier cleaning statement--set outliers to 0
+    dataframe.loc[(abs(mean - dataframe[column_name]) > (3*std)) &
+                  (dataframe[column_name] <= 0) & 
+                  (dataframe[column_name] >= (Q3 + 5*IQR))] = 0
     #Min-max normalize the time series
     scaled_column = 'scaled_' + column_name
     dataframe[scaled_column] = (dataframe[column_name] - dataframe[column_name].min()) / (dataframe[column_name].max() - dataframe[column_name].min())
