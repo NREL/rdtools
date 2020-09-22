@@ -556,12 +556,19 @@ class AvailabilityAnalysis:
 
     def plot(self):
         """
-        Create a figure summarizing the availability analysis results.
+        Create a figure summarizing the availability analysis results. The
+        analysis must be run using the :py:meth:`.run` method before using
+        this method.
 
         Returns
         -------
         fig : matplotlib Figure
         """
+        try:
+            self.loss_total
+        except AttributeError:
+            raise TypeError("No results to plot, use the `run` method first")
+
         return rdtools.plotting.availability_summary_plots(
             self.power_system, self.power_subsystem, self.loss_total,
             self.energy_cumulative, self.energy_expected_rescaled,

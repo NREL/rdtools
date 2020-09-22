@@ -419,3 +419,10 @@ def availability_analysis_object(energy_data_outage_single):
 def test_plot(availability_analysis_object):
     result = availability_analysis_object.plot()
     assert_isinstance(result, plt.Figure)
+
+
+def test_plot_norun():
+    aa = AvailabilityAnalysis(None, None, None, None)
+    # don't call run, just go straight to plot
+    with pytest.raises(TypeError, match="No results to plot"):
+        aa.plot()
