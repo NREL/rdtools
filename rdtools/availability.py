@@ -480,7 +480,7 @@ class AvailabilityAnalysis:
         self.energy_cumulative_corrected = corrected_cumulative_energy
         self.loss_system = lost_power_full
 
-    def _combine_losses(self, rollup_period='m'):
+    def _combine_losses(self, rollup_period='M'):
         """
         Combine subsystem and system losses.
 
@@ -488,7 +488,7 @@ class AvailabilityAnalysis:
 
         Parameters
         ----------
-        rollup_period : pandas offset string, default 'm'
+        rollup_period : pandas offset string, default 'M'
             The period on which to roll up losses and calculate availability.
         """
         self.loss_total = self.loss_system + self.loss_subsystem
@@ -511,7 +511,7 @@ class AvailabilityAnalysis:
 
     def run(self, low_threshold=None, relative_sizes=None,
             power_system_limit=None, quantiles=(0.01, 0.99),
-            rollup_period='m'):
+            rollup_period='M'):
         """
         Run the availability analysis.
 
@@ -545,7 +545,7 @@ class AvailabilityAnalysis:
             no production loss or (2) a power outage with an associated
             production loss estimate.
 
-        rollup_period : pandas offset string, default 'm'
+        rollup_period : pandas DateOffset or alias, default 'M'
             The period on which to roll up losses and calculate availability.
         """
         self._loss_from_power(low_threshold, relative_sizes,
