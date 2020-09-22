@@ -55,9 +55,12 @@ class AvailabilityAnalysis:
         +----------------------+----------------------------------------------+
         | Column Name          | Description                                  |
         +======================+==============================================+
-        | `lost_production`    | Production loss from outages                 |
+        | `lost_production`    | Production loss from outages. Units match the|
+        |                      | input power units (e.g. if power is given in |
+        |                      | kW, `lost_production` will be in kWh).       |
         +----------------------+----------------------------------------------+
-        | `actual_production`  | System energy production.                    |
+        | `actual_production`  | System energy production. Same units as      |
+        |                      | `lost_production`.                           |
         +----------------------+----------------------------------------------+
         | `availability`       | Energy-weighted system availability as a     |
         |                      | fraction (0-1).                              |
