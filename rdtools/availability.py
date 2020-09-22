@@ -150,9 +150,10 @@ class AvailabilityAnalysis:
     inverter. Additionally, the loss at the edges of an outage may be
     underestimated because of masking by the interval averages.
 
-    The outage detection routine assumes that the input timeseries are
-    continuous, so any gaps in the timeseries should be filled with nan before
-    using this function.  See :py:func:`rdtools.normalization.interpolate`.
+    This class expects outages to be represented in the timeseries by NaN,
+    zero, or very low values. If your DAS does not report data with missing
+    values (so an outage would create a jump in the reported timestamps), you
+    should insert those missing rows before using this analysis.
 
     References
     ----------
