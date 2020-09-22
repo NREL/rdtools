@@ -126,7 +126,7 @@ class AvailabilityAnalysis:
         |                      | end.                                         |
         +----------------------+----------------------------------------------+
         | `energy_actual`      | System production during the outage (*i.e.*, |
-        |                      | `end_energy - start_energy`).                |
+        |                      | `energy_end - energy_start`).                |
         +----------------------+----------------------------------------------+
         | `ci_lower`           | Lower bound for the expected energy          |
         |                      | confidence interval.                         |
