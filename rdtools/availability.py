@@ -38,9 +38,9 @@ class AvailabilityAnalysis:
 
     power_expected : pd.Series
         Expected system power data with the same index as the measured data.
-        This can be modeled from on-site weather measurements if there is no
-        risk of instrument calibration or data gaps. However, because full
-        system outages often cause weather data to be lost as well, it may
+        This can be modeled from on-site weather measurements if instruments
+        are well calibrated and there is no risk of data gaps. However, because
+        full system outages often cause weather data to be lost as well, it may
         be more useful to use data from an independent weather station or
         satellite-based weather provider.
 
