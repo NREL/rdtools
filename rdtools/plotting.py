@@ -297,23 +297,27 @@ def availability_summary_plots(power_system, power_subsystem, loss_total,
     ax3.set_ylabel('Estimated lost power [kW]')
 
     # cumulative energy
-    measured_artist = ax4.plot(energy_cumulative)
+    ax4.plot(energy_cumulative, label='Reported Production')
+
+    # we'll use the index value to only set legend entries for the first
+    # outage we plot.  Just in case the index has some other values, we'll
+    # reset it here:
+    outage_info = outage_info.reset_index(drop=True)
     for i, row in outage_info.iterrows():
+        # matplotlib ignores legend entries starting with underscore, so we
+        # can use that to hide duplicate entries
+        prefix = "_" if i > 0 else ""
         start, end = row[['start', 'end']]
         start_energy = row['energy_start']
         expected_energy = row['energy_expected']
         lo, hi = np.abs(expected_energy - row[['ci_lower', 'ci_upper']])
         expected_curve = energy_expected_rescaled[start:end].cumsum()
         expected_curve += start_energy
-        expected_artist = ax4.plot(expected_curve, c='tab:orange')
+        expected_curve.plot(c='tab:orange', ax=ax4,
+                            label=prefix + 'Expected Production')
         energy_end = expected_curve.iloc[-1]
-        uncertainty_artist = ax4.errorbar([end], [energy_end],
-                                          [[lo], [hi]], c='k')
-    if not outage_info.empty:
-        artists = [
-            measured_artist[0], expected_artist[0], uncertainty_artist]
-        labels = [
-            'Reported Production', 'Expected Production', 'Uncertainty']
-        ax4.legend(artists, labels, loc='upper left')
+        ax4.errorbar([end], [energy_end], [[lo], [hi]], c='k',
+                     label=prefix + 'Uncertainty')
+    ax4.legend()
     ax4.set_ylabel('Cumulative Energy [kWh]')
     return fig
