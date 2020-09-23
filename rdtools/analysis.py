@@ -204,17 +204,8 @@ class RdAnalysis():
         numeric
             calculated cell temperature
         '''
-        from packaging import version
-        
-        if version.parse(pvlib.__version__) < version.parse('0.7'):
-            # workflow for pvlib 0.6.3 and below
-            cell_temp = pvlib.pvsystem.sapm_celltemp(poa_global=poa, 
-                                     wind_speed=windspeed, 
-                                     temp_air=ambient_temperature, 
-                                     model=self.temperature_model)['temp_cell']
 
-        else:
-           # workflow for pvlib >= 0.7  
+        try:  # workflow for pvlib >= 0.7  
         
             if self.temperature_model is None:
                 self.temperature_model = "open_rack_glass_polymer" # default
@@ -236,7 +227,9 @@ class RdAnalysis():
                                                     wind_speed=windspeed,
                                                     **model_params
                                                     )
-
+        except AttributeError as e:
+            print('Error: PVLib > 0.7 required')
+            raise e
         return cell_temp
 
     def calc_clearsky_tamb(self):
