@@ -17,7 +17,7 @@ time series data from photovoltaic energy systems. The library aims to provide
 best practice analysis routines along with the building blocks for users to
 tailor their own analyses.
 Current applications include the evaluation of PV production over several years to obtain
-rates of performance degradation and soiling loss. It also includes the capability to
+rates of performance degradation and soiling loss. They also include the capability to
 analyze systems for system- and subsystem-level availability. RdTools can handle
 both high frequency (hourly or better) or low frequency (daily, weekly,
 etc.) datasets. Best results are obtained with higher frequency data.
