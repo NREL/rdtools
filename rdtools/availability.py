@@ -170,8 +170,8 @@ class AvailabilityAnalysis:
         self.power_expected = power_expected
         # TODO: assert indexes are all aligned?
 
-    def _loss_from_power(self, low_threshold, relative_sizes,
-                         power_system_limit):
+    def _calc_loss_subsystem(self, low_threshold, relative_sizes,
+                             power_system_limit):
         """
         Estimate timeseries production loss from subsystem downtime events.
 
@@ -257,7 +257,7 @@ class AvailabilityAnalysis:
 
         self.loss_subsystem = p_loss.fillna(0)
 
-    def _error_distributions(self, quantiles):
+    def _calc_error_distributions(self, quantiles):
         """
         Calculate the error distributions of Section II-A in [1]_.
 
@@ -348,7 +348,7 @@ class AvailabilityAnalysis:
         self.interp_lower = interp_lower
         self.interp_upper = interp_upper
 
-    def _loss_from_energy(self):
+    def _calc_loss_system(self):
         """
         Estimate total production loss from system downtime events.
 
@@ -549,10 +549,10 @@ class AvailabilityAnalysis:
         rollup_period : pandas DateOffset or alias, default 'M'
             The period on which to roll up losses and calculate availability.
         """
-        self._loss_from_power(low_threshold, relative_sizes,
-                              power_system_limit)
-        self._error_distributions(quantiles)
-        self._loss_from_energy()
+        self._calc_loss_subsystem(low_threshold, relative_sizes,
+                                  power_system_limit)
+        self._calc_error_distributions(quantiles)
+        self._calc_loss_system()
         self._combine_losses(rollup_period)
 
     def plot(self):

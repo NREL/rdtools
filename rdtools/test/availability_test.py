@@ -92,7 +92,7 @@ def power_data(request):
     return inverter_power, meter_power, expected_loss
 
 
-def test__loss_from_power(power_data):
+def test__calc_loss_subsystem(power_data):
     # implicitly sweeps across the parameter space because power_data is
     # parametrized
     inverter_power, meter_power, expected_loss = power_data
@@ -100,8 +100,8 @@ def test__loss_from_power(power_data):
                               inverter_power,
                               energy_cumulative=None,
                               power_expected=None)
-    aa._loss_from_power(low_threshold=None, relative_sizes=None,
-                        power_system_limit=None)
+    aa._calc_loss_subsystem(low_threshold=None, relative_sizes=None,
+                            power_system_limit=None)
     actual_loss = aa.loss_subsystem
     # pandas <1.1.0 as no atol/rtol parameters, so just use np.round instead:
     assert_series_equal(np.round(expected_loss, 1),
@@ -119,7 +119,7 @@ def dummy_power_data():
     return df, df.sum(axis=1)
 
 
-def test__loss_from_power_threshold(dummy_power_data):
+def test_calc_loss_subsystem_threshold(dummy_power_data):
     # test low_threshold parameter.
     # negative threshold means the inverter is never classified as offline
     inverter_power, meter_power = dummy_power_data
@@ -127,13 +127,13 @@ def test__loss_from_power_threshold(dummy_power_data):
                               inverter_power,
                               energy_cumulative=None,
                               power_expected=None)
-    aa._loss_from_power(low_threshold=-1, relative_sizes=None,
-                        power_system_limit=None)
+    aa._calc_loss_subsystem(low_threshold=-1, relative_sizes=None,
+                            power_system_limit=None)
     actual_loss = aa.loss_subsystem
     assert actual_loss.sum() == 0
 
 
-def test__loss_from_power_limit(dummy_power_data):
+def test_calc_loss_subsystem_limit(dummy_power_data):
     # test system_power_limit parameter.
     # set it unrealistically low to verify it constrains the loss.
     # real max power is 2, real max loss is 1, so setting limit=1.5 sets max
@@ -143,8 +143,8 @@ def test__loss_from_power_limit(dummy_power_data):
                               inverter_power,
                               energy_cumulative=None,
                               power_expected=None)
-    aa._loss_from_power(low_threshold=None, relative_sizes=None,
-                        power_system_limit=1.5)
+    aa._calc_loss_subsystem(low_threshold=None, relative_sizes=None,
+                            power_system_limit=1.5)
     actual_loss = aa.loss_subsystem
     assert actual_loss.max() == pytest.approx(0.5, abs=0.01)
 
@@ -183,7 +183,7 @@ def difficult_data():
 
     return df, meter_power, expected_power, relative_sizes
 
-def test__loss_from_power_relative_sizes(difficult_data):
+def test_calc_loss_subsystem_relative_sizes(difficult_data):
     # test that manually passing in relative_sizes improves the results
     # for pathological datasets with tons of downtime
     invs, meter, expected, relative_sizes = difficult_data
@@ -294,7 +294,7 @@ def energy_data_comms_single():
     return _generate_energy_data(outage_value, outage_value, outage_fraction)
 
 
-def test__loss_from_energy(energy_data):
+def test__calc_loss_system(energy_data):
     # test single outage
     (meter_power,
      meter_energy,
@@ -319,7 +319,7 @@ def test__loss_from_energy(energy_data):
     assert outage_info['loss'] == pytest.approx(expected_loss, rel=0.05)
 
 
-def test__loss_from_energy_multiple(energy_data):
+def test__calc_loss_system_multiple(energy_data):
     # test multiple outages
     (meter_power,
      meter_energy,
@@ -339,7 +339,7 @@ def test__loss_from_energy_multiple(energy_data):
 
 
 @pytest.mark.parametrize('side', ['start', 'end'])
-def test__loss_from_energy_startend(side, energy_data_outage_single):
+def test__calc_loss_system_startend(side, energy_data_outage_single):
     # data starts or ends in an outage
     (meter_power,
      meter_energy,
@@ -376,7 +376,7 @@ def test__loss_from_energy_startend(side, energy_data_outage_single):
     assert actual_end == expected_end
 
 
-def test__loss_from_energy_quantiles(energy_data_comms_single):
+def test__calc_loss_system_quantiles(energy_data_comms_single):
     # exercise the quantiles parameter
     (meter_power,
      meter_energy,
