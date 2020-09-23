@@ -5,15 +5,17 @@ v2.1.0 (October XX, 2020)
 API Changes
 -----------
 * Add :py:class:`~rdtools.analysis.RdAnalysis` class for single-line analysis. (:pull:`117`).
-* Add :py:class:`~rdtools.analysis.RdAnalysis` class run functions  called :py:func:`~rdtools.analysis.sensor_analysis`
-  and :py:func:`~rdtools.analysis.RdAnalysis.clearsky_analysis`. (:pull:`117`).
-* Run SRR analysis by including 'srr_soiling' option when calling 
-  :py:func:`~rdtools.analysis.RdAnalysis.sensor_analysis` (:pull:`117`).
+
 
 Enhancements
 ------------
 * Add new :py:mod:`~rdtools.analysis` module to focus on single-line analysis workflow
   (:pull:`117`).
+* Add :py:class:`~rdtools.analysis.RdAnalysis` class for single-line analysis. 
+  Degradataion analysis is run by :py:meth:`~rdtools.analysis.RdAnalysis.sensor_analysis` 
+  and :py:meth:`~rdtools.analysis.RdAnalysis.clearsky_analysis`. Soiling analysis
+  is run by including 'srr_soiling' option when calling 
+  :py:meth:`~rdtools.analysis.RdAnalysis.sensor_analysis` (:pull:`117`).
 
 
 Bug fixes
@@ -39,7 +41,7 @@ Example Updates
 * New example notebook based on PVDAQ system #4 for the new :py:class:`~rdtools.analysis.RdAnalysis`
   analysis workflow (:pull:`196`).
 * Update the standard PVDAQ system #4 workbook to match best practice, including 
-  `pvlib.get_total_irradiance()`` and `max_timedelta = '15T'` in rdtools.interpolate (:pull:`196`).
+  `pvlib.get_total_irradiance()` and `max_timedelta = '15T'` in rdtools.interpolate (:pull:`196`).
 * Update the standard PVDAQ system #4 workbook to include a single `soiling * ac_power`
   analysis (:pull:`196`).
   

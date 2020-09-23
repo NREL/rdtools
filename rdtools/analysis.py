@@ -12,8 +12,8 @@ from rdtools import soiling, clearsky_temperature, plotting
 
 class RdAnalysis():
     '''
-    Class for end-to-end degradation and soiling analysis using :py:class:`~rdtools.RdAnalysis.sensor_analysis`
-    or :py:class:`~rdtools.RdAnalysis.clearsky_analysis`
+    Class for end-to-end degradation and soiling analysis using :py:meth:`~rdtools.RdAnalysis.sensor_analysis`
+    or :py:meth:`~rdtools.RdAnalysis.clearsky_analysis`
 
     Parameters
     ----------
