@@ -49,8 +49,8 @@ drift.
 .. image:: _images/RdTools_workflows.png
   :alt: RdTools workflow diagram
 
-Degradation Results
-^^^^^^^^^^^^^^^^^^^
+Degradation
+^^^^^^^^^^^
 
 The preferred method for degradation rate estimation is the year-on-year
 (YOY) approach, available in :py:func:`.degradation.degradation_year_on_year`.
@@ -79,8 +79,8 @@ analysis when details such as filtering are changed. We generally recommend
 that the clear-sky analysis be used as a check on the sensor-based results,
 rather than as a stand-alone analysis.
 
-Soiling Results
-^^^^^^^^^^^^^^^
+Soiling
+^^^^^^^
 
 Soiling can be estimated with the stochastic rate and recovery (SRR)
 method (Deceglie 2018). This method works well when soiling patterns
@@ -98,8 +98,8 @@ identified soiling rates for the dataset.
    :width: 320
    :height: 216
 
-Availability Results
---------------------
+Availability
+------------
 
 Evaluating system availability can be confounded by data loss from interrupted
 datalogger or system communications. RdTools implements two methods of
