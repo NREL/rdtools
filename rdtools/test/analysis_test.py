@@ -79,7 +79,7 @@ def test_clearsky_analysis_fixture(getRdCS):
     cs_yoy_results = getRdCS.results['clearsky']['yoy_degradation']
 
     assert -4.744 == pytest.approx(cs_yoy_results['p50_rd'], abs=1e-3)
-    assert [-4.75, -4.73] == pytest.approx(cs_yoy_results['rd_confidence_interval'], abs=1e-2)
+    assert [-4.756, -4.734] == pytest.approx(cs_yoy_results['rd_confidence_interval'], abs=1e-3)
     
     # Re-run while passing some of the clearsky values back into the original instance to improve test coverage
     poa = getRdCS.poa
@@ -93,13 +93,13 @@ def test_clearsky_analysis_fixture(getRdCS):
             clearsky_poa=cspoa, clearsky_ambient_temperature=csamb, pv_input='energy', 
             pvlib_location=loc, pv_tilt=pd.Series(data=meta['tilt'], index=pv.index), 
             pv_azimuth=pd.Series(data=meta['azimuth'], index=pv.index),
-            temperature_model = {'a': -3.47, 'b': -0.0594, 'deltaT': 3}, interp_freq='1H'
-            )
+            temperature_model = {'a': -3.47, 'b': -0.0594, 'deltaT': 3}, interp_freq='1H',
+            temperature_coefficient=meta['tempco'])
     rdCS2.pv_power = getRdCS.pv_power
     rdCS2.clearsky_analysis()
     cs_yoy_results2 = rdCS2.results['clearsky']['yoy_degradation']
-    assert -5.1278 == pytest.approx(cs_yoy_results2['p50_rd'], abs=1e-3)
-    assert [-5.1285, -5.1269] == pytest.approx(cs_yoy_results2['rd_confidence_interval'], abs=1e-3)    
+    assert -4.744 == pytest.approx(cs_yoy_results2['p50_rd'], abs=1e-2)
+    assert [-4.756, -4.734] == pytest.approx(cs_yoy_results2['rd_confidence_interval'], abs=1e-3)    
     
 
 
