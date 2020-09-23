@@ -53,7 +53,7 @@ Degradation
 ^^^^^^^^^^^
 
 The preferred method for degradation rate estimation is the year-on-year
-(YOY) approach, available in :py:func:`.degradation.degradation_year_on_year`.
+(YOY) approach (Jordan 2018), available in :py:func:`.degradation.degradation_year_on_year`.
 The YOY calculation yields in a distribution of degradation rates, the
 central tendency of which is the most representative of the true
 degradation. The width of the distribution provides information about
@@ -102,8 +102,9 @@ Availability
 ------------
 
 Evaluating system availability can be confounded by data loss from interrupted
-datalogger or system communications. RdTools implements two methods of
-distinguishing nuisance communication interruptions from true production outages
+datalogger or system communications. RdTools implements two methods
+(Anderson & Blumenthal 2020) of distinguishing nuisance communication
+interruptions from true production outages
 with the :py:class:`.availability.AvailabilityAnalysis` class. In addition to
 classifying data outages, it estimates lost production and calculates
 energy-weighted system availability.
