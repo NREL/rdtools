@@ -198,7 +198,8 @@ def test_clipping_filter_plots(clipping_info,
     
     # test defaults
     result = tune_clip_filter_plot(clipping_power_degradation_signal,
-                                    clipping_mask_series)
+                                    clipping_mask_series,
+                                    display_web_browser=False)
     assert_isinstance(result, plotly.graph_objs._figure.Figure)
 
 
@@ -208,7 +209,7 @@ def test_clipping_filter_plots_kwargs(clipping_info,
 
     # test kwargs
     kwargs = dict(
-        display_web_browser = True
+        display_web_browser = False
     )
     result = tune_clip_filter_plot(clipping_power_degradation_signal,
                                     clipping_mask_series,
