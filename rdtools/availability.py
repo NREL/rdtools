@@ -508,7 +508,7 @@ class AvailabilityAnalysis:
         })
         loss_plus_actual = df['lost_production'] + df['actual_production']
         df['availability'] = 1 - df['lost_production'] / loss_plus_actual
-        self.results = df.tz_localize(None)
+        self.results = df
 
     def run(self, low_threshold=None, relative_sizes=None,
             power_system_limit=None, quantiles=(0.01, 0.99),
