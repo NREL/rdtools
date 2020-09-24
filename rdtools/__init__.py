@@ -20,6 +20,7 @@ from rdtools.plotting import degradation_summary_plots
 from rdtools.plotting import soiling_monte_carlo_plot
 from rdtools.plotting import soiling_interval_plot
 from rdtools.plotting import soiling_rate_histogram
+from rdtools.plotting import tune_clip_filter_plot
 
 from ._version import get_versions
 __version__ = get_versions()['version']
