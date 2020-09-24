@@ -739,7 +739,7 @@ def annual_soiling_ratios(stochastic_soiling_profiles, confidence_level=68.2):
     Returns
     -------
     pd.DataFrame
-        DataFrame describing annual insolation-wighted soiling ratios. The multi-index
+        DataFrame describing annual insolation-weighted soiling ratios. The multi-index
         is (year, quantile)
 
     '''
