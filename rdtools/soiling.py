@@ -767,16 +767,18 @@ def monthly_soiling_rates(soiling_interval_summary, min_length=14,
     ----------
     soiling_interval_summary : pd.DataFrame
         DataFrame describing soiling intervals. Typically from
-        soiling_interval_summary['confidence_interval'] obtained with
-        soiling_srr() or SRRAnalysis.run() Must have columns 'slope_high',
-        'slope_low', 'slope', 'length', 'valid', 'start', and 'end'.
+        ``soiling_interval_summary['confidence_interval']`` obtained with
+        :py:func:`rdtools.soiling.soiling_srr` or
+        :py:meth:`rdtools.soiling.SRRAnalysis.run` Must have columns
+        ``slope_high``, ``slope_low``, ``slope``, ``length``, ``valid``,
+        ``start``, and ``end``.
 
     min_length : int, default 14
         The minimum number of days a soiling interval must contain to be
         included in the calculation
 
     max_relative_slope_error : float, default 500.0
-        the maximum relative size of the slope confidence interval for an
+        The maximum relative size of the slope confidence interval for an
         interval to be considered valid (percentage).
 
     reps : int, default 100000
