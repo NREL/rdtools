@@ -12,7 +12,7 @@ Enhancements
 * Add new :py:mod:`~rdtools.analysis` module to focus on single-line analysis workflow
   (:pull:`117`).
 * Add :py:class:`~rdtools.analysis.RdAnalysis` class for single-line analysis. 
-  Degradataion analysis is run by :py:meth:`~rdtools.analysis.RdAnalysis.sensor_analysis` 
+  Degradation analysis is run by :py:meth:`~rdtools.analysis.RdAnalysis.sensor_analysis` 
   and :py:meth:`~rdtools.analysis.RdAnalysis.clearsky_analysis`. Soiling analysis
   is run by including 'srr_soiling' option when calling 
   :py:meth:`~rdtools.analysis.RdAnalysis.sensor_analysis` (:pull:`117`).
@@ -51,4 +51,3 @@ Contributors
 * Mike Deceglie (:ghuser:`mdeceglie`)
 * Kevin Anderson (:ghuser:`kanderso-nrel`)
 * Chris Deline (:ghuser:`cdeline`)
-
