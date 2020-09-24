@@ -243,30 +243,24 @@ def srr_profiles():
 
 
 def test_annual_soiling_ratios(srr_profiles):
-    expected_data = [4.5, 1.0, 8.0, 14.5, 11.0, 18.0]
-
-    mi = pd.MultiIndex.from_product([[2018, 2019], [0.5, 0.159, 0.841]],
-                                    names=['year', 'quantile'])
-
+    expected_data = np.array([[2018, 4.5, 1.0, 8.0],
+        [2019, 14.5, 11.0, 18.0]])
     expected = pd.DataFrame(data=expected_data,
-                            index=mi,
-                            columns=['insolation_weighted_soiling_ratio']
-                            )
+        columns=['year', 'soiling_ratio_median', 'soiling_ratio_low', 'soiling_ratio_high'])
+    expected['year'] = expected['year'].astype(int)
+    
     result = annual_soiling_ratios(srr_profiles)
 
     pd.testing.assert_frame_equal(result, expected, atol=1e-8)
 
 
 def test_annual_soiling_ratios_confidence_interval(srr_profiles):
-    expected_data = [4.5, 0.0, 9.0, 14.5, 10.0, 19.0]
-
-    mi = pd.MultiIndex.from_product([[2018, 2019], [0.5, 0.025, 0.975]],
-                                    names=['year', 'quantile'])
-
+    expected_data = np.array([[2018, 4.5, 0, 9.0],
+        [2019, 14.5, 10.0, 19.0]])
     expected = pd.DataFrame(data=expected_data,
-                            index=mi,
-                            columns=['insolation_weighted_soiling_ratio']
-                            )
+        columns=['year', 'soiling_ratio_median', 'soiling_ratio_low', 'soiling_ratio_high'])
+    expected['year'] = expected['year'].astype(int)
+
     result = annual_soiling_ratios(srr_profiles, confidence_level=95)
 
     pd.testing.assert_frame_equal(result, expected, atol=1e-8)
