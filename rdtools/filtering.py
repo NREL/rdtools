@@ -2,10 +2,7 @@
 
 import numpy as np
 import pandas as pd
-import plotly.express as px
-#Import plotly for viewing in the browser
-import plotly.io as pio
-pio.renderers.default = "browser"
+
 
 def normalized_filter(energy_normalized, energy_normalized_low=0.01,
                       energy_normalized_high=None):
@@ -195,61 +192,6 @@ def geometric_clip_filter(power_ac, clipping_percentile_cutoff = 0.8,
     dataframe.set_index(index_name, inplace = True)
     dataframe.loc[(dataframe['clipping_cutoff'] - dataframe[scaled_column]) <= 0.01, scaled_column +'_clipping_mask'] = True
     return pd.Series(dataframe[dataframe[scaled_column +'_clipping_mask'] == False][column_name]), pd.Series(dataframe[scaled_column +'_clipping_mask'])
-
-
-def tune_geometric_clip_filter_plot(power_ac, clipping_mask,
-                                    display_web_browser = True):
-    """
-    This function allows the user to visualize a clipping filter in a matplotlib plot, after tweaking 
-    the function's different hyperparameters. The plot can be zoomed in on, for an in-depth look at
-    clipping in the AC power time series.
-    
-    Parameters
-    ----------
-    power_ac : pd.Series
-        AC power in Watts. Index of the Pandas series is a Pandas datetime index.
-    clipping_percentile_cutoff: float, default 0.8
-        Cutoff value for the percentile (for the whole time series) where clipping takes place. 
-        So, for example, if the cutoff is set to 0.8, then any value in the normalized time series less than 
-        0.8 will not be considered clipping. The higher the threshold, the more data omitted.
-    daily_max_percentile_cutoff: float, default 0.9
-        Cutoff value for the the daily percentile where clipping takes place. So, for example,
-        if the cutoff is set to 0.9, then any value in a normalized daily time series that is 
-        less than 90% the max daily value will not be considered clipping. The higher the threshold,
-        the more data omitted.
-    first_order_derivative_threshold : float, default None,
-        Cutoff value for the derivative threshold. The higher the value, the less stringent 
-        the function is on defining clipping periods. Represents the cutoff for the first-order
-        derivative across two data points. Default is set to None, where the threshold is derived 
-        based on an experimental equation, which varies threshold by sampling frequency.        
-    
-    Returns 
-    ---------
-    Interactive Plotly graph, with the masked time series for clipping. Returned via web browser.
-    """
-    #Get the names of the series and the datetime index
-    column_name = power_ac.name
-    if column_name is None:
-        column_name = 'power_ac'
-        power_ac = power_ac.rename(column_name)   
-    index_name = power_ac.index.name
-    if index_name is None:
-        index_name = 'datetime'
-        power_ac = power_ac.rename_axis(index_name)   
-    #Visualize the power_ac time series, delineating clipping periods using the clipping_mask series.
-    #Use plotly to visualize.
-    df = pd.DataFrame(power_ac)
-    #Add the clipping mask as a column
-    df['clipping_mask'] = clipping_mask
-    df = df.reset_index()
-    fig = px.scatter(df, x = index_name, y = column_name, color= 'clipping_mask')
-    #If display_web_browser is set to True, the time series with clipping is rendered via 
-    #the web browser.
-    if display_web_browser == True:
-        pio.renderers.default = "browser"
-        fig.show()
-    return fig
-
 
 def clip_filter(power_ac, quantile=0.98):
     '''
