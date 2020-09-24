@@ -14,9 +14,10 @@ class AvailabilityAnalysis:
     """
     A class to perform system availability and loss analysis.
 
-    This class follows the analysis procedure described in [1]_, and implements two
-    distinct algorithms. One for partial (subsystem) outages and one for system-wide outages. 
-    The `run()` method executes both algorithms and combines their results.
+    This class follows the analysis procedure described in [1]_, and
+    implements two distinct algorithms. One for partial (subsystem) outages
+    and one for system-wide outages. The :py:meth:`.AvailabilityAnalysis.run()`
+    method executes both algorithms and combines their results.
 
     Parameters
     ----------
