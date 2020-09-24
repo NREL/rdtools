@@ -1,14 +1,17 @@
 import pandas as pd
 import numpy as np
 from rdtools.degradation import degradation_year_on_year
+from rdtools.filtering import geometric_clip_filter
 from rdtools.soiling import soiling_srr
 from rdtools.plotting import (
     degradation_summary_plots,
     soiling_monte_carlo_plot,
     soiling_interval_plot,
-    soiling_rate_histogram
+    soiling_rate_histogram,
+    tune_clip_filter_plot
 )
 import matplotlib.pyplot as plt
+import plotly
 import pytest
 
 # bring in soiling pytest fixtures
@@ -162,3 +165,51 @@ def test_soiling_rate_histogram_kwargs(soiling_info):
     )
     result = soiling_rate_histogram(soiling_info, **kwargs)
     assert_isinstance(result, plt.Figure)
+
+
+@pytest.fixture()
+def clipping_power_degradation_signal():
+    clipping_power_series = pd.Series(np.arange(1, 101))
+    #Add datetime index to second series
+    time_range = pd.date_range('2016-12-02T11:00:00.000Z', '2017-06-06T07:00:00.000Z', freq='H')
+    clipping_power_series.index = pd.to_datetime(time_range[:100])
+    return clipping_power_series
+
+
+@pytest.fixture()
+def clipping_info(degradation_power_signal):
+    '''
+    Return results of clipping filter applied to a degradation signal.
+
+    Returns
+    -------
+    signal_filtered: Pandas series, filtered degradation power signal
+    clipping_mask_series: Pandas series, boolean mask time series for 
+    clipping, with True indicating a clipping period and False 
+    representing a non-clipping period
+    '''
+    signal_filtered, clipping_mask_series = geometric_clip_filter(clipping_power_degradation_signal)
+    return signal_filtered, clipping_mask_series
+
+
+@pytest.fixture()
+def test_clipping_filter_plots(clipping_info):
+    signal_filtered, clipping_mask_series = clipping_info
+    
+    # test defaults
+    result = tune_clip_filter_plot(clipping_power_degradation_signal,
+                                    clipping_mask_series)
+    assert_isinstance(result, plotly.graph_objs._figure.Figure)
+
+
+def test_clipping_filter_plots_kwargs(clipping_info):
+    signal_filtered, clipping_mask_series = clipping_info
+
+    # test kwargs
+    kwargs = dict(
+        display_web_browser = True
+    )
+    result = tune_clip_filter_plot(clipping_power_degradation_signal,
+                                    clipping_mask_series,
+                                    **kwargs)
+    assert_isinstance(result, plotly.graph_objs._figure.Figure)
