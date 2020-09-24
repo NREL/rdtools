@@ -728,8 +728,8 @@ def annual_soiling_ratios(stochastic_soiling_profiles, confidence_level=68.2):
     ----------
     stochastic_soiling_profiles : list
         List of pd.Series representing profile realizations from the SRR monte carlo.
-        Typically soiling_interval_summary['stochastic_soiling_profiles'] obtained with
-        soiling_srr() or SRRAnalysis.run()
+        Typically ``soiling_interval_summary['stochastic_soiling_profiles']`` obtained with
+        :py:func:`rdtools.soiling.soiling_srr` or :py:meth:`rdtools.soiling.SRRAnalysis.run`
 
     confidence_level : float, default 68.2
         The size of the confidence interval to use in determining the upper and lower
