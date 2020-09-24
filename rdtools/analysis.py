@@ -5,18 +5,15 @@ import pvlib
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-from . import normalization
-from . import filtering
-from . import aggregation
-from . import degradation
-from . import soiling
-from . import clearsky_temperature
-from . import plotting
+from rdtools import normalization, filtering, aggregation, degradation
+from rdtools import soiling, clearsky_temperature, plotting
 
 
-class SystemAnalysis():
+
+class RdAnalysis():
     '''
-    Class for end-to-end analysis
+    Class for end-to-end degradation and soiling analysis using :py:meth:`~rdtools.RdAnalysis.sensor_analysis`
+    or :py:meth:`~rdtools.RdAnalysis.clearsky_analysis`
 
     Parameters
     ----------
@@ -207,27 +204,32 @@ class SystemAnalysis():
         numeric
             calculated cell temperature
         '''
-        if self.temperature_model is None:
-            cell_temp = pvlib.pvsystem.sapm_celltemp(poa_global=poa, 
-                                                     wind_speed=windspeed, 
-                                                     temp_air=ambient_temperature)
-        else:
-            #pvlib 0.7+
-            try:
-                model_params = pvlib.temperature.TEMPERATURE_MODEL_PARAMETERS['sapm'][self.temperature_model]
-                cell_temp = pvlib.temperature.sapm_cell(poa_global=poa,
-                                                        temp_air=ambient_temperature,
-                                                        wind_speed=windspeed,
-                                                        a=model_params['a'],
-                                                        b=model_params['b'],
-                                                        deltaT=model_params['deltaT']
-                                                        )
-            except: #pvlib < 0.7
-                cell_temp = pvlib.pvsystem.sapm_celltemp(poa_global=poa, wind_speed=windspeed, 
-                                                         temp_air=ambient_temperature, 
-                                                         model=self.temperature_model)
-                cell_temp = cell_temp['temp_cell']
 
+        try:  # workflow for pvlib >= 0.7  
+        
+            if self.temperature_model is None:
+                self.temperature_model = "open_rack_glass_polymer" # default
+
+            # check if self.temperature_model is a string or dict with keys 'a', 'b' and 'deltaT'
+            if isinstance(self.temperature_model,str):
+                model_params = pvlib.temperature.TEMPERATURE_MODEL_PARAMETERS['sapm'][self.temperature_model]
+            elif (isinstance(self.temperature_model,dict) & 
+                  ('a' in self.temperature_model) & 
+                  ('b' in self.temperature_model) & 
+                  ('deltaT' in self.temperature_model)):
+                model_params = self.temperature_model
+            else:
+                raise Exception('pvlib temperature_model entry is neither '
+                                'a string nor a dictionary with correct '
+                                'entries. Try "open_rack_glass_polymer"')
+            cell_temp = pvlib.temperature.sapm_cell(poa_global=poa,
+                                                    temp_air=ambient_temperature,
+                                                    wind_speed=windspeed,
+                                                    **model_params
+                                                    )
+        except AttributeError as e:
+            print('Error: PVLib > 0.7 required')
+            raise e
         return cell_temp
 
     def calc_clearsky_tamb(self):
@@ -261,6 +263,7 @@ class SystemAnalysis():
         pandas.Series
             Associated insolation
         '''
+        import warnings
         if self.pv_nameplate is None:
             renorm = True
             pv_nameplate = 1.0
@@ -269,26 +272,27 @@ class SystemAnalysis():
             pv_nameplate = self.pv_nameplate
 
         if self.temperature_coefficient is None:
-            raise ValueError('Temperature coeffcient must be available to perform pvwatts_norm')
-
+            #raise ValueError('Temperature coefficient must be available to perform pvwatts_norm')
+            warnings.warn('Temperature coefficient not passed in to RdAnalysis'
+                          '. No temperature correction will be conducted.')
         pvwatts_kws = {"poa_global": poa,
-                       "P_ref": pv_nameplate,
-                       "T_cell": cell_temperature,
-                       "G_ref": 1000,
-                       "T_ref": 25,
+                       "power_dc_rated": pv_nameplate,
+                       "temperature_cell": cell_temperature,
+                       "poa_global_ref": 1000,
+                       "temperature_cell_ref": 25,
                        "gamma_pdc": self.temperature_coefficient}
 
-        normalized, insolation = normalization.normalize_with_pvwatts(self.pv_energy, pvwatts_kws)
+        energy_normalized, insolation = normalization.normalize_with_pvwatts(self.pv_energy, pvwatts_kws)
 
         if renorm:
             # Normalize to the 95th percentile for convenience, this is renormalized out
             # in the calculations but is relevant to normalized_filter()
-            x = normalized[np.isfinite(normalized)]
-            normalized = normalized / x.quantile(0.95)
+            x = energy_normalized[np.isfinite(energy_normalized)]
+            energy_normalized = energy_normalized / x.quantile(0.95)
 
-        return normalized, insolation
+        return energy_normalized, insolation
 
-    def filter(self, normalized, case):
+    def filter(self, energy_normalized, case):
         '''
         Calculate filters based on those in rdtools.filtering. Uses
         self.filter_params, which is a dict, the keys of which are names of
@@ -298,7 +302,7 @@ class SystemAnalysis():
 
         Parameters
         ----------
-        normalized : pandas.Series
+        energy_normalized : pandas.Series
             Time series of normalized PV energy
         case : str
             'sensor' or 'clearsky' which filtering protocol to apply. Affects
@@ -319,7 +323,7 @@ class SystemAnalysis():
             cell_temp = self.clearsky_cell_temperature
 
         if 'normalized_filter' in self.filter_params.keys():
-            f = filtering.normalized_filter(normalized, **self.filter_params['normalized_filter'])
+            f = filtering.normalized_filter(energy_normalized, **self.filter_params['normalized_filter'])
             bool_filter = bool_filter & f
         if 'poa_filter' in self.filter_params.keys():
             if poa is None:
@@ -351,7 +355,7 @@ class SystemAnalysis():
         elif case == 'clearsky':
             self.clearsky_filter = bool_filter
 
-    def aggregate(self, normalized, insolation):
+    def aggregate(self, energy_normalized, insolation):
         '''
         Return insolation-weighted normalized PV energy and the associated aggregated insolation
 
@@ -369,7 +373,7 @@ class SystemAnalysis():
         pandas.Series
             Aggregated insolation
         '''
-        aggregated = aggregation.aggregation_insol(normalized, insolation, self.aggregation_freq)
+        aggregated = aggregation.aggregation_insol(energy_normalized, insolation, self.aggregation_freq)
         aggregated_insolation = insolation.resample(self.aggregation_freq).sum()
 
         return aggregated, aggregated_insolation
@@ -453,9 +457,9 @@ class SystemAnalysis():
             raise ValueError('either cell or ambient temperature must be available to perform sensor_preprocess')
         if self.cell_temperature is None:
             self.cell_temperature = self.calc_cell_temperature(self.poa, self.windspeed, self.ambient_temperature)
-        normalized, insolation = self.pvwatts_norm(self.poa, self.cell_temperature)
-        self.filter(normalized, 'sensor')
-        aggregated, aggregated_insolation = self.aggregate(normalized[self.sensor_filter], insolation[self.sensor_filter])
+        energy_normalized, insolation = self.pvwatts_norm(self.poa, self.cell_temperature)
+        self.filter(energy_normalized, 'sensor')
+        aggregated, aggregated_insolation = self.aggregate(energy_normalized[self.sensor_filter], insolation[self.sensor_filter])
         self.sensor_aggregated_performance = aggregated
         self.sensor_aggregated_insolation = aggregated_insolation
 

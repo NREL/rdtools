@@ -14,6 +14,7 @@ analysis workflow.
 .. autosummary::
    :toctree: generated/
 
+   analysis
    degradation
    soiling   
    filtering
@@ -22,7 +23,24 @@ analysis workflow.
    clearsky_temperature
    plotting
 
+Analysis
+===========
 
+Conduct end-to-end Degradation and Soiling analysis with sensor_analysis or clearsky_analysis
+
+.. autosummary::
+   :toctree: generated/
+
+   analysis.RdAnalysis
+   analysis.RdAnalysis.sensor_analysis
+   analysis.RdAnalysis.clearsky_analysis
+   analysis.RdAnalysis.plot_degradation_summary
+   analysis.RdAnalysis.plot_soiling_rate_histogram
+   analysis.RdAnalysis.plot_soiling_interval
+   analysis.RdAnalysis.plot_soiling_monte_carlo
+   analysis.RdAnalysis.plot_pv_vs_irradiance
+   
+   
 Degradation
 ===========
 
