@@ -9,7 +9,7 @@ API Changes
 Enhancements
 ------------
 * Add new function :py:func:`~rdtools.soiling.monthly_soiling_rates` (:pull:`193`).
-* Add new function :py:func:`~rdtools.annual_soilng_ratios` (:pull:`193`).
+* Add new function :py:func:`~rdtools.annual_soiling_ratios` (:pull:`193`).
 
 
 Bug fixes
@@ -35,4 +35,3 @@ Example Updates
 Contributors
 ------------
 * Mike Deceglie (:ghuser:`mdeceglie`)
-
