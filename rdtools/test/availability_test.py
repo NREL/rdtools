@@ -96,10 +96,14 @@ def test__calc_loss_subsystem(power_data):
     # implicitly sweeps across the parameter space because power_data is
     # parametrized
     inverter_power, meter_power, expected_loss = power_data
+    # these values aren't relevant to this test, but the timeseries are
+    # checked for timestamp consistency so just pass in dummy data:
+    energy_cumulative = pd.Series(np.nan, meter_power.index)
+    power_expected = pd.Series(np.nan, meter_power.index)
     aa = AvailabilityAnalysis(meter_power,
                               inverter_power,
-                              energy_cumulative=None,
-                              power_expected=None)
+                              energy_cumulative=energy_cumulative,
+                              power_expected=power_expected)
     aa._calc_loss_subsystem(low_threshold=None, relative_sizes=None,
                             power_system_limit=None)
     actual_loss = aa.loss_subsystem
@@ -116,17 +120,19 @@ def dummy_power_data():
         'inv1': [0] * (N//2) + [1] * (N//2),
         'inv2': [1] * N,
     }, index=pd.date_range('2019-01-01', freq='h', periods=N))
-    return df, df.sum(axis=1)
+    # return dummy data for cumulative energy and expected power
+    dummy = pd.Series(np.nan, df.index)
+    return df, df.sum(axis=1), dummy
 
 
 def test_calc_loss_subsystem_threshold(dummy_power_data):
     # test low_threshold parameter.
     # negative threshold means the inverter is never classified as offline
-    inverter_power, meter_power = dummy_power_data
+    inverter_power, meter_power, dummy = dummy_power_data
     aa = AvailabilityAnalysis(meter_power,
                               inverter_power,
-                              energy_cumulative=None,
-                              power_expected=None)
+                              energy_cumulative=dummy,
+                              power_expected=dummy)
     aa._calc_loss_subsystem(low_threshold=-1, relative_sizes=None,
                             power_system_limit=None)
     actual_loss = aa.loss_subsystem
@@ -138,11 +144,11 @@ def test_calc_loss_subsystem_limit(dummy_power_data):
     # set it unrealistically low to verify it constrains the loss.
     # real max power is 2, real max loss is 1, so setting limit=1.5 sets max
     # loss to 0.5
-    inverter_power, meter_power = dummy_power_data
+    inverter_power, meter_power, dummy = dummy_power_data
     aa = AvailabilityAnalysis(meter_power,
                               inverter_power,
-                              energy_cumulative=None,
-                              power_expected=None)
+                              energy_cumulative=dummy,
+                              power_expected=dummy)
     aa._calc_loss_subsystem(low_threshold=None, relative_sizes=None,
                             power_system_limit=1.5)
     actual_loss = aa.loss_subsystem
@@ -421,8 +427,35 @@ def test_plot(availability_analysis_object):
     assert_isinstance(result, plt.Figure)
 
 
-def test_plot_norun():
-    aa = AvailabilityAnalysis(None, None, None, None)
+# %% errors
+
+def test_plot_norun(dummy_power_data):
+    _, _, dummy = dummy_power_data
+    aa = AvailabilityAnalysis(dummy, dummy, dummy, dummy)
     # don't call run, just go straight to plot
     with pytest.raises(TypeError, match="No results to plot"):
         aa.plot()
+
+
+def test_availability_analysis_index_mismatch(energy_data_outage_single):
+    # exercise the timeseries index check
+    (meter_power,
+     meter_energy,
+     inverter_power,
+     expected_power,
+     _, _) = energy_data_outage_single
+
+    base_kwargs = {
+        'power_system': meter_power,
+        'power_subsystem': inverter_power,
+        'energy_cumulative': meter_energy,
+        'power_expected': expected_power,
+    }
+    # verify that the check works for any of the timeseries inputs
+    for key in base_kwargs.keys():
+        kwargs = base_kwargs.copy()
+        value = kwargs.pop(key)
+        value_shortened = value.iloc[1:]
+        kwargs[key] = value_shortened
+        with pytest.raises(ValueError, match='timeseries indexes must match'):
+            aa = AvailabilityAnalysis(**kwargs)

@@ -167,11 +167,14 @@ class AvailabilityAnalysis:
 
     def __init__(self, power_system, power_subsystem, energy_cumulative,
                  power_expected):
+        for series in [power_subsystem, energy_cumulative, power_expected]:
+            if not power_system.index.equals(series.index):
+                raise ValueError("Input timeseries indexes must match")
+
         self.power_system = power_system
         self.power_subsystem = power_subsystem
         self.energy_cumulative = energy_cumulative
         self.power_expected = power_expected
-        # TODO: assert indexes are all aligned?
 
     def _calc_loss_subsystem(self, low_threshold, relative_sizes,
                              power_system_limit):
