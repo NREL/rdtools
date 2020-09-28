@@ -459,3 +459,16 @@ def test_availability_analysis_index_mismatch(energy_data_outage_single):
         kwargs[key] = value_shortened
         with pytest.raises(ValueError, match='timeseries indexes must match'):
             aa = AvailabilityAnalysis(**kwargs)
+
+
+def test_availability_analysis_doublecount_loss(availability_analysis_object):
+    # test that a warning is emitted when loss is found at both the
+    # system and subsystem levels. I don't know how to trigger the warning
+    # with real data, so we'll "hack" the analysis object:
+    loss = pd.Series(0, index=availability_analysis_object.power_system.index)
+    loss.iloc[0] = 1
+    availability_analysis_object.loss_system = loss
+    availability_analysis_object.loss_subsystem = loss
+    match = 'Loss detected simultaneously at both system and subsystem levels.'
+    with pytest.warns(UserWarning, match=match):
+        availability_analysis_object._combine_losses()

@@ -8,6 +8,7 @@ import rdtools
 import pandas as pd
 import numpy as np
 from scipy.interpolate import interp1d
+import warnings
 
 
 class AvailabilityAnalysis:
@@ -498,6 +499,15 @@ class AvailabilityAnalysis:
         rollup_period : pandas offset string, default 'M'
             The period on which to roll up losses and calculate availability.
         """
+
+        if ((self.loss_system > 0) & (self.loss_subsystem > 0)).any():
+            msg = (
+                'Loss detected simultaneously at both system and subsystem '
+                'levels. This is unexpected and could indicate a problem with '
+                'the input time series data.'
+            )
+            warnings.warn(msg, UserWarning)
+
         self.loss_total = self.loss_system + self.loss_subsystem
 
         # calculate actual production based on corrected cumulative meter
