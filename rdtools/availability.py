@@ -154,9 +154,9 @@ class AvailabilityAnalysis:
     underestimated because of masking by the interval averages.
 
     This class expects outages to be represented in the timeseries by NaN,
-    zero, or very low values. If your DAS does not report data with missing
-    values (so an outage would create a jump in the reported timestamps), you
-    should insert those missing rows before using this analysis.
+    zero, or very low values. If your DAS does not record data from outages
+    (e.g., a three-hour outage results in three hours of omitted timestamps),
+    you should insert those missing rows before using this analysis.
 
     References
     ----------
@@ -537,10 +537,11 @@ class AvailabilityAnalysis:
             power data.
 
         power_system_limit : float or pd.Series, optional
-            An optional maximum system power used as an upper limit for
-            (power_system + lost_power) so that the maximum system capacity or
-            interconnection limit is not exceeded. If omitted, that check is
-            skipped.
+            Maximum allowable system power. This parameter is used to account
+            for cases where online subsystems can partially mitigate the loss
+            of an offline subsystem, for example a system with a plant
+            controller and dynamic inverter setpoints. This constraint is
+            only applied to the subsystem loss calculation.
 
         quantiles : 2-element tuple, default (0.01, 0.99)
             The quantiles of the error distribution used for the expected
