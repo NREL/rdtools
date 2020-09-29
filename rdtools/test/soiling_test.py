@@ -323,9 +323,9 @@ def test_monthly_soiling_rates(soiling_interval_summary):
     pd.testing.assert_frame_equal(result, expected, check_dtype=False)
 
 
-def test_monthly_soiling_rates_min_length(soiling_interval_summary):
+def test_monthly_soiling_rates_min_interval_length(soiling_interval_summary):
     np.random.seed(1977)
-    result = monthly_soiling_rates(soiling_interval_summary, min_length=20)
+    result = monthly_soiling_rates(soiling_interval_summary, min_interval_length=20)
 
     expected = np.array([[1.00000000e+00, -1.24851539e-03, -2.10394564e-03, -3.98358211e-04, 1.00000000e+00],
                         [2.00000000e+00, -1.25092837e-03, -2.10091842e-03, -3.97330424e-04, 1.00000000e+00],

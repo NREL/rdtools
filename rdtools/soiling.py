@@ -763,7 +763,7 @@ def annual_soiling_ratios(stochastic_soiling_profiles, confidence_level=68.2):
     return annual_soiling
 
 
-def monthly_soiling_rates(soiling_interval_summary, min_length=14,
+def monthly_soiling_rates(soiling_interval_summary, min_interval_length=14,
                           max_relative_slope_error=500.0, reps=100000,
                           confidence_level=68.2):
     '''
@@ -782,9 +782,11 @@ def monthly_soiling_rates(soiling_interval_summary, min_length=14,
         ``slope_high``, ``slope_low``, ``slope``, ``length``, ``valid``,
         ``start``, and ``end``.
 
-    min_length : int, default 14
+    min_interval_length : int, default 14
         The minimum number of days a soiling interval must contain to be
-        included in the calculation
+        included in the calculation. Similar to the same parameter in soiling_srr()
+        and SRRAnalysis.run() but with a more conservative default value as a
+        starting point for monthly soiling rate analyses.
 
     max_relative_slope_error : float, default 500.0
         The maximum relative size of the slope confidence interval for an
@@ -819,7 +821,7 @@ def monthly_soiling_rates(soiling_interval_summary, min_length=14,
     # filter to intervals of interest
     rel_error = 100 * abs((soiling_interval_summary['slope_high'] -
                            soiling_interval_summary['slope_low']) / soiling_interval_summary['slope'])
-    intervals = soiling_interval_summary[(soiling_interval_summary['length'] >= min_length) &
+    intervals = soiling_interval_summary[(soiling_interval_summary['length'] >= min_interval_length) &
                                          (soiling_interval_summary['valid']) &
                                          (rel_error <= max_relative_slope_error)
                                          ].copy()
