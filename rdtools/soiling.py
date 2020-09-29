@@ -750,21 +750,14 @@ def annual_soiling_ratios(stochastic_soiling_profiles, confidence_level=68.2):
           insolation-weighted soiling ratio for the year
     '''
 
-    df = pd.DataFrame(pd.concat(stochastic_soiling_profiles))
-
-    ci_quantiles = [0.5 - confidence_level/2/100, 0.5 + confidence_level/2/100]
-    annual_soiling = df.groupby(df.index.year).quantile([0.5, ci_quantiles[0], ci_quantiles[1]])
-    annual_soiling.index.rename(['year', 'quantile'], inplace=True)
-    annual_soiling.columns = ['insolation_weighted_soiling_ratio']
-
-    # Make the output look like monthly_soiling_rates
-    annual_soiling = annual_soiling.reset_index(['quantile'])
-    annual_soiling = pd.pivot(annual_soiling, columns='quantile')
-    annual_soiling.columns = annual_soiling.columns.droplevel(0)
-    annual_soiling.columns.name = None
-    annual_soiling = annual_soiling.sort_index(axis=1)
-    annual_soiling.columns = ['soiling_ratio_low', 'soiling_ratio_median', 'soiling_ratio_high']
-    annual_soiling = annual_soiling[['soiling_ratio_median', 'soiling_ratio_low', 'soiling_ratio_high']]
+    all_profiles = pd.concat(stochastic_soiling_profiles)
+    annual_groups = all_profiles.groupby(all_profiles.index.year)
+    annual_soiling = pd.DataFrame({
+        'soiling_ratio_median': annual_groups.quantile(0.5),
+        'soiling_ratio_low': annual_groups.quantile(0.5 - confidence_level/2/100),
+        'soiling_ratio_high': annual_groups.quantile(0.5 + confidence_level/2/100),
+    })
+    annual_soiling.index.name = 'year'
     annual_soiling = annual_soiling.reset_index()
 
     return annual_soiling
