@@ -86,6 +86,13 @@ class AvailabilityAnalysis:
         Expected power rescaled to better match system power during periods
         where the system is performing normally.
 
+    energy_expected_rescaled : pd.Series
+        Interval expected energy calculated from `power_expected_rescaled`.
+
+    energy_cumulative_corrected : pd.Series
+        Cumulative system production after filling in data gaps from outages
+        with estimated production.
+
     error_info : pd.DataFrame
         Records about the error between expected power and actual power.
 
@@ -190,7 +197,7 @@ class AvailabilityAnalysis:
         timestamp, it is not suitable for full system outages (i.e., at least
         one inverter must be reporting along with the system meter).
 
-        Sets the `reporting_mask` and `subsystem_loss` attributes.
+        Sets the `reporting_mask` and `loss_subsystem` attributes.
 
         Parameters
         ----------
@@ -209,11 +216,12 @@ class AvailabilityAnalysis:
             subsystem capacity. If not specified, it will be estimated from
             power data.
 
-        power_system_limit : float or pd.Series
-            An optional maximum system power used as an upper limit for
-            (power_system + power_lost) so that the maximum system capacity or
-            interconnection limit is not exceeded. If omitted, that check is
-            skipped.
+        power_system_limit : float or pd.Series, optional
+            Maximum allowable system power. This parameter is used to account
+            for cases where online subsystems can partially mitigate the loss
+            of an offline subsystem, for example a system with a plant
+            controller and dynamic inverter setpoints. This constraint is
+            only applied to the subsystem loss calculation.
         """
         power_subsystem = self.power_subsystem
         power_system = self.power_system

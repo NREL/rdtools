@@ -258,7 +258,8 @@ def availability_summary_plots(power_system, power_subsystem, loss_total,
         Timeseries system cumulative energy.
 
     energy_expected_rescaled : pd.Series
-        Timeseries expected energy, rescaled to match actual energy.
+        Timeseries expected energy, rescaled to match actual energy. This
+        reflects interval energy, not cumulative.
 
     outage_info : pd.DataFrame
         A dataframe with information about system outages.
