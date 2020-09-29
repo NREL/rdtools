@@ -776,7 +776,7 @@ def monthly_soiling_rates(soiling_interval_summary, min_length=14,
     ----------
     soiling_interval_summary : pd.DataFrame
         DataFrame describing soiling intervals. Typically from
-        ``soiling_interval_summary['confidence_interval']`` obtained with
+        ``soiling_info['soiling_interval_summary']`` obtained with
         :py:func:`rdtools.soiling.soiling_srr` or
         :py:meth:`rdtools.soiling.SRRAnalysis.run` Must have columns
         ``slope_high``, ``slope_low``, ``slope``, ``length``, ``valid``,
