@@ -20,6 +20,11 @@ class AvailabilityAnalysis:
     and one for system-wide outages. The :py:meth:`.AvailabilityAnalysis.run()`
     method executes both algorithms and combines their results.
 
+    The input timeseries don't need to be in any particular set of units as
+    long as all power and energy units are consistent, with energy units
+    being the hourly-integrated power (e.g., kW and kWh). The units of the
+    analysis outputs will match the inputs.
+
     Parameters
     ----------
     power_system : pd.Series
@@ -558,7 +563,8 @@ class AvailabilityAnalysis:
             power data.
 
         power_system_limit : float or pd.Series, optional
-            Maximum allowable system power. This parameter is used to account
+            Maximum allowable system power in the same units as the input
+            power timeseries. This parameter is used to account
             for cases where online subsystems can partially mitigate the loss
             of an offline subsystem, for example a system with a plant
             controller and dynamic inverter setpoints. This constraint is
