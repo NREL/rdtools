@@ -812,9 +812,8 @@ def monthly_soiling_rates(soiling_interval_summary, min_length=14,
         * `soiling_rate_high` - The upper edge of the confidence interval
           for the monthly soiling rate.
         * `interval_count` - The number of soiling intervals contributing to the
-          monthly calculation. If this number is low, the
-          confidence interval is likely to underestimate the
-          true uncertainty.
+          monthly calculation. If only a few intervals contribute, the
+          confidence interval is likely to underestimate the true uncertainty.
     '''
 
     # filter to intervals of interest
