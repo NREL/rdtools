@@ -548,6 +548,9 @@ class SRRAnalysis():
               | 'end'                  | End timestamp of the soiling interval        |
               +------------------------+----------------------------------------------+
               | 'soiling_rate'         | P50 Soiling rate for interval, in day^−1     |
+              |                        | Negative value indicates soiling is          |
+              |                        | occurring. E.g. a rate of −0.01 indicates 1% |
+              |                        | soiling loss per day.                        |
               +------------------------+----------------------------------------------+
               | 'soiling_rate_low'     | Low edge of confidence interval for soiling  |
               |                        | rate for interval, in day^−1                 |
@@ -720,6 +723,9 @@ def soiling_srr(energy_normalized_daily, insolation_daily, reps=1000,
           | 'end'                  | End timestamp of the soiling interval        |
           +------------------------+----------------------------------------------+
           | 'soiling_rate'         | P50 Soiling rate for interval, in day^−1     |
+          |                        | Negative value indicates soiling is          |
+          |                        | occurring. E.g. a rate of −0.01 indicates 1% |
+          |                        | soiling loss per day.                        |
           +------------------------+----------------------------------------------+
           | 'soiling_rate_low'     | Low edge of confidence interval for soiling  |
           |                        | rate for interval, in day^−1                 |
