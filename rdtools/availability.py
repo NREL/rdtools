@@ -121,7 +121,9 @@ class AvailabilityAnalysis:
         +----------------------+----------------------------------------------+
         | 'end'                | Timestamp of the outage end.                 |
         +----------------------+----------------------------------------------+
-        | 'duration'           | Length of the outage (*i.e.*, 'end - start').|
+        | 'duration'           | Length of the outage (*i.e.*                 |
+        |                      | ``outage_info['end'] - outage_info['start']``|
+        |                      | ).                                           |
         +----------------------+----------------------------------------------+
         | 'intervals'          | Total count of data intervals contained in   |
         |                      | the outage.                                  |
@@ -145,7 +147,8 @@ class AvailabilityAnalysis:
         |                      | end.                                         |
         +----------------------+----------------------------------------------+
         | 'energy_actual'      | System production during the outage (*i.e.*, |
-        |                      | 'energy_end - energy_start').                |
+        |                      | ``outage_info['energy_end'] -                |
+        |                      | outage_info['energy_start']``).              |
         +----------------------+----------------------------------------------+
         | 'ci_lower'           | Lower bound for the expected energy          |
         |                      | confidence interval.                         |
@@ -153,7 +156,7 @@ class AvailabilityAnalysis:
         | 'ci_upper'           | Lower bound for the expected energy          |
         |                      | confidence interval.                         |
         +----------------------+----------------------------------------------+
-        | 'type'               | Type of the outage ('real or 'comms').  |
+        | 'type'               | Type of the outage ('real or 'comms').       |
         +----------------------+----------------------------------------------+
         | 'loss'               | Estimated production loss.                   |
         +----------------------+----------------------------------------------+
