@@ -64,14 +64,14 @@ class AvailabilityAnalysis:
         +----------------------+----------------------------------------------+
         | Column Name          | Description                                  |
         +======================+==============================================+
-        | `lost_production`    | Production loss from outages. Units match the|
+        | 'lost_production'    | Production loss from outages. Units match the|
         |                      | input power units (e.g. if power is given in |
-        |                      | kW, `lost_production` will be in kWh).       |
+        |                      | kW, 'lost_production' will be in kWh).       |
         +----------------------+----------------------------------------------+
-        | `actual_production`  | System energy production. Same units as      |
-        |                      | `lost_production`.                           |
+        | 'actual_production'  | System energy production. Same units as      |
+        |                      | 'lost_production'.                           |
         +----------------------+----------------------------------------------+
-        | `availability`       | Energy-weighted system availability as a     |
+        | 'availability'       | Energy-weighted system availability as a     |
         |                      | fraction (0-1).                              |
         +----------------------+----------------------------------------------+
 
@@ -117,45 +117,45 @@ class AvailabilityAnalysis:
         +----------------------+----------------------------------------------+
         | Column Name          | Description                                  |
         +======================+==============================================+
-        | `start`              | Timestamp of the outage start.               |
+        | 'start'              | Timestamp of the outage start.               |
         +----------------------+----------------------------------------------+
-        | `end`                | Timestamp of the outage end.                 |
+        | 'end'                | Timestamp of the outage end.                 |
         +----------------------+----------------------------------------------+
-        | `duration`           | Length of the outage (*i.e.*, `end - start`).|
+        | 'duration'           | Length of the outage (*i.e.*, 'end - start').|
         +----------------------+----------------------------------------------+
-        | `intervals`          | Total count of data intervals contained in   |
+        | 'intervals'          | Total count of data intervals contained in   |
         |                      | the outage.                                  |
         +----------------------+----------------------------------------------+
-        | `daylight_intervals` | Count of data intervals contained in the     |
+        | 'daylight_intervals' | Count of data intervals contained in the     |
         |                      | outage occurring during the day.             |
         +----------------------+----------------------------------------------+
-        | `error_lower`        | Lower error bound as a fraction of expected  |
+        | 'error_lower'        | Lower error bound as a fraction of expected  |
         |                      | energy.                                      |
         +----------------------+----------------------------------------------+
-        | `error_upper`        | Upper error bound as a fraction of expected  |
+        | 'error_upper'        | Upper error bound as a fraction of expected  |
         |                      | energy.                                      |
         +----------------------+----------------------------------------------+
-        | `energy_expected`    | Total expected production for the outage     |
+        | 'energy_expected'    | Total expected production for the outage     |
         |                      | duration.                                    |
         +----------------------+----------------------------------------------+
-        | `energy_start`       | System cumulative production at the outage   |
+        | 'energy_start'       | System cumulative production at the outage   |
         |                      | start.                                       |
         +----------------------+----------------------------------------------+
-        | `energy_end`         | System cumulative production at the outage   |
+        | 'energy_end'         | System cumulative production at the outage   |
         |                      | end.                                         |
         +----------------------+----------------------------------------------+
-        | `energy_actual`      | System production during the outage (*i.e.*, |
-        |                      | `energy_end - energy_start`).                |
+        | 'energy_actual'      | System production during the outage (*i.e.*, |
+        |                      | 'energy_end - energy_start').                |
         +----------------------+----------------------------------------------+
-        | `ci_lower`           | Lower bound for the expected energy          |
+        | 'ci_lower'           | Lower bound for the expected energy          |
         |                      | confidence interval.                         |
         +----------------------+----------------------------------------------+
-        | `ci_upper`           | Lower bound for the expected energy          |
+        | 'ci_upper'           | Lower bound for the expected energy          |
         |                      | confidence interval.                         |
         +----------------------+----------------------------------------------+
-        | `type`               | Type of the outage (`'real'` or `'comms'`).  |
+        | 'type'               | Type of the outage ('real or 'comms').  |
         +----------------------+----------------------------------------------+
-        | `loss`               | Estimated production loss.                   |
+        | 'loss'               | Estimated production loss.                   |
         +----------------------+----------------------------------------------+
 
     Notes
