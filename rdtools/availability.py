@@ -407,7 +407,7 @@ class AvailabilityAnalysis:
         # Find expected production and associated uncertainty for each outage
         diff = full_outage.astype(int).diff()
         starts = all_times[diff == 1].tolist()
-        ends = all_times[diff == -1].tolist()
+        ends = all_times[diff.shift(-1) == -1].tolist()
         steps = diff[~diff.isnull() & (diff != 0)]
         if not steps.empty:
             if steps[0] == -1:

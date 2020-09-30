@@ -358,7 +358,7 @@ def test__calc_loss_system_startend(side, energy_data_outage_single):
         # sunrise on the 2nd, but it doesn't wrap around to the previous dusk
         date = '2019-01-01'
         expected_start = '2019-01-01 00:00'
-        expected_end = '2019-01-02 08:00'
+        expected_end = '2019-01-02 07:45'
         idx = 0
     else:
         # last day doesn't have a "sunrise on the next day", so it doesn't
