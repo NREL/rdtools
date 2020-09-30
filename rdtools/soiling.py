@@ -547,12 +547,12 @@ class SRRAnalysis():
               +------------------------+----------------------------------------------+
               | 'end'                  | End timestamp of the soiling interval        |
               +------------------------+----------------------------------------------+
-              | 'slope'                | P50 Soiling rate for interval, in day^−1     |
+              | 'soiling_rate'         | P50 Soiling rate for interval, in day^−1     |
               +------------------------+----------------------------------------------+
-              | 'slope_low'            | Low edge of confidence interval for soiling  |
+              | 'soiling_rate_low'     | Low edge of confidence interval for soiling  |
               |                        | rate for interval, in day^−1                 |
               +------------------------+----------------------------------------------+
-              | 'slope_high'           | High edge of confidence interval for         |
+              | 'soiling_rate_high'    | High edge of confidence interval for         |
               |                        | soiling rate for interval, in day^−1         |
               +------------------------+----------------------------------------------+
               | 'inferred_start_loss'  | Estimated performance metric at the start    |
@@ -594,9 +594,9 @@ class SRRAnalysis():
             ['start', 'end', 'run_slope', 'run_slope_low',
                 'run_slope_high', 'inferred_start_loss', 'inferred_end_loss',
                 'length', 'valid']].copy()
-        intervals_out.rename(columns={'run_slope': 'slope',
-                                      'run_slope_high': 'slope_high',
-                                      'run_slope_low': 'slope_low',
+        intervals_out.rename(columns={'run_slope': 'soiling_rate',
+                                      'run_slope_high': 'soiling_rate_high',
+                                      'run_slope_low': 'soiling_rate_low',
                                       }, inplace=True)
 
         df_d = self.analyzed_daily_df
@@ -719,12 +719,12 @@ def soiling_srr(energy_normalized_daily, insolation_daily, reps=1000,
           +------------------------+----------------------------------------------+
           | 'end'                  | End timestamp of the soiling interval        |
           +------------------------+----------------------------------------------+
-          | 'slope'                | P50 Soiling rate for interval, in day^−1     |
+          | 'soiling_rate'                | P50 Soiling rate for interval, in day^−1     |
           +------------------------+----------------------------------------------+
-          | 'slope_low'            | Low edge of confidence interval for soiling  |
+          | 'soiling_rate_low'            | Low edge of confidence interval for soiling  |
           |                        | rate for interval, in day^−1                 |
           +------------------------+----------------------------------------------+
-          | 'slope_high'           | High edge of confidence interval for         |
+          | 'soiling_rate_high'           | High edge of confidence interval for         |
           |                        | soiling rate for interval, in day^−1         |
           +------------------------+----------------------------------------------+
           | 'inferred_start_loss'  | Estimated performance metric at the start    |
@@ -843,7 +843,7 @@ def monthly_soiling_rates(soiling_interval_summary, min_interval_length=14,
         ``soiling_info['soiling_interval_summary']`` obtained with
         :py:func:`rdtools.soiling.soiling_srr` or
         :py:meth:`rdtools.soiling.SRRAnalysis.run` Must have columns
-        ``slope_high``, ``slope_low``, ``slope``, ``length``, ``valid``,
+        ``soiling_rate_high``, ``soiling_rate_low``, ``soiling_rate``, ``length``, ``valid``,
         ``start``, and ``end``.
 
     min_interval_length : int, default 14
@@ -896,8 +896,8 @@ def monthly_soiling_rates(soiling_interval_summary, min_interval_length=14,
     '''
 
     # filter to intervals of interest
-    rel_error = 100 * abs((soiling_interval_summary['slope_high'] -
-                           soiling_interval_summary['slope_low']) / soiling_interval_summary['slope'])
+    rel_error = 100 * abs((soiling_interval_summary['soiling_rate_high'] -
+                           soiling_interval_summary['soiling_rate_low']) / soiling_interval_summary['soiling_rate'])
     intervals = soiling_interval_summary[(soiling_interval_summary['length'] >= min_interval_length) &
                                          (soiling_interval_summary['valid']) &
                                          (rel_error <= max_relative_slope_error)
@@ -929,7 +929,7 @@ def monthly_soiling_rates(soiling_interval_summary, min_interval_length=14,
         relevant_intervals = intervals[intervals[sample_col] > 0]
         for _, row in relevant_intervals.iterrows():
             rates.append(np.random.uniform(
-                row['slope_low'], row['slope_high'], row[sample_col]))
+                row['soiling_rate_low'], row['soiling_rate_high'], row[sample_col]))
 
         rates = [x for sublist in rates for x in sublist]
 

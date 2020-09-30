@@ -59,7 +59,7 @@ def test_soiling_srr(normalized_daily, insolation, times):
         'soiling_info["stochastic_soiling_profiles"] is not a list'
 
     # Check soiling_info['soiling_interval_summary']
-    expected_summary_columns = ['start', 'end', 'slope', 'slope_low', 'slope_high',
+    expected_summary_columns = ['start', 'end', 'soiling_rate', 'soiling_rate_low', 'soiling_rate_high',
                                 'inferred_start_loss', 'inferred_end_loss', 'length', 'valid']
     actual_summary_columns = soiling_info['soiling_interval_summary'].columns.values
 
@@ -71,14 +71,14 @@ def test_soiling_srr(normalized_daily, insolation, times):
             "'{}' was expected as a column, but not in soiling_info['soiling_interval_summary']".format(x)
     assert isinstance(soiling_info['soiling_interval_summary'], pd.DataFrame),\
         'soiling_info["soiling_interval_summary"] not a dataframe'
-    expected_means = pd.Series({'slope': -0.002617290,
-                                'slope_low': -0.002828525,
-                                'slope_high': -0.002396639,
+    expected_means = pd.Series({'soiling_rate': -0.002617290,
+                                'soiling_rate_low': -0.002828525,
+                                'soiling_rate_high': -0.002396639,
                                 'inferred_start_loss': 1.021514,
                                 'inferred_end_loss': 0.9572880,
                                 'length': 24.0,
                                 'valid': 1.0})
-    expected_means = expected_means[['slope', 'slope_low', 'slope_high',
+    expected_means = expected_means[['soiling_rate', 'soiling_rate_low', 'soiling_rate_high',
                                      'inferred_start_loss', 'inferred_end_loss',
                                      'length', 'valid']]
     pd.testing.assert_series_equal(expected_means, soiling_info['soiling_interval_summary'].mean(),
@@ -284,9 +284,9 @@ def soiling_interval_summary():
     soiling_interval_summary = pd.DataFrame()
     soiling_interval_summary['start'] = starts
     soiling_interval_summary['end'] = ends
-    soiling_interval_summary['slope'] = slopes
-    soiling_interval_summary['slope_low'] = slopes_low
-    soiling_interval_summary['slope_high'] = slopes_high
+    soiling_interval_summary['soiling_rate'] = slopes
+    soiling_interval_summary['soiling_rate_low'] = slopes_low
+    soiling_interval_summary['soiling_rate_high'] = slopes_high
     soiling_interval_summary['inferred_start_loss'] = np.nan
     soiling_interval_summary['inferred_end_loss'] = np.nan
     soiling_interval_summary['length'] = (ends - starts).days
