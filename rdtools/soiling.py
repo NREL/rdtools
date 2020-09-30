@@ -719,12 +719,12 @@ def soiling_srr(energy_normalized_daily, insolation_daily, reps=1000,
           +------------------------+----------------------------------------------+
           | 'end'                  | End timestamp of the soiling interval        |
           +------------------------+----------------------------------------------+
-          | 'soiling_rate'                | P50 Soiling rate for interval, in day^−1     |
+          | 'soiling_rate'         | P50 Soiling rate for interval, in day^−1     |
           +------------------------+----------------------------------------------+
-          | 'soiling_rate_low'            | Low edge of confidence interval for soiling  |
+          | 'soiling_rate_low'     | Low edge of confidence interval for soiling  |
           |                        | rate for interval, in day^−1                 |
           +------------------------+----------------------------------------------+
-          | 'soiling_rate_high'           | High edge of confidence interval for         |
+          | 'soiling_rate_high'    | High edge of confidence interval for         |
           |                        | soiling rate for interval, in day^−1         |
           +------------------------+----------------------------------------------+
           | 'inferred_start_loss'  | Estimated performance metric at the start    |
