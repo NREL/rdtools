@@ -25,7 +25,7 @@ class SRRAnalysis():
         In either case, data should be insolation-weighted daily aggregates.
     insolation_daily : pd.Series
         Daily plane-of-array insolation corresponding to
-        `energy_normalized_daily`. Arbirary units.
+        `energy_normalized_daily`. Arbitrary units.
     precipitation_daily : pd.Series, default None
         Daily total precipitation. (Ignored if ``clean_criterion='shift'`` in
         subsequent calculations.)
@@ -632,7 +632,7 @@ def soiling_srr(energy_normalized_daily, insolation_daily, reps=1000,
         In either case, data should be insolation-weighted daily aggregates.
     insolation_daily : pd.Series
         Daily plane-of-array insolation corresponding to
-        `energy_normalized_daily`. Arbirary units.
+        `energy_normalized_daily`. Arbitrary units.
     reps : int, default 1000
         number of Monte Carlo realizations to calculate
     precipitation_daily : pd.Series, default None
