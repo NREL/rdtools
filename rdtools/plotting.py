@@ -224,7 +224,7 @@ def soiling_rate_histogram(soiling_info, bins=None):
 
     soiling_summary = soiling_info['soiling_interval_summary']
     fig, ax = plt.subplots()
-    ax.hist(100.0 * soiling_summary.loc[soiling_summary['valid'], 'slope'],
+    ax.hist(100.0 * soiling_summary.loc[soiling_summary['valid'], 'soiling_rate'],
             bins=bins)
     ax.set_xlabel('Soiling rate (%/day)')
     ax.set_ylabel('Count')
