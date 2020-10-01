@@ -4,6 +4,7 @@ Pending
 
 API Changes
 -----------
+* Change the column names 'slope', 'slope_low', and 'slope_high' to 'soiling_rate', 'soiling_rate_low', and 'soiling_rate_high' in ``calc_info['soiling_interval_summary']`` returned from :py:meth:`~rdtools.soiling.SRRAnalysis.run()` and :py:func:`rdtools.soiling.soiling_srr()` (:pull:`193`).
 
 
 Enhancements
