@@ -16,6 +16,7 @@ analysis workflow.
 
    degradation
    soiling   
+   availability
    filtering
    normalization
    aggregation
@@ -49,6 +50,19 @@ Functions for estimating soiling rates from PV system data.
    soiling.annual_soiling_ratios
    soiling.SRRAnalysis
    soiling.SRRAnalysis.run
+
+
+System Availability
+===================
+
+Functions for estimating production loss from PV system outages.
+
+.. autosummary::
+   :toctree: generated/
+   
+   availability.AvailabilityAnalysis
+   availability.AvailabilityAnalysis.run
+   availability.AvailabilityAnalysis.plot
 
 
 Filtering
@@ -123,3 +137,4 @@ Functions to visualize degradation and soiling analysis results.
    plotting.soiling_monte_carlo_plot
    plotting.soiling_interval_plot
    plotting.soiling_rate_histogram
+   plotting.availability_summary_plots
