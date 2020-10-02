@@ -1,6 +1,7 @@
 ************************
 Pending
 ************************
+These changes are not yet part of a tagged release, but are available in the `development branch on github <https://github.com/NREL/rdtools/tree/development>`_.
 
 API Changes
 -----------
