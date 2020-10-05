@@ -778,7 +778,7 @@ def _count_month_days(start, end):
     return out_dict
 
 
-def annual_soiling_ratios(stochastic_soiling_profiles, confidence_level=68.2):
+def annual_soiling_ratios(stochastic_soiling_profiles, insolation_daily, confidence_level=68.2):
     '''
     Return annualized soiling ratios and associated confidence intervals based
     on stochastic soiling profiles from SRR. Note that each year may be affected
@@ -791,7 +791,9 @@ def annual_soiling_ratios(stochastic_soiling_profiles, confidence_level=68.2):
         List of pd.Series representing profile realizations from the SRR monte carlo.
         Typically ``soiling_interval_summary['stochastic_soiling_profiles']`` obtained with
         :py:func:`rdtools.soiling.soiling_srr` or :py:meth:`rdtools.soiling.SRRAnalysis.run`
-
+    insolation_daily : pd.Series
+        Daily plane-of-array insolation corresponding to
+        `energy_normalized_daily`. Arbitrary units.
     confidence_level : float, default 68.2
         The size of the confidence interval to use in determining the upper and lower
         quantiles reported in the returned DataFrame. (The median is always included in
@@ -820,12 +822,20 @@ def annual_soiling_ratios(stochastic_soiling_profiles, confidence_level=68.2):
         +------------------------+-------------------------------------------+
     '''
 
-    all_profiles = pd.concat(stochastic_soiling_profiles)
-    annual_groups = all_profiles.groupby(all_profiles.index.year)
+    # Create a df with each realization as a column
+    all_profiles = pd.concat(stochastic_soiling_profiles, axis=1)
+    # Weight each day by insolation
+    all_profiles_weighted = all_profiles.multiply(insolation_daily, axis=0)
+
+    # Compute the insolation-weighted soiling ration (IWSR) for each realization
+    annual_insolation = insolation_daily.groupby(insolation_daily.index.year).sum()
+    all_annual_weighted_sums = all_profiles_weighted.groupby(all_profiles_weighted.index.year).sum()
+    all_annual_iwsr = all_annual_weighted_sums.multiply(1/annual_insolation, axis=0)
+
     annual_soiling = pd.DataFrame({
-        'soiling_ratio_median': annual_groups.quantile(0.5),
-        'soiling_ratio_low': annual_groups.quantile(0.5 - confidence_level/2/100),
-        'soiling_ratio_high': annual_groups.quantile(0.5 + confidence_level/2/100),
+        'soiling_ratio_median': all_annual_iwsr.quantile(0.5, axis=1),
+        'soiling_ratio_low': all_annual_iwsr.quantile(0.5 - confidence_level/2/100, axis=1),
+        'soiling_ratio_high': all_annual_iwsr.quantile(0.5 + confidence_level/2/100, axis=1),
     })
     annual_soiling.index.name = 'year'
     annual_soiling = annual_soiling.reset_index()
