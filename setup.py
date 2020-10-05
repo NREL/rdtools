@@ -54,6 +54,8 @@ EXTRAS_REQUIRE = {
         'pvlib==0.7.1',
         'sphinx_rtd_theme==0.4.3',
         'ipython',
+        'nbconvert==6.0.6'
+
     ],
     'test': [
         'pytest',
