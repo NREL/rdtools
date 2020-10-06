@@ -792,8 +792,7 @@ def annual_soiling_ratios(stochastic_soiling_profiles, insolation_daily, confide
         Typically ``soiling_interval_summary['stochastic_soiling_profiles']`` obtained with
         :py:func:`rdtools.soiling.soiling_srr` or :py:meth:`rdtools.soiling.SRRAnalysis.run`
     insolation_daily : pd.Series
-        Daily plane-of-array insolation corresponding to
-        `energy_normalized_daily`. Arbitrary units.
+        Daily plane-of-array insolation with DatetimeIndex. Arbitrary units.
     confidence_level : float, default 68.2
         The size of the confidence interval to use in determining the upper and lower
         quantiles reported in the returned DataFrame. (The median is always included in
