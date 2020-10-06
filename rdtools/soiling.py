@@ -826,7 +826,7 @@ def annual_soiling_ratios(stochastic_soiling_profiles, insolation_daily, confide
     # Weight each day by insolation
     all_profiles_weighted = all_profiles.multiply(insolation_daily, axis=0)
 
-    # Compute the insolation-weighted soiling ration (IWSR) for each realization
+    # Compute the insolation-weighted soiling ratio (IWSR) for each realization
     annual_insolation = insolation_daily.groupby(insolation_daily.index.year).sum()
     all_annual_weighted_sums = all_profiles_weighted.groupby(all_profiles_weighted.index.year).sum()
     all_annual_iwsr = all_annual_weighted_sums.multiply(1/annual_insolation, axis=0)
