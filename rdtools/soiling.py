@@ -1,5 +1,6 @@
 '''Functions for calculating soiling metrics from photovoltaic system data.'''
 
+import warnings
 import pandas as pd
 import numpy as np
 from scipy.stats.mstats import theilslopes
@@ -823,6 +824,15 @@ def annual_soiling_ratios(stochastic_soiling_profiles, insolation_daily, confide
 
     # Create a df with each realization as a column
     all_profiles = pd.concat(stochastic_soiling_profiles, axis=1)
+    all_profiles = all_profiles.dropna()
+
+    if not all_profiles.index.isin(insolation_daily.index).all():
+        warnings.warn('The indexes of stochastic_soiling_profiles are not entirely contained '
+                      'within the index of insolation_daily. Every day in stochastic_soiling_profiles '
+                      'should be representted in insolation_daily. This may cause erroneous results.')
+
+    insolation_daily = insolation_daily.reindex(all_profiles.index)
+
     # Weight each day by insolation
     all_profiles_weighted = all_profiles.multiply(insolation_daily, axis=0)
 

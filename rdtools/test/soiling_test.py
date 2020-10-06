@@ -235,10 +235,12 @@ def test_soiling_srr_with_nan_interval(normalized_daily, insolation, times):
 
 @pytest.fixture()
 def multi_year_profiles():
-    times = pd.date_range('01-01-2018', '12-31-2019', freq='D')
-    data = np.array([0]*365 + [10]*365)
+    times = pd.date_range('01-01-2018', '11-30-2019', freq='D')
+    data = np.array([0]*365 + [10]*334)
     profiles = [pd.Series(x + data, times) for x in range(10)]
 
+    # make insolation slighly longer to test for proper normalization
+    times = pd.date_range('01-01-2018', '12-31-2019', freq='D')
     insolation = 350*[0.8] + (len(times)-350)*[1]
     insolation = pd.Series(insolation, index=times)
 
@@ -254,6 +256,7 @@ def test_annual_soiling_ratios(multi_year_profiles):
     
     srr_profiles, insolation = multi_year_profiles
     result = annual_soiling_ratios(srr_profiles, insolation)
+    print(result)
 
     pd.testing.assert_frame_equal(result, expected, atol=1e-8)
 
@@ -267,8 +270,16 @@ def test_annual_soiling_ratios_confidence_interval(multi_year_profiles):
 
     srr_profiles, insolation = multi_year_profiles
     result = annual_soiling_ratios(srr_profiles, insolation, confidence_level=95)
+    print(result)
 
     pd.testing.assert_frame_equal(result, expected, atol=1e-8)
+
+def test_annual_soiling_ratios_warning(multi_year_profiles):
+    srr_profiles, insolation = multi_year_profiles
+    insolation = insolation.iloc[:-200]
+    with pytest.warns(UserWarning):
+        result = annual_soiling_ratios(srr_profiles, insolation)
+
 
 # ###########################
 # monthly_soiling_rates tests
