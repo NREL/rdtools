@@ -35,6 +35,7 @@ Documentation
 
 Requirements
 ------------
+* notebook_requirements.txt updated (:pull:`209`) 
 
 
 Example Updates
