@@ -444,7 +444,7 @@ class SRRAnalysis():
 
             df_rand['soil_insol'] = df_rand.loss * df_rand.insol
 
-            monte_losses.append(df_rand.soil_insol.sum() / df_rand.insol.sum())
+            monte_losses.append(df_rand.soil_insol.sum() / df_rand.insol[~df_rand.soil_insol.isnull()].sum())
             random_profile = df_rand['loss'].copy()
             random_profile.name = 'stochastic_soiling_profile'
             random_profiles.append(random_profile)
