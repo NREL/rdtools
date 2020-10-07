@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 from rdtools import soiling_srr
+from rdtools.soiling import SRRAnalysis
 from rdtools import annual_soiling_ratios
 from rdtools import monthly_soiling_rates
 from rdtools.soiling import NoValidIntervalError
@@ -178,6 +179,19 @@ def test_soiling_srr_method(normalized_daily, insolation):
         'Soiling ratio with method="perfect_clean" different from expected value'
 
 
+def test_soiling_srr_min_interval_length(normalized_daily, insolation):
+    'Test that a long minimum interval length prevents finding shorter intervals'
+    with pytest.raises(NoValidIntervalError):
+        np.random.seed(1977)
+        # normalized_daily intervals are 25 days long, so min=26 should fail:
+        _ = soiling_srr(normalized_daily, insolation, confidence_level=68.2,
+                        reps=10, min_interval_length=26)
+
+    # but min=24 should be fine:
+    _ = soiling_srr(normalized_daily, insolation, confidence_level=68.2,
+                    reps=10, min_interval_length=24)
+
+
 def test_soiling_srr_recenter_false(normalized_daily, insolation):
     np.random.seed(1977)
     sr, sr_ci, soiling_info = soiling_srr(normalized_daily, insolation, reps=10,
@@ -227,6 +241,20 @@ def test_soiling_srr_with_nan_interval(normalized_daily, insolation, times):
     sr, sr_ci, soiling_info = soiling_srr(normalized_corrupt, insolation, reps=reps)
     assert 0.947416 == pytest.approx(sr, abs=1e-6),\
         'Soiling ratio different from expected value when an entire interval was NaN'
+
+
+def test_soiling_srr_kwargs(monkeypatch, normalized_daily, insolation):
+    '''
+    Make sure that all soiling_srr parameters get passed on to SRRAnalysis and
+    SRRAnalysis.run(), i.e. all necessary inputs to SRRAnalysis are provided by
+    soiling_srr.  Done by removing the SRRAnalysis default param values
+    and making sure everything still runs.
+    '''
+    # the __defaults__ attr is the tuple of default values in py3
+    monkeypatch.delattr(SRRAnalysis.__init__, "__defaults__")
+    monkeypatch.delattr(SRRAnalysis.run, "__defaults__")
+    _ = soiling_srr(normalized_daily, insolation, reps=10)
+
 
 # ###########################
 # annual_soiling_ratios tests
