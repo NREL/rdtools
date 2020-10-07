@@ -142,5 +142,9 @@ def test_energy_from_power_upsample_maxtimedelta_exceeded():
     pd.testing.assert_series_equal(result, expected_energy_series)
 
 
-
-
+def test_energy_from_power_single_value_input():
+    times = pd.date_range('2019-01-01', freq='15T', periods=1)
+    power = pd.Series([100.], index=times)
+    expected_result = pd.Series([25.], index=times, name='energy_Wh')
+    result = energy_from_power(power)
+    pd.testing.assert_series_equal(result, expected_result)
