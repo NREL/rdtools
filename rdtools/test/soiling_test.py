@@ -276,7 +276,10 @@ def test_annual_soiling_ratios_confidence_interval(multi_year_profiles):
 def test_annual_soiling_ratios_warning(multi_year_profiles):
     srr_profiles, insolation = multi_year_profiles
     insolation = insolation.iloc[:-200]
-    with pytest.warns(UserWarning):
+    match = ('The indexes of stochastic_soiling_profiles are not entirely contained '
+             'within the index of insolation_daily. Every day in stochastic_soiling_profiles '
+             'should be represented in insolation_daily. This may cause erroneous results.')
+    with pytest.warns(UserWarning, match=match):
         result = annual_soiling_ratios(srr_profiles, insolation)
 
 
