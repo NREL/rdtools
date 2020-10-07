@@ -20,8 +20,11 @@ Enhancements
 * Create new plotting function :py:func:`~rdtools.plotting.availability_summary_plots`
   (:pull:`131`)
 
+
 Bug fixes
 ---------
+* Pass ``min_interval_length`` through from :py:func:`~rdtools.soiling.soiling_srr`
+  to :py:class:`~rdtools.soiling.SRRAnalysis` (:issue:`201`, :pull:`208`)
 
 
 Testing
