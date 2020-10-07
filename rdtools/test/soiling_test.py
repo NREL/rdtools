@@ -256,7 +256,6 @@ def test_annual_soiling_ratios(multi_year_profiles):
     
     srr_profiles, insolation = multi_year_profiles
     result = annual_soiling_ratios(srr_profiles, insolation)
-    print(result)
 
     pd.testing.assert_frame_equal(result, expected, atol=1e-8)
 
@@ -270,9 +269,9 @@ def test_annual_soiling_ratios_confidence_interval(multi_year_profiles):
 
     srr_profiles, insolation = multi_year_profiles
     result = annual_soiling_ratios(srr_profiles, insolation, confidence_level=95)
-    print(result)
 
     pd.testing.assert_frame_equal(result, expected, atol=1e-8)
+
 
 def test_annual_soiling_ratios_warning(multi_year_profiles):
     srr_profiles, insolation = multi_year_profiles
