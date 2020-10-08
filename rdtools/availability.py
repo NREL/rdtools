@@ -10,6 +10,11 @@ import numpy as np
 from scipy.interpolate import interp1d
 import warnings
 
+warnings.warn(
+    'The availability analysis functions are currently experimental. The API '
+    'and results may change in future releases as the code matures.'
+)
+
 
 class AvailabilityAnalysis:
     """

@@ -5,6 +5,10 @@ import pandas as pd
 import numpy as np
 from scipy.stats.mstats import theilslopes
 
+warnings.warn(
+    'The soiling analysis functions are currently experimental. The API and '
+    'results may change in future releases as the code matures.'
+)
 
 # Custom exception
 class NoValidIntervalError(Exception):
