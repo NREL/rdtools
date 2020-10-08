@@ -148,3 +148,11 @@ def test_energy_from_power_single_value_input():
     expected_result = pd.Series([25.], index=times, name='energy_Wh')
     result = energy_from_power(power)
     pd.testing.assert_series_equal(result, expected_result)
+
+
+def test_energy_from_power_single_value_input_no_freq():
+    power = pd.Series([1], pd.date_range('2019-01-01', periods=1, freq='15T'))
+    power.index.freq = None
+    match = "Could not determine period of input power"
+    with pytest.raises(ValueError, match=match):
+        energy_from_power(power)

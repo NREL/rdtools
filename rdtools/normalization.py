@@ -488,11 +488,14 @@ def energy_from_power(power, target_frequency=None, max_timedelta=None):
                          'DatetimeIndex')
 
     t_steps = t_step_nanoseconds(power)
-    if power.index.freq is not None:
-        timedelta = pd.to_timedelta(power.index.freq)
-        median_step_ns = timedelta.total_seconds() * 1e9
-    else:
-        median_step_ns = t_steps.median()
+    median_step_ns = t_steps.median()
+
+    if np.isnan(median_step_ns):
+        if power.index.freq is not None:
+            timedelta = pd.to_timedelta(power.index.freq)
+            median_step_ns = timedelta.total_seconds() * 1e9
+        else:
+            raise ValueError('Could not determine period of input power')
 
     if target_frequency is None:
         # 'N' is the Pandas offset alias for ns
