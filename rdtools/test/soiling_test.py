@@ -262,36 +262,54 @@ def test_soiling_srr_kwargs(monkeypatch, normalized_daily, insolation):
 
 
 @pytest.fixture()
-def srr_profiles():
-    times = pd.date_range('01-01-2018', '12-31-2019', freq='D')
-    data = np.array([0]*365 + [10]*365)
+def multi_year_profiles():
+    times = pd.date_range('01-01-2018', '11-30-2019', freq='D')
+    data = np.array([0]*365 + [10]*334)
     profiles = [pd.Series(x + data, times) for x in range(10)]
 
-    return profiles
+    # make insolation slighly longer to test for proper normalization
+    times = pd.date_range('01-01-2018', '12-31-2019', freq='D')
+    insolation = 350*[0.8] + (len(times)-350)*[1]
+    insolation = pd.Series(insolation, index=times)
+
+    return profiles, insolation
 
 
-def test_annual_soiling_ratios(srr_profiles):
-    expected_data = np.array([[2018, 4.5, 1.0, 8.0],
-        [2019, 14.5, 11.0, 18.0]])
+def test_annual_soiling_ratios(multi_year_profiles):
+    expected_data = np.array([[2018, 4.5, 1.431, 7.569],
+        [2019, 14.5, 11.431, 17.569]])
     expected = pd.DataFrame(data=expected_data,
         columns=['year', 'soiling_ratio_median', 'soiling_ratio_low', 'soiling_ratio_high'])
     expected['year'] = expected['year'].astype(int)
     
-    result = annual_soiling_ratios(srr_profiles)
+    srr_profiles, insolation = multi_year_profiles
+    result = annual_soiling_ratios(srr_profiles, insolation)
 
     pd.testing.assert_frame_equal(result, expected, atol=1e-8)
 
 
-def test_annual_soiling_ratios_confidence_interval(srr_profiles):
-    expected_data = np.array([[2018, 4.5, 0, 9.0],
-        [2019, 14.5, 10.0, 19.0]])
+def test_annual_soiling_ratios_confidence_interval(multi_year_profiles):
+    expected_data = np.array([[2018, 4.5, 0.225, 8.775],
+        [2019, 14.5, 10.225, 18.775]])
     expected = pd.DataFrame(data=expected_data,
         columns=['year', 'soiling_ratio_median', 'soiling_ratio_low', 'soiling_ratio_high'])
     expected['year'] = expected['year'].astype(int)
 
-    result = annual_soiling_ratios(srr_profiles, confidence_level=95)
+    srr_profiles, insolation = multi_year_profiles
+    result = annual_soiling_ratios(srr_profiles, insolation, confidence_level=95)
 
     pd.testing.assert_frame_equal(result, expected, atol=1e-8)
+
+
+def test_annual_soiling_ratios_warning(multi_year_profiles):
+    srr_profiles, insolation = multi_year_profiles
+    insolation = insolation.iloc[:-200]
+    match = ('The indexes of stochastic_soiling_profiles are not entirely contained '
+             'within the index of insolation_daily. Every day in stochastic_soiling_profiles '
+             'should be represented in insolation_daily. This may cause erroneous results.')
+    with pytest.warns(UserWarning, match=match):
+        result = annual_soiling_ratios(srr_profiles, insolation)
+
 
 # ###########################
 # monthly_soiling_rates tests
