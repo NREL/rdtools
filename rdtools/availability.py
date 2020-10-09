@@ -1,6 +1,10 @@
 """
 Functions for detecting and quantifying production loss from photovoltaic
 system downtime events.
+
+The availability module is currently experimental. The API, results,
+and default behaviors may change in future releases (including MINOR
+and PATCH releases) as the code matures.
 """
 
 import rdtools
@@ -11,8 +15,9 @@ from scipy.interpolate import interp1d
 import warnings
 
 warnings.warn(
-    'The availability analysis functions are currently experimental. The API '
-    'and results may change in future releases as the code matures.'
+    'The availability module is currently experimental. The API, results, '
+    'and default behaviors may change in future releases (including MINOR '
+    'and PATCH releases) as the code matures.'
 )
 
 
