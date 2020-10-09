@@ -2,6 +2,7 @@
 
 import matplotlib.pyplot as plt
 import numpy as np
+import warnings
 
 def degradation_summary_plots(yoy_rd, yoy_ci, yoy_info, normalized_yield,
                               hist_xmin=None, hist_xmax=None, bins=None,
@@ -114,6 +115,11 @@ def soiling_monte_carlo_plot(soiling_info, normalized_yield, point_alpha=0.5,
     Create figure to visualize Monte Carlo of soiling profiles used in the SRR
     analysis.
 
+    .. warning::
+        The soiling module is currently experimental. The API, results,
+        and default behaviors may change in future releases (including MINOR
+        and PATCH releases) as the code matures.
+
     Parameters
     ----------
     soiling_info : dict
@@ -141,6 +147,11 @@ def soiling_monte_carlo_plot(soiling_info, normalized_yield, point_alpha=0.5,
     -------
     fig : matplotlib Figure
     '''
+    warnings.warn(
+        'The soiling module is currently experimental. The API, results, '
+        'and default behaviors may change in future releases (including MINOR '
+        'and PATCH releases) as the code matures.'
+    )
 
     fig, ax = plt.subplots()
     renormalized = normalized_yield / soiling_info['renormalizing_factor']
@@ -167,6 +178,11 @@ def soiling_interval_plot(soiling_info, normalized_yield, point_alpha=0.5,
     '''
     Create figure to visualize valid soiling profiles used in the SRR analysis.
 
+    .. warning::
+        The soiling module is currently experimental. The API, results,
+        and default behaviors may change in future releases (including MINOR
+        and PATCH releases) as the code matures.
+
     Parameters
     ----------
     soiling_info : dict
@@ -191,6 +207,11 @@ def soiling_interval_plot(soiling_info, normalized_yield, point_alpha=0.5,
     -------
     fig : matplotlib Figure
     '''
+    warnings.warn(
+        'The soiling module is currently experimental. The API, results, '
+        'and default behaviors may change in future releases (including MINOR '
+        'and PATCH releases) as the code matures.'
+    )
 
     sratio = soiling_info['soiling_ratio_perfect_clean']
     fig, ax = plt.subplots()
@@ -209,6 +230,11 @@ def soiling_rate_histogram(soiling_info, bins=None):
     '''
     Create histogram of soiling rates found in the SRR analysis.
 
+    .. warning::
+        The soiling module is currently experimental. The API, results,
+        and default behaviors may change in future releases (including MINOR
+        and PATCH releases) as the code matures.
+
     Parameters
     ----------
     soiling_info : dict
@@ -221,6 +247,11 @@ def soiling_rate_histogram(soiling_info, bins=None):
     -------
     fig : matplotlib Figure
     '''
+    warnings.warn(
+        'The soiling module is currently experimental. The API, results, '
+        'and default behaviors may change in future releases (including MINOR '
+        'and PATCH releases) as the code matures.'
+    )
 
     soiling_summary = soiling_info['soiling_interval_summary']
     fig, ax = plt.subplots()
@@ -242,6 +273,11 @@ def availability_summary_plots(power_system, power_subsystem, loss_total,
     AvailabilityAnalysis object, it is usually easier to use
     :py:meth:`.availability.AvailabilityAnalysis.plot` instead of running
     this function manually.
+
+    .. warning::
+        The availability module is currently experimental. The API, results,
+        and default behaviors may change in future releases (including MINOR
+        and PATCH releases) as the code matures.
 
     Parameters
     ----------
@@ -280,6 +316,12 @@ def availability_summary_plots(power_system, power_subsystem, loss_total,
     ...     aa.power_subsystem, aa.loss_total, aa.energy_cumulative,
     ...     aa.energy_expected_rescaled, aa.outage_info)
     """
+    warnings.warn(
+        'The availability module is currently experimental. The API, results, '
+        'and default behaviors may change in future releases (including MINOR '
+        'and PATCH releases) as the code matures.'
+    )
+
     fig = plt.figure(figsize=(16, 8))
     gs = fig.add_gridspec(3, 2)
     ax1 = fig.add_subplot(gs[0, 0])
