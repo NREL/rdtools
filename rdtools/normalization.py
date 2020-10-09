@@ -470,32 +470,42 @@ def energy_from_power(power, target_frequency=None, max_timedelta=None):
         Instantaneous time series of power in Watts
     target_frequency : DatetimeOffset or frequency string, default None
         The frequency of the energy time series to be returned.
-        If omitted, use the median timestep of `power`
+        If omitted, use the median timestep of `power`, or if `power` has
+        fewer than two elements, use `power.index.freq`.
     max_timedelta : pd.Timedelta, default None
         The maximum allowed gap between power measurements. If the gap between
         consecutive power measurements exceeds `max_timedelta`, NaN will be
         returned for that interval. If omitted, `max_timedelta` is set
-        internally to the median time delta in `power`.
+        internally to the median time delta in `power`. Ignored when `power`
+        has fewer than two elements.
 
     Returns
     -------
     pd.Series
         right-labeled energy in Wh per interval
     '''
-
     if not isinstance(power.index, pd.DatetimeIndex):
         raise ValueError('power must be a pandas series with a '
                          'DatetimeIndex')
 
+    if len(power) <= 1:
+        # just one value, doesn't make sense to interpolate or trapz aggregate.
+        # use the index frequency to determine the appropriate timescale
+        if target_frequency is None:
+            if power.index.freq is None:
+                raise ValueError('Could not determine period of input power')
+
+            target_frequency = power.index.freq
+        # just raise if it's a non-fixed frequency
+        interval_length_ns = \
+            pd.tseries.frequencies.to_offset(target_frequency).nanos
+
+        energy = power * interval_length_ns / 1e9 / 3600  # ns to s to h
+        energy.name = 'energy_Wh'
+        return energy
+
     t_steps = t_step_nanoseconds(power)
     median_step_ns = t_steps.median()
-
-    if np.isnan(median_step_ns):
-        if power.index.freq is not None:
-            timedelta = pd.to_timedelta(power.index.freq)
-            median_step_ns = timedelta.total_seconds() * 1e9
-        else:
-            raise ValueError('Could not determine period of input power')
 
     if target_frequency is None:
         # 'N' is the Pandas offset alias for ns
@@ -520,44 +530,37 @@ def energy_from_power(power, target_frequency=None, max_timedelta=None):
         else:
             raise
 
-    if len(power) <= 1:
-        # just one value, doesn't make sense to interpolate or trapz aggregate.
-        energy = power * freq_interval_size_ns / 1e9 / 3600  # ns to s to h
+    # Upsampling case
+    if freq_interval_size_ns <= median_step_ns:
+        resampled = interpolate(power, target_frequency, max_timedelta)
 
-    else:
-        # a "proper" timeseries with multiple values
+        moving_average = (resampled + resampled.shift()) / 2.0
 
-        # Upsampling case
-        if freq_interval_size_ns <= median_step_ns:
-            resampled = interpolate(power, target_frequency, max_timedelta)
+        energy = moving_average * t_step_nanoseconds(moving_average) \
+                    / 10.0**9 / 3600.0
 
-            moving_average = (resampled + resampled.shift()) / 2.0
+        # Drop first row with work around for pandas issue #18031
+        if energy.index.tz is None:
+            energy = energy.drop(energy.index[0])
+        else:
+            tz = str(energy.index.tz)
+            energy.index = energy.index.tz_convert('UTC')
+            energy = energy.drop(energy.index[0])
+            energy.index = energy.index.tz_convert(tz)
 
-            energy = moving_average * t_step_nanoseconds(moving_average) \
-                / 10.0**9 / 3600.0
+    # Downsampling case
+    elif freq_interval_size_ns > median_step_ns:
+        energy = trapz_aggregate(power, target_frequency, max_timedelta)
 
-            # Drop first row with work around for pandas issue #18031
-            if energy.index.tz is None:
-                energy = energy.drop(energy.index[0])
-            else:
-                tz = str(energy.index.tz)
-                energy.index = energy.index.tz_convert('UTC')
-                energy = energy.drop(energy.index[0])
-                energy.index = energy.index.tz_convert(tz)
+    # Set the frequency if we can
+    try:
+        energy.index.freq = pd.infer_freq(energy.index)
+    except ValueError:
+        pass
 
-        # Downsampling case
-        elif freq_interval_size_ns > median_step_ns:
-            energy = trapz_aggregate(power, target_frequency, max_timedelta)
-
-        # Set the frequency if we can
-        try:
-            energy.index.freq = pd.infer_freq(energy.index)
-        except ValueError:
-            pass
-
-        # enforce max_timedelta
-        t_steps = t_steps.reindex(energy.index, method='backfill')
-        energy.loc[t_steps > max_interval_nanoseconds] = np.nan
+    # enforce max_timedelta
+    t_steps = t_steps.reindex(energy.index, method='backfill')
+    energy.loc[t_steps > max_interval_nanoseconds] = np.nan
 
     energy.name = 'energy_Wh'
 
