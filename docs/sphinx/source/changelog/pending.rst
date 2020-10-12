@@ -1,17 +1,20 @@
 ************************
 Pending
 ************************
-These changes are not yet part of a tagged release, but are available in the `development branch on github <https://github.com/NREL/rdtools/tree/development>`_.
+These changes are not yet part of a tagged release, but are available in the
+`development branch on github <https://github.com/NREL/rdtools/tree/development>`_.
 
 API Changes
 -----------
-
-* Change the column names 'slope', 'slope_low', and 'slope_high' to 'soiling_rate', 'soiling_rate_low', and 'soiling_rate_high' in ``calc_info['soiling_interval_summary']`` returned from :py:meth:`~rdtools.soiling.SRRAnalysis.run()` and :py:func:`rdtools.soiling.soiling_srr()` (:pull:`193`).
+* Change the column names 'slope', 'slope_low', and 'slope_high' to 'soiling_rate',
+  'soiling_rate_low', and 'soiling_rate_high' in ``calc_info['soiling_interval_summary']``
+  returned from :py:meth:`~rdtools.soiling.SRRAnalysis.run()` and :py:func:`rdtools.soiling.soiling_srr()` (:pull:`193`).
+* Remove :py:mod:`~rdtools.soiling` from default imports and emit warning when
+  importing it (:pull:`213`)
 
 
 Enhancements
 ------------
-
 * Add new function :py:func:`~rdtools.soiling.monthly_soiling_rates` (:pull:`193`).
 * Add new function :py:func:`~rdtools.annual_soiling_ratios` (:pull:`193`, :pull:`207`).
 * Create new module :py:mod:`~rdtools.availability` and class

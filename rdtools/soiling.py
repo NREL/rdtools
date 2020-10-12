@@ -1,10 +1,21 @@
-'''Functions for calculating soiling metrics from photovoltaic system data.'''
+'''
+Functions for calculating soiling metrics from photovoltaic system data.
+
+The soiling module is currently experimental. The API, results,
+and default behaviors may change in future releases (including MINOR
+and PATCH releases) as the code matures.
+'''
 
 import warnings
 import pandas as pd
 import numpy as np
 from scipy.stats.mstats import theilslopes
 
+warnings.warn(
+    'The soiling module is currently experimental. The API, results, '
+    'and default behaviors may change in future releases (including MINOR '
+    'and PATCH releases) as the code matures.'
+)
 
 # Custom exception
 class NoValidIntervalError(Exception):

@@ -1,9 +1,9 @@
 import pandas as pd
 import numpy as np
-from rdtools import soiling_srr
+from rdtools.soiling import soiling_srr
 from rdtools.soiling import SRRAnalysis
-from rdtools import annual_soiling_ratios
-from rdtools import monthly_soiling_rates
+from rdtools.soiling import annual_soiling_ratios
+from rdtools.soiling import monthly_soiling_rates
 from rdtools.soiling import NoValidIntervalError
 import pytest
 
