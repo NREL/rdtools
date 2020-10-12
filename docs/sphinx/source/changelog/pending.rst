@@ -28,6 +28,8 @@ Bug fixes
 ---------
 * Pass ``min_interval_length`` through from :py:func:`~rdtools.soiling.soiling_srr`
   to :py:class:`~rdtools.soiling.SRRAnalysis` (:issue:`201`, :pull:`208`)
+* Allow single-value timeseries input to :py:func:`~rdtools.normalization.energy_from_power`,
+  (:issue:`206`, :pull:`212`)
 
 
 Testing
