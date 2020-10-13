@@ -1,12 +1,17 @@
 """ Energy Normalization with PVWatts Unit Tests. """
 
 import unittest
+import pytest
 
 import pandas as pd
 import numpy as np
 
 from rdtools.normalization import normalize_with_pvwatts
 from rdtools.normalization import pvwatts_dc_power
+
+from conftest import fail_on_rdtools_version
+from rdtools._deprecation import rdtoolsDeprecationWarning
+
 
 class PVWattsNormalizationTestCase(unittest.TestCase):
     ''' Unit tests for energy normalization module. '''
@@ -56,12 +61,14 @@ class PVWattsNormalizationTestCase(unittest.TestCase):
     def tearDown(self):
         pass
 
+    @fail_on_rdtools_version('3.0.0')
     def test_pvwatts_dc_power(self):
         ''' Test PVWatts DC power caculation. '''
 
-        dc_power = pvwatts_dc_power(self.poa_global, self.power,
-                                    temperature_cell=self.temp,
-                                    gamma_pdc=self.gamma_pdc)
+        with pytest.warns(rdtoolsDeprecationWarning):
+            dc_power = pvwatts_dc_power(self.poa_global, self.power,
+                                        temperature_cell=self.temp,
+                                        gamma_pdc=self.gamma_pdc)
 
         # Assert output has same frequency and length as input
         self.assertEqual(self.poa_global.index.freq, dc_power.index.freq)
@@ -70,6 +77,8 @@ class PVWattsNormalizationTestCase(unittest.TestCase):
         # Assert value of output Series is equal to value expected
         self.assertTrue((dc_power == 19.75).all())
 
+
+    @fail_on_rdtools_version('3.0.0')
     def test_normalization_with_pvw(self):
         ''' Test PVWatts normalization. '''
 
@@ -80,7 +89,8 @@ class PVWattsNormalizationTestCase(unittest.TestCase):
             'gamma_pdc': self.gamma_pdc,
         }
 
-        corr_energy, insolation = normalize_with_pvwatts(self.energy, pvw_kws)
+        with pytest.warns(rdtoolsDeprecationWarning):
+            corr_energy, insolation = normalize_with_pvwatts(self.energy, pvw_kws)
 
         # Test output is same frequency and length as energy
         self.assertEqual(corr_energy.index.freq, self.energy.index.freq)
@@ -94,13 +104,15 @@ class PVWattsNormalizationTestCase(unittest.TestCase):
 
         # Test expected behavior when energy has no explicit frequency
         self.energy.index.freq = None
-        corr_energy, insolation = normalize_with_pvwatts(self.energy, pvw_kws)
+        with pytest.warns(rdtoolsDeprecationWarning):
+            corr_energy, insolation = normalize_with_pvwatts(self.energy, pvw_kws)
         self.assertTrue(np.isnan(corr_energy.iloc[0]))  # first value should be nan
         self.assertTrue((corr_energy.iloc[1:] == 1.0).all())  # rest should be 1
 
         # Test for valueError when energy frequency can't be inferred
         with self.assertRaises(ValueError):
-            corr_energy, insolation = normalize_with_pvwatts(self.irregular_timeseries, pvw_kws)
+            with pytest.warns(rdtoolsDeprecationWarning):
+                corr_energy, insolation = normalize_with_pvwatts(self.irregular_timeseries, pvw_kws)
 
 
 if __name__ == '__main__':
