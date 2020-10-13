@@ -470,22 +470,39 @@ def energy_from_power(power, target_frequency=None, max_timedelta=None):
         Instantaneous time series of power in Watts
     target_frequency : DatetimeOffset or frequency string, default None
         The frequency of the energy time series to be returned.
-        If omitted, use the median timestep of `power`
+        If omitted, use the median timestep of `power`, or if `power` has
+        fewer than two elements, use `power.index.freq`.
     max_timedelta : pd.Timedelta, default None
         The maximum allowed gap between power measurements. If the gap between
         consecutive power measurements exceeds `max_timedelta`, NaN will be
         returned for that interval. If omitted, `max_timedelta` is set
-        internally to the median time delta in `power`.
+        internally to the median time delta in `power`. Ignored when `power`
+        has fewer than two elements.
 
     Returns
     -------
     pd.Series
         right-labeled energy in Wh per interval
     '''
-
     if not isinstance(power.index, pd.DatetimeIndex):
         raise ValueError('power must be a pandas series with a '
                          'DatetimeIndex')
+
+    if len(power) <= 1:
+        # just one value, doesn't make sense to interpolate or trapz aggregate.
+        # use the index frequency to determine the appropriate timescale
+        if target_frequency is None:
+            if power.index.freq is None:
+                raise ValueError('Could not determine period of input power')
+
+            target_frequency = power.index.freq
+        # just raise if it's a non-fixed frequency
+        interval_length_ns = \
+            pd.tseries.frequencies.to_offset(target_frequency).nanos
+
+        energy = power * interval_length_ns / 1e9 / 3600  # ns to s to h
+        energy.name = 'energy_Wh'
+        return energy
 
     t_steps = t_step_nanoseconds(power)
     median_step_ns = t_steps.median()

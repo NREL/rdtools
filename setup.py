@@ -48,12 +48,13 @@ INSTALL_REQUIRES = [
 EXTRAS_REQUIRE = {
     'doc': [
         'sphinx==1.8.5',
-        'nbsphinx==0.4.3',
+        'nbsphinx==0.5.0',
         'nbsphinx-link==1.3.0',
         'pandas==0.23.0',
         'pvlib==0.7.1',
         'sphinx_rtd_theme==0.4.3',
-        'ipython',
+        'ipython'
+
     ],
     'test': [
         'pytest',
