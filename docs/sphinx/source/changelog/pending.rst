@@ -28,7 +28,7 @@ Enhancements
 * Add new function :py:func:`~rdtools.soiling.monthly_soiling_rates` (:pull:`193`).
 * Add new function :py:func:`~rdtools.soiling.annual_soiling_ratios` (:pull:`193`, :pull:`207`).
 * Create new module :py:mod:`~rdtools.availability` and class
-  :py:class:`~rdtools.availability.AvailabilityAanlysis` for estimating
+  :py:class:`~rdtools.availability.AvailabilityAnalysis` for estimating
   timeseries system availability (:pull:`131`)
 * Create new plotting function :py:func:`~rdtools.plotting.availability_summary_plots`
   (:pull:`131`)
