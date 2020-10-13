@@ -34,7 +34,7 @@ Bug fixes
 
 Testing
 -------
-
+* Add automated tests based on the minimum dependency versions (:pull:`197`)
 
 Documentation
 -------------
@@ -43,7 +43,8 @@ Documentation
 
 Requirements
 ------------
-
+* Increase minimum matplotlib version from 2.2.2 (released March 17, 2018)
+  to 3.0.0 (released September 18, 2018) (:pull:`197`)
 
 Example Updates
 ---------------
