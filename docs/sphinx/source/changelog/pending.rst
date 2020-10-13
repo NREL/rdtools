@@ -20,7 +20,7 @@ Deprecations
   :py:func:`~rdtools.normalization.normalize_with_pvwatts`, and
   :py:func:`~rdtools.normalization.normalize_with_sapm` have been deprecated
   in favor of :py:func:`~rdtools.normalization.normalize_with_expected_power`.
-  (:pull:`XX`)
+  (:pull:`215`)
   
   
 Enhancements
