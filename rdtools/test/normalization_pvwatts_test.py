@@ -8,6 +8,8 @@ import numpy as np
 from rdtools.normalization import normalize_with_pvwatts
 from rdtools.normalization import pvwatts_dc_power
 
+from conftest import fail_on_rdtools_version
+
 class PVWattsNormalizationTestCase(unittest.TestCase):
     ''' Unit tests for energy normalization module. '''
 
@@ -56,6 +58,7 @@ class PVWattsNormalizationTestCase(unittest.TestCase):
     def tearDown(self):
         pass
 
+    @fail_on_rdtools_version('3.0.0')
     def test_pvwatts_dc_power(self):
         ''' Test PVWatts DC power caculation. '''
 
@@ -70,6 +73,8 @@ class PVWattsNormalizationTestCase(unittest.TestCase):
         # Assert value of output Series is equal to value expected
         self.assertTrue((dc_power == 19.75).all())
 
+
+    @fail_on_rdtools_version('3.0.0')
     def test_normalization_with_pvw(self):
         ''' Test PVWatts normalization. '''
 

@@ -9,6 +9,7 @@ import pvlib
 from rdtools.normalization import normalize_with_sapm
 from rdtools.normalization import sapm_dc_power
 
+from conftest import fail_on_rdtools_version
 
 class SapmNormalizationTestCase(unittest.TestCase):
     ''' Unit tests for energy normalization module. '''
@@ -77,6 +78,7 @@ class SapmNormalizationTestCase(unittest.TestCase):
     def tearDown(self):
         pass
 
+    @fail_on_rdtools_version('3.0.0')
     def test_sapm_dc_power(self):
         ''' Test SAPM DC power. '''
 
@@ -84,6 +86,7 @@ class SapmNormalizationTestCase(unittest.TestCase):
         self.assertEqual(self.irrad.index.freq, dc_power.index.freq)
         self.assertEqual(len(self.irrad), len(dc_power))
 
+    @fail_on_rdtools_version('3.0.0')
     def test_normalization_with_sapm(self):
         ''' Test SAPM normalization. '''
 
