@@ -26,7 +26,7 @@ Deprecations
 Enhancements
 ------------
 * Add new function :py:func:`~rdtools.soiling.monthly_soiling_rates` (:pull:`193`).
-* Add new function :py:func:`~rdtools.annual_soiling_ratios` (:pull:`193`, :pull:`207`).
+* Add new function :py:func:`~rdtools.soiling.annual_soiling_ratios` (:pull:`193`, :pull:`207`).
 * Create new module :py:mod:`~rdtools.availability` and class
   :py:class:`~rdtools.availability.AvailabilityAanlysis` for estimating
   timeseries system availability (:pull:`131`)
