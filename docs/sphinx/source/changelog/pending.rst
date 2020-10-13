@@ -13,6 +13,16 @@ API Changes
   importing it (:pull:`213`)
 
 
+Deprecations
+------------
+* The functions :py:func:`~rdtools.normalization.pvwatts_dc_power`,
+  :py:func:`~rdtools.normalization.sapm_dc_power`,
+  :py:func:`~rdtools.normalization.normalize_with_pvwatts`, and
+  :py:func:`~rdtools.normalization.normalize_with_sapm` have been deprecated
+  in favor of :py:func:`~rdtools.normalization.normalize_with_expected_power`.
+  (:pull:`XX`)
+  
+  
 Enhancements
 ------------
 * Add new function :py:func:`~rdtools.soiling.monthly_soiling_rates` (:pull:`193`).
