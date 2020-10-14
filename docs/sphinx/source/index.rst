@@ -300,6 +300,6 @@ Indices and tables
 
 .. links and references
 
-.. _example notebook: https://rdtools.readthedocs.io/en/latest/example.html
+.. _example notebook: rd_example.nblink
 .. _release: https://github.com/NREL/rdtools/releases
 .. _github: https://github.com/NREL/rdtools
