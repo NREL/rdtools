@@ -1,6 +1,7 @@
 [run]
 omit = 
-    # _version.py doesn't count
+    # _version.py doesn't count, same for _deprecation.py
     rdtools/_version.py
+    rdtools/_deprecation.py
     # omit the test files themselves
     rdtools/test/*
