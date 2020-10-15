@@ -49,7 +49,7 @@ class PVWattsNormalizationTestCase(unittest.TestCase):
 
         # define an irregular pandas series
         times = pd.DatetimeIndex(['2012-01-01 12:00', '2012-01-01 12:05', '2012-01-01 12:06',
-                                 '2012-01-01 12:09'])
+                                  '2012-01-01 12:09'])
         data = [1, 2, 3, 4]
         self.irregular_timeseries = pd.Series(data=data, index=times)
 
@@ -81,6 +81,7 @@ class PVWattsNormalizationTestCase(unittest.TestCase):
         }
 
         corr_energy, insolation = normalize_with_pvwatts(self.energy, pvw_kws)
+        corr_energy = corr_energy.reindex(self.energy.index)
 
         # Test output is same frequency and length as energy
         self.assertEqual(corr_energy.index.freq, self.energy.index.freq)
@@ -95,6 +96,7 @@ class PVWattsNormalizationTestCase(unittest.TestCase):
         # Test expected behavior when energy has no explicit frequency
         self.energy.index.freq = None
         corr_energy, insolation = normalize_with_pvwatts(self.energy, pvw_kws)
+        corr_energy = corr_energy.reindex(self.energy.index)
         self.assertTrue(np.isnan(corr_energy.iloc[0]))  # first value should be nan
         self.assertTrue((corr_energy.iloc[1:] == 1.0).all())  # rest should be 1
 
