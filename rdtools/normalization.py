@@ -618,6 +618,10 @@ def _aggregate(time_series, target_frequency, max_timedelta, series_type):
         time_series[gap_mask] = np.nan
         values = time_series.values
         series_sum = values[1:] * t_diffs_hours
+    else:
+        raise ValueError("series_type must be either 'instantaneous' or 'right_labeled', "
+                         "not '{}'".format(series_type))
+
     series_sum = pd.Series(data=series_sum, index=time_series.index[1:])
 
     aggregated = series_sum.resample(target_frequency,
