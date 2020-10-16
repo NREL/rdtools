@@ -162,10 +162,11 @@ The most frequently used functions are:
 
 .. code:: python
 
-   normalization.normalize_with_pvwatts(energy, pvwatts_kws)
+   normalization.normalize_with_expected_power(pv, power_expected, poa_global,
+                                               pv_input='power')
      '''
-     Inputs: Pandas time series of raw energy, PVwatts dict for system analysis 
-       (poa_global, power_dc_rated, temperature_cell, poa_global_ref, temperature_cell_ref, gamma_pdc)
+     Inputs: Pandas time series of raw power or energy, expected power, and
+        plane of array irradiance.
      Outputs: Pandas time series of normalized energy and POA insolation
      '''
 
@@ -299,6 +300,6 @@ Indices and tables
 
 .. links and references
 
-.. _example notebook: https://rdtools.readthedocs.io/en/latest/example.html
+.. _example notebook: rd_example.nblink
 .. _release: https://github.com/NREL/rdtools/releases
 .. _github: https://github.com/NREL/rdtools

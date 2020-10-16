@@ -43,7 +43,7 @@ INSTALL_REQUIRES = [
     'statsmodels >= 0.8.0',
     'scipy >= 0.19.1',
     'h5py >= 2.7.1',
-    'pvlib >= 0.7.0, <0.8.0',
+    'pvlib >= 0.7.0, <0.9.0',
 ]
 
 EXTRAS_REQUIRE = {
