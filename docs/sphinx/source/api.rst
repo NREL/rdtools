@@ -105,7 +105,6 @@ Normalization
    pvwatts_dc_power
    sapm_dc_power
    t_step_nanoseconds
-   trapz_aggregate
 
 
 Aggregation
