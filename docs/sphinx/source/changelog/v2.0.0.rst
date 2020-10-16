@@ -1,5 +1,5 @@
 *************************
-v2.0.0 (October 15, 2020)
+v2.0.0 (TBD, 2020)
 *************************
 
 API Changes
@@ -110,4 +110,3 @@ Contributors
 * Mike Deceglie (:ghuser:`mdeceglie`)
 * Kevin Anderson (:ghuser:`kanderso-nrel`)
 * Chris Deline (:ghuser:`cdeline`)
-
