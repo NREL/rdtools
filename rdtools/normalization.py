@@ -489,13 +489,14 @@ def energy_from_power(power, target_frequency=None, max_timedelta=None, power_ty
         internally to the median time delta in `power`. Ignored when `power`
         has fewer than two elements.
     power_type : {'right_labeled', 'instantaneous'}
-        The labeling convention used in power.
+        The labeling convention used in power. Default: 'right_labeled'
 
     Returns
     -------
     pd.Series
         right-labeled energy in Wh per interval
     '''
+
     if not isinstance(power.index, pd.DatetimeIndex):
         raise ValueError('power must be a pandas series with a '
                          'DatetimeIndex')
@@ -503,6 +504,9 @@ def energy_from_power(power, target_frequency=None, max_timedelta=None, power_ty
     if len(power) <= 1:
         # just one value, doesn't make sense to interpolate or trapz aggregate.
         # use the index frequency to determine the appropriate timescale
+        if power_type == 'instantaneous':
+            raise ValueError("power_type='instantaneous' is incompatible with single element "
+                "power. Use power_type='right-labeled'")
         if target_frequency is None:
             if power.index.freq is None:
                 raise ValueError('Could not determine period of input power')

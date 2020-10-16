@@ -77,6 +77,14 @@ def test_energy_from_power_single_value_input_no_freq():
         energy_from_power(power)
 
 
+def test_energy_from_power_single_value_instantaneous():
+    power = pd.Series([1], pd.date_range('2019-01-01', periods=1, freq='15T'))
+    power.index.freq = None
+    match = "power_type='instantaneous' is incompatible with single element power. Use power_type='right-labeled'"
+    with pytest.raises(ValueError, match=match):
+        energy_from_power(power, power_type='instantaneous')
+
+
 def test_energy_from_power_single_value_with_target():
     times = pd.date_range('2019-01-01', freq='15T', periods=1)
     power = pd.Series([100.], index=times)
