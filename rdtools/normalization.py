@@ -605,18 +605,19 @@ def _aggregate(time_series, target_frequency, max_timedelta, series_type):
 
     time_series = time_series.reindex(union_index)
     t_diffs = np.diff(time_series.index.astype('int64').values)
+    t_diffs_hours = t_diffs / 10**9 / 3600.0
     if series_type == 'instantaneous':
         # interpolate with trapz sum
         time_series = time_series.interpolate(method='time')
         time_series[gap_mask] = np.nan
         values = time_series.values
-        series_sum = (values[1:] + values[:-1]) / 2 * t_diffs / 10**9 / 3600.0
+        series_sum = (values[1:] + values[:-1]) / 2 * t_diffs_hours
     elif series_type == 'right_labeled':
         # bfill and rectangular sum
         time_series = time_series.bfill()
         time_series[gap_mask] = np.nan
         values = time_series.values
-        series_sum = values[1:] * t_diffs / 10**9 / 3600.0
+        series_sum = values[1:] * t_diffs_hours
     series_sum = pd.Series(data=series_sum, index=time_series.index[1:])
 
     aggregated = series_sum.resample(target_frequency,
