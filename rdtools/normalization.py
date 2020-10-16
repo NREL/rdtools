@@ -41,7 +41,7 @@ def normalize_with_expected_power(pv, power_expected, poa_global,
     freq = check_series_frequency(pv, 'pv')
 
     if pv_input == 'power':
-        energy = energy_from_power(pv, freq)
+        energy = energy_from_power(pv, freq, power_type='right_labeled')
     elif pv_input == 'energy':
         energy = pv.copy()
         energy.name = 'energy_Wh'
@@ -56,8 +56,8 @@ def normalize_with_expected_power(pv, power_expected, poa_global,
         power_expected = interpolate(power_expected, pv.index)
         poa_global = interpolate(poa_global, pv.index)
 
-    energy_expected = energy_from_power(power_expected, freq)
-    insolation = energy_from_power(poa_global, freq)
+    energy_expected = energy_from_power(power_expected, freq, power_type='right_labeled')
+    insolation = energy_from_power(poa_global, freq, power_type='right_labeled')
 
     energy_normalized = energy / energy_expected
 
@@ -465,17 +465,19 @@ def t_step_nanoseconds(time_series):
     return t_steps
 
 
-def energy_from_power(power, target_frequency=None, max_timedelta=None):
+def energy_from_power(power, target_frequency=None, max_timedelta=None, power_type='right_labeled'):
     '''
     Returns a regular right-labeled energy time series in units of Wh per
-    interval from an instantaneous power time series. NaN is filled where the
-    gap between input data points exceeds `max_timedelta`. Power_series should
+    interval from a power time series. For instantaneous timeseries, a
+    trapezoidal sum is used. For right labeled time series, a rectangular sum
+    is used. NaN is filled where the gap between input data points exceeds
+    `max_timedelta`. Power_series should
     be given in Watts.
 
     Parameters
     ----------
     power : pd.Series
-        Instantaneous time series of power in Watts
+        Time series of power in Watts
     target_frequency : DatetimeOffset or frequency string, default None
         The frequency of the energy time series to be returned.
         If omitted, use the median timestep of `power`, or if `power` has
@@ -486,12 +488,15 @@ def energy_from_power(power, target_frequency=None, max_timedelta=None):
         returned for that interval. If omitted, `max_timedelta` is set
         internally to the median time delta in `power`. Ignored when `power`
         has fewer than two elements.
+    power_type : {'right_labeled', 'instantaneous'}
+        The labeling convention used in power. Default: 'right_labeled'
 
     Returns
     -------
     pd.Series
         right-labeled energy in Wh per interval
     '''
+
     if not isinstance(power.index, pd.DatetimeIndex):
         raise ValueError('power must be a pandas series with a '
                          'DatetimeIndex')
@@ -499,6 +504,9 @@ def energy_from_power(power, target_frequency=None, max_timedelta=None):
     if len(power) <= 1:
         # just one value, doesn't make sense to interpolate or trapz aggregate.
         # use the index frequency to determine the appropriate timescale
+        if power_type == 'instantaneous':
+            raise ValueError("power_type='instantaneous' is incompatible with single element "
+                "power. Use power_type='right-labeled'")
         if target_frequency is None:
             if power.index.freq is None:
                 raise ValueError('Could not determine period of input power')
@@ -523,7 +531,8 @@ def energy_from_power(power, target_frequency=None, max_timedelta=None):
         max_interval_nanoseconds = median_step_ns
     else:
         max_interval_nanoseconds = max_timedelta.total_seconds() * 10.0**9
-
+    # set max_timedelta for use in interpolate and _aggregate
+    max_timedelta = pd.to_timedelta(f'{max_interval_nanoseconds} nanos')
     try:
         freq_interval_size_ns = \
             pd.tseries.frequencies.to_offset(target_frequency).nanos
@@ -538,27 +547,9 @@ def energy_from_power(power, target_frequency=None, max_timedelta=None):
         else:
             raise
 
-    # Upsampling case
     if freq_interval_size_ns <= median_step_ns:
-        resampled = interpolate(power, target_frequency, max_timedelta)
-
-        moving_average = (resampled + resampled.shift()) / 2.0
-
-        energy = moving_average * t_step_nanoseconds(moving_average) \
-                    / 10.0**9 / 3600.0
-
-        # Drop first row with work around for pandas issue #18031
-        if energy.index.tz is None:
-            energy = energy.drop(energy.index[0])
-        else:
-            tz = str(energy.index.tz)
-            energy.index = energy.index.tz_convert('UTC')
-            energy = energy.drop(energy.index[0])
-            energy.index = energy.index.tz_convert(tz)
-
-    # Downsampling case
-    elif freq_interval_size_ns > median_step_ns:
-        energy = trapz_aggregate(power, target_frequency, max_timedelta)
+        power = interpolate(power, target_frequency, max_timedelta)
+    energy = _aggregate(power, target_frequency, max_timedelta, power_type)
 
     # Set the frequency if we can
     try:
@@ -575,12 +566,13 @@ def energy_from_power(power, target_frequency=None, max_timedelta=None):
     return energy
 
 
-def trapz_aggregate(time_series, target_frequency, max_timedelta=None):
+def _aggregate(time_series, target_frequency, max_timedelta, series_type):
     '''
     Returns a right-labeled series with frequency target_frequency generated by
-    aggregating `time_series` with the trapezoidal rule (in units of hours).
-    If any interval in `time_series` is greater than `max_timedelta`, it is
-    ommitted from the sum.
+    aggregating `time_series` (in units of hours). For instantaneous timeseries,
+    a trapezoidal sum is used. For right labeled time series, a rectangular sum
+    is used. If any interval in `time_series` is greater than `max_timedelta`,
+    it is omitted from the sum.
 
     Parameters
     ----------
@@ -590,33 +582,61 @@ def trapz_aggregate(time_series, target_frequency, max_timedelta=None):
     max_timedelta : pd.Timedelta, default None
         The maximum allowed gap between power measurements. If the gap between
         consecutive power measurements exceeds `max_timedelta`, no energy value
-        will be returned for that interval. If omitted, `max_timedelta` is set
-        internally to the median time delta in `time_series`.
+        will be returned for that interval.
+    series_type : {'right_labeled', 'instantaneous'}
+        The labeling convention of time_series
+        
 
     Returns
     -------
     pd.Series
-        right-labeled energy in Wh per interval
+        right-labeled aggregated time_series in _*hours per interval
     '''
 
+    #series that has same index as desired output
+    output_dummy = time_series.resample(target_frequency,
+                                        closed='right',
+                                        label='right').sum()
+    
+    union_index = time_series.index.union(output_dummy.index)
+    time_series = time_series.dropna()
+
     values = time_series.values
+
+    # Identify gaps (including from nans) bigger than max_time_delta
     timestamps = time_series.index.astype('int64').values
+    timestamps = pd.Series(timestamps, index=time_series.index)
+    t_diffs = timestamps.diff()
+    # Keep track of the gap size but with refilled NaNs and new
+    # timestamps from target freq
+    t_diffs = t_diffs.reindex(union_index, method='bfill')
 
-    t_diffs = np.diff(timestamps)
+    max_interval_nanoseconds = max_timedelta.total_seconds() * 10.0**9
 
-    if max_timedelta is None:
-        max_interval_nanoseconds = np.median(t_diffs)
+    gap_mask = t_diffs > max_interval_nanoseconds
+
+    time_series = time_series.reindex(union_index)
+    t_diffs = np.diff(time_series.index.astype('int64').values)
+    t_diffs_hours = t_diffs / 10**9 / 3600.0
+    if series_type == 'instantaneous':
+        # interpolate with trapz sum
+        time_series = time_series.interpolate(method='time')
+        time_series[gap_mask] = np.nan
+        values = time_series.values
+        series_sum = (values[1:] + values[:-1]) / 2 * t_diffs_hours
+    elif series_type == 'right_labeled':
+        # bfill and rectangular sum
+        time_series = time_series.bfill()
+        time_series[gap_mask] = np.nan
+        values = time_series.values
+        series_sum = values[1:] * t_diffs_hours
     else:
-        max_interval_nanoseconds = max_timedelta.total_seconds() * 10.0**9
+        raise ValueError("series_type must be either 'instantaneous' or 'right_labeled', "
+                         "not '{}'".format(series_type))
 
-    # in x*hours
-    trap_sum = (values[1:] + values[:-1]) / 2 * t_diffs / 10**9 / 3600.0
+    series_sum = pd.Series(data=series_sum, index=time_series.index[1:])
 
-    trap_sum[t_diffs > max_interval_nanoseconds] = np.nan
-
-    trap_sum = pd.Series(data=trap_sum, index=time_series.index[1:])
-
-    aggregated = trap_sum.resample(target_frequency,
+    aggregated = series_sum.resample(target_frequency,
                                    closed='right',
                                    label='right').sum(min_count=1)
 
