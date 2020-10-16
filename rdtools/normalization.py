@@ -582,7 +582,7 @@ def _aggregate(time_series, target_frequency, max_timedelta=None, series_type='r
     #series that has same index as desired output
     output_dummy = time_series.resample(target_frequency,
                                         closed='right',
-                                        label='right').asfreq()
+                                        label='right').sum()
     
     union_index = time_series.index.union(output_dummy.index)
     time_series = time_series.dropna()
