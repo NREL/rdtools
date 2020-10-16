@@ -39,13 +39,14 @@ class AvailabilityAnalysis:
     ----------
     power_system : pd.Series
         Timeseries total system power. In the typical case, this is meter
-        power data.
+        power data. Should be a right-labeled interval average (this is what
+        is typically recorded in many DAS).
 
     power_subsystem : pd.DataFrame
         Timeseries power data, one column per subsystem. In the typical case,
         this is inverter AC power data. Each column is assumed to represent
         a subsystem, so no extra columns may be included. The index must
-        match ``power_system``.
+        match ``power_system``. Should be a right-labeled interval average.
 
     energy_cumulative : pd.Series
         Timeseries cumulative energy data for the entire system (e.g. meter).
@@ -61,7 +62,8 @@ class AvailabilityAnalysis:
         are well calibrated and there is no risk of data gaps. However, because
         full system outages often cause weather data to be lost as well, it may
         be more useful to use data from an independent weather station or
-        satellite-based weather provider.
+        satellite-based weather provider. Should be a right-labeled interval
+        average.
 
     Attributes
     ----------
