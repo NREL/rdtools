@@ -61,6 +61,14 @@ def test_energy_from_power_downsample(power):
     pd.testing.assert_series_equal(result, expected)
 
 
+def test_energy_from_power_max_timedelta_edge_case():
+    times = pd.date_range('2020-01-01 12:00', periods=4, freq='15T')
+    power = pd.Series(1, index=times)
+    power = power.drop(power.index[2])
+    result = energy_from_power(power, '30T', max_timedelta=pd.to_timedelta('20 minutes'))
+    assert result.isnull().all()
+
+
 def test_energy_from_power_single_value_input():
     times = pd.date_range('2019-01-01', freq='15T', periods=1)
     power = pd.Series([100.], index=times)
