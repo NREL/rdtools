@@ -70,7 +70,7 @@ class SapmNormalizationTestCase(unittest.TestCase):
 
         # define an irregular pandas series
         times = pd.DatetimeIndex(['2012-01-01 12:00', '2012-01-01 12:05', '2012-01-01 12:06',
-                                 '2012-01-01 12:09'])
+                                  '2012-01-01 12:09'])
         data = [1, 2, 3, 4]
         self.irregular_timeseries = pd.Series(data=data, index=times)
 
@@ -96,7 +96,8 @@ class SapmNormalizationTestCase(unittest.TestCase):
 
         # Test output is same frequency and length as energy
         self.assertEqual(corr_energy.index.freq, self.energy.index.freq)
-        self.assertEqual(len(corr_energy), len(self.energy))
+        # Expected behavior is to have a nan at energy.index[0]
+        self.assertEqual(len(corr_energy.dropna()), len(self.energy)-1)
 
         # Test for valueError when energy frequency can't be inferred
         with self.assertRaises(ValueError):
