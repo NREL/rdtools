@@ -5,7 +5,7 @@ import pvlib
 import numpy as np
 from scipy.optimize import minimize
 import warnings
-
+from rdtools._deprecation import deprecated
 
 class ConvergenceError(Exception):
     '''Rescale optimization did not converge'''
@@ -68,6 +68,8 @@ def normalize_with_expected_power(pv, power_expected, poa_global,
     return energy_normalized, insolation
 
 
+@deprecated(since='2.0.0', removal='3.0.0',
+            alternative='normalize_with_expected_power')
 def pvwatts_dc_power(poa_global, power_dc_rated, temperature_cell=None,
                      poa_global_ref=1000, temperature_cell_ref=25,
                      gamma_pdc=None):
@@ -116,6 +118,8 @@ def pvwatts_dc_power(poa_global, power_dc_rated, temperature_cell=None,
     return power_dc
 
 
+@deprecated(since='2.0.0', removal='3.0.0',
+            alternative='normalize_with_expected_power')
 def normalize_with_pvwatts(energy, pvwatts_kws):
     '''
     Normalize system AC energy output given measured poa_global and
@@ -171,6 +175,8 @@ def normalize_with_pvwatts(energy, pvwatts_kws):
     return energy_normalized, insolation
 
 
+@deprecated(since='2.0.0', removal='3.0.0',
+            alternative='normalize_with_expected_power')
 def sapm_dc_power(pvlib_pvsystem, met_data):
     '''
     Use Sandia Array Performance Model (SAPM) and PVWatts to compute the
@@ -239,6 +245,8 @@ def sapm_dc_power(pvlib_pvsystem, met_data):
     return power_dc, effective_irradiance
 
 
+@deprecated(since='2.0.0', removal='3.0.0',
+            alternative='normalize_with_expected_power')
 def normalize_with_sapm(energy, sapm_kws):
     '''
     Normalize system AC energy output given measured met_data and

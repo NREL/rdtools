@@ -340,7 +340,7 @@ def availability_summary_plots(power_system, power_subsystem, loss_total,
     ax3.set_ylabel('Estimated lost power [kW]')
 
     # cumulative energy
-    ax4.plot(energy_cumulative, label='Reported Production')
+    energy_cumulative.plot(ax=ax4, label='Reported Production')
 
     # we'll use the index value to only set legend entries for the first
     # outage we plot.  Just in case the index has some other values, we'll
