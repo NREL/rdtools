@@ -456,7 +456,7 @@ def check_series_frequency(series, series_description):
     return freq
 
 
-def t_step_nanoseconds(time_series):
+def _t_step_nanoseconds(time_series):
     '''
     return a series of right labeled differences in the index of time_series
     in nanoseconds
@@ -522,7 +522,7 @@ def energy_from_power(power, target_frequency=None, max_timedelta=None, power_ty
         energy.name = 'energy_Wh'
         return energy
 
-    t_steps = t_step_nanoseconds(power)
+    t_steps = _t_step_nanoseconds(power)
     median_step_ns = t_steps.median()
 
     if target_frequency is None:
@@ -544,7 +544,7 @@ def energy_from_power(power, target_frequency=None, max_timedelta=None, power_ty
                                      power.index[-1],
                                      freq=target_frequency)
             temp_series = pd.Series(data=1, index=temp_ind)
-            temp_diffs = t_step_nanoseconds(temp_series)
+            temp_diffs = _t_step_nanoseconds(temp_series)
             freq_interval_size_ns = temp_diffs.median()
         else:
             raise
@@ -645,7 +645,7 @@ def _aggregate(time_series, target_frequency, max_timedelta, series_type):
     return aggregated
 
 
-def interpolate_series(time_series, target_index, max_timedelta=None,
+def _interpolate_series(time_series, target_index, max_timedelta=None,
                        warning_threshold=0.1):
     '''
     Returns an interpolation of time_series onto target_index, NaN is returned
@@ -787,13 +787,13 @@ def interpolate(time_series, target, max_timedelta=None, warning_threshold=0.1):
                          'both must be time-zone naive.')
 
     if isinstance(time_series, pd.Series):
-        out = interpolate_series(time_series, target_index, max_timedelta,
+        out = _interpolate_series(time_series, target_index, max_timedelta,
                                  warning_threshold)
     elif isinstance(time_series, pd.DataFrame):
         out_list = []
         for col in time_series.columns:
             ts = time_series[col]
-            series = interpolate_series(ts, target_index, max_timedelta,
+            series = _interpolate_series(ts, target_index, max_timedelta,
                                         warning_threshold)
             out_list.append(series)
         out = pd.concat(out_list, axis=1)
