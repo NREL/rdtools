@@ -88,7 +88,7 @@ def pvwatts_dc_power(poa_global, power_dc_rated, temperature_cell=None,
         Rated DC power of array in watts
     temperature_cell : pd.Series, optional
         Measured or derived cell temperature [degrees Celsius].
-        Time series assumed to be same frequency as `poa_global`.
+        Time series assumed to be same frequency as ``poa_global``.
         If omitted, the temperature term will be ignored.
     poa_global_ref : float, default 1000
         Reference irradiance at standard test condition [W/m**2].
@@ -136,7 +136,7 @@ def normalize_with_pvwatts(energy, pvwatts_kws):
         Must be a right-labeled regular time series.
     pvwatts_kws : dict
         Dictionary of parameters used in the pvwatts_dc_power function.  See
-        `Other Parameters`.
+        Other Parameters.
 
     Other Parameters
     ------------------
@@ -191,8 +191,8 @@ def sapm_dc_power(pvlib_pvsystem, met_data):
     pvlib_pvsystem : pvlib-python LocalizedPVSystem object
         Object contains orientation, geographic coordinates, equipment
         constants (including DC rated power in watts).  The object must also
-        specify either the `temperature_model_parameters` attribute or both
-        `racking_model` and `module_type` attributes to infer the temperature model parameters.
+        specify either the ``temperature_model_parameters`` attribute or both
+        ``racking_model`` and ``module_type`` attributes to infer the temperature model parameters.
     met_data : pd.DataFrame
         Measured irradiance components, ambient temperature, and wind speed.
         Expected met_data DataFrame column names:
@@ -265,15 +265,15 @@ def normalize_with_sapm(energy, sapm_kws):
         Must be a right-labeled regular time series.
     sapm_kws : dict
         Dictionary of parameters required for sapm_dc_power function. See
-        `Other Parameters`.
+        Other Parameters.
 
     Other Parameters
     ---------------
     pvlib_pvsystem : pvlib-python LocalizedPVSystem object
         Object contains orientation, geographic coordinates, equipment
         constants (including DC rated power in watts).  The object must also
-        specify either the `temperature_model_parameters` attribute or both
-        `racking_model` and `module_type` to infer the model parameters.
+        specify either the ``temperature_model_parameters`` attribute or both
+        ``racking_model`` and ``module_type`` to infer the model parameters.
     met_data : pd.DataFrame
         Measured met_data, ambient temperature, and wind speed.  Expected
         column names are ['DNI', 'GHI', 'DHI', 'Temperature', 'Wind Speed']
@@ -311,7 +311,7 @@ def delta_index(series):
     Returns
     -------
     deltas : pd.Series
-        A timeseries representing the timestep sizes of `series`
+        A timeseries representing the timestep sizes of ``series``
     mean : float
         The average timestep
     '''
@@ -347,7 +347,7 @@ def irradiance_rescale(irrad, irrad_sim, max_iterations=100,
         modeled/simulated irradiance time series
     max_iterations : int, default 100
         The maximum number of times to attempt rescale optimization.
-        Ignored if `method` = 'single_opt'
+        Ignored if ``method = 'single_opt'``
     method : str, default 'iterative'
         The calculation method to use. 'single_opt' implements the
         irradiance_rescale of rdtools v1.1.3 and earlier. 'iterative'
@@ -356,9 +356,9 @@ def irradiance_rescale(irrad, irrad_sim, max_iterations=100,
     convergence_threshold : float, default 1e-6
         The acceptable iteration-to-iteration scaling factor difference to
         determine convergence.  If the threshold is not reached after
-        `max_iterations`, raise
+        ``max_iterations``, raise
         :py:exc:`rdtools.normalization.ConvergenceError`.
-        Must be greater than zero.  Only used if `method=='iterative'`.
+        Must be greater than zero.  Only used if ``method=='iterative'``.
 
     Returns
     -------
@@ -429,7 +429,7 @@ def irradiance_rescale(irrad, irrad_sim, max_iterations=100,
 def check_series_frequency(series, series_description):
     '''
     Returns the inferred frequency of a pandas series, raises ValueError
-    using `series_description` if it can't.
+    using ``series_description`` if it can't.
 
     Parameters
     ----------
@@ -473,7 +473,7 @@ def energy_from_power(power, target_frequency=None, max_timedelta=None, power_ty
     interval from a power time series. For instantaneous timeseries, a
     trapezoidal sum is used. For right labeled time series, a rectangular sum
     is used. NaN is filled where the gap between input data points exceeds
-    `max_timedelta`. Power_series should
+    ``max_timedelta``. Power_series should
     be given in Watts.
 
     Parameters
@@ -482,13 +482,13 @@ def energy_from_power(power, target_frequency=None, max_timedelta=None, power_ty
         Time series of power in Watts
     target_frequency : DatetimeOffset or frequency string, default None
         The frequency of the energy time series to be returned.
-        If omitted, use the median timestep of `power`, or if `power` has
-        fewer than two elements, use `power.index.freq`.
+        If omitted, use the median timestep of ``power``, or if ``power`` has
+        fewer than two elements, use ``power.index.freq`.
     max_timedelta : pd.Timedelta, default None
         The maximum allowed gap between power measurements. If the gap between
-        consecutive power measurements exceeds `max_timedelta`, NaN will be
-        returned for that interval. If omitted, `max_timedelta` is set
-        internally to the median time delta in `power`. Ignored when `power`
+        consecutive power measurements exceeds ``max_timedelta``, NaN will be
+        returned for that interval. If omitted, ``max_timedelta`` is set
+        internally to the median time delta in ``power``. Ignored when ``power``
         has fewer than two elements.
     power_type : {'right_labeled', 'instantaneous'}
         The labeling convention used in power. Default: 'right_labeled'
@@ -571,9 +571,9 @@ def energy_from_power(power, target_frequency=None, max_timedelta=None, power_ty
 def _aggregate(time_series, target_frequency, max_timedelta, series_type):
     '''
     Returns a right-labeled series with frequency target_frequency generated by
-    aggregating `time_series` (in units of hours). For instantaneous timeseries,
+    aggregating ``time_series`` (in units of hours). For instantaneous timeseries,
     a trapezoidal sum is used. For right labeled time series, a rectangular sum
-    is used. If any interval in `time_series` is greater than `max_timedelta`,
+    is used. If any interval in ``time_series`` is greater than ``max_timedelta``,
     it is omitted from the sum.
 
     Parameters
@@ -583,7 +583,7 @@ def _aggregate(time_series, target_frequency, max_timedelta, series_type):
         The frequency of the accumulated series to be returned.
     max_timedelta : pd.Timedelta, default None
         The maximum allowed gap between power measurements. If the gap between
-        consecutive power measurements exceeds `max_timedelta`, no energy value
+        consecutive power measurements exceeds ``max_timedelta``, no energy value
         will be returned for that interval.
     series_type : {'right_labeled', 'instantaneous'}
         The labeling convention of time_series
@@ -649,7 +649,7 @@ def _interpolate_series(time_series, target_index, max_timedelta=None,
                        warning_threshold=0.1):
     '''
     Returns an interpolation of time_series onto target_index, NaN is returned
-    for times associated with gaps in time_series longer `than max_timedelta`.
+    for times associated with gaps in time_series longer than ``max_timedelta``.
 
     Parameters
     ----------
@@ -659,13 +659,13 @@ def _interpolate_series(time_series, target_index, max_timedelta=None,
         the index onto which the interpolation is to be made
     max_timedelta : pd.Timedelta, default None
         The maximum allowed gap between values in time_series. Times associated
-        with gaps longer than `max_timedelta` are excluded from the output. If
-        omitted, `max_timedelta` is set internally to two times the median
-        time delta in `time_series.`
+        with gaps longer than ``max_timedelta`` are excluded from the output. If
+        omitted, ``max_timedelta`` is set internally to two times the median
+        time delta in ``time_series``.
     warning_threshold : float, default 0.1
         The fraction of data exclusion above which a warning is raised. With
         the default value of 0.1, a warning will be raised if the fraction
-        of data excluded because of data gaps longer than `max_timedelta` is
+        of data excluded because of data gaps longer than ``max_timedelta`` is
         above than 10%.
 
     Returns
@@ -675,7 +675,7 @@ def _interpolate_series(time_series, target_index, max_timedelta=None,
     Note
     ----
     Timezone information in the DatetimeIndexes is handled automatically,
-    however both `time_series` and `target_index` should be time zone aware or
+    however both ``time_series`` and ``target_index`` should be time zone aware or
     they should both be time zone naive.
 
     '''
@@ -753,14 +753,14 @@ def interpolate(time_series, target, max_timedelta=None, warning_threshold=0.1):
         * If DatetimeOffset or frequency string: the frequency at which to
           resample and interpolate
     max_timedelta : pd.Timedelta, default None
-        The maximum allowed gap between values in `time_series`. Times
-        associated with gaps longer than `max_timedelta` are excluded from the
-        output. If omitted, `max_timedelta` is set internally to two times
-        the median time delta in `time_series`.
+        The maximum allowed gap between values in ``time_series``. Times
+        associated with gaps longer than ``max_timedelta`` are excluded from the
+        output. If omitted, ``max_timedelta`` is set internally to two times
+        the median time delta in ``time_series``.
     warning_threshold : float, default 0.1
         The fraction of data exclusion above which a warning is raised. With
         the default value of 0.1, a warning will be raised if the fraction
-        of data excluded because of data gaps longer than `max_timedelta` is
+        of data excluded because of data gaps longer than ``max_timedelta`` is
         above than 10%.
 
     Returns
@@ -770,7 +770,7 @@ def interpolate(time_series, target, max_timedelta=None, warning_threshold=0.1):
     Note
     ----
     Timezone information in the DatetimeIndexes is handled automatically,
-    however both `time_series` and `target` should be time zone aware or they
+    however both ``time_series`` and ``target`` should be time zone aware or they
     should both be time zone naive.
     '''
 

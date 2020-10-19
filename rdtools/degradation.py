@@ -206,7 +206,7 @@ def degradation_year_on_year(energy_normalized, recenter=True,
     Rd_pct : float
         Estimated degradation relative to the year 0 median system capacity [%/year]
     confidence_interval : np.array
-        confidence interval (size specified by `confidence_level`) of
+        confidence interval (size specified by ``confidence_level``) of
         degradation rate estimate
     calc_info : dict
 
