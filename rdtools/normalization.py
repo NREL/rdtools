@@ -14,20 +14,22 @@ class ConvergenceError(Exception):
 def normalize_with_expected_power(pv, power_expected, poa_global,
                                   pv_input='power'):
     '''
-    Normalize pv output based on expected PV power.
+    Normalize PV power or energy based on expected PV power.
 
     Parameters
     ----------
     pv : pd.Series
         Right-labeled time series PV energy or power. If energy, should *not*
-        be cumulative, but only for preceding time step.
+        be cumulative, but only for preceding time step. Type (energy or power)
+        must be specified in the pv_input parameter.
     power_expected : pd.Series
-        Right-labeled time series of expected PV power.
+        Right-labeled time series of expected PV power. (Note: Expected energy
+        is not supported.)
     poa_global : pd.Series
         Right-labeled time series of plane-of-array irradiance associated with
         `expected_power`
-    pv_input : str
-        'power' or 'energy' to specify type of input used for pv parameter
+    pv_input : {'power' or 'energy'}
+        Specifies the type of input used for pv parameter. Default: 'power'
 
     Returns
     -------
