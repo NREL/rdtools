@@ -21,7 +21,8 @@ def degradation_ols(energy_normalized, confidence_level=68.2):
     Returns
     -------
     Rd_pct : float
-        Estimated degradation rate in units percent/year.
+        Estimated degradation rate in units percent/year relative
+        to energy_normalized=1.
     Rd_CI : np.array
         The calculated confidence interval bounds.
     calc_info : dict
@@ -94,7 +95,8 @@ def degradation_classical_decomposition(energy_normalized,
     Returns
     -------
     Rd_pct : float
-        Estimated degradation rate in units percent/year.
+        Estimated degradation rate in units percent/year relative
+        to energy_normalized=1.
     Rd_CI : np.array
         The calculated confidence interval bounds.
     calc_info : dict
@@ -201,8 +203,9 @@ def degradation_year_on_year(energy_normalized, recenter=True,
 
     Returns
     -------
-    degradation_rate : float
-        rate of relative performance change in %/yr
+    Rd_pct : float
+        Estimated degradation rate in units percent/year relative
+        to energy_normalized=1.
     confidence_interval : np.array
         confidence interval (size specified by `confidence_level`) of
         degradation rate estimate
