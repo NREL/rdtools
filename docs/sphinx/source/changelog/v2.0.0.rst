@@ -10,9 +10,6 @@ API Changes
   right-labeled energy with :py:func:`~rdtools.normalization.energy_from_power`
   before being used with these normalization functions (:pull:`105`, :pull:`108`).
 * Remove ``low_power_cutoff`` parameter in :py:func:`~rdtools.filtering.clip_filter` (:issue:`84`).
-* Double the default value of the ``max_timedelta`` in :py:func:`~rdtools.normalization.interpolate`
-  and :py:func:`~rdtools.normalization.interpolate_series` to be twice the
-  median timedelta (:pull:`182`).
 * Many kwargs have changed name (but not input order) to bring nomenclature into 
   closer alignment with the `DuraMAT pv-terms project <https://duramat.github.io/pv-terms>`_: (:pull:`185`)
 
@@ -55,14 +52,12 @@ Enhancements
   timeseries system availability (:pull:`131`)
 * Add new function :py:func:`~rdtools.normalization.normalize_with_expected_power` (:pull:`173`).
 * Add new functions :py:func:`~rdtools.normalization.energy_from_power` and
-  :py:func:`~rdtools.normalization.interpolate` (:pull:`105`, :pull:`108`, :pull:`212`).
+  :py:func:`~rdtools.normalization.interpolate` (:pull:`105`, :pull:`108`, :pull:`182`, :pull:`212`).
 * Add new function :py:func:`~rdtools.filtering.normalized_filter` (:pull:`139`)
 * Add new :py:mod:`~rdtools.plotting` module for generating standard plots
   (:pull:`138`, :pull:`131`)
 * Add parameter ``convergence_threshold`` to
   :py:func:`~rdtools.normalization.irradiance_rescale` (:pull:`152`).
-* Add parameter ``warning_threshold`` to :py:func:`~rdtools.normalization.interpolate`
-  and :py:func:`~rdtools.normalization.interpolate_series` (:pull:`182`).
 
 Bug fixes
 ---------
