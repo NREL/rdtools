@@ -336,9 +336,10 @@ class SRRAnalysis():
             * 'random_clean' - a random recovery between 0-100%
             * 'perfect_clean' - each cleaning event returns the performance
               metric to 1
-            * 'half_norm_clean' - The three-sigma lower bound of recovery is
-              inferred from the fit of the following interval, the upper bound
-              is 1 with the magnitude drawn from a half normal centered at 1
+            * 'half_norm_clean' - The starting point of each interval is taken
+              randomly from a half normal distribution with its mode (mu) at 1 and
+              its sigma equal to 1/3 * (1-b) where b is the intercept of the fit to
+              the interval.
         '''
 
         monte_losses = []
@@ -383,7 +384,7 @@ class SRRAnalysis():
                     end = inter_start + row.run_loss
                     end_list.append(end)
 
-                    # Use a half normal with the infered clean at the
+                    # Use a half normal with the inferred clean at the
                     # 3sigma point
                     x = np.clip(end + row.inferred_recovery, 0, 1)
                     inter_start = 1 - abs(np.random.normal(0.0, (1 - x) / 3))
@@ -471,7 +472,8 @@ class SRRAnalysis():
         '''
         Run the SRR method from beginning to end.  Perform the stochastic rate
         and recovery soiling loss calculation. Based on the methods presented
-        in Deceglie et al. JPV 8(2) p547 2018.
+        in Deceglie et al. "Quantifying Soiling Loss Directly From PV Yield"
+        JPV 8(2) p547 2018.
 
         Parameters
         ----------
@@ -494,10 +496,10 @@ class SRRAnalysis():
             * 'random_clean' - a random recovery between 0-100%
             * 'perfect_clean' - each cleaning event returns the performance
               metric to 1
-            * 'half_norm_clean' (default) - The three-sigma lower bound of
-              recovery is inferred from the fit of the following interval, the
-              upper bound is 1 with the magnitude drawn from a half normal
-              centered at 1
+            * 'half_norm_clean' - The starting point of each interval is taken
+              randomly from a half normal distribution with its mode (mu) at 1 and
+              its sigma equal to 1/3 * (1-b) where b is the intercept of the fit to
+              the interval.
 
         clean_criterion : {'precip_and_shift', 'precip_or_shift', 'precip', 'shift'} \
                 default 'shift'
@@ -671,9 +673,10 @@ def soiling_srr(energy_normalized_daily, insolation_daily, reps=1000,
         * 'random_clean' - a random recovery between 0-100%
         * 'perfect_clean' - each cleaning event returns the performance metric
           to 1
-        * 'half_norm_clean' (default) - The three-sigma lower bound of recovery
-          is inferred from the fit of the following interval, the upper bound
-          is 1 with the magnitude drawn from a half normal centered at 1
+        * 'half_norm_clean'(default) - The starting point of each interval is taken
+              randomly from a half normal distribution with its mode (mu) at 1 and
+              its sigma equal to 1/3 * (1-b) where b is the intercept of the fit to
+              the interval.
     clean_criterion : {'precip_and_shift', 'precip_or_shift', 'precip', 'shift'} \
                 default 'shift'
             The method of partitioning the dataset into soiling intervals.

@@ -250,6 +250,9 @@ class AvailabilityAnalysis:
 
         # Part A
         if low_threshold is None:
+            # calculate the low-power threshold based on the upper edge of the
+            # power distribution so that low-power strangeness (snow cover,
+            # outages, shading etc) don't affect the estimate:
             low_threshold = power_subsystem.quantile(0.99) / 1000
 
         self.reporting_mask = looks_online = power_subsystem > low_threshold
