@@ -21,20 +21,20 @@ def normalize_with_expected_power(pv, power_expected, poa_global,
     pv : pd.Series
         Right-labeled time series PV energy or power. If energy, should *not*
         be cumulative, but only for preceding time step. Type (energy or power)
-        must be specified in the pv_input parameter.
+        must be specified in the ``pv_input`` parameter.
     power_expected : pd.Series
         Right-labeled time series of expected PV power. (Note: Expected energy
         is not supported.)
     poa_global : pd.Series
         Right-labeled time series of plane-of-array irradiance associated with
-        `expected_power`
+        ``expected_power``
     pv_input : {'power' or 'energy'}
         Specifies the type of input used for pv parameter. Default: 'power'
 
     Returns
     -------
     energy_normalized : pd.Series
-        Energy normalized based on `expected_power`
+        Energy normalized based on ``power_expected``
     insolation : pd.Series
         Insolation associated with each normalized point
 
