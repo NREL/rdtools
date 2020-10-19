@@ -145,7 +145,7 @@ Usage and examples
 ------------------
 
 Full workflow examples are found in the notebooks in `example notebook`_.
-The examples are designed to work with python 3.6. For a consistent
+The examples are designed to work with python 3.7. For a consistent
 experience, we recommend installing the packages and versions documented
 in ``docs/notebook_requirements.txt``. This can be achieved in your
 environment by first installing RdTools as described above, then running
