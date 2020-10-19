@@ -40,7 +40,7 @@ def normalize_with_expected_power(pv, power_expected, poa_global,
 
     '''
 
-    freq = check_series_frequency(pv, 'pv')
+    freq = _check_series_frequency(pv, 'pv')
 
     if pv_input == 'power':
         energy = energy_from_power(pv, freq, power_type='right_labeled')
@@ -50,8 +50,8 @@ def normalize_with_expected_power(pv, power_expected, poa_global,
     else:
         raise ValueError("Unexpected value for pv_input. pv_input should be 'power' or 'energy'.")
 
-    model_tds, mean_model_td = delta_index(power_expected)
-    measure_tds, mean_measure_td = delta_index(energy)
+    model_tds, mean_model_td = _delta_index(power_expected)
+    measure_tds, mean_measure_td = _delta_index(energy)
 
     # Case in which the model less frequent than the measurements
     if mean_model_td > mean_measure_td:
@@ -298,7 +298,7 @@ def normalize_with_sapm(energy, sapm_kws):
     return energy_normalized, insolation
 
 
-def delta_index(series):
+def _delta_index(series):
     '''
     Takes a pandas series with a DatetimeIndex as input and
     returns (time step sizes, average time step size) in hours
@@ -426,7 +426,7 @@ def irradiance_rescale(irrad, irrad_sim, max_iterations=100,
         raise ValueError('Invalid method')
 
 
-def check_series_frequency(series, series_description):
+def _check_series_frequency(series, series_description):
     '''
     Returns the inferred frequency of a pandas series, raises ValueError
     using ``series_description`` if it can't.

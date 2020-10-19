@@ -93,8 +93,6 @@ Normalization
 .. autosummary::
    :toctree: generated/
 
-   check_series_frequency
-   delta_index
    energy_from_power
    interpolate
    irradiance_rescale
