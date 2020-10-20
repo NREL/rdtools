@@ -1,6 +1,7 @@
 """ Energy Normalization with SAPM Unit Tests. """
 
 import unittest
+import pytest
 
 import pandas as pd
 import numpy as np
@@ -8,6 +9,9 @@ import pvlib
 
 from rdtools.normalization import normalize_with_sapm
 from rdtools.normalization import sapm_dc_power
+
+from conftest import fail_on_rdtools_version
+from rdtools._deprecation import rdtoolsDeprecationWarning
 
 
 class SapmNormalizationTestCase(unittest.TestCase):
@@ -70,20 +74,23 @@ class SapmNormalizationTestCase(unittest.TestCase):
 
         # define an irregular pandas series
         times = pd.DatetimeIndex(['2012-01-01 12:00', '2012-01-01 12:05', '2012-01-01 12:06',
-                                 '2012-01-01 12:09'])
+                                  '2012-01-01 12:09'])
         data = [1, 2, 3, 4]
         self.irregular_timeseries = pd.Series(data=data, index=times)
 
     def tearDown(self):
         pass
 
+    @fail_on_rdtools_version('3.0.0')
     def test_sapm_dc_power(self):
         ''' Test SAPM DC power. '''
 
-        dc_power, poa = sapm_dc_power(self.pvsystem, self.irrad)
+        with pytest.warns(rdtoolsDeprecationWarning):
+            dc_power, poa = sapm_dc_power(self.pvsystem, self.irrad)
         self.assertEqual(self.irrad.index.freq, dc_power.index.freq)
         self.assertEqual(len(self.irrad), len(dc_power))
 
+    @fail_on_rdtools_version('3.0.0')
     def test_normalization_with_sapm(self):
         ''' Test SAPM normalization. '''
 
@@ -92,15 +99,18 @@ class SapmNormalizationTestCase(unittest.TestCase):
             'met_data': self.irrad,
         }
 
-        corr_energy, insol = normalize_with_sapm(self.energy, sapm_kws)
+        with pytest.warns(rdtoolsDeprecationWarning):
+            corr_energy, insol = normalize_with_sapm(self.energy, sapm_kws)
 
         # Test output is same frequency and length as energy
         self.assertEqual(corr_energy.index.freq, self.energy.index.freq)
-        self.assertEqual(len(corr_energy), len(self.energy))
+        # Expected behavior is to have a nan at energy.index[0]
+        self.assertEqual(len(corr_energy.dropna()), len(self.energy)-1)
 
         # Test for valueError when energy frequency can't be inferred
         with self.assertRaises(ValueError):
-            corr_energy, insolation = normalize_with_sapm(self.irregular_timeseries, sapm_kws)
+            with pytest.warns(rdtoolsDeprecationWarning):
+                corr_energy, insolation = normalize_with_sapm(self.irregular_timeseries, sapm_kws)
 
         # TODO, test for:
         #     incorrect data format

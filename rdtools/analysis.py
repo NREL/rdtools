@@ -6,7 +6,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from rdtools import normalization, filtering, aggregation, degradation
-from rdtools import soiling, clearsky_temperature, plotting
+from rdtools import clearsky_temperature, plotting
 
 
 
@@ -434,6 +434,7 @@ class RdAnalysis():
                                           confidence interval
             'calc_info' : Dict of detailed results (see soiling.soiling_srr() docs)
         '''
+        from rdtools import soiling
         if aggregated.index.freq != 'D' or aggregated_insolation.index.freq != 'D':
             raise ValueError('Soiling SRR analysis requires daily aggregation.')
 

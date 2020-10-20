@@ -7,18 +7,27 @@ python:
   - "3.7"
   - "3.8"
 
-# Test two environments:
-# 1) dependencies with pinned versions from requirements.txt
-# 2) 'pip install --upgrade --upgrade-strategy=eager .' to install upgraded
+# Test three environments:
+# 1) "standard" dependencies with pinned versions from requirements.txt
+# 2) "minimum" dependencies with pinned versions from requirements-min.txt
+#    (only on python 3.6)
+# 3) 'pip install --upgrade --upgrade-strategy=eager .' to install upgraded
 #    dependencies from PyPi using version ranges defined within setup.py
 env:
-  - REQ_ENV='-r requirements.txt .'
-  - REQ_ENV='--upgrade --upgrade-strategy=eager .'
+  - REQ_ENV='-r requirements.txt .[test]'
+  - REQ_ENV='-r requirements-min.txt .[test]'
+  - REQ_ENV='--upgrade --upgrade-strategy=eager .[test]'
 
+
+# PyPI doesn't have wheels built for the minimum requirements (e.g. numpy 1.12)
+# for newer python versions.  Rather than try to get Travis to build them
+# from source, prefer to restrict the minimum-reqs build to only py 3.6:
 jobs:
   exclude:
-  - python: 2.7
-    env: REQ_ENV='--upgrade --upgrade-strategy=eager .'
+  - python: 3.7
+    env: REQ_ENV='-r requirements-min.txt .[test]'
+  - python: 3.8
+    env: REQ_ENV='-r requirements-min.txt .[test]'
 
 install:
   - pip install $REQ_ENV
