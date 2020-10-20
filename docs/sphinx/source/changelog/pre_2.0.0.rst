@@ -37,7 +37,6 @@ Contributors
 ------------
 * Mike Deceglie (:ghuser:`mdeceglie`)
 * Adam Shinn (:ghuser:`abshinn`)
-* Ambarish Nag (:ghuser:`ambarishnag`)
 * Chris Deline (:ghuser:`cdeline`)
 * nb137 (:ghuser:`nb137`)
 
