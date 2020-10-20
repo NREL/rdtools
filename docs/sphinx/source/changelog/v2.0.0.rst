@@ -1,6 +1,7 @@
 *************************
 v2.0.0 (October 20, 2020)
 *************************
+Version 2.0.0 adds experimental soiling and availability modules, plotting capability, and includes updates to normalization work flow. This major release introduces some breaking changes to the API. Details below.
 
 API Changes
 -----------
