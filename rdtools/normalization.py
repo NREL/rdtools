@@ -29,7 +29,7 @@ def normalize_with_expected_power(pv, power_expected, poa_global,
         Right-labeled time series of plane-of-array irradiance associated with
         ``expected_power``
     pv_input : {'power' or 'energy'}
-        Specifies the type of input used for pv parameter. Default: 'power'
+        Specifies the type of input used for ``pv`` parameter. Default: 'power'
 
     Returns
     -------
@@ -40,7 +40,7 @@ def normalize_with_expected_power(pv, power_expected, poa_global,
 
     '''
 
-    freq = check_series_frequency(pv, 'pv')
+    freq = _check_series_frequency(pv, 'pv')
 
     if pv_input == 'power':
         energy = energy_from_power(pv, freq, power_type='right_labeled')
@@ -50,8 +50,8 @@ def normalize_with_expected_power(pv, power_expected, poa_global,
     else:
         raise ValueError("Unexpected value for pv_input. pv_input should be 'power' or 'energy'.")
 
-    model_tds, mean_model_td = delta_index(power_expected)
-    measure_tds, mean_measure_td = delta_index(energy)
+    model_tds, mean_model_td = _delta_index(power_expected)
+    measure_tds, mean_measure_td = _delta_index(energy)
 
     # Case in which the model less frequent than the measurements
     if mean_model_td > mean_measure_td:
@@ -298,7 +298,7 @@ def normalize_with_sapm(energy, sapm_kws):
     return energy_normalized, insolation
 
 
-def delta_index(series):
+def _delta_index(series):
     '''
     Takes a pandas series with a DatetimeIndex as input and
     returns (time step sizes, average time step size) in hours
@@ -331,6 +331,9 @@ def delta_index(series):
         deltas = (series.index - series.index.shift(-1)).astype('int64') / \
                     (10.0**9 * 3600.0)
     return deltas, np.mean(deltas.dropna())
+
+
+delta_index = deprecated('2.0.0', removal='3.0.0')(_delta_index)
 
 
 def irradiance_rescale(irrad, irrad_sim, max_iterations=100,
@@ -426,7 +429,7 @@ def irradiance_rescale(irrad, irrad_sim, max_iterations=100,
         raise ValueError('Invalid method')
 
 
-def check_series_frequency(series, series_description):
+def _check_series_frequency(series, series_description):
     '''
     Returns the inferred frequency of a pandas series, raises ValueError
     using ``series_description`` if it can't.
@@ -454,6 +457,9 @@ def check_series_frequency(series, series_description):
     else:
         freq = series.index.freq
     return freq
+
+
+check_series_frequency = deprecated('2.0.0', removal='3.0.0')(_check_series_frequency)
 
 
 def _t_step_nanoseconds(time_series):

@@ -35,6 +35,7 @@ Deprecations
   :py:func:`~rdtools.normalization.normalize_with_sapm` have been deprecated
   in favor of :py:func:`~rdtools.normalization.normalize_with_expected_power`.
   (:pull:`215`)
+* :py:func:`~rdtools.normalization.delta_index` and :py:func:`~rdtools.normalization.check_series_frequency` (:pull:`222`)
 
 Enhancements
 ------------
