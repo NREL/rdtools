@@ -53,7 +53,8 @@ templates_path = ['_templates']
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
 
-exclude_patterns = []
+exclude_patterns = ['changelog/*']
+
 
 source_suffix = ['.rst', '.md']
 
@@ -80,6 +81,7 @@ html_theme_options = {
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static', '_images']
+smartquotes = False
 
 master_doc = 'index'
 # A workaround for the responsive tables always having annoying scrollbars.
@@ -158,6 +160,12 @@ def make_github_url(pagename):
 
     URL_BASE = "https://github.com/nrel/rdtools/blob/{}/".format(branch)
 
+    # map notebook pagenames to source files on github
+    notebook_map = {
+        'rd_example': 'degradation_and_soiling_example_pvdaq_4.ipynb',
+        'system_availability_example': 'system_availability_example.ipynb',
+    }
+
     # is it an API autogen page?
     if pagename.startswith("generated/"):
         # pagename looks like "generated/rdtools.degradation.degradation_ols"
@@ -170,9 +178,9 @@ def make_github_url(pagename):
         if start and end:
             target_url += '#L{}-L{}'.format(start, end)
 
-    # is it the example notebook?
-    elif pagename == "example":
-        target_url = URL_BASE + "docs/degradation_and_soiling_example.ipynb"
+    # is it an example notebook?
+    elif pagename in notebook_map:
+        target_url = URL_BASE + "docs/" + notebook_map[pagename]
 
     # is the the changelog page?
     elif pagename == "changelog":
