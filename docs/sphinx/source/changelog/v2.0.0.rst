@@ -106,3 +106,4 @@ Contributors
 * Mike Deceglie (:ghuser:`mdeceglie`)
 * Kevin Anderson (:ghuser:`kanderso-nrel`)
 * Chris Deline (:ghuser:`cdeline`)
+* Will Vining (:ghuser:`wfvining`)

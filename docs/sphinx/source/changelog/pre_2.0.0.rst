@@ -7,12 +7,20 @@ v1.2.3 (April 12, 2020)
 - Versioneer bug fix
 - Licence update
 
+Contributors
+------------
+* Mike Deceglie (:ghuser:`mdeceglie`)
+
 
 *************************
 v1.2.2 (October 12, 2018)
 *************************
 
 Patch that adds author email to enable pypi deployment
+
+Contributors
+------------
+* Mike Deceglie (:ghuser:`mdeceglie`)
 
 
 *************************
@@ -24,6 +32,14 @@ along with some bug fixes to the library itself, a documented environment for
 the example notebook, and new example results to reflect changes in the example
 dataset. It addresses :issue:`49`, :issue:`76`, :issue:`78`, :issue:`79`,
 :issue:`80`, :issue:`85`, :issue:`86`, and :issue:`92`.
+
+Contributors
+------------
+* Mike Deceglie (:ghuser:`mdeceglie`)
+* Adam Shinn (:ghuser:`abshinn`)
+* Ambarish Nag (:ghuser:`ambarishnag`)
+* Chris Deline (:ghuser:`cdeline`)
+* nb137 (:ghuser:`nb137`)
 
 
 ***********************
@@ -39,6 +55,14 @@ This incorporates changes including:
 - Fixes error in check for two years of data in degradation_year_on_year
 - Improves the calculations underlying irradiance_rescale
 
+Contributors
+------------
+* Mike Deceglie (:ghuser:`mdeceglie`)
+* Ambarish Nag (:ghuser:`ambarishnag`)
+* Gregory Kimball (:ghuser:`GregoryKimball`)
+* Chris Deline (:ghuser:`cdeline`)
+* Mark Mikofski (:ghuser:`mikofski`)
+
 
 *************************
 v1.1.3 (December 6, 2017)
@@ -48,6 +72,11 @@ This patch includes the following changes:
 
 1. Update the notebook for improved plotting with Pandas v.0.21.0
 2. Fix installation bug related to package data
+
+Contributors
+------------
+* Mike Deceglie (:ghuser:`mdeceglie`)
+* Chris Deline (:ghuser:`cdeline`)
 
 
 *************************
@@ -60,6 +89,10 @@ This patch includes the following changes:
 2. Update requirements
 3. Notebook plots made compatible with pandas v.0.21.0
 
+Contributors
+------------
+* Mike Deceglie (:ghuser:`mdeceglie`)
+
 
 *************************
 v1.1.1 (November 1, 2017)
@@ -70,6 +103,12 @@ This patch:
 1. Improves documentation
 2. Fixes installation requirements
 
+Contributors
+------------
+* Mike Deceglie (:ghuser:`mdeceglie`)
+* Adam Shinn (:ghuser:`abshinn`)
+* Chris Deline (:ghuser:`cdeline`)
+
 
 ***************************
 v1.1.0 (September 30, 2017)
@@ -77,3 +116,12 @@ v1.1.0 (September 30, 2017)
 
 This update includes the addition of filters, functions to support a clear-sky
 workflow, and updates to the example notebook.
+
+Contributors
+------------
+* Mike Deceglie (:ghuser:`mdeceglie`)
+* Adam Shinn (:ghuser:`abshinn`)
+* Ambarish Nag (:ghuser:`ambarishnag`)
+* Gregory Kimball (:ghuser:`GregoryKimball`)
+* Chris Deline (:ghuser:`cdeline`)
+* Jiyang Yan (:ghuser:`yjy1663`)
