@@ -29,7 +29,7 @@ def normalize_with_expected_power(pv, power_expected, poa_global,
         Right-labeled time series of plane-of-array irradiance associated with
         ``expected_power``
     pv_input : {'power' or 'energy'}
-        Specifies the type of input used for pv parameter. Default: 'power'
+        Specifies the type of input used for ``pv`` parameter. Default: 'power'
 
     Returns
     -------
