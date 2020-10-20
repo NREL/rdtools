@@ -10,8 +10,6 @@ API Changes
   right-labeled energy with :py:func:`~rdtools.normalization.energy_from_power`
   before being used with these normalization functions (:pull:`105`, :pull:`108`).
 * Remove ``low_power_cutoff`` parameter in :py:func:`~rdtools.filtering.clip_filter` (:issue:`84`).
-* :py:func:`~rdtools.normalization.delta_index` and :py:func:`~rdtools.normalization.check_series_frequency`
-  made private functions. (:pull:`222`)
 * Many kwargs have changed name (but not input order) to bring nomenclature into 
   closer alignment with the `DuraMAT pv-terms project <https://duramat.github.io/pv-terms>`_: (:pull:`185`)
 
@@ -37,6 +35,7 @@ Deprecations
   :py:func:`~rdtools.normalization.normalize_with_sapm` have been deprecated
   in favor of :py:func:`~rdtools.normalization.normalize_with_expected_power`.
   (:pull:`215`)
+* :py:func:`~rdtools.normalization.delta_index` and :py:func:`~rdtools.normalization.check_series_frequency` (:pull:`222`)
 
 Enhancements
 ------------

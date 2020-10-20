@@ -333,6 +333,9 @@ def _delta_index(series):
     return deltas, np.mean(deltas.dropna())
 
 
+delta_index = deprecated('2.0.0', removal='3.0.0')(_delta_index)
+
+
 def irradiance_rescale(irrad, irrad_sim, max_iterations=100,
                        method='iterative', convergence_threshold=1e-6):
     '''
@@ -454,6 +457,9 @@ def _check_series_frequency(series, series_description):
     else:
         freq = series.index.freq
     return freq
+
+
+check_series_frequency = deprecated('2.0.0', removal='3.0.0')(_check_series_frequency)
 
 
 def _t_step_nanoseconds(time_series):

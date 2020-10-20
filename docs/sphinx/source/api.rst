@@ -101,6 +101,8 @@ Normalization
    normalize_with_sapm
    pvwatts_dc_power
    sapm_dc_power
+   delta_index
+   check_series_frequency
 
 
 Aggregation
