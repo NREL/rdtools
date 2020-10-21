@@ -280,7 +280,7 @@ def test_annual_soiling_ratios(multi_year_profiles):
         [2019, 14.5, 11.431, 17.569]])
     expected = pd.DataFrame(data=expected_data,
         columns=['year', 'soiling_ratio_median', 'soiling_ratio_low', 'soiling_ratio_high'])
-    expected['year'] = expected['year'].astype(int)
+    expected['year'] = expected['year'].astype(np.int64)
     
     srr_profiles, insolation = multi_year_profiles
     result = annual_soiling_ratios(srr_profiles, insolation)
@@ -293,7 +293,7 @@ def test_annual_soiling_ratios_confidence_interval(multi_year_profiles):
         [2019, 14.5, 10.225, 18.775]])
     expected = pd.DataFrame(data=expected_data,
         columns=['year', 'soiling_ratio_median', 'soiling_ratio_low', 'soiling_ratio_high'])
-    expected['year'] = expected['year'].astype(int)
+    expected['year'] = expected['year'].astype(np.int64)
 
     srr_profiles, insolation = multi_year_profiles
     result = annual_soiling_ratios(srr_profiles, insolation, confidence_level=95)
