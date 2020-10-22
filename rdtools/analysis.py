@@ -282,8 +282,10 @@ class RdAnalysis():
                        "temperature_cell_ref": 25,
                        "gamma_pdc": self.temperature_coefficient}
 
+        # suppress RdTools 2.0 deprecation warning
+        warnings.filterwarnings("ignore")
         energy_normalized, insolation = normalization.normalize_with_pvwatts(self.pv_energy, pvwatts_kws)
-
+        warnings.resetwarnings()
         if renorm:
             # Normalize to the 95th percentile for convenience, this is renormalized out
             # in the calculations but is relevant to normalized_filter()
@@ -434,7 +436,12 @@ class RdAnalysis():
                                           confidence interval
             'calc_info' : Dict of detailed results (see soiling.soiling_srr() docs)
         '''
+        # suppress RdTools experimental warning
+        import warnings
+        warnings.filterwarnings("ignore")
         from rdtools import soiling
+        warnings.resetwarnings()
+
         if aggregated.index.freq != 'D' or aggregated_insolation.index.freq != 'D':
             raise ValueError('Soiling SRR analysis requires daily aggregation.')
 
