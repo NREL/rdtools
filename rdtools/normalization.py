@@ -1,4 +1,4 @@
- '''Functions for normalizing, rescaling, and regularizing PV system data.'''
+'''Functions for normalizing, rescaling, and regularizing PV system data.'''
 
 import pandas as pd
 import pvlib
