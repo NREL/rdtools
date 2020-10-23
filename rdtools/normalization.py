@@ -1,4 +1,4 @@
-'''Functions for normalizing, rescaling, and regularizing PV system data.'''
+ '''Functions for normalizing, rescaling, and regularizing PV system data.'''
 
 import pandas as pd
 import pvlib
@@ -70,8 +70,6 @@ def normalize_with_expected_power(pv, power_expected, poa_global,
     return energy_normalized, insolation
 
 
-@deprecated(since='2.0.0', removal='3.0.0',
-            alternative='normalize_with_expected_power')
 def pvwatts_dc_power(poa_global, power_dc_rated, temperature_cell=None,
                      poa_global_ref=1000, temperature_cell_ref=25,
                      gamma_pdc=None):
@@ -120,8 +118,6 @@ def pvwatts_dc_power(poa_global, power_dc_rated, temperature_cell=None,
     return power_dc
 
 
-@deprecated(since='2.0.0', removal='3.0.0',
-            alternative='normalize_with_expected_power')
 def normalize_with_pvwatts(energy, pvwatts_kws):
     '''
     Normalize system AC energy output given measured poa_global and
