@@ -16,7 +16,7 @@ python:
 env:
   - REQ_ENV='-r requirements.txt .[test]'
   - REQ_ENV='-r requirements-min.txt .[test]'
-  - REQ_ENV='--upgrade --upgrade-strategy=eager .[test]'
+  - REQ_ENV='--upgrade --upgrade-strategy=eager .[test]' # if changing this, change the deploy condition as well
 
 
 # PyPI doesn't have wheels built for the minimum requirements (e.g. numpy 1.12)
@@ -46,7 +46,7 @@ deploy:
     tags: true
     branch: master
     python: 3.6
-    condition: $REQ_ENV == '--upgrade --upgrade-strategy=eager .'
+    condition: $REQ_ENV == '--upgrade --upgrade-strategy=eager .[test]'
   distributions: "sdist bdist_wheel"
   skip_cleanup: true
   skip_existing: true
