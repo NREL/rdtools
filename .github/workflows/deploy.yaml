@@ -5,9 +5,8 @@ on:
     types: [published]
 
 jobs:
-  name: Deploy to PyPI
   deploy:
-
+    name: Deploy to PyPI
     runs-on: ubuntu-latest
 
     steps:
