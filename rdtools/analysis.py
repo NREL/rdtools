@@ -7,7 +7,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from rdtools import normalization, filtering, aggregation, degradation
 from rdtools import clearsky_temperature, plotting
-
+import warnings
 
 
 class RdAnalysis():
@@ -263,7 +263,7 @@ class RdAnalysis():
         pandas.Series
             Associated insolation
         '''
-        import warnings
+
         if self.pv_nameplate is None:
             renorm = True
             pv_nameplate = 1.0
@@ -282,10 +282,8 @@ class RdAnalysis():
                        "temperature_cell_ref": 25,
                        "gamma_pdc": self.temperature_coefficient}
 
-        # suppress RdTools 2.0 deprecation warning
-        warnings.filterwarnings("ignore")
         energy_normalized, insolation = normalization.normalize_with_pvwatts(self.pv_energy, pvwatts_kws)
-        warnings.resetwarnings()
+
         if renorm:
             # Normalize to the 95th percentile for convenience, this is renormalized out
             # in the calculations but is relevant to normalized_filter()
@@ -437,11 +435,11 @@ class RdAnalysis():
             'calc_info' : Dict of detailed results (see soiling.soiling_srr() docs)
         '''
         # suppress RdTools experimental warning
-        import warnings
-        warnings.filterwarnings("ignore")
-        from rdtools import soiling
-        warnings.resetwarnings()
-
+        
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore')
+            from rdtools import soiling
+            
         if aggregated.index.freq != 'D' or aggregated_insolation.index.freq != 'D':
             raise ValueError('Soiling SRR analysis requires daily aggregation.')
 
@@ -605,8 +603,11 @@ class RdAnalysis():
         elif result_to_plot == 'clearsky':
             results_dict = self.results['clearsky']['srr_soiling']
             aggregated = self.clearsky_aggregated_performance
-
-        fig = plotting.soiling_monte_carlo_plot(results_dict['calc_info'], aggregated, **kwargs)
+                # suppress RdTools experimental warning
+        
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore')
+            fig = plotting.soiling_monte_carlo_plot(results_dict['calc_info'], aggregated, **kwargs)
 
         return fig
 
@@ -634,7 +635,9 @@ class RdAnalysis():
             results_dict = self.results['clearsky']['srr_soiling']
             aggregated = self.clearsky_aggregated_performance
 
-        fig = plotting.soiling_interval_plot(results_dict['calc_info'], aggregated, **kwargs)
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore')
+            fig = plotting.soiling_interval_plot(results_dict['calc_info'], aggregated, **kwargs)
 
         return fig
 
@@ -660,7 +663,9 @@ class RdAnalysis():
         elif result_to_plot == 'clearsky':
             results_dict = self.results['clearsky']['srr_soiling']
 
-        fig = plotting.soiling_rate_histogram(results_dict['calc_info'], **kwargs)
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore')
+            fig = plotting.soiling_rate_histogram(results_dict['calc_info'], **kwargs)
 
         return fig
 

@@ -1,4 +1,4 @@
-from rdtools import analysis
+from rdtools import RdAnalysis
 from soiling_test import normalized_daily, times
 from plotting_test import assert_isinstance
 import pytest
@@ -51,7 +51,7 @@ def sensor_parameters(basic_parameters, degradation_trend):
 
 @pytest.fixture
 def sensor_analysis(sensor_parameters):
-    rd_analysis = analysis.RdAnalysis(**sensor_parameters)
+    rd_analysis = RdAnalysis(**sensor_parameters)
     rd_analysis.sensor_analysis(analyses=['yoy_degradation'])
     return rd_analysis
 
@@ -70,7 +70,7 @@ def clearsky_parameters(basic_parameters, sensor_parameters,
                         degradation_trend):
     # clear-sky weather data.  Uses RdAnalysis's internal clear-sky
     # functions to generate the data.
-    rd_analysis = analysis.RdAnalysis(**sensor_parameters)
+    rd_analysis = RdAnalysis(**sensor_parameters)
     rd_analysis.clearsky_preprocess()
     poa = rd_analysis.clearsky_poa
     basic_parameters['poa'] = poa
@@ -80,7 +80,7 @@ def clearsky_parameters(basic_parameters, sensor_parameters,
 
 @pytest.fixture
 def clearsky_analysis(clearsky_parameters):
-    rd_analysis = analysis.RdAnalysis(**clearsky_parameters)
+    rd_analysis = RdAnalysis(**clearsky_parameters)
     rd_analysis.clearsky_analysis(analyses=['yoy_degradation'])
     return rd_analysis
 
@@ -113,7 +113,7 @@ def test_clearsky_analysis(clearsky_analysis):
 
 
 def test_clearsky_analysis_optional(clearsky_parameters, clearsky_optional):
-    rd_analysis = analysis.RdAnalysis(**clearsky_optional,
+    rd_analysis = RdAnalysis(**clearsky_optional,
                                       pv_input='energy')
     rd_analysis.pv_power = clearsky_parameters['pv']
     rd_analysis.clearsky_analysis()
@@ -143,7 +143,7 @@ def soiling_parameters(basic_parameters, normalized_daily):
 
 @pytest.fixture
 def soiling_analysis_sensor(soiling_parameters):
-    soiling_analysis = analysis.RdAnalysis(**soiling_parameters)
+    soiling_analysis = RdAnalysis(**soiling_parameters)
     soiling_analysis.sensor_analysis(analyses=['srr_soiling'],
                                      srr_kwargs={'reps': 10})
     return soiling_analysis
@@ -151,7 +151,7 @@ def soiling_analysis_sensor(soiling_parameters):
 
 @pytest.fixture
 def soiling_analysis_clearsky(soiling_parameters):
-    soiling_analysis = analysis.RdAnalysis(**soiling_parameters)
+    soiling_analysis = RdAnalysis(**soiling_parameters)
     soiling_analysis.clearsky_analysis(analyses=['srr_soiling'],
                                        srr_kwargs={'reps': 10})
     return soiling_analysis
@@ -195,12 +195,12 @@ def test_plot_soiling_cs(soiling_analysis_clearsky):
 
 def test_errors(sensor_parameters, clearsky_analysis):
 
-    rdtemp = analysis.RdAnalysis(sensor_parameters['pv'])
+    rdtemp = RdAnalysis(sensor_parameters['pv'])
     with pytest.raises(ValueError, match='poa must be available'):
         rdtemp.sensor_preprocess()
 
     # no temperature
-    rdtemp = analysis.RdAnalysis(sensor_parameters['pv'],
+    rdtemp = RdAnalysis(sensor_parameters['pv'],
                                  poa=sensor_parameters['poa'])
     with pytest.raises(ValueError, match='either cell or ambient temperature'):
         rdtemp.sensor_preprocess()
