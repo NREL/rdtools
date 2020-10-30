@@ -1,5 +1,5 @@
 *************************
-Pending
+v2.0.1 (October 30, 2020)
 *************************
 
 Deprecations
@@ -11,3 +11,4 @@ Deprecations
 Contributors
 ------------
 * Mike Deceglie (:ghuser:`mdeceglie`)
+* Kevin Anderson (:ghuser:`kanderso-nrel`)
