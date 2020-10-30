@@ -7,9 +7,11 @@ from scipy.optimize import minimize
 import warnings
 from rdtools._deprecation import deprecated
 
+
 class ConvergenceError(Exception):
     '''Rescale optimization did not converge'''
     pass
+
 
 def normalize_with_expected_power(pv, power_expected, poa_global,
                                   pv_input='power'):
@@ -70,8 +72,6 @@ def normalize_with_expected_power(pv, power_expected, poa_global,
     return energy_normalized, insolation
 
 
-@deprecated(since='2.0.0', removal='3.0.0',
-            alternative='normalize_with_expected_power')
 def pvwatts_dc_power(poa_global, power_dc_rated, temperature_cell=None,
                      poa_global_ref=1000, temperature_cell_ref=25,
                      gamma_pdc=None):
@@ -120,8 +120,6 @@ def pvwatts_dc_power(poa_global, power_dc_rated, temperature_cell=None,
     return power_dc
 
 
-@deprecated(since='2.0.0', removal='3.0.0',
-            alternative='normalize_with_expected_power')
 def normalize_with_pvwatts(energy, pvwatts_kws):
     '''
     Normalize system AC energy output given measured poa_global and
@@ -329,7 +327,7 @@ def _delta_index(series):
         # Length of each interval calculated by using 'int64' to convert to
         # nanoseconds.
         deltas = (series.index - series.index.shift(-1)).astype('int64') / \
-                    (10.0**9 * 3600.0)
+                 (10.0**9 * 3600.0)
     return deltas, np.mean(deltas.dropna())
 
 
@@ -418,7 +416,7 @@ def irradiance_rescale(irrad, irrad_sim, max_iterations=100,
             return rmse
 
         guess = np.percentile(irrad.dropna(), 90) / \
-                np.percentile(irrad_sim.dropna(), 90)
+            np.percentile(irrad_sim.dropna(), 90)
         min_result = minimize(_rmse, guess, method='Nelder-Mead')
         factor = min_result['x'][0]
 
@@ -514,7 +512,7 @@ def energy_from_power(power, target_frequency=None, max_timedelta=None, power_ty
         # use the index frequency to determine the appropriate timescale
         if power_type == 'instantaneous':
             raise ValueError("power_type='instantaneous' is incompatible with single element "
-                "power. Use power_type='right-labeled'")
+                             "power. Use power_type='right-labeled'")
         if target_frequency is None:
             if power.index.freq is None:
                 raise ValueError('Could not determine period of input power')
@@ -593,7 +591,7 @@ def _aggregate(time_series, target_frequency, max_timedelta, series_type):
         will be returned for that interval.
     series_type : {'right_labeled', 'instantaneous'}
         The labeling convention of time_series
-        
+
 
     Returns
     -------
@@ -601,11 +599,11 @@ def _aggregate(time_series, target_frequency, max_timedelta, series_type):
         right-labeled aggregated time_series in _*hours per interval
     '''
 
-    #series that has same index as desired output
+    # series that has same index as desired output
     output_dummy = time_series.resample(target_frequency,
                                         closed='right',
                                         label='right').sum()
-    
+
     union_index = time_series.index.union(output_dummy.index)
     time_series = time_series.dropna()
 
@@ -645,14 +643,14 @@ def _aggregate(time_series, target_frequency, max_timedelta, series_type):
     series_sum = pd.Series(data=series_sum, index=time_series.index[1:])
 
     aggregated = series_sum.resample(target_frequency,
-                                   closed='right',
-                                   label='right').sum(min_count=1)
+                                     closed='right',
+                                     label='right').sum(min_count=1)
 
     return aggregated
 
 
 def _interpolate_series(time_series, target_index, max_timedelta=None,
-                       warning_threshold=0.1):
+                        warning_threshold=0.1):
     '''
     Returns an interpolation of time_series onto target_index, NaN is returned
     for times associated with gaps in time_series longer than ``max_timedelta``.
