@@ -1,0 +1,13 @@
+*************************
+Pending
+*************************
+
+Deprecations
+------------
+* The the deprecation of :py:func:`~rdtools.normalization.pvwatts_dc_power`,
+  and :py:func:`~rdtools.normalization.normalize_with_pvwatts` has been reversed.
+  (:pull:`227`)
+
+Contributors
+------------
+* Mike Deceglie (:ghuser:`mdeceglie`)
