@@ -4,7 +4,7 @@ v2.0.1 (October 30, 2020)
 
 Deprecations
 ------------
-* The the deprecation of :py:func:`~rdtools.normalization.pvwatts_dc_power`,
+* The deprecation of :py:func:`~rdtools.normalization.pvwatts_dc_power`
   and :py:func:`~rdtools.normalization.normalize_with_pvwatts` has been reversed.
   (:pull:`227`)
 
