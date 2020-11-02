@@ -26,7 +26,7 @@ copyright = '2016–2020 kwhanalytics, Alliance for Sustainable Energy, LLC, and
 author = 'kwhanalytics, Alliance for Sustainable Energy, LLC, and SunPower'
 
 # The full version, including alpha/beta/rc tags
-import rdtools
+import rdtools  # noqa: E402
 release = version = rdtools.__version__
 
 
@@ -84,6 +84,8 @@ html_static_path = ['_static', '_images']
 smartquotes = False
 
 master_doc = 'index'
+
+
 # A workaround for the responsive tables always having annoying scrollbars.
 def setup(app):
     app.add_stylesheet("no_scrollbars.css")
@@ -150,7 +152,7 @@ def make_github_url(pagename):
     rtd_version = os.environ.get('READTHEDOCS_VERSION', None)
     version_map = {
         'stable': 'master',
-        'latest': 'development',        
+        'latest': 'development',
     }
     try:
         branch = version_map[rtd_version]
@@ -185,7 +187,7 @@ def make_github_url(pagename):
     # is the the changelog page?
     elif pagename == "changelog":
         target_url = URL_BASE + "docs/sphinx/source/changelog"
-        
+
     # Just a normal source RST page
     else:
         target_url = URL_BASE + "docs/sphinx/source/" + pagename + ".rst"
@@ -193,7 +195,7 @@ def make_github_url(pagename):
     display_text = "View on github/" + branch
     link_info = {
         'url': target_url,
-        'text': display_text        
+        'text': display_text
     }
     return link_info
 
