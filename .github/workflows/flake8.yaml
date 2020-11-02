@@ -22,4 +22,4 @@ jobs:
         pip install flake8
     - name: Run linter
       run: |
-        flake8
+        flake8 . --config=.flake8 --count --statistics --show-source
