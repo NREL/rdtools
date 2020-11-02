@@ -1,9 +1,9 @@
-name: pytest
+name: flake8
 
 on: [pull_request, push]
 
 jobs:
-  build:
+  lint:
 
     runs-on: ubuntu-latest
     strategy:
