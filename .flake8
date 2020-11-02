@@ -5,7 +5,7 @@
 max-line-length = 99
 max-doc-length = 99
 per-file-ignores =
-	# rdtools.x.y imported but unused
+    # rdtools.x.y imported but unused
     __init__.py:F401
-	# invalid escape sequence '\s'
+    # invalid escape sequence '\s'
     versioneer.py:W605
