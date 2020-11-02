@@ -490,7 +490,7 @@ def energy_from_power(power, target_frequency=None, max_timedelta=None,
     target_frequency : DatetimeOffset or frequency string, default None
         The frequency of the energy time series to be returned.
         If omitted, use the median timestep of ``power``, or if ``power`` has
-        fewer than two elements, use ``power.index.freq`.
+        fewer than two elements, use ``power.index.freq``.
     max_timedelta : pd.Timedelta, default None
         The maximum allowed gap between power measurements. If the gap between
         consecutive power measurements exceeds ``max_timedelta``, NaN will be
