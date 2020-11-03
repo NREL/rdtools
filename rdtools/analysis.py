@@ -356,7 +356,7 @@ class RdAnalysis():
         elif case == 'clearsky':
             self.clearsky_filter = bool_filter
 
-    def filter_check(self, normalized, bool_filter):
+    def filter_check(self, post_filter):
         '''
         post-filter check for requisite 720 days of data
         
@@ -366,7 +366,6 @@ class RdAnalysis():
             Time series of normalized PV energy
         bool_filter : boolean output from self.filter    
         '''
-        post_filter = normalized[bool_filter]
         if post_filter.empty or post_filter.index[-1] - post_filter.index[0] < pd.Timedelta('730d'):
             raise ValueError("Less than two years of data left after filtering")
 
@@ -415,7 +414,7 @@ class RdAnalysis():
             'calc_info': Dict of detailed results
                          (see degradation.degradation_year_on_year() docs)
         '''
-
+        self.filter_check(aggregated)
         yoy_rd, yoy_ci, yoy_info = degradation.degradation_year_on_year(aggregated, **kwargs)
 
         yoy_results = {
@@ -485,7 +484,6 @@ class RdAnalysis():
         else: # self.power_expected set manually by user
             energy_normalized, insolation = normalization.normalize_with_expected_power(self.pv_energy, self.power_expected, self.poa, pv_input='energy')
         self.filter(energy_normalized, 'sensor')
-        self.filter_check(energy_normalized, self.sensor_filter)
         aggregated, aggregated_insolation = self.aggregate(energy_normalized[self.sensor_filter], insolation[self.sensor_filter])
         self.sensor_aggregated_performance = aggregated
         self.sensor_aggregated_insolation = aggregated_insolation
@@ -508,7 +506,6 @@ class RdAnalysis():
         else: # self.power_expected set manually by user
             cs_normalized, cs_insolation = normalization.normalize_with_expected_power(self.pv_energy, self.power_expected, self.clearsky_poa, pv_input='energy')
         self.filter(cs_normalized, 'clearsky')
-        self.filter_check(cs_normalized, self.clearsky_filter)
         cs_aggregated, cs_aggregated_insolation = self.aggregate(cs_normalized[self.clearsky_filter], cs_insolation[self.clearsky_filter])
         self.clearsky_aggregated_performance = cs_aggregated
         self.clearsky_aggregated_insolation = cs_aggregated_insolation
