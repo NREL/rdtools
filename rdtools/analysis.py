@@ -133,6 +133,7 @@ class RdAnalysis():
         self.pv_tilt = pv_tilt
         self.pv_nameplate = pv_nameplate
         self.results = {}
+        self.power_expected = None
 
         # Initialize to use default filter parameters
         self.filter_params = {
@@ -455,7 +456,9 @@ class RdAnalysis():
 
     def sensor_preprocess(self):
         '''
-        Perform sensor-based normalization, filtering, and aggregation work flow.
+        Perform sensor-based normalization, filtering, and aggregation.
+        If self.power_expected is set manually prior to this process, 
+        normalize_with_expected_power will be used instead of pvwatts.
         '''
         if self.poa is None:
             raise ValueError('poa must be available to perform sensor_preprocess')
@@ -463,7 +466,10 @@ class RdAnalysis():
             raise ValueError('either cell or ambient temperature must be available to perform sensor_preprocess')
         if self.cell_temperature is None:
             self.cell_temperature = self.calc_cell_temperature(self.poa, self.windspeed, self.ambient_temperature)
-        energy_normalized, insolation = self.pvwatts_norm(self.poa, self.cell_temperature)
+        if self.power_expected is None:
+            energy_normalized, insolation = self.pvwatts_norm(self.poa, self.cell_temperature)
+        else: # self.power_expected set manually by user
+            energy_normalized, insolation = normalization.normalize_with_expected_power(self.pv_energy, self.power_expected, self.poa, pv_input='energy')
         self.filter(energy_normalized, 'sensor')
         aggregated, aggregated_insolation = self.aggregate(energy_normalized[self.sensor_filter], insolation[self.sensor_filter])
         self.sensor_aggregated_performance = aggregated
@@ -471,7 +477,9 @@ class RdAnalysis():
 
     def clearsky_preprocess(self):
         '''
-        Perform clear-sky-based normalization, filtering, and aggregation work flow
+        Perform clear-sky-based normalization, filtering, and aggregation. 
+        If self.power_expected is set manually prior to this process, 
+        normalize_with_expected_power will be used instead of pvwatts.
         '''
         if self.clearsky_poa is None:
             self.calc_clearsky_poa(model='isotropic')
@@ -480,7 +488,10 @@ class RdAnalysis():
                 self.calc_clearsky_tamb()
             self.clearsky_cell_temperature = self.calc_cell_temperature(self.clearsky_poa, 0, self.clearsky_ambient_temperature)
             # Note example notebook uses windspeed=0 in the clearskybranch
-        cs_normalized, cs_insolation = self.pvwatts_norm(self.clearsky_poa, self.clearsky_cell_temperature)
+        if self.power_expected is None:
+            cs_normalized, cs_insolation = self.pvwatts_norm(self.clearsky_poa, self.clearsky_cell_temperature)
+        else: # self.power_expected set manually by user
+            cs_normalized, cs_insolation = normalization.normalize_with_expected_power(self.pv_energy, self.power_expected, self.clearsky_poa, pv_input='energy')
         self.filter(cs_normalized, 'clearsky')
         cs_aggregated, cs_aggregated_insolation = self.aggregate(cs_normalized[self.clearsky_filter], cs_insolation[self.clearsky_filter])
         self.clearsky_aggregated_performance = cs_aggregated
@@ -488,7 +499,8 @@ class RdAnalysis():
 
     def sensor_analysis(self, analyses=['yoy_degradation'], yoy_kwargs={}, srr_kwargs={}):
         '''
-        Perform entire sensor-based analysis workflow. Results are stored in self.results['sensor']
+        Perform entire sensor-based analysis workflow. 
+        Results are stored in self.results['sensor']
 
         Parameters
         ---------
