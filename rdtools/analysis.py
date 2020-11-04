@@ -148,6 +148,9 @@ class RdAnalysis():
             'csi_filter': {},
             'ad_hoc_filter': None  # use this to include an explict filter
         }
+        # remove tcell_filter from list if power_expected is passed in
+        if power_expected is not None and cell_temperature is None:
+            del self.filter_params['tcell_filter']
 
     def calc_clearsky_poa(self, times=None, rescale=True, **kwargs):
         '''
