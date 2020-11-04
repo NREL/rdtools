@@ -478,11 +478,13 @@ class RdAnalysis():
         '''
         if self.poa is None:
             raise ValueError('poa must be available to perform sensor_preprocess')
-        if self.cell_temperature is None and self.ambient_temperature is None:
-            raise ValueError('either cell or ambient temperature must be available to perform sensor_preprocess')
-        if self.cell_temperature is None:
-            self.cell_temperature = self.calc_cell_temperature(self.poa, self.windspeed, self.ambient_temperature)
+
         if self.power_expected is None:
+            # Thermal details required if power_expected is not manually set.
+            if self.cell_temperature is None and self.ambient_temperature is None:
+                raise ValueError('either cell or ambient temperature must be available to perform sensor_preprocess')
+            if self.cell_temperature is None:
+                self.cell_temperature = self.calc_cell_temperature(self.poa, self.windspeed, self.ambient_temperature)
             energy_normalized, insolation = self.pvwatts_norm(self.poa, self.cell_temperature)
         else: # self.power_expected passed in by user
             energy_normalized, insolation = normalization.normalize_with_expected_power(self.pv_energy, self.power_expected, self.poa, pv_input='energy')
