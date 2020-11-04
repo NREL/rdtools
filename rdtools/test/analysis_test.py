@@ -57,10 +57,10 @@ def sensor_analysis(sensor_parameters):
 
 @pytest.fixture
 def sensor_analysis_exp_power(sensor_parameters):
-    
-    rd_analysis = RdAnalysis(**sensor_parameters)
-    rd_analysis.power_expected = normalization.pvwatts_dc_power(sensor_parameters['poa'],
+    power_expected = normalization.pvwatts_dc_power(sensor_parameters['poa'],
                                                                 power_dc_rated=1)
+    sensor_parameters['power_expected']=power_expected
+    rd_analysis = RdAnalysis(**sensor_parameters)
     rd_analysis.sensor_analysis(analyses=['yoy_degradation'])
     return rd_analysis
 
