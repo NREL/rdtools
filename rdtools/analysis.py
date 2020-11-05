@@ -51,6 +51,9 @@ class RdAnalysis():
         of 0 neglects the wind in this calculation
     albedo : numeric
         Albedo to be used in irradiance transposition calculations
+    power_expected : pd.Series
+        Right-labeled time series of expected PV power. (Note: Expected energy
+        is not supported.)
     temperature_model : str
         Model parameter pvlib.pvsystem.sapm_celltemp() used in calculating cell
         temperature from ambient
