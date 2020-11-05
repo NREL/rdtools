@@ -366,7 +366,7 @@ class RdAnalysis():
         elif case == 'clearsky':
             self.clearsky_filter = bool_filter
 
-    def filter_check(self, post_filter):
+    def _filter_check(self, post_filter):
         '''
         post-filter check for requisite 730 days of data
         
@@ -423,7 +423,7 @@ class RdAnalysis():
             'calc_info': Dict of detailed results
                          (see degradation.degradation_year_on_year() docs)
         '''
-        self.filter_check(aggregated)
+        self._filter_check(aggregated)
         yoy_rd, yoy_ci, yoy_info = degradation.degradation_year_on_year(aggregated, **kwargs)
 
         yoy_results = {

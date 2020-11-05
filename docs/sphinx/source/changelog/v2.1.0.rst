@@ -5,7 +5,6 @@ v2.1.0 (October XX, 2020)
 API Changes
 -----------
 * Add :py:class:`~rdtools.analysis.RdAnalysis` class for single-line analysis. (:pull:`117`).
-* :py:class:`~rdtools.analysis.RdAnalysis` class includes `power_expected` input option (:pull:`232`).
 
 Enhancements
 ------------
