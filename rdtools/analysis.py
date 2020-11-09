@@ -34,33 +34,19 @@ class RdAnalysis():
         data for analysis
     pv_input : str
         'power' or 'energy' to specify type of input used for pv parameter
-    pvlib_location : pvlib.location.Location
-        Used for calculating clearsky temperature and irradiance
-    clearsky_poa : pd.Series
-        Right-labeled time Series of clear-sky plane of array irradiance
-    clearsky_cell_temperature : pd.Series
-        Right-labeled time series of cell temperature in clear-sky conditions
-        in Celsius. In practice, back of module temperature works as a good
-        approximation.
-    clearsky_ambient_temperature : pd.Series
-            Right-label time series of ambient temperature in clear sky conditions
-        in Celsius
+
     windspeed : pd.Series
         Right-labeled Pandas Time Series or numeric indicating wind speed in
         m/s for use in calculating cell temperature from ambient default value
         of 0 neglects the wind in this calculation
-    albedo : numeric
-        Albedo to be used in irradiance transposition calculations
+
     power_expected : pd.Series
         Right-labeled time series of expected PV power. (Note: Expected energy
         is not supported.)
     temperature_model : str
         Model parameter pvlib.pvsystem.sapm_celltemp() used in calculating cell
         temperature from ambient
-    pv_azimuth : numeric
-        Azimuth of PV array in degrees from north
-    pv_tilt : numeric
-        Tilt of PV array in degrees from horizontal
+
     pv_nameplate : numeric
         Nameplate DC rating of PV array in Watts
     interp_freq : str or Pandas DateOffset object
@@ -88,10 +74,9 @@ class RdAnalysis():
     '''
 
     def __init__(self, pv, poa=None, cell_temperature=None, ambient_temperature=None,
-                 temperature_coefficient=None, aggregation_freq='D', pv_input='power', pvlib_location=None,
-                 clearsky_poa=None, clearsky_cell_temperature=None, clearsky_ambient_temperature=None,
-                 windspeed=0, albedo=0.25, power_expected=None, temperature_model=None, 
-                 pv_azimuth=None, pv_tilt=None,
+                 temperature_coefficient=None, aggregation_freq='D', pv_input='power', 
+                 windspeed=0, power_expected=None, temperature_model=None, 
+                 
                  pv_nameplate=None, interp_freq=None, max_timedelta=None):
 
         if interp_freq is not None:
@@ -104,16 +89,7 @@ class RdAnalysis():
                 ambient_temperature = normalization.interpolate(ambient_temperature, interp_freq, max_timedelta)
             if power_expected is not None:
                 power_expected = normalization.interpolate(power_expected, interp_freq, max_timedelta)
-            if clearsky_poa is not None:
-                clearsky_poa = normalization.interpolate(clearsky_poa, interp_freq, max_timedelta)
-            if clearsky_cell_temperature is not None:
-                clearsky_cell_temperature = normalization.interpolate(clearsky_cell_temperature, interp_freq, max_timedelta)
-            if clearsky_ambient_temperature is not None:
-                clearsky_ambient_temperature = normalization.interpolate(clearsky_ambient_temperature, interp_freq, max_timedelta)
-            if isinstance(pv_azimuth, (pd.Series, pd.DataFrame)):
-                pv_azimuth = normalization.interpolate(pv_azimuth, interp_freq, max_timedelta)
-            if isinstance(pv_tilt, (pd.Series, pd.DataFrame)):
-                pv_tilt = normalization.interpolate(pv_tilt, interp_freq, max_timedelta)
+           
 
         if pv_input == 'power':
             self.pv_power = pv
@@ -124,23 +100,16 @@ class RdAnalysis():
 
         self.cell_temperature = cell_temperature
         self.ambient_temperature = ambient_temperature
-        self.clearsky_cell_temperature = clearsky_cell_temperature
-        self.clearsky_ambient_temperature = clearsky_ambient_temperature
-
         self.poa = poa
         self.temperature_coefficient = temperature_coefficient
         self.aggregation_freq = aggregation_freq
-        self.pvlib_location = pvlib_location
-        self.clearsky_poa = clearsky_poa
         self.windspeed = windspeed
-        self.albedo = albedo
         self.power_expected = power_expected
         self.temperature_model = temperature_model
-        self.pv_azimuth = pv_azimuth
-        self.pv_tilt = pv_tilt
         self.pv_nameplate = pv_nameplate
+        self.interp_freq = interp_freq
+        self.max_timedelta = max_timedelta
         self.results = {}
-
 
         # Initialize to use default filter parameters
         self.filter_params = {
@@ -155,6 +124,54 @@ class RdAnalysis():
         if power_expected is not None and cell_temperature is None:
             del self.filter_params['tcell_filter']
 
+    def set_clearsky(self, pvlib_location=None, pv_azimuth=None, pv_tilt=None,
+                 clearsky_poa=None, clearsky_cell_temperature=None, 
+                 clearsky_ambient_temperature=None, albedo=0.25 ):
+        '''
+        Initialize values for a clearsky analysis.  RdAnalysis can run as-is
+        with a sensor-based analysis, but requires configuration of location 
+        and orientation details to be able to run clearsky analysis. 
+        
+        
+        pvlib_location : pvlib.location.Location
+            Used for calculating clearsky temperature and irradiance
+        pv_azimuth : numeric
+            Azimuth of PV array in degrees from north
+        pv_tilt : numeric
+            Tilt of PV array in degrees from horizontal
+        clearsky_poa : pd.Series
+            Right-labeled time Series of clear-sky plane of array irradiance
+        clearsky_cell_temperature : pd.Series
+            Right-labeled time series of cell temperature in clear-sky conditions
+            in Celsius. In practice, back of module temperature works as a good
+            approximation.
+        clearsky_ambient_temperature : pd.Series
+            Right-label time series of ambient temperature in clear sky conditions
+            in Celsius
+        albedo : numeric
+            Albedo to be used in irradiance transposition calculations
+        
+        '''
+        if self.interp_freq is not None:
+            if clearsky_poa is not None:
+                clearsky_poa = normalization.interpolate(clearsky_poa, self.interp_freq, self.max_timedelta)
+            if clearsky_cell_temperature is not None:
+                clearsky_cell_temperature = normalization.interpolate(clearsky_cell_temperature, self.interp_freq, self.max_timedelta)
+            if clearsky_ambient_temperature is not None:
+                clearsky_ambient_temperature = normalization.interpolate(clearsky_ambient_temperature, self.interp_freq, self.max_timedelta)
+            if isinstance(pv_azimuth, (pd.Series, pd.DataFrame)):
+                pv_azimuth = normalization.interpolate(pv_azimuth, self.interp_freq, self.max_timedelta)
+            if isinstance(pv_tilt, (pd.Series, pd.DataFrame)):
+                pv_tilt = normalization.interpolate(pv_tilt, self.interp_freq, self.max_timedelta)
+                
+        self.pvlib_location = pvlib_location
+        self.pv_azimuth = pv_azimuth
+        self.pv_tilt = pv_tilt
+        self.clearsky_poa = clearsky_poa
+        self.clearsky_cell_temperature = clearsky_cell_temperature
+        self.clearsky_ambient_temperature = clearsky_ambient_temperature
+        self.albedo = albedo
+        
     def calc_clearsky_poa(self, times=None, rescale=True, **kwargs):
         '''
         Calculate clearsky plane-of-array irradiance and stores in self.clearsky_poa
