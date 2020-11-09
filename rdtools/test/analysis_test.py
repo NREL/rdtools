@@ -114,21 +114,21 @@ def clearsky_analysis(cs_input, clearsky_parameters):
 
 
 @pytest.fixture
-def clearsky_optional(cs_input, clearsky_parameters, clearsky_analysis):
+def clearsky_optional(cs_input, clearsky_analysis):
     # optional parameters to exercise other branches
     times = clearsky_analysis.poa.index
     extras = dict(
         clearsky_poa=clearsky_analysis.clearsky_poa,
         clearsky_cell_temperature=clearsky_analysis.clearsky_cell_temperature,
         clearsky_ambient_temperature=clearsky_analysis.clearsky_ambient_temperature,
-        pv=clearsky_analysis.pv_energy,
-
+        #pv=clearsky_analysis.pv_energy,  # todo: set up a test for pv_energy 
+        
         # series orientation instead of scalars to exercise interpolation
         pv_tilt=pd.Series(cs_input['pv_tilt'], index=times),
         pv_azimuth=pd.Series(cs_input['pv_azimuth'], index=times)
     )
     # merge dicts, favoring new params over the ones in clearsky_parameters
-    return {**clearsky_parameters, **extras}
+    return {**extras}
 
 
 def test_clearsky_analysis(clearsky_analysis):
@@ -140,13 +140,11 @@ def test_clearsky_analysis(clearsky_analysis):
     assert [-4.74, -4.72] == pytest.approx(ci, abs=1e-2)
 
 
-def test_clearsky_analysis_optional(cs_input, clearsky_parameters, clearsky_optional):
-    rd_analysis = RdAnalysis(**clearsky_optional,
-                                      pv_input='energy')
-    rd_analysis.pv_power = clearsky_parameters['pv']
-    rd_analysis.set_clearsky(**cs_input)
-    rd_analysis.clearsky_analysis()
-    yoy_results = rd_analysis.results['clearsky']['yoy_degradation']
+def test_clearsky_analysis_optional(clearsky_analysis, clearsky_parameters, clearsky_optional):
+
+    clearsky_analysis.set_clearsky(**clearsky_optional)
+    clearsky_analysis.clearsky_analysis()
+    yoy_results = clearsky_analysis.results['clearsky']['yoy_degradation']
     ci = yoy_results['rd_confidence_interval']
     rd = yoy_results['p50_rd']
     print(f'ci:{ci}')
@@ -162,11 +160,8 @@ def soiling_parameters(basic_parameters, normalized_daily, cs_input):
         pv=power,
         poa=power * 0 + 1000,
         cell_temperature=power * 0 + 25,
-        pvlib_location=cs_input['pvlib_location'],
         temperature_coefficient=0,
         interp_freq='D',
-        pv_tilt=cs_input['pv_tilt'],
-        pv_azimuth=cs_input['pv_azimuth']
     )
 
 
