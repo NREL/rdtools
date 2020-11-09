@@ -128,9 +128,10 @@ class RdAnalysis():
                  clearsky_poa=None, clearsky_cell_temperature=None, 
                  clearsky_ambient_temperature=None, albedo=0.25 ):
         '''
-        Initialize values for a clearsky analysis.  RdAnalysis can run as-is
-        with a sensor-based analysis, but requires configuration of location 
-        and orientation details to be able to run clearsky analysis. 
+        Initialize values for a clearsky analysis which requires configuration 
+        of location and orientation details. If optional parameters `clearsky_poa`,
+        `clearsky_ambient_temperature` are not passed, they will be modeled
+        based on location and orientation.
         
         
         pvlib_location : pvlib.location.Location
@@ -140,7 +141,7 @@ class RdAnalysis():
         pv_tilt : numeric
             Tilt of PV array in degrees from horizontal
         clearsky_poa : pd.Series
-            Right-labeled time Series of clear-sky plane of array irradiance
+            Right-labeled time Series of clear-sky plane of array irradiance 
         clearsky_cell_temperature : pd.Series
             Right-labeled time series of cell temperature in clear-sky conditions
             in Celsius. In practice, back of module temperature works as a good
