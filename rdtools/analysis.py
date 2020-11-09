@@ -195,9 +195,9 @@ class RdAnalysis():
         if times is None:
             times = self.poa.index
         if self.pvlib_location is None:
-            raise ValueError('pvlib location must be provided')
+            raise ValueError('pvlib location must be provided using set_clearsky()')
         if self.pv_tilt is None or self.pv_azimuth is None:
-            raise ValueError('pv_tilt and pv_azimuth must be provided')
+            raise ValueError('pv_tilt and pv_azimuth must be provided using set_clearsky()')
         if times is not self.poa.index and rescale is True:
             raise ValueError('rescale=True can only be used when clearsky poa is on same index as poa')
 
@@ -267,7 +267,7 @@ class RdAnalysis():
         '''
         times = self.clearsky_poa.index
         if self.pvlib_location is None:
-            raise ValueError('pvlib location must be provided')
+            raise ValueError('pvlib location must be provided using set_clearsky()')
         loc = self.pvlib_location
 
         cs_amb_temp = clearsky_temperature.get_clearsky_tamb(times, loc.latitude, loc.longitude)
