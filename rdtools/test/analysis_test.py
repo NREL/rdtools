@@ -1,4 +1,4 @@
-from rdtools import RdAnalysis
+from rdtools import RdAnalysis, normalization
 from soiling_test import normalized_daily, times
 from plotting_test import assert_isinstance
 import pytest
@@ -55,6 +55,14 @@ def sensor_analysis(sensor_parameters):
     rd_analysis.sensor_analysis(analyses=['yoy_degradation'])
     return rd_analysis
 
+@pytest.fixture
+def sensor_analysis_exp_power(sensor_parameters):
+    power_expected = normalization.pvwatts_dc_power(sensor_parameters['poa'],
+                                                                power_dc_rated=1)
+    sensor_parameters['power_expected']=power_expected
+    rd_analysis = RdAnalysis(**sensor_parameters)
+    rd_analysis.sensor_analysis(analyses=['yoy_degradation'])
+    return rd_analysis
 
 def test_sensor_analysis(sensor_analysis):
     yoy_results = sensor_analysis.results['sensor']['yoy_degradation']
@@ -64,6 +72,13 @@ def test_sensor_analysis(sensor_analysis):
     assert -1 == pytest.approx(rd, abs=1e-2)
     assert [-1, -1] == pytest.approx(ci, abs=1e-2)
 
+def test_sensor_analysis_exp_power(sensor_analysis_exp_power):
+    yoy_results = sensor_analysis_exp_power.results['sensor']['yoy_degradation']
+    rd = yoy_results['p50_rd']
+    ci = yoy_results['rd_confidence_interval']
+
+    assert 0 == pytest.approx(rd, abs=1e-2)
+    assert [0, 0] == pytest.approx(ci, abs=1e-2)
 
 @pytest.fixture
 def clearsky_parameters(basic_parameters, sensor_parameters,

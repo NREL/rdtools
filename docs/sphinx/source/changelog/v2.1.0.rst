@@ -6,7 +6,6 @@ API Changes
 -----------
 * Add :py:class:`~rdtools.analysis.RdAnalysis` class for single-line analysis. (:pull:`117`).
 
-
 Enhancements
 ------------
 * Add new :py:mod:`~rdtools.analysis` module to focus on single-line analysis workflow

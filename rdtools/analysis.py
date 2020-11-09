@@ -51,6 +51,9 @@ class RdAnalysis():
         of 0 neglects the wind in this calculation
     albedo : numeric
         Albedo to be used in irradiance transposition calculations
+    power_expected : pd.Series
+        Right-labeled time series of expected PV power. (Note: Expected energy
+        is not supported.)
     temperature_model : str
         Model parameter pvlib.pvsystem.sapm_celltemp() used in calculating cell
         temperature from ambient
@@ -87,7 +90,8 @@ class RdAnalysis():
     def __init__(self, pv, poa=None, cell_temperature=None, ambient_temperature=None,
                  temperature_coefficient=None, aggregation_freq='D', pv_input='power', pvlib_location=None,
                  clearsky_poa=None, clearsky_cell_temperature=None, clearsky_ambient_temperature=None,
-                 windspeed=0, albedo=0.25, temperature_model=None, pv_azimuth=None, pv_tilt=None,
+                 windspeed=0, albedo=0.25, power_expected=None, temperature_model=None, 
+                 pv_azimuth=None, pv_tilt=None,
                  pv_nameplate=None, interp_freq=None, max_timedelta=None):
 
         if interp_freq is not None:
@@ -98,6 +102,8 @@ class RdAnalysis():
                 cell_temperature = normalization.interpolate(cell_temperature, interp_freq, max_timedelta)
             if ambient_temperature is not None:
                 ambient_temperature = normalization.interpolate(ambient_temperature, interp_freq, max_timedelta)
+            if power_expected is not None:
+                power_expected = normalization.interpolate(power_expected, interp_freq, max_timedelta)
             if clearsky_poa is not None:
                 clearsky_poa = normalization.interpolate(clearsky_poa, interp_freq, max_timedelta)
             if clearsky_cell_temperature is not None:
@@ -128,11 +134,13 @@ class RdAnalysis():
         self.clearsky_poa = clearsky_poa
         self.windspeed = windspeed
         self.albedo = albedo
+        self.power_expected = power_expected
         self.temperature_model = temperature_model
         self.pv_azimuth = pv_azimuth
         self.pv_tilt = pv_tilt
         self.pv_nameplate = pv_nameplate
         self.results = {}
+
 
         # Initialize to use default filter parameters
         self.filter_params = {
@@ -143,6 +151,9 @@ class RdAnalysis():
             'csi_filter': {},
             'ad_hoc_filter': None  # use this to include an explict filter
         }
+        # remove tcell_filter from list if power_expected is passed in
+        if power_expected is not None and cell_temperature is None:
+            del self.filter_params['tcell_filter']
 
     def calc_clearsky_poa(self, times=None, rescale=True, **kwargs):
         '''
@@ -355,6 +366,18 @@ class RdAnalysis():
         elif case == 'clearsky':
             self.clearsky_filter = bool_filter
 
+    def _filter_check(self, post_filter):
+        '''
+        post-filter check for requisite 730 days of data
+        
+        Parameters
+        ----------
+        post_filter : pandas.Series
+            Time series filtered by boolean output from self.filter  
+        '''
+        if post_filter.empty or post_filter.index[-1] - post_filter.index[0] < pd.Timedelta('730d'):
+            raise ValueError("Less than two years of data left after filtering")
+
     def aggregate(self, energy_normalized, insolation):
         '''
         Return insolation-weighted normalized PV energy and the associated aggregated insolation
@@ -400,7 +423,7 @@ class RdAnalysis():
             'calc_info': Dict of detailed results
                          (see degradation.degradation_year_on_year() docs)
         '''
-
+        self._filter_check(aggregated)
         yoy_rd, yoy_ci, yoy_info = degradation.degradation_year_on_year(aggregated, **kwargs)
 
         yoy_results = {
@@ -455,15 +478,22 @@ class RdAnalysis():
 
     def sensor_preprocess(self):
         '''
-        Perform sensor-based normalization, filtering, and aggregation work flow.
+        Perform sensor-based normalization, filtering, and aggregation.
+        If optional parameter self.power_expected is passed in, 
+        normalize_with_expected_power will be used instead of pvwatts.
         '''
         if self.poa is None:
             raise ValueError('poa must be available to perform sensor_preprocess')
-        if self.cell_temperature is None and self.ambient_temperature is None:
-            raise ValueError('either cell or ambient temperature must be available to perform sensor_preprocess')
-        if self.cell_temperature is None:
-            self.cell_temperature = self.calc_cell_temperature(self.poa, self.windspeed, self.ambient_temperature)
-        energy_normalized, insolation = self.pvwatts_norm(self.poa, self.cell_temperature)
+
+        if self.power_expected is None:
+            # Thermal details required if power_expected is not manually set.
+            if self.cell_temperature is None and self.ambient_temperature is None:
+                raise ValueError('either cell or ambient temperature must be available to perform sensor_preprocess')
+            if self.cell_temperature is None:
+                self.cell_temperature = self.calc_cell_temperature(self.poa, self.windspeed, self.ambient_temperature)
+            energy_normalized, insolation = self.pvwatts_norm(self.poa, self.cell_temperature)
+        else: # self.power_expected passed in by user
+            energy_normalized, insolation = normalization.normalize_with_expected_power(self.pv_energy, self.power_expected, self.poa, pv_input='energy')
         self.filter(energy_normalized, 'sensor')
         aggregated, aggregated_insolation = self.aggregate(energy_normalized[self.sensor_filter], insolation[self.sensor_filter])
         self.sensor_aggregated_performance = aggregated
@@ -471,7 +501,9 @@ class RdAnalysis():
 
     def clearsky_preprocess(self):
         '''
-        Perform clear-sky-based normalization, filtering, and aggregation work flow
+        Perform clear-sky-based normalization, filtering, and aggregation. 
+        If optional parameter self.power_expected is passed in, 
+        normalize_with_expected_power will be used instead of pvwatts.
         '''
         if self.clearsky_poa is None:
             self.calc_clearsky_poa(model='isotropic')
@@ -480,7 +512,10 @@ class RdAnalysis():
                 self.calc_clearsky_tamb()
             self.clearsky_cell_temperature = self.calc_cell_temperature(self.clearsky_poa, 0, self.clearsky_ambient_temperature)
             # Note example notebook uses windspeed=0 in the clearskybranch
-        cs_normalized, cs_insolation = self.pvwatts_norm(self.clearsky_poa, self.clearsky_cell_temperature)
+        if self.power_expected is None:
+            cs_normalized, cs_insolation = self.pvwatts_norm(self.clearsky_poa, self.clearsky_cell_temperature)
+        else: # self.power_expected passed in by user
+            cs_normalized, cs_insolation = normalization.normalize_with_expected_power(self.pv_energy, self.power_expected, self.clearsky_poa, pv_input='energy')
         self.filter(cs_normalized, 'clearsky')
         cs_aggregated, cs_aggregated_insolation = self.aggregate(cs_normalized[self.clearsky_filter], cs_insolation[self.clearsky_filter])
         self.clearsky_aggregated_performance = cs_aggregated
@@ -488,7 +523,8 @@ class RdAnalysis():
 
     def sensor_analysis(self, analyses=['yoy_degradation'], yoy_kwargs={}, srr_kwargs={}):
         '''
-        Perform entire sensor-based analysis workflow. Results are stored in self.results['sensor']
+        Perform entire sensor-based analysis workflow. 
+        Results are stored in self.results['sensor']
 
         Parameters
         ---------
