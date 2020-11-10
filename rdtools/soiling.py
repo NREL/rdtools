@@ -89,7 +89,7 @@ class SRRAnalysis():
         '''
         if (day_scale % 2 == 0) and ('shift' in clean_criterion):
             warnings.warn('An even value of day_scale was passed. An odd value is '
-                          'recommended, otherwise, consecutive days may be erronsiously '
+                          'recommended, otherwise, consecutive days may be erroneously '
                           'flagged as cleaning events. '
                           'See https://github.com/NREL/rdtools/issues/189')
 
