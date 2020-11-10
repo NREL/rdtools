@@ -16,6 +16,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
+      with:
+        fetch-depth: 0  # fetch all branches, needed so we can diff against the target branch
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v2
       with:
