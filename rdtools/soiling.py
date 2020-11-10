@@ -17,7 +17,6 @@ warnings.warn(
     'and PATCH releases) as the code matures.'
 )
 
-
 # Custom exception
 class NoValidIntervalError(Exception):
     '''raised when no valid rows appear in the result dataframe'''
@@ -290,9 +289,12 @@ class SRRAnalysis():
             results.next_inferred_start_loss - results.inferred_end_loss,
             0, 1)
 
+        # Don't consider data outside of first and last valid intervals
         if len(results[results.valid]) == 0:
             raise NoValidIntervalError('No valid soiling intervals were found')
-        pm_frame_out = daily_df.copy()
+        new_start = results[results.valid].start.iloc[0]
+        new_end = results[results.valid].end.iloc[-1]
+        pm_frame_out = daily_df[new_start:new_end]
         pm_frame_out = pm_frame_out.reset_index() \
                                    .merge(results, how='left', on='run') \
                                    .set_index('date')
