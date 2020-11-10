@@ -225,7 +225,7 @@ def test_soiling_srr_max_negative_slope_error(normalized_daily, insolation):
     assert list(soiling_info['soiling_interval_summary']['valid'].values) == [True, True, False],\
         'Soiling interval validity differs from expected when max_relative_slope_error=45.0'
 
-    assert 0.954569 == pytest.approx(sr, abs=1e-6),\
+    assert 0.958761 == pytest.approx(sr, abs=1e-6),\
         'Soiling ratio different from expected when max_relative_slope_error=45.0'
 
 

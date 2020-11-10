@@ -292,9 +292,9 @@ class SRRAnalysis():
         # Don't consider data outside of first and last valid intervals
         if len(results[results.valid]) == 0:
             raise NoValidIntervalError('No valid soiling intervals were found')
-        new_start = results[results.valid].start.iloc[0]
-        new_end = results[results.valid].end.iloc[-1]
-        pm_frame_out = daily_df[new_start:new_end]
+        new_start = results.start.iloc[0]
+        new_end = results.end.iloc[-1]
+        pm_frame_out = daily_df[new_start:new_end].copy()
         pm_frame_out = pm_frame_out.reset_index() \
                                    .merge(results, how='left', on='run') \
                                    .set_index('date')
