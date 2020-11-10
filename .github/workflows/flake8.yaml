@@ -28,7 +28,7 @@ jobs:
         pip install flake8
     - name: List changed files
       run: |
-        git diff --compact-summary "$GITHUB_BASE_REF"
+        git diff --compact-summary "refs/heads/$GITHUB_BASE_REF"
     - name: Run linter on changed files
       run: |
-        git diff "$GITHUB_BASE_REF" -- "*.py" | flake8 . --config=.flake8 --diff --count --statistics --show-source
+        git diff "refs/heads/$GITHUB_BASE_REF" -- "*.py" | flake8 . --config=.flake8 --diff --count --statistics --show-source
