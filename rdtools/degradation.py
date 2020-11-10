@@ -4,6 +4,7 @@ import pandas as pd
 import numpy as np
 import statsmodels.api as sm
 
+import os  # test the flake8 check
 
 def degradation_ols(energy_normalized, confidence_level=68.2):
     '''
