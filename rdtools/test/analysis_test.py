@@ -127,7 +127,7 @@ def clearsky_optional(cs_input, clearsky_analysis):
         pv_tilt=pd.Series(cs_input['pv_tilt'], index=times),
         pv_azimuth=pd.Series(cs_input['pv_azimuth'], index=times)
     )
-    return {extras}
+    return extras
 
 
 def test_clearsky_analysis(clearsky_analysis):
@@ -232,5 +232,5 @@ def test_errors(sensor_parameters, clearsky_analysis):
     # clearsky analysis with no pvlib.loc
     clearsky_analysis.pvlib_location = None
     clearsky_analysis.clearsky_poa = None
-    with pytest.raises(ValueError, match='pvlib location must be provided'):
+    with pytest.raises(Exception, match='pvlib location must be provided'):
         clearsky_analysis.clearsky_preprocess()
