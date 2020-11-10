@@ -34,19 +34,16 @@ class RdAnalysis():
         data for analysis
     pv_input : str
         'power' or 'energy' to specify type of input used for pv parameter
-
     windspeed : pd.Series
         Right-labeled Pandas Time Series or numeric indicating wind speed in
         m/s for use in calculating cell temperature from ambient default value
         of 0 neglects the wind in this calculation
-
     power_expected : pd.Series
         Right-labeled time series of expected PV power. (Note: Expected energy
         is not supported.)
     temperature_model : str
         Model parameter pvlib.pvsystem.sapm_celltemp() used in calculating cell
         temperature from ambient
-
     pv_nameplate : numeric
         Nameplate DC rating of PV array in Watts
     interp_freq : str or Pandas DateOffset object
@@ -125,8 +122,8 @@ class RdAnalysis():
             del self.filter_params['tcell_filter']
 
     def set_clearsky(self, pvlib_location=None, pv_azimuth=None, pv_tilt=None,
-                 clearsky_poa=None, clearsky_cell_temperature=None, 
-                 clearsky_ambient_temperature=None, albedo=0.25 ):
+                     clearsky_poa=None, clearsky_cell_temperature=None, 
+                     clearsky_ambient_temperature=None, albedo=0.25 ):
         '''
         Initialize values for a clearsky analysis which requires configuration 
         of location and orientation details. If optional parameters `clearsky_poa`,
@@ -195,9 +192,9 @@ class RdAnalysis():
         if times is None:
             times = self.poa.index
         if self.pvlib_location is None:
-            raise ValueError('pvlib location must be provided using set_clearsky()')
+            raise Exception('pvlib location must be provided using set_clearsky()')
         if self.pv_tilt is None or self.pv_azimuth is None:
-            raise ValueError('pv_tilt and pv_azimuth must be provided using set_clearsky()')
+            raise Exception('pv_tilt and pv_azimuth must be provided using set_clearsky()')
         if times is not self.poa.index and rescale is True:
             raise ValueError('rescale=True can only be used when clearsky poa is on same index as poa')
 
@@ -267,7 +264,7 @@ class RdAnalysis():
         '''
         times = self.clearsky_poa.index
         if self.pvlib_location is None:
-            raise ValueError('pvlib location must be provided using set_clearsky()')
+            raise Exception('pvlib location must be provided using set_clearsky()')
         loc = self.pvlib_location
 
         cs_amb_temp = clearsky_temperature.get_clearsky_tamb(times, loc.latitude, loc.longitude)
@@ -523,8 +520,12 @@ class RdAnalysis():
         If optional parameter self.power_expected is passed in, 
         normalize_with_expected_power will be used instead of pvwatts.
         '''
-        if self.clearsky_poa is None:
-            self.calc_clearsky_poa(model='isotropic')
+        try:
+            if self.clearsky_poa is None:
+                self.calc_clearsky_poa(model='isotropic')
+        except AttributeError:
+            raise Exception("No clearsky_poa. 'set_clearsky' must be run "+
+                             "prior to 'clearsky_analysis'")
         if self.clearsky_cell_temperature is None:
             if self.clearsky_ambient_temperature is None:
                 self.calc_clearsky_tamb()

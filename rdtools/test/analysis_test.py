@@ -127,8 +127,7 @@ def clearsky_optional(cs_input, clearsky_analysis):
         pv_tilt=pd.Series(cs_input['pv_tilt'], index=times),
         pv_azimuth=pd.Series(cs_input['pv_azimuth'], index=times)
     )
-    # merge dicts, favoring new params over the ones in clearsky_parameters
-    return {**extras}
+    return {extras}
 
 
 def test_clearsky_analysis(clearsky_analysis):
