@@ -56,6 +56,7 @@ def sensor_parameters(basic_parameters, degradation_trend):
     basic_parameters['pv'] = power
     basic_parameters['poa'] = poa
     basic_parameters['ambient_temperature'] = ambient_temperature
+    basic_parameters['interp_freq'] = 'H'
     return basic_parameters
 
 
@@ -76,6 +77,19 @@ def sensor_analysis_exp_power(sensor_parameters):
 
 def test_sensor_analysis(sensor_analysis):
     yoy_results = sensor_analysis.results['sensor']['yoy_degradation']
+    rd = yoy_results['p50_rd']
+    ci = yoy_results['rd_confidence_interval']
+
+    assert -1 == pytest.approx(rd, abs=1e-2)
+    assert [-1, -1] == pytest.approx(ci, abs=1e-2)
+    
+def test_sensor_analysis_energy(sensor_parameters, sensor_analysis):
+    sensor_parameters['pv'] = sensor_analysis.pv_energy
+    sensor_parameters['pv_input'] = 'energy'
+    sensor_analysis2 = RdAnalysis(**sensor_parameters)
+    sensor_analysis2.pv_power = sensor_analysis.pv_power
+    sensor_analysis2.sensor_analysis(analyses=['yoy_degradation'])
+    yoy_results = sensor_analysis2.results['sensor']['yoy_degradation']
     rd = yoy_results['p50_rd']
     ci = yoy_results['rd_confidence_interval']
 
@@ -121,9 +135,6 @@ def clearsky_optional(cs_input, clearsky_analysis):
         clearsky_poa=clearsky_analysis.clearsky_poa,
         clearsky_cell_temperature=clearsky_analysis.clearsky_cell_temperature,
         clearsky_ambient_temperature=clearsky_analysis.clearsky_ambient_temperature,
-        #pv=clearsky_analysis.pv_energy,  # todo: set up a test for pv_energy 
-        
-        # series orientation instead of scalars to exercise interpolation
         pv_tilt=pd.Series(cs_input['pv_tilt'], index=times),
         pv_azimuth=pd.Series(cs_input['pv_azimuth'], index=times)
     )
@@ -232,11 +243,11 @@ def test_errors(sensor_parameters, clearsky_analysis):
     # clearsky analysis with no tilt/azm
     clearsky_analysis.pv_tilt = None
     clearsky_analysis.clearsky_poa = None
-    with pytest.raises(Exception, match='pv_tilt and pv_azimuth must be provided'):
+    with pytest.raises(ValueError, match='pv_tilt and pv_azimuth must be provided'):
         clearsky_analysis.clearsky_preprocess()
         
     # clearsky analysis with no pvlib.loc
     clearsky_analysis.pvlib_location = None
-    with pytest.raises(Exception, match='pvlib location must be provided'):
+    with pytest.raises(ValueError, match='pvlib location must be provided'):
         clearsky_analysis.clearsky_preprocess()
     

@@ -73,7 +73,6 @@ class RdAnalysis():
     def __init__(self, pv, poa=None, cell_temperature=None, ambient_temperature=None,
                  temperature_coefficient=None, aggregation_freq='D', pv_input='power', 
                  windspeed=0, power_expected=None, temperature_model=None, 
-                 
                  pv_nameplate=None, interp_freq=None, max_timedelta=None):
 
         if interp_freq is not None:
@@ -129,7 +128,6 @@ class RdAnalysis():
         of location and orientation details. If optional parameters `clearsky_poa`,
         `clearsky_ambient_temperature` are not passed, they will be modeled
         based on location and orientation.
-        
         
         Parameters
         ----------
@@ -194,9 +192,9 @@ class RdAnalysis():
         if times is None:
             times = self.poa.index
         if self.pvlib_location is None:
-            raise Exception('pvlib location must be provided using set_clearsky()')
+            raise ValueError('pvlib location must be provided using set_clearsky()')
         if self.pv_tilt is None or self.pv_azimuth is None:
-            raise Exception('pv_tilt and pv_azimuth must be provided using set_clearsky()')
+            raise ValueError('pv_tilt and pv_azimuth must be provided using set_clearsky()')
         if times is not self.poa.index and rescale is True:
             raise ValueError('rescale=True can only be used when clearsky poa is on same index as poa')
 
@@ -247,7 +245,7 @@ class RdAnalysis():
                   ('deltaT' in self.temperature_model)):
                 model_params = self.temperature_model
             else:
-                raise Exception('pvlib temperature_model entry is neither '
+                raise ValueError('pvlib temperature_model entry is neither '
                                 'a string nor a dictionary with correct '
                                 'entries. Try "open_rack_glass_polymer"')
             cell_temp = pvlib.temperature.sapm_cell(poa_global=poa,
@@ -266,7 +264,7 @@ class RdAnalysis():
         '''
         times = self.clearsky_poa.index
         if self.pvlib_location is None:
-            raise Exception('pvlib location must be provided using set_clearsky()')
+            raise ValueError('pvlib location must be provided using set_clearsky()')
         loc = self.pvlib_location
 
         cs_amb_temp = clearsky_temperature.get_clearsky_tamb(times, loc.latitude, loc.longitude)
@@ -526,7 +524,7 @@ class RdAnalysis():
             if self.clearsky_poa is None:
                 self.calc_clearsky_poa(model='isotropic')
         except AttributeError:
-            raise Exception("No clearsky_poa. 'set_clearsky' must be run "+
+            raise AttributeError("No clearsky_poa. 'set_clearsky' must be run "+
                              "prior to 'clearsky_analysis'")
         if self.clearsky_cell_temperature is None:
             if self.clearsky_ambient_temperature is None:
