@@ -229,8 +229,14 @@ def test_errors(sensor_parameters, clearsky_analysis):
     with pytest.raises(ValueError, match='either cell or ambient temperature'):
         rdtemp.sensor_preprocess()
 
+    # clearsky analysis with no tilt/azm
+    clearsky_analysis.pv_tilt = None
+    clearsky_analysis.clearsky_poa = None
+    with pytest.raises(Exception, match='pv_tilt and pv_azimuth must be provided'):
+        clearsky_analysis.clearsky_preprocess()
+        
     # clearsky analysis with no pvlib.loc
     clearsky_analysis.pvlib_location = None
-    clearsky_analysis.clearsky_poa = None
     with pytest.raises(Exception, match='pvlib location must be provided'):
         clearsky_analysis.clearsky_preprocess()
+    
