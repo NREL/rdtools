@@ -131,6 +131,8 @@ class RdAnalysis():
         based on location and orientation.
         
         
+        Parameters
+        ----------
         pvlib_location : pvlib.location.Location
             Used for calculating clearsky temperature and irradiance
         pv_azimuth : numeric
