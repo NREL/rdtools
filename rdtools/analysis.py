@@ -190,7 +190,7 @@ class RdAnalysis():
             raise ValueError('pvlib location must be provided')
         if self.pv_tilt is None or self.pv_azimuth is None:
             raise ValueError('pv_tilt and pv_azimuth must be provided')
-        if times is not self.poa.index and rescale is True:
+        if rescale is True and not times.equals(self.poa.index):
             raise ValueError(
                 'rescale=True can only be used when clearsky poa is on same index as poa')
 
