@@ -487,7 +487,8 @@ class RdAnalysis():
             warnings.simplefilter('ignore')
             from rdtools import soiling
 
-        if aggregated.index.freq != 'D' or aggregated_insolation.index.freq != 'D':
+        daily_freq = pd.tseries.offsets.Day()
+        if aggregated.index.freq != daily_freq or aggregated_insolation.index.freq != daily_freq:
             raise ValueError(
                 'Soiling SRR analysis requires daily aggregation.')
 
