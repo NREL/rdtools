@@ -33,6 +33,7 @@ Conduct end-to-end Degradation and Soiling analysis with sensor_analysis or clea
    :toctree: generated/
 
    analysis.RdAnalysis
+   analysis.RdAnalysis.set_clearsky
    analysis.RdAnalysis.sensor_analysis
    analysis.RdAnalysis.clearsky_analysis
    analysis.RdAnalysis.plot_degradation_summary
