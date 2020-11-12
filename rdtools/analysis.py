@@ -12,8 +12,9 @@ import warnings
 
 class RdAnalysis():
     '''
-    Class for end-to-end degradation and soiling analysis using :py:meth:`~rdtools.RdAnalysis.sensor_analysis`
-    or :py:meth:`~rdtools.RdAnalysis.clearsky_analysis`
+    Class for end-to-end degradation and soiling analysis using 
+    :py:meth:`~rdtools.RdAnalysis.sensor_analysis` or
+    :py:meth:`~rdtools.RdAnalysis.clearsky_analysis`
 
     Parameters
     ----------
@@ -88,10 +89,10 @@ class RdAnalysis():
     '''
 
     def __init__(self, pv, poa=None, cell_temperature=None, ambient_temperature=None,
-                 temperature_coefficient=None, aggregation_freq='D', pv_input='power', pvlib_location=None,
-                 clearsky_poa=None, clearsky_cell_temperature=None, clearsky_ambient_temperature=None,
-                 windspeed=0, albedo=0.25, power_expected=None, temperature_model=None,
-                 pv_azimuth=None, pv_tilt=None,
+                 temperature_coefficient=None, aggregation_freq='D', pv_input='power',
+                 pvlib_location=None, clearsky_poa=None, clearsky_cell_temperature=None,
+                 clearsky_ambient_temperature=None, windspeed=0, albedo=0.25,
+                 power_expected=None, temperature_model=None, pv_azimuth=None, pv_tilt=None,
                  pv_nameplate=None, interp_freq=None, max_timedelta=None):
 
         if interp_freq is not None:
@@ -197,9 +198,16 @@ class RdAnalysis():
         sun = loc.get_solarposition(times)
         clearsky = loc.get_clearsky(times, solar_position=sun)
 
-        clearsky_poa = pvlib.irradiance.get_total_irradiance(self.pv_tilt, self.pv_azimuth, sun['apparent_zenith'],
-                                                             sun['azimuth'], clearsky['dni'], clearsky['ghi'],
-                                                             clearsky['dhi'], albedo=self.albedo, **kwargs)
+        clearsky_poa = pvlib.irradiance.get_total_irradiance(
+            self.pv_tilt,
+            self.pv_azimuth,
+            sun['apparent_zenith'],
+            sun['azimuth'],
+            clearsky['dni'],
+            clearsky['ghi'],
+            clearsky['dhi'],
+            albedo=self.albedo,
+            **kwargs)
         clearsky_poa = clearsky_poa['poa_global']
 
         if rescale is True:
@@ -365,8 +373,9 @@ class RdAnalysis():
             bool_filter = bool_filter & f
         if 'clip_filter' in self.filter_params.keys():
             if self.pv_power is None:
-                raise ValueError('PV power (not energy) is required for the clipping filter. Either omit the clipping filter,'
-                                 'provide PV power at instantiation, or explicitly assign system_analysis.pv_power.')
+                raise ValueError('PV power (not energy) is required for the clipping filter. '
+                                 'Either omit the clipping filter, provide PV power at '
+                                 'instantiation, or explicitly assign system_analysis.pv_power.')
             f = filtering.clip_filter(
                 self.pv_power, **self.filter_params['clip_filter'])
             bool_filter = bool_filter & f
@@ -375,8 +384,8 @@ class RdAnalysis():
                 bool_filter = bool_filter & self.filter_params['ad_hoc_filter']
         if case == 'clearsky':
             if self.poa is None or self.clearsky_poa is None:
-                raise ValueError(
-                    'Both poa and clearsky_poa must be available to do clearsky filtering with csi_filter')
+                raise ValueError('Both poa and clearsky_poa must be available to do clearsky '
+                                 'filtering with csi_filter')
             f = filtering.csi_filter(
                 self.poa, self.clearsky_poa, **self.filter_params['csi_filter'])
             bool_filter = bool_filter & f
@@ -395,7 +404,8 @@ class RdAnalysis():
         post_filter : pandas.Series
             Time series filtered by boolean output from self.filter
         '''
-        if post_filter.empty or post_filter.index[-1] - post_filter.index[0] < pd.Timedelta('730d'):
+        post_filter_length = post_filter.index[-1] - post_filter.index[0]
+        if post_filter.empty or post_filter_length < pd.Timedelta('730d'):
             raise ValueError(
                 "Less than two years of data left after filtering")
 
@@ -516,8 +526,8 @@ class RdAnalysis():
         if self.power_expected is None:
             # Thermal details required if power_expected is not manually set.
             if self.cell_temperature is None and self.ambient_temperature is None:
-                raise ValueError(
-                    'either cell or ambient temperature must be available to perform sensor_preprocess')
+                raise ValueError('either cell or ambient temperature must be available '
+                                 'to perform sensor_preprocess')
             if self.cell_temperature is None:
                 self.cell_temperature = self.calc_cell_temperature(
                     self.poa, self.windspeed, self.ambient_temperature)
@@ -595,7 +605,8 @@ class RdAnalysis():
 
     def clearsky_analysis(self, analyses=['yoy_degradation'], yoy_kwargs={}, srr_kwargs={}):
         '''
-        Perform entire clear-sky-based analysis workflow. Results are stored in self.results['clearsky']
+        Perform entire clear-sky-based analysis workflow. Results are stored
+        in self.results['clearsky']
 
         Parameters
         ---------
@@ -651,8 +662,10 @@ class RdAnalysis():
             results_dict = self.results['clearsky']['yoy_degradation']
             aggregated = self.clearsky_aggregated_performance
 
-        fig = plotting.degradation_summary_plots(results_dict['p50_rd'], results_dict['rd_confidence_interval'],
-                                                 results_dict['calc_info'], aggregated, **kwargs)
+        fig = plotting.degradation_summary_plots(
+            results_dict['p50_rd'],
+            results_dict['rd_confidence_interval'],
+            results_dict['calc_info'], aggregated, **kwargs)
         return fig
 
     def plot_soiling_monte_carlo(self, result_to_plot, **kwargs):
