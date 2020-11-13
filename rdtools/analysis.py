@@ -688,6 +688,8 @@ class RdAnalysis():
         elif result_to_plot == 'clearsky':
             results_dict = self.results['clearsky']['yoy_degradation']
             aggregated = self.clearsky_aggregated_performance
+        else:
+            raise ValueError("result_to_plot must be either 'sensor' or 'clearsky'")
 
         fig = plotting.degradation_summary_plots(
             results_dict['p50_rd'],
@@ -718,8 +720,10 @@ class RdAnalysis():
         elif result_to_plot == 'clearsky':
             results_dict = self.results['clearsky']['srr_soiling']
             aggregated = self.clearsky_aggregated_performance
-            # suppress RdTools experimental warning
+        else:
+            raise ValueError("result_to_plot must be either 'sensor' or 'clearsky'")
 
+        # suppress RdTools experimental warning
         with warnings.catch_warnings():
             warnings.simplefilter('ignore')
             fig = plotting.soiling_monte_carlo_plot(
@@ -750,7 +754,10 @@ class RdAnalysis():
         elif result_to_plot == 'clearsky':
             results_dict = self.results['clearsky']['srr_soiling']
             aggregated = self.clearsky_aggregated_performance
+        else:
+            raise ValueError("result_to_plot must be either 'sensor' or 'clearsky'")
 
+        # suppress RdTools experimental warning
         with warnings.catch_warnings():
             warnings.simplefilter('ignore')
             fig = plotting.soiling_interval_plot(
@@ -779,7 +786,10 @@ class RdAnalysis():
             results_dict = self.results['sensor']['srr_soiling']
         elif result_to_plot == 'clearsky':
             results_dict = self.results['clearsky']['srr_soiling']
+        else:
+            raise ValueError("result_to_plot must be either 'sensor' or 'clearsky'")
 
+        # suppress RdTools experimental warning
         with warnings.catch_warnings():
             warnings.simplefilter('ignore')
             fig = plotting.soiling_rate_histogram(
@@ -811,6 +821,8 @@ class RdAnalysis():
             poa = self.poa
         elif poa_type == 'clearsky':
             poa = self.clearsky_poa
+        else:
+            raise ValueError("result_to_plot must be either 'sensor' or 'clearsky'")
 
         to_plot = pd.merge(pd.DataFrame(poa), pd.DataFrame(
             self.pv_energy), left_index=True, right_index=True)
