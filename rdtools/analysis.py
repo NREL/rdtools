@@ -376,23 +376,23 @@ class RdAnalysis():
             poa = self.clearsky_poa
             cell_temp = self.clearsky_cell_temperature
 
-        if 'normalized_filter' in self.filter_params.keys():
+        if 'normalized_filter' in self.filter_params:
             f = filtering.normalized_filter(
                 energy_normalized, **self.filter_params['normalized_filter'])
             bool_filter = bool_filter & f
-        if 'poa_filter' in self.filter_params.keys():
+        if 'poa_filter' in self.filter_params:
             if poa is None:
                 raise ValueError('poa must be available to use poa_filter')
             f = filtering.poa_filter(poa, **self.filter_params['poa_filter'])
             bool_filter = bool_filter & f
-        if 'tcell_filter' in self.filter_params.keys():
+        if 'tcell_filter' in self.filter_params:
             if cell_temp is None:
                 raise ValueError(
                     'Cell temperature must be available to use tcell_filter')
             f = filtering.tcell_filter(
                 cell_temp, **self.filter_params['tcell_filter'])
             bool_filter = bool_filter & f
-        if 'clip_filter' in self.filter_params.keys():
+        if 'clip_filter' in self.filter_params:
             if self.pv_power is None:
                 raise ValueError('PV power (not energy) is required for the clipping filter. '
                                  'Either omit the clipping filter, provide PV power at '
@@ -400,7 +400,7 @@ class RdAnalysis():
             f = filtering.clip_filter(
                 self.pv_power, **self.filter_params['clip_filter'])
             bool_filter = bool_filter & f
-        if 'ad_hoc_filter' in self.filter_params.keys():
+        if 'ad_hoc_filter' in self.filter_params:
             if self.filter_params['ad_hoc_filter'] is not None:
                 bool_filter = bool_filter & self.filter_params['ad_hoc_filter']
         if case == 'clearsky':
