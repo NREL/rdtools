@@ -44,7 +44,7 @@ INSTALL_REQUIRES = [
     'scipy >= 0.19.1',
     'h5py >= 2.7.1',
     'pvlib >= 0.7.0, <0.9.0',
-    'tables',
+    'tables >= 3.6.1'
 ]
 
 EXTRAS_REQUIRE = {
