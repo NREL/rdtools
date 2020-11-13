@@ -12,7 +12,7 @@ import warnings
 
 class RdAnalysis():
     '''
-    Class for end-to-end degradation and soiling analysis using 
+    Class for end-to-end degradation and soiling analysis using
     :py:meth:`~rdtools.RdAnalysis.sensor_analysis` or
     :py:meth:`~rdtools.RdAnalysis.clearsky_analysis`
 
@@ -72,8 +72,8 @@ class RdAnalysis():
     '''
 
     def __init__(self, pv, poa=None, cell_temperature=None, ambient_temperature=None,
-                 temperature_coefficient=None, aggregation_freq='D', pv_input='power', 
-                 windspeed=0, power_expected=None, temperature_model=None, 
+                 temperature_coefficient=None, aggregation_freq='D', pv_input='power',
+                 windspeed=0, power_expected=None, temperature_model=None,
                  pv_nameplate=None, interp_freq=None, max_timedelta=None):
 
         if interp_freq is not None:
@@ -90,7 +90,6 @@ class RdAnalysis():
             if power_expected is not None:
                 power_expected = normalization.interpolate(
                     power_expected, interp_freq, max_timedelta)
-           
 
         if pv_input == 'power':
             self.pv_power = pv
@@ -127,14 +126,14 @@ class RdAnalysis():
             del self.filter_params['tcell_filter']
 
     def set_clearsky(self, pvlib_location=None, pv_azimuth=None, pv_tilt=None,
-                     clearsky_poa=None, clearsky_cell_temperature=None, 
-                     clearsky_ambient_temperature=None, albedo=0.25 ):
+                     clearsky_poa=None, clearsky_cell_temperature=None,
+                     clearsky_ambient_temperature=None, albedo=0.25):
         '''
-        Initialize values for a clearsky analysis which requires configuration 
+        Initialize values for a clearsky analysis which requires configuration
         of location and orientation details. If optional parameters `clearsky_poa`,
         `clearsky_ambient_temperature` are not passed, they will be modeled
         based on location and orientation.
-        
+
         Parameters
         ----------
         pvlib_location : pvlib.location.Location
@@ -144,7 +143,7 @@ class RdAnalysis():
         pv_tilt : numeric
             Tilt of PV array in degrees from horizontal
         clearsky_poa : pd.Series
-            Right-labeled time Series of clear-sky plane of array irradiance 
+            Right-labeled time Series of clear-sky plane of array irradiance
         clearsky_cell_temperature : pd.Series
             Right-labeled time series of cell temperature in clear-sky conditions
             in Celsius. In practice, back of module temperature works as a good
@@ -154,11 +153,11 @@ class RdAnalysis():
             in Celsius
         albedo : numeric
             Albedo to be used in irradiance transposition calculations
-        
+
         '''
         interp_freq = self.interp_freq
         max_timedelta = self.max_timedelta
-        
+
         if interp_freq is not None:
             if clearsky_poa is not None:
                 clearsky_poa = normalization.interpolate(
@@ -175,7 +174,7 @@ class RdAnalysis():
             if isinstance(pv_tilt, (pd.Series, pd.DataFrame)):
                 pv_tilt = normalization.interpolate(
                     pv_tilt, interp_freq, max_timedelta)
-                
+
         self.pvlib_location = pvlib_location
         self.pv_azimuth = pv_azimuth
         self.pv_tilt = pv_tilt
@@ -183,7 +182,7 @@ class RdAnalysis():
         self.clearsky_cell_temperature = clearsky_cell_temperature
         self.clearsky_ambient_temperature = clearsky_ambient_temperature
         self.albedo = albedo
-        
+
     def calc_clearsky_poa(self, times=None, rescale=True, **kwargs):
         '''
         Calculate clearsky plane-of-array irradiance and stores in self.clearsky_poa
@@ -206,9 +205,11 @@ class RdAnalysis():
         if times is None:
             times = self.poa.index
         if self.pvlib_location is None:
-            raise ValueError('pvlib location must be provided using set_clearsky()')
+            raise ValueError(
+                'pvlib location must be provided using set_clearsky()')
         if self.pv_tilt is None or self.pv_azimuth is None:
-            raise ValueError('pv_tilt and pv_azimuth must be provided using set_clearsky()')
+            raise ValueError(
+                'pv_tilt and pv_azimuth must be provided using set_clearsky()')
         if rescale is True and not times.equals(self.poa.index):
             raise ValueError(
                 'rescale=True can only be used when clearsky poa is on same index as poa')
@@ -254,24 +255,24 @@ class RdAnalysis():
             calculated cell temperature
         '''
 
-        try:  # workflow for pvlib >= 0.7  
-        
+        try:  # workflow for pvlib >= 0.7
+
             if self.temperature_model is None:
-                self.temperature_model = "open_rack_glass_polymer" # default
+                self.temperature_model = "open_rack_glass_polymer"  # default
 
             # check if self.temperature_model is a string or dict with keys 'a', 'b' and 'deltaT'
-            if isinstance(self.temperature_model,str):
+            if isinstance(self.temperature_model, str):
                 model_params = pvlib.temperature.TEMPERATURE_MODEL_PARAMETERS[
                     'sapm'][self.temperature_model]
-            elif (isinstance(self.temperature_model,dict) & 
-                  ('a' in self.temperature_model) & 
-                  ('b' in self.temperature_model) & 
+            elif (isinstance(self.temperature_model, dict) &
+                  ('a' in self.temperature_model) &
+                  ('b' in self.temperature_model) &
                   ('deltaT' in self.temperature_model)):
                 model_params = self.temperature_model
             else:
                 raise ValueError('pvlib temperature_model entry is neither '
-                                'a string nor a dictionary with correct '
-                                'entries. Try "open_rack_glass_polymer"')
+                                 'a string nor a dictionary with correct '
+                                 'entries. Try "open_rack_glass_polymer"')
             cell_temp = pvlib.temperature.sapm_cell(poa_global=poa,
                                                     temp_air=ambient_temperature,
                                                     wind_speed=windspeed,
@@ -288,7 +289,8 @@ class RdAnalysis():
         '''
         times = self.clearsky_poa.index
         if self.pvlib_location is None:
-            raise ValueError('pvlib location must be provided using set_clearsky()')
+            raise ValueError(
+                'pvlib location must be provided using set_clearsky()')
         loc = self.pvlib_location
 
         cs_amb_temp = clearsky_temperature.get_clearsky_tamb(
@@ -323,7 +325,7 @@ class RdAnalysis():
             pv_nameplate = self.pv_nameplate
 
         if self.temperature_coefficient is None:
-            #raise ValueError('Temperature coefficient must be available to perform pvwatts_norm')
+            # raise ValueError('Temperature coefficient must be available to perform pvwatts_norm')
             warnings.warn('Temperature coefficient not passed in to RdAnalysis'
                           '. No temperature correction will be conducted.')
         pvwatts_kws = {"poa_global": poa,
@@ -417,11 +419,11 @@ class RdAnalysis():
     def _filter_check(self, post_filter):
         '''
         post-filter check for requisite 730 days of data
-        
+
         Parameters
         ----------
         post_filter : pandas.Series
-            Time series filtered by boolean output from self.filter  
+            Time series filtered by boolean output from self.filter
         '''
         post_filter_length = post_filter.index[-1] - post_filter.index[0]
         if post_filter.empty or post_filter_length < pd.Timedelta('730d'):
@@ -511,11 +513,11 @@ class RdAnalysis():
             'calc_info' : Dict of detailed results (see soiling.soiling_srr() docs)
         '''
         # suppress RdTools experimental warning
-        
+
         with warnings.catch_warnings():
             warnings.simplefilter('ignore')
             from rdtools import soiling
-            
+
         daily_freq = pd.tseries.offsets.Day()
         if aggregated.index.freq != daily_freq or aggregated_insolation.index.freq != daily_freq:
             raise ValueError(
@@ -535,7 +537,7 @@ class RdAnalysis():
     def sensor_preprocess(self):
         '''
         Perform sensor-based normalization, filtering, and aggregation.
-        If optional parameter self.power_expected is passed in, 
+        If optional parameter self.power_expected is passed in,
         normalize_with_expected_power will be used instead of pvwatts.
         '''
         if self.poa is None:
@@ -552,7 +554,7 @@ class RdAnalysis():
                     self.poa, self.windspeed, self.ambient_temperature)
             energy_normalized, insolation = self.pvwatts_norm(
                 self.poa, self.cell_temperature)
-        else: # self.power_expected passed in by user
+        else:  # self.power_expected passed in by user
             energy_normalized, insolation = normalization.normalize_with_expected_power(
                 self.pv_energy, self.power_expected, self.poa, pv_input='energy')
         self.filter(energy_normalized, 'sensor')
@@ -563,16 +565,16 @@ class RdAnalysis():
 
     def clearsky_preprocess(self):
         '''
-        Perform clear-sky-based normalization, filtering, and aggregation. 
-        If optional parameter self.power_expected is passed in, 
+        Perform clear-sky-based normalization, filtering, and aggregation.
+        If optional parameter self.power_expected is passed in,
         normalize_with_expected_power will be used instead of pvwatts.
         '''
         try:
             if self.clearsky_poa is None:
                 self.calc_clearsky_poa(model='isotropic')
         except AttributeError:
-            raise AttributeError("No clearsky_poa. 'set_clearsky' must be run "+
-                             "prior to 'clearsky_analysis'")
+            raise AttributeError("No clearsky_poa. 'set_clearsky' must be run " +
+                                 "prior to 'clearsky_analysis'")
         if self.clearsky_cell_temperature is None:
             if self.clearsky_ambient_temperature is None:
                 self.calc_clearsky_tamb()
@@ -582,7 +584,7 @@ class RdAnalysis():
         if self.power_expected is None:
             cs_normalized, cs_insolation = self.pvwatts_norm(
                 self.clearsky_poa, self.clearsky_cell_temperature)
-        else: # self.power_expected passed in by user
+        else:  # self.power_expected passed in by user
             cs_normalized, cs_insolation = normalization.normalize_with_expected_power(
                 self.pv_energy, self.power_expected, self.clearsky_poa, pv_input='energy')
         self.filter(cs_normalized, 'clearsky')
@@ -593,7 +595,7 @@ class RdAnalysis():
 
     def sensor_analysis(self, analyses=['yoy_degradation'], yoy_kwargs={}, srr_kwargs={}):
         '''
-        Perform entire sensor-based analysis workflow. 
+        Perform entire sensor-based analysis workflow.
         Results are stored in self.results['sensor']
 
         Parameters
@@ -688,7 +690,7 @@ class RdAnalysis():
         fig = plotting.degradation_summary_plots(
             results_dict['p50_rd'],
             results_dict['rd_confidence_interval'],
-                                                 results_dict['calc_info'], aggregated, **kwargs)
+            results_dict['calc_info'], aggregated, **kwargs)
         return fig
 
     def plot_soiling_monte_carlo(self, result_to_plot, **kwargs):
@@ -714,8 +716,8 @@ class RdAnalysis():
         elif result_to_plot == 'clearsky':
             results_dict = self.results['clearsky']['srr_soiling']
             aggregated = self.clearsky_aggregated_performance
-                # suppress RdTools experimental warning
-        
+            # suppress RdTools experimental warning
+
         with warnings.catch_warnings():
             warnings.simplefilter('ignore')
             fig = plotting.soiling_monte_carlo_plot(
