@@ -46,7 +46,9 @@ class RdAnalysis():
         Model parameter pvlib.pvsystem.sapm_celltemp() used in calculating cell
         temperature from ambient
     pv_nameplate : numeric
-        Nameplate DC rating of PV array in Watts
+        Nameplate DC rating of PV array in Watts. If omitted, pv output will be internally
+        normalized in the normalization step based on it's 95th percentile
+        (see RdAnalysis.pvwatts_norm() source).
     interp_freq : str or Pandas DateOffset object
         Pandas frequency specification used to interpolate all pandas.Series
         passed at instantiation. We recommend using the natural frequency of the
