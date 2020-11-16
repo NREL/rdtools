@@ -1,0 +1,11 @@
+*************************
+Pending (DATE)
+*************************
+
+Examples
+------------
+* degradation_and_soiling_example.ipynb modified to not use ``max_timedelta`` parameter in :py:func:`~rdtools.normalization.interpolate` and :py:func:`~rdtools.normalization.energy_from_power` in Step 0 (:pull:`237`)
+
+Contributors
+------------
+* Mike Deceglie (:ghuser:`mdeceglie`)
