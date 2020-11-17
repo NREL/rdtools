@@ -10,11 +10,11 @@ from rdtools import clearsky_temperature, plotting
 import warnings
 
 
-class RdAnalysis():
+class TrendAnalysis():
     '''
     Class for end-to-end degradation and soiling analysis using
-    :py:meth:`~rdtools.RdAnalysis.sensor_analysis` or
-    :py:meth:`~rdtools.RdAnalysis.clearsky_analysis`
+    :py:meth:`~rdtools.TrendAnalysis.sensor_analysis` or
+    :py:meth:`~rdtools.TrendAnalysis.clearsky_analysis`
 
     Parameters
     ----------
@@ -48,7 +48,7 @@ class RdAnalysis():
     pv_nameplate : numeric
         Nameplate DC rating of PV array in Watts. If omitted, pv output will be internally
         normalized in the normalization step based on it's 95th percentile
-        (see RdAnalysis.pvwatts_norm() source).
+        (see TrendAnalysis.pvwatts_norm() source).
     interp_freq : str or Pandas DateOffset object
         Pandas frequency specification used to interpolate all pandas.Series
         passed at instantiation. We recommend using the natural frequency of the
@@ -328,7 +328,7 @@ class RdAnalysis():
 
         if self.temperature_coefficient is None:
             # raise ValueError('Temperature coefficient must be available to perform pvwatts_norm')
-            warnings.warn('Temperature coefficient not passed in to RdAnalysis'
+            warnings.warn('Temperature coefficient not passed in to TrendAnalysis'
                           '. No temperature correction will be conducted.')
         pvwatts_kws = {"poa_global": poa,
                        "power_dc_rated": pv_nameplate,

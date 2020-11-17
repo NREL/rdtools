@@ -14,7 +14,7 @@ analysis workflow.
 .. autosummary::
    :toctree: generated/
 
-   analysis
+   analysis_chains
    degradation
    soiling   
    availability
@@ -27,20 +27,20 @@ analysis workflow.
 Analysis
 ===========
 
-Conduct end-to-end Degradation and Soiling analysis with sensor_analysis or clearsky_analysis
+Object-oriented end-to-end analysis
 
 .. autosummary::
    :toctree: generated/
 
-   analysis.RdAnalysis
-   analysis.RdAnalysis.set_clearsky
-   analysis.RdAnalysis.sensor_analysis
-   analysis.RdAnalysis.clearsky_analysis
-   analysis.RdAnalysis.plot_degradation_summary
-   analysis.RdAnalysis.plot_soiling_rate_histogram
-   analysis.RdAnalysis.plot_soiling_interval
-   analysis.RdAnalysis.plot_soiling_monte_carlo
-   analysis.RdAnalysis.plot_pv_vs_irradiance
+   analysis_chains.TrendAnalysis
+   analysis_chains.TrendAnalysis.set_clearsky
+   analysis_chains.TrendAnalysis.sensor_analysis
+   analysis_chains.TrendAnalysis.clearsky_analysis
+   analysis_chains.TrendAnalysis.plot_degradation_summary
+   analysis_chains.TrendAnalysis.plot_soiling_rate_histogram
+   analysis_chains.TrendAnalysis.plot_soiling_interval
+   analysis_chains.TrendAnalysis.plot_soiling_monte_carlo
+   analysis_chains.TrendAnalysis.plot_pv_vs_irradiance
    
    
 Degradation

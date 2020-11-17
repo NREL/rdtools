@@ -1,4 +1,4 @@
-from rdtools import RdAnalysis, normalization
+from rdtools import TrendAnalysis, normalization
 from soiling_test import normalized_daily, times
 from plotting_test import assert_isinstance
 import pytest
@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 
 @pytest.fixture
 def basic_parameters():
-    # basic parameters (no time series data) for the RdAnalysis class
+    # basic parameters (no time series data) for the TrendAnalysis class
 
     parameters = dict(
         temperature_coefficient=-0.005,
@@ -21,7 +21,7 @@ def basic_parameters():
 
 @pytest.fixture
 def cs_input():
-    # basic parameters (no time series data) for the RdAnalysis class
+    # basic parameters (no time series data) for the TrendAnalysis class
     loc = pvlib.location.Location(-23.762028, 133.874886,
                                   tz='Australia/North')
     cs_input = dict(
@@ -63,7 +63,7 @@ def sensor_parameters(basic_parameters, degradation_trend):
 
 @pytest.fixture
 def sensor_analysis(sensor_parameters):
-    rd_analysis = RdAnalysis(**sensor_parameters)
+    rd_analysis = TrendAnalysis(**sensor_parameters)
     rd_analysis.sensor_analysis(analyses=['yoy_degradation'])
     return rd_analysis
 
@@ -73,7 +73,7 @@ def sensor_analysis_exp_power(sensor_parameters):
     power_expected = normalization.pvwatts_dc_power(sensor_parameters['poa'],
                                                     power_dc_rated=1)
     sensor_parameters['power_expected'] = power_expected
-    rd_analysis = RdAnalysis(**sensor_parameters)
+    rd_analysis = TrendAnalysis(**sensor_parameters)
     rd_analysis.sensor_analysis(analyses=['yoy_degradation'])
     return rd_analysis
 
@@ -90,7 +90,7 @@ def test_sensor_analysis(sensor_analysis):
 def test_sensor_analysis_energy(sensor_parameters, sensor_analysis):
     sensor_parameters['pv'] = sensor_analysis.pv_energy
     sensor_parameters['pv_input'] = 'energy'
-    sensor_analysis2 = RdAnalysis(**sensor_parameters)
+    sensor_analysis2 = TrendAnalysis(**sensor_parameters)
     sensor_analysis2.pv_power = sensor_analysis.pv_power
     sensor_analysis2.sensor_analysis(analyses=['yoy_degradation'])
     yoy_results = sensor_analysis2.results['sensor']['yoy_degradation']
@@ -113,9 +113,9 @@ def test_sensor_analysis_exp_power(sensor_analysis_exp_power):
 @pytest.fixture
 def clearsky_parameters(basic_parameters, sensor_parameters,
                         cs_input, degradation_trend):
-    # clear-sky weather data.  Uses RdAnalysis's internal clear-sky
+    # clear-sky weather data.  Uses TrendAnalysis's internal clear-sky
     # functions to generate the data.
-    rd_analysis = RdAnalysis(**sensor_parameters)
+    rd_analysis = TrendAnalysis(**sensor_parameters)
     rd_analysis.set_clearsky(**cs_input)
     rd_analysis.clearsky_preprocess()
     poa = rd_analysis.clearsky_poa
@@ -127,7 +127,7 @@ def clearsky_parameters(basic_parameters, sensor_parameters,
 
 @pytest.fixture
 def clearsky_analysis(cs_input, clearsky_parameters):
-    rd_analysis = RdAnalysis(**clearsky_parameters)
+    rd_analysis = TrendAnalysis(**clearsky_parameters)
     rd_analysis.set_clearsky(**cs_input)
     rd_analysis.clearsky_analysis(analyses=['yoy_degradation'])
     return rd_analysis
@@ -170,7 +170,7 @@ def test_clearsky_analysis_optional(clearsky_analysis, clearsky_parameters, clea
 
 @pytest.fixture
 def soiling_parameters(basic_parameters, normalized_daily, cs_input):
-    # parameters for soiling analysis with RdAnalysis
+    # parameters for soiling analysis with TrendAnalysis
     power = normalized_daily.resample('1h').interpolate()
     return dict(
         pv=power,
@@ -183,7 +183,7 @@ def soiling_parameters(basic_parameters, normalized_daily, cs_input):
 
 @pytest.fixture
 def soiling_analysis_sensor(soiling_parameters):
-    soiling_analysis = RdAnalysis(**soiling_parameters)
+    soiling_analysis = TrendAnalysis(**soiling_parameters)
     soiling_analysis.sensor_analysis(analyses=['srr_soiling'],
                                      srr_kwargs={'reps': 10})
     return soiling_analysis
@@ -191,7 +191,7 @@ def soiling_analysis_sensor(soiling_parameters):
 
 @pytest.fixture
 def soiling_analysis_clearsky(soiling_parameters, cs_input):
-    soiling_analysis = RdAnalysis(**soiling_parameters)
+    soiling_analysis = TrendAnalysis(**soiling_parameters)
     soiling_analysis.set_clearsky(**cs_input)
     soiling_analysis.clearsky_analysis(analyses=['srr_soiling'],
                                        srr_kwargs={'reps': 10})
@@ -205,11 +205,11 @@ def test_srr_soiling(soiling_analysis_sensor):
     renorm_factor = srr_results['calc_info']['renormalizing_factor']
     print(f'soiling ci:{ci}')
     assert 0.959 == pytest.approx(sratio, abs=1e-3),\
-        'Soiling ratio different from expected value in RdAnalysis.srr_soiling'
+        'Soiling ratio different from expected value in TrendAnalysis.srr_soiling'
     assert [0.95, 0.96] == pytest.approx(ci, abs=1e-2),\
-        'Soiling confidence interval different from expected value in RdAnalysis.srr_soiling'
+        'Soiling confidence interval different from expected value in TrendAnalysis.srr_soiling'
     assert 0.974 == pytest.approx(renorm_factor, abs=1e-3),\
-        'Renormalization factor different from expected value in RdAnalysis.srr_soiling'
+        'Renormalization factor different from expected value in TrendAnalysis.srr_soiling'
 
 
 def test_plot_degradation(sensor_analysis):
@@ -246,13 +246,13 @@ def test_plot_soiling_cs(soiling_analysis_clearsky):
 
 def test_errors(sensor_parameters, clearsky_analysis):
 
-    rdtemp = RdAnalysis(sensor_parameters['pv'])
+    rdtemp = TrendAnalysis(sensor_parameters['pv'])
     with pytest.raises(ValueError, match='poa must be available'):
         rdtemp.sensor_preprocess()
 
     # no temperature
-    rdtemp = RdAnalysis(sensor_parameters['pv'],
-                        poa=sensor_parameters['poa'])
+    rdtemp = TrendAnalysis(sensor_parameters['pv'],
+                           poa=sensor_parameters['poa'])
     with pytest.raises(ValueError, match='either cell or ambient temperature'):
         rdtemp.sensor_preprocess()
 
