@@ -516,9 +516,7 @@ class RdAnalysis():
         '''
         # suppress RdTools experimental warning
 
-        with warnings.catch_warnings():
-            warnings.simplefilter('ignore')
-            from rdtools import soiling
+        from rdtools import soiling
 
         daily_freq = pd.tseries.offsets.Day()
         if aggregated.index.freq != daily_freq or aggregated_insolation.index.freq != daily_freq:
@@ -723,11 +721,8 @@ class RdAnalysis():
         else:
             raise ValueError("result_to_plot must be either 'sensor' or 'clearsky'")
 
-        # suppress RdTools experimental warning
-        with warnings.catch_warnings():
-            warnings.simplefilter('ignore')
-            fig = plotting.soiling_monte_carlo_plot(
-                results_dict['calc_info'], aggregated, **kwargs)
+        fig = plotting.soiling_monte_carlo_plot(
+            results_dict['calc_info'], aggregated, **kwargs)
 
         return fig
 
@@ -757,11 +752,8 @@ class RdAnalysis():
         else:
             raise ValueError("result_to_plot must be either 'sensor' or 'clearsky'")
 
-        # suppress RdTools experimental warning
-        with warnings.catch_warnings():
-            warnings.simplefilter('ignore')
-            fig = plotting.soiling_interval_plot(
-                results_dict['calc_info'], aggregated, **kwargs)
+        fig = plotting.soiling_interval_plot(
+            results_dict['calc_info'], aggregated, **kwargs)
 
         return fig
 
@@ -789,11 +781,8 @@ class RdAnalysis():
         else:
             raise ValueError("result_to_plot must be either 'sensor' or 'clearsky'")
 
-        # suppress RdTools experimental warning
-        with warnings.catch_warnings():
-            warnings.simplefilter('ignore')
-            fig = plotting.soiling_rate_histogram(
-                results_dict['calc_info'], **kwargs)
+        fig = plotting.soiling_rate_histogram(
+            results_dict['calc_info'], **kwargs)
 
         return fig
 
