@@ -10,13 +10,14 @@ import matplotlib.pyplot as plt
 @pytest.fixture
 def basic_parameters():
     # basic parameters (no time series data) for the RdAnalysis class
-    
+
     parameters = dict(
         temperature_coefficient=-0.005,
         temperature_model={'a': -3.47, 'b': -0.0594, 'deltaT': 3}
     )
 
     return parameters
+
 
 @pytest.fixture
 def cs_input():
@@ -51,8 +52,8 @@ def degradation_trend(basic_parameters, cs_input):
 def sensor_parameters(basic_parameters, degradation_trend):
     # basic parameters plus time series data
     power = degradation_trend
-    poa = power*1000
-    ambient_temperature = power*0+25
+    poa = power * 1000
+    ambient_temperature = power * 0 + 25
     basic_parameters['pv'] = power
     basic_parameters['poa'] = poa
     basic_parameters['ambient_temperature'] = ambient_temperature
@@ -66,14 +67,16 @@ def sensor_analysis(sensor_parameters):
     rd_analysis.sensor_analysis(analyses=['yoy_degradation'])
     return rd_analysis
 
+
 @pytest.fixture
 def sensor_analysis_exp_power(sensor_parameters):
     power_expected = normalization.pvwatts_dc_power(sensor_parameters['poa'],
-                                                                power_dc_rated=1)
-    sensor_parameters['power_expected']=power_expected
+                                                    power_dc_rated=1)
+    sensor_parameters['power_expected'] = power_expected
     rd_analysis = RdAnalysis(**sensor_parameters)
     rd_analysis.sensor_analysis(analyses=['yoy_degradation'])
     return rd_analysis
+
 
 def test_sensor_analysis(sensor_analysis):
     yoy_results = sensor_analysis.results['sensor']['yoy_degradation']
@@ -82,7 +85,8 @@ def test_sensor_analysis(sensor_analysis):
 
     assert -1 == pytest.approx(rd, abs=1e-2)
     assert [-1, -1] == pytest.approx(ci, abs=1e-2)
-    
+
+
 def test_sensor_analysis_energy(sensor_parameters, sensor_analysis):
     sensor_parameters['pv'] = sensor_analysis.pv_energy
     sensor_parameters['pv_input'] = 'energy'
@@ -96,6 +100,7 @@ def test_sensor_analysis_energy(sensor_parameters, sensor_analysis):
     assert -1 == pytest.approx(rd, abs=1e-2)
     assert [-1, -1] == pytest.approx(ci, abs=1e-2)
 
+
 def test_sensor_analysis_exp_power(sensor_analysis_exp_power):
     yoy_results = sensor_analysis_exp_power.results['sensor']['yoy_degradation']
     rd = yoy_results['p50_rd']
@@ -103,6 +108,7 @@ def test_sensor_analysis_exp_power(sensor_analysis_exp_power):
 
     assert 0 == pytest.approx(rd, abs=1e-2)
     assert [0, 0] == pytest.approx(ci, abs=1e-2)
+
 
 @pytest.fixture
 def clearsky_parameters(basic_parameters, sensor_parameters,
@@ -207,25 +213,35 @@ def test_srr_soiling(soiling_analysis_sensor):
 
 
 def test_plot_degradation(sensor_analysis):
-    assert_isinstance(sensor_analysis.plot_degradation_summary('sensor'), plt.Figure)
-    assert_isinstance(sensor_analysis.plot_pv_vs_irradiance('sensor'), plt.Figure)
+    assert_isinstance(
+        sensor_analysis.plot_degradation_summary('sensor'), plt.Figure)
+    assert_isinstance(
+        sensor_analysis.plot_pv_vs_irradiance('sensor'), plt.Figure)
 
 
 def test_plot_cs(clearsky_analysis):
-    assert_isinstance(clearsky_analysis.plot_degradation_summary('clearsky'), plt.Figure)
-    assert_isinstance(clearsky_analysis.plot_pv_vs_irradiance('clearsky'), plt.Figure)
+    assert_isinstance(
+        clearsky_analysis.plot_degradation_summary('clearsky'), plt.Figure)
+    assert_isinstance(
+        clearsky_analysis.plot_pv_vs_irradiance('clearsky'), plt.Figure)
 
 
 def test_plot_soiling(soiling_analysis_sensor):
-    assert_isinstance(soiling_analysis_sensor.plot_soiling_monte_carlo('sensor'), plt.Figure)
-    assert_isinstance(soiling_analysis_sensor.plot_soiling_interval('sensor'), plt.Figure)    
-    assert_isinstance(soiling_analysis_sensor.plot_soiling_rate_histogram('sensor'), plt.Figure) 
+    assert_isinstance(
+        soiling_analysis_sensor.plot_soiling_monte_carlo('sensor'), plt.Figure)
+    assert_isinstance(
+        soiling_analysis_sensor.plot_soiling_interval('sensor'), plt.Figure)
+    assert_isinstance(
+        soiling_analysis_sensor.plot_soiling_rate_histogram('sensor'), plt.Figure)
 
 
 def test_plot_soiling_cs(soiling_analysis_clearsky):
-    assert_isinstance(soiling_analysis_clearsky.plot_soiling_monte_carlo('clearsky'), plt.Figure)
-    assert_isinstance(soiling_analysis_clearsky.plot_soiling_interval('clearsky'), plt.Figure)    
-    assert_isinstance(soiling_analysis_clearsky.plot_soiling_rate_histogram('clearsky'), plt.Figure) 
+    assert_isinstance(
+        soiling_analysis_clearsky.plot_soiling_monte_carlo('clearsky'), plt.Figure)
+    assert_isinstance(
+        soiling_analysis_clearsky.plot_soiling_interval('clearsky'), plt.Figure)
+    assert_isinstance(
+        soiling_analysis_clearsky.plot_soiling_rate_histogram('clearsky'), plt.Figure)
 
 
 def test_errors(sensor_parameters, clearsky_analysis):
@@ -236,7 +252,7 @@ def test_errors(sensor_parameters, clearsky_analysis):
 
     # no temperature
     rdtemp = RdAnalysis(sensor_parameters['pv'],
-                                 poa=sensor_parameters['poa'])
+                        poa=sensor_parameters['poa'])
     with pytest.raises(ValueError, match='either cell or ambient temperature'):
         rdtemp.sensor_preprocess()
 
@@ -245,9 +261,8 @@ def test_errors(sensor_parameters, clearsky_analysis):
     clearsky_analysis.clearsky_poa = None
     with pytest.raises(ValueError, match='pv_tilt and pv_azimuth must be provided'):
         clearsky_analysis.clearsky_preprocess()
-        
+
     # clearsky analysis with no pvlib.loc
     clearsky_analysis.pvlib_location = None
     with pytest.raises(ValueError, match='pvlib location must be provided'):
         clearsky_analysis.clearsky_preprocess()
-    
