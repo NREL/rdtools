@@ -398,7 +398,7 @@ class TrendAnalysis():
             if self.pv_power is None:
                 raise ValueError('PV power (not energy) is required for the clipping filter. '
                                  'Either omit the clipping filter, provide PV power at '
-                                 'instantiation, or explicitly assign system_analysis.pv_power.')
+                                 'instantiation, or explicitly assign TrendAnalysis.pv_power.')
             f = filtering.clip_filter(
                 self.pv_power, **self.filter_params['clip_filter'])
             bool_filter = bool_filter & f
