@@ -24,8 +24,8 @@ analysis workflow.
    clearsky_temperature
    plotting
 
-Analysis
-===========
+Analysis Chains
+===============
 
 Object-oriented end-to-end analysis
 
