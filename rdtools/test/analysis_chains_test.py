@@ -52,10 +52,10 @@ def degradation_trend(basic_parameters, cs_input):
 def sensor_parameters(basic_parameters, degradation_trend):
     # basic parameters plus time series data
     power = degradation_trend
-    poa = power * 1000
+    poa_global = power * 1000
     ambient_temperature = power * 0 + 25
     basic_parameters['pv'] = power
-    basic_parameters['poa'] = poa
+    basic_parameters['poa_global'] = poa_global
     basic_parameters['ambient_temperature'] = ambient_temperature
     basic_parameters['interp_freq'] = 'H'
     return basic_parameters
@@ -70,7 +70,7 @@ def sensor_analysis(sensor_parameters):
 
 @pytest.fixture
 def sensor_analysis_exp_power(sensor_parameters):
-    power_expected = normalization.pvwatts_dc_power(sensor_parameters['poa'],
+    power_expected = normalization.pvwatts_dc_power(sensor_parameters['poa_global'],
                                                     power_dc_rated=1)
     sensor_parameters['power_expected'] = power_expected
     rd_analysis = TrendAnalysis(**sensor_parameters)
@@ -120,7 +120,7 @@ def clearsky_parameters(basic_parameters, sensor_parameters,
     rd_analysis.clearsky_preprocess()
     poa = rd_analysis.clearsky_poa
     clearsky_parameters = basic_parameters
-    clearsky_parameters['poa'] = poa
+    clearsky_parameters['poa_global'] = poa
     clearsky_parameters['pv'] = poa * degradation_trend
     return clearsky_parameters
 
@@ -136,7 +136,7 @@ def clearsky_analysis(cs_input, clearsky_parameters):
 @pytest.fixture
 def clearsky_optional(cs_input, clearsky_analysis):
     # optional parameters to exercise other branches
-    times = clearsky_analysis.poa.index
+    times = clearsky_analysis.poa_global.index
     extras = dict(
         clearsky_poa=clearsky_analysis.clearsky_poa,
         clearsky_cell_temperature=clearsky_analysis.clearsky_cell_temperature,
@@ -174,7 +174,7 @@ def soiling_parameters(basic_parameters, normalized_daily, cs_input):
     power = normalized_daily.resample('1h').interpolate()
     return dict(
         pv=power,
-        poa=power * 0 + 1000,
+        poa_global=power * 0 + 1000,
         cell_temperature=power * 0 + 25,
         temperature_coefficient=0,
         interp_freq='D',
@@ -247,12 +247,12 @@ def test_plot_soiling_cs(soiling_analysis_clearsky):
 def test_errors(sensor_parameters, clearsky_analysis):
 
     rdtemp = TrendAnalysis(sensor_parameters['pv'])
-    with pytest.raises(ValueError, match='poa must be available'):
+    with pytest.raises(ValueError, match='poa_global must be available'):
         rdtemp.sensor_preprocess()
 
     # no temperature
     rdtemp = TrendAnalysis(sensor_parameters['pv'],
-                           poa=sensor_parameters['poa'])
+                           poa_global=sensor_parameters['poa_global'])
     with pytest.raises(ValueError, match='either cell or ambient temperature'):
         rdtemp.sensor_preprocess()
 
