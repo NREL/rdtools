@@ -139,7 +139,7 @@ def clearsky_optional(cs_input, clearsky_analysis):
     times = clearsky_analysis.poa_global.index
     extras = dict(
         clearsky_poa=clearsky_analysis.clearsky_poa,
-        clearsky_cell_temperature=clearsky_analysis.clearsky_cell_temperature,
+        clearsky_temperature_cell=clearsky_analysis.clearsky_temperature_cell,
         clearsky_ambient_temperature=clearsky_analysis.clearsky_ambient_temperature,
         pv_tilt=pd.Series(cs_input['pv_tilt'], index=times),
         pv_azimuth=pd.Series(cs_input['pv_azimuth'], index=times)
@@ -175,7 +175,7 @@ def soiling_parameters(basic_parameters, normalized_daily, cs_input):
     return dict(
         pv=power,
         poa_global=power * 0 + 1000,
-        cell_temperature=power * 0 + 25,
+        temperature_cell=power * 0 + 25,
         temperature_coefficient=0,
         interp_freq='D',
     )
