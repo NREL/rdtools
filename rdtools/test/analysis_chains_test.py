@@ -139,7 +139,7 @@ def clearsky_optional(cs_input, clearsky_analysis):
     times = clearsky_analysis.poa_global.index
     extras = dict(
         poa_global_clearsky=clearsky_analysis.poa_global_clearsky,
-        clearsky_temperature_cell=clearsky_analysis.clearsky_temperature_cell,
+        temperature_cell_clearsky=clearsky_analysis.temperature_cell_clearsky,
         clearsky_temperature_ambient=clearsky_analysis.clearsky_temperature_ambient,
         pv_tilt=pd.Series(cs_input['pv_tilt'], index=times),
         pv_azimuth=pd.Series(cs_input['pv_azimuth'], index=times)
