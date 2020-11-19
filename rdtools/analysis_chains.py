@@ -460,14 +460,14 @@ class TrendAnalysis():
 
         return aggregated, aggregated_insolation
 
-    def yoy_degradation(self, aggregated, **kwargs):
+    def yoy_degradation(self, energy_normalized, **kwargs):
         '''
         Perform year-on-year degradation analysis on insolation-weighted
         aggregated energy yield.
 
         Parameters
         ----------
-        aggregated : pandas.Series
+        energy_normalized : pandas.Series
             Time Series of insolation-weighted aggregated normalized PV energy
         kwargs :
             Extra parameters passed to degradation.degradation_year_on_year()
@@ -482,9 +482,9 @@ class TrendAnalysis():
             'calc_info': Dict of detailed results
                          (see degradation.degradation_year_on_year() docs)
         '''
-        self._filter_check(aggregated)
+        self._filter_check(energy_normalized)
         yoy_rd, yoy_ci, yoy_info = degradation.degradation_year_on_year(
-            aggregated, **kwargs)
+            energy_normalized, **kwargs)
 
         yoy_results = {
             'p50_rd': yoy_rd,
@@ -494,15 +494,15 @@ class TrendAnalysis():
 
         return yoy_results
 
-    def srr_soiling(self, aggregated, aggregated_insolation, **kwargs):
+    def srr_soiling(self, energy_normalized_daily, insolation_daily, **kwargs):
         '''
         Perform stochastic rate and recovery soiling analysis.
 
         Parameters
         ---------
-        aggregated : pandas.Series
+        energy_normalized_daily : pandas.Series
             Time Series of insolation-weighted aggregated normalized PV energy
-        aggregated_insolation : pandas.Series
+        insolation_daily : pandas.Series
             Time Series of insolation, aggregated at same level as `aggregated`
         kwargs :
             Extra parameters passed to soiling.soiling_srr()
@@ -522,12 +522,12 @@ class TrendAnalysis():
         from rdtools import soiling
 
         daily_freq = pd.tseries.offsets.Day()
-        if aggregated.index.freq != daily_freq or aggregated_insolation.index.freq != daily_freq:
+        if energy_normalized_daily.index.freq != daily_freq or insolation_daily.index.freq != daily_freq:
             raise ValueError(
                 'Soiling SRR analysis requires daily aggregation.')
 
         sr, sr_ci, soiling_info = soiling.soiling_srr(
-            aggregated, aggregated_insolation, **kwargs)
+            energy_normalized_daily, insolation_daily, **kwargs)
 
         srr_results = {
             'p50_sratio': sr,
