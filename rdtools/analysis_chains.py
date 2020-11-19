@@ -132,11 +132,11 @@ class TrendAnalysis():
 
     def set_clearsky(self, pvlib_location=None, pv_azimuth=None, pv_tilt=None,
                      poa_global_clearsky=None, temperature_cell_clearsky=None,
-                     clearsky_temperature_ambient=None, albedo=0.25):
+                     temperature_ambient_clearsky=None, albedo=0.25):
         '''
         Initialize values for a clearsky analysis which requires configuration
         of location and orientation details. If optional parameters `poa_global_clearsky`,
-        `clearsky_temperature_ambient` are not passed, they will be modeled
+        `temperature_ambient_clearsky` are not passed, they will be modeled
         based on location and orientation.
 
         Parameters
@@ -153,7 +153,7 @@ class TrendAnalysis():
             Right-labeled time series of cell temperature in clear-sky conditions
             in Celsius. In practice, back of module temperature works as a good
             approximation.
-        clearsky_temperature_ambient : pd.Series
+        temperature_ambient_clearsky : pd.Series
             Right-label time series of ambient temperature in clear sky conditions
             in Celsius
         albedo : numeric
@@ -170,9 +170,9 @@ class TrendAnalysis():
             if temperature_cell_clearsky is not None:
                 temperature_cell_clearsky = normalization.interpolate(
                     temperature_cell_clearsky, interp_freq, max_timedelta)
-            if clearsky_temperature_ambient is not None:
-                clearsky_temperature_ambient = normalization.interpolate(
-                    clearsky_temperature_ambient, interp_freq, max_timedelta)
+            if temperature_ambient_clearsky is not None:
+                temperature_ambient_clearsky = normalization.interpolate(
+                    temperature_ambient_clearsky, interp_freq, max_timedelta)
             if isinstance(pv_azimuth, (pd.Series, pd.DataFrame)):
                 pv_azimuth = normalization.interpolate(
                     pv_azimuth, interp_freq, max_timedelta)
@@ -185,7 +185,7 @@ class TrendAnalysis():
         self.pv_tilt = pv_tilt
         self.poa_global_clearsky = poa_global_clearsky
         self.temperature_cell_clearsky = temperature_cell_clearsky
-        self.clearsky_temperature_ambient = clearsky_temperature_ambient
+        self.temperature_ambient_clearsky = temperature_ambient_clearsky
         self.albedo = albedo
 
     def calc_clearsky_poa(self, times=None, rescale=True, **kwargs):
@@ -290,7 +290,7 @@ class TrendAnalysis():
 
     def calc_clearsky_tamb(self):
         '''
-        Calculate clear-sky ambient temperature and store in self.clearsky_temperature_ambient
+        Calculate clear-sky ambient temperature and store in self.temperature_ambient_clearsky
         '''
         times = self.poa_global_clearsky.index
         if self.pvlib_location is None:
@@ -301,7 +301,7 @@ class TrendAnalysis():
         cs_amb_temp = clearsky_temperature.get_clearsky_tamb(
             times, loc.latitude, loc.longitude)
 
-        self.clearsky_temperature_ambient = cs_amb_temp
+        self.temperature_ambient_clearsky = cs_amb_temp
 
     def pvwatts_norm(self, poa_global, temperature_cell):
         '''
@@ -579,10 +579,10 @@ class TrendAnalysis():
             raise AttributeError("No poa_global_clearsky. 'set_clearsky' must be run " +
                                  "prior to 'clearsky_analysis'")
         if self.temperature_cell_clearsky is None:
-            if self.clearsky_temperature_ambient is None:
+            if self.temperature_ambient_clearsky is None:
                 self.calc_clearsky_tamb()
             self.temperature_cell_clearsky = self.calc_cell_temperature(
-                self.poa_global_clearsky, 0, self.clearsky_temperature_ambient)
+                self.poa_global_clearsky, 0, self.temperature_ambient_clearsky)
             # Note example notebook uses windspeed=0 in the clearskybranch
         if self.power_expected is None:
             cs_normalized, cs_insolation = self.pvwatts_norm(
