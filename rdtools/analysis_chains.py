@@ -51,7 +51,7 @@ class TrendAnalysis():
     power_dc_rated : numeric
         Nameplate DC rating of PV array in Watts. If omitted, pv output will be internally
         normalized in the normalization step based on it's 95th percentile
-        (see TrendAnalysis.pvwatts_norm() source).
+        (see TrendAnalysis._pvwatts_norm() source).
     interp_freq : str or Pandas DateOffset object
         Pandas frequency specification used to interpolate all pandas.Series
         passed at instantiation. We recommend using the natural frequency of the
@@ -188,7 +188,7 @@ class TrendAnalysis():
         self.temperature_ambient_clearsky = temperature_ambient_clearsky
         self.albedo = albedo
 
-    def calc_clearsky_poa(self, times=None, rescale=True, **kwargs):
+    def _calc_clearsky_poa(self, times=None, rescale=True, **kwargs):
         '''
         Calculate clearsky plane-of-array irradiance and stores in self.poa_global_clearsky
 
@@ -241,7 +241,7 @@ class TrendAnalysis():
 
         self.poa_global_clearsky = clearsky_poa
 
-    def calc_cell_temperature(self, poa_global, windspeed, temperature_ambient):
+    def _calc_cell_temperature(self, poa_global, windspeed, temperature_ambient):
         '''
         Return cell temperature calculated from ambient conditions.
 
@@ -288,7 +288,7 @@ class TrendAnalysis():
             raise e
         return cell_temp
 
-    def calc_clearsky_tamb(self):
+    def _calc_clearsky_tamb(self):
         '''
         Calculate clear-sky ambient temperature and store in self.temperature_ambient_clearsky
         '''
@@ -303,7 +303,7 @@ class TrendAnalysis():
 
         self.temperature_ambient_clearsky = cs_amb_temp
 
-    def pvwatts_norm(self, poa_global, temperature_cell):
+    def _pvwatts_norm(self, poa_global, temperature_cell):
         '''
         Normalize PV energy to that expected from a PVWatts model.
 
@@ -330,7 +330,7 @@ class TrendAnalysis():
             power_dc_rated = self.power_dc_rated
 
         if self.gamma_pdc is None:
-            # raise ValueError('Temperature coefficient must be available to perform pvwatts_norm')
+            # raise ValueError('Temperature coefficient must be available to perform _pvwatts_norm')
             warnings.warn('Temperature coefficient not passed in to TrendAnalysis'
                           '. No temperature correction will be conducted.')
         pvwatts_kws = {"poa_global": poa_global,
@@ -351,7 +351,7 @@ class TrendAnalysis():
 
         return energy_normalized, insolation
 
-    def filter(self, energy_normalized, case):
+    def _filter(self, energy_normalized, case):
         '''
         Calculate filters based on those in rdtools.filtering. Uses
         self.filter_params, which is a dict, the keys of which are names of
@@ -435,7 +435,7 @@ class TrendAnalysis():
             raise ValueError(
                 "Less than two years of data left after filtering")
 
-    def aggregate(self, energy_normalized, insolation):
+    def _aggregate(self, energy_normalized, insolation):
         '''
         Return insolation-weighted normalized PV energy and the associated aggregated insolation
 
@@ -460,7 +460,7 @@ class TrendAnalysis():
 
         return aggregated, aggregated_insolation
 
-    def yoy_degradation(self, energy_normalized, **kwargs):
+    def _yoy_degradation(self, energy_normalized, **kwargs):
         '''
         Perform year-on-year degradation analysis on insolation-weighted
         aggregated energy yield.
@@ -494,7 +494,7 @@ class TrendAnalysis():
 
         return yoy_results
 
-    def srr_soiling(self, energy_normalized_daily, insolation_daily, **kwargs):
+    def _srr_soiling(self, energy_normalized_daily, insolation_daily, **kwargs):
         '''
         Perform stochastic rate and recovery soiling analysis.
 
@@ -537,7 +537,7 @@ class TrendAnalysis():
 
         return srr_results
 
-    def sensor_preprocess(self):
+    def _sensor_preprocess(self):
         '''
         Perform sensor-based normalization, filtering, and aggregation.
         If optional parameter self.power_expected is passed in,
@@ -545,28 +545,28 @@ class TrendAnalysis():
         '''
         if self.poa_global is None:
             raise ValueError(
-                'poa_global must be available to perform sensor_preprocess')
+                'poa_global must be available to perform _sensor_preprocess')
 
         if self.power_expected is None:
             # Thermal details required if power_expected is not manually set.
             if self.temperature_cell is None and self.temperature_ambient is None:
                 raise ValueError('either cell or ambient temperature must be available '
-                                 'to perform sensor_preprocess')
+                                 'to perform _sensor_preprocess')
             if self.temperature_cell is None:
-                self.temperature_cell = self.calc_cell_temperature(
+                self.temperature_cell = self._calc_cell_temperature(
                     self.poa_global, self.windspeed, self.temperature_ambient)
-            energy_normalized, insolation = self.pvwatts_norm(
+            energy_normalized, insolation = self._pvwatts_norm(
                 self.poa_global, self.temperature_cell)
         else:  # self.power_expected passed in by user
             energy_normalized, insolation = normalization.normalize_with_expected_power(
                 self.pv_energy, self.power_expected, self.poa_global, pv_input='energy')
-        self.filter(energy_normalized, 'sensor')
-        aggregated, aggregated_insolation = self.aggregate(
+        self._filter(energy_normalized, 'sensor')
+        aggregated, aggregated_insolation = self._aggregate(
             energy_normalized[self.sensor_filter], insolation[self.sensor_filter])
         self.sensor_aggregated_performance = aggregated
         self.sensor_aggregated_insolation = aggregated_insolation
 
-    def clearsky_preprocess(self):
+    def _clearsky_preprocess(self):
         '''
         Perform clear-sky-based normalization, filtering, and aggregation.
         If optional parameter self.power_expected is passed in,
@@ -574,24 +574,24 @@ class TrendAnalysis():
         '''
         try:
             if self.poa_global_clearsky is None:
-                self.calc_clearsky_poa(model='isotropic')
+                self._calc_clearsky_poa(model='isotropic')
         except AttributeError:
             raise AttributeError("No poa_global_clearsky. 'set_clearsky' must be run " +
                                  "prior to 'clearsky_analysis'")
         if self.temperature_cell_clearsky is None:
             if self.temperature_ambient_clearsky is None:
-                self.calc_clearsky_tamb()
-            self.temperature_cell_clearsky = self.calc_cell_temperature(
+                self._calc_clearsky_tamb()
+            self.temperature_cell_clearsky = self._calc_cell_temperature(
                 self.poa_global_clearsky, 0, self.temperature_ambient_clearsky)
             # Note example notebook uses windspeed=0 in the clearskybranch
         if self.power_expected is None:
-            cs_normalized, cs_insolation = self.pvwatts_norm(
+            cs_normalized, cs_insolation = self._pvwatts_norm(
                 self.poa_global_clearsky, self.temperature_cell_clearsky)
         else:  # self.power_expected passed in by user
             cs_normalized, cs_insolation = normalization.normalize_with_expected_power(
                 self.pv_energy, self.power_expected, self.poa_global_clearsky, pv_input='energy')
-        self.filter(cs_normalized, 'clearsky')
-        cs_aggregated, cs_aggregated_insolation = self.aggregate(
+        self._filter(cs_normalized, 'clearsky')
+        cs_aggregated, cs_aggregated_insolation = self._aggregate(
             cs_normalized[self.clearsky_filter], cs_insolation[self.clearsky_filter])
         self.clearsky_aggregated_performance = cs_aggregated
         self.clearsky_aggregated_insolation = cs_aggregated_insolation
@@ -615,18 +615,18 @@ class TrendAnalysis():
         None
         '''
 
-        self.sensor_preprocess()
+        self._sensor_preprocess()
         sensor_results = {}
 
         if 'yoy_degradation' in analyses:
-            yoy_results = self.yoy_degradation(
+            yoy_results = self._yoy_degradation(
                 self.sensor_aggregated_performance, **yoy_kwargs)
             sensor_results['yoy_degradation'] = yoy_results
 
         if 'srr_soiling' in analyses:
-            srr_results = self.srr_soiling(self.sensor_aggregated_performance,
-                                           self.sensor_aggregated_insolation,
-                                           **srr_kwargs)
+            srr_results = self._srr_soiling(self.sensor_aggregated_performance,
+                                            self.sensor_aggregated_insolation,
+                                            **srr_kwargs)
             sensor_results['srr_soiling'] = srr_results
 
         self.results['sensor'] = sensor_results
@@ -650,18 +650,18 @@ class TrendAnalysis():
         None
         '''
 
-        self.clearsky_preprocess()
+        self._clearsky_preprocess()
         clearsky_results = {}
 
         if 'yoy_degradation' in analyses:
-            yoy_results = self.yoy_degradation(
+            yoy_results = self._yoy_degradation(
                 self.clearsky_aggregated_performance, **yoy_kwargs)
             clearsky_results['yoy_degradation'] = yoy_results
 
         if 'srr_soiling' in analyses:
-            srr_results = self.srr_soiling(self.clearsky_aggregated_performance,
-                                           self.clearsky_aggregated_insolation,
-                                           **srr_kwargs)
+            srr_results = self._srr_soiling(self.clearsky_aggregated_performance,
+                                            self.clearsky_aggregated_insolation,
+                                            **srr_kwargs)
             clearsky_results['srr_soiling'] = srr_results
 
         self.results['clearsky'] = clearsky_results

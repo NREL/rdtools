@@ -117,7 +117,7 @@ def clearsky_parameters(basic_parameters, sensor_parameters,
     # functions to generate the data.
     rd_analysis = TrendAnalysis(**sensor_parameters)
     rd_analysis.set_clearsky(**cs_input)
-    rd_analysis.clearsky_preprocess()
+    rd_analysis._clearsky_preprocess()
     poa = rd_analysis.poa_global_clearsky
     clearsky_parameters = basic_parameters
     clearsky_parameters['poa_global'] = poa
@@ -248,21 +248,21 @@ def test_errors(sensor_parameters, clearsky_analysis):
 
     rdtemp = TrendAnalysis(sensor_parameters['pv'])
     with pytest.raises(ValueError, match='poa_global must be available'):
-        rdtemp.sensor_preprocess()
+        rdtemp._sensor_preprocess()
 
     # no temperature
     rdtemp = TrendAnalysis(sensor_parameters['pv'],
                            poa_global=sensor_parameters['poa_global'])
     with pytest.raises(ValueError, match='either cell or ambient temperature'):
-        rdtemp.sensor_preprocess()
+        rdtemp._sensor_preprocess()
 
     # clearsky analysis with no tilt/azm
     clearsky_analysis.pv_tilt = None
     clearsky_analysis.poa_global_clearsky = None
     with pytest.raises(ValueError, match='pv_tilt and pv_azimuth must be provided'):
-        clearsky_analysis.clearsky_preprocess()
+        clearsky_analysis._clearsky_preprocess()
 
     # clearsky analysis with no pvlib.loc
     clearsky_analysis.pvlib_location = None
     with pytest.raises(ValueError, match='pvlib location must be provided'):
-        clearsky_analysis.clearsky_preprocess()
+        clearsky_analysis._clearsky_preprocess()
