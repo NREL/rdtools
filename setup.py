@@ -50,13 +50,13 @@ EXTRAS_REQUIRE = {
     'doc': [
         'sphinx==1.8.5',
         'nbsphinx==0.6.0',
-        'sphinx-gallery==0.8.1',
         'nbsphinx-link==1.3.0',
         'pandas==0.23.0',
         'pvlib==0.7.1',
         'sphinx_rtd_theme==0.4.3',
         'ipython'
-
+         # used for thumbnail galleries (https://nbsphinx.readthedocs.io/en/0.6.0/subdir/gallery.html#Creating-Thumbnail-Galleries)
+        'sphinx-gallery==0.8.1',
     ],
     'test': [
         'pytest',
