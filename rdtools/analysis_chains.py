@@ -42,9 +42,12 @@ class TrendAnalysis():
     power_expected : pd.Series
         Right-labeled time series of expected PV power. (Note: Expected energy
         is not supported.)
-    temperature_model : str
-        Model parameter pvlib.pvsystem.sapm_celltemp() used in calculating cell
-        temperature from ambient
+    temperature_model : str or dict
+        Model parameters for pvlib.pvsystem.sapm_celltemp(). Used in calculating cell
+        temperature from ambient. If string, must be a valid entry
+        for sapm model in pvlib.temeprature.TEMPERATURE_MODEL_PARAMETERS. If dict, must
+        have keys 'a', 'b', 'deltaT'. See pvlib.pvsystem.sapm_celltemp() documentation
+        for details.
     pv_nameplate : numeric
         Nameplate DC rating of PV array in Watts. If omitted, pv output will be internally
         normalized in the normalization step based on it's 95th percentile
