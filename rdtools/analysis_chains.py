@@ -201,8 +201,6 @@ class TrendAnalysis():
             times on for which to calculate clearsky poa
         rescale : bool
             Whether to attempt to rescale clearsky irradiance to measured
-        model : str
-            Model for pvlib.irradiance.get_total_irradiance()
         kwargs :
             Extra parameters passed to pvlib.irradiance.get_total_irradiance()
 
@@ -506,7 +504,7 @@ class TrendAnalysis():
         energy_normalized_daily : pandas.Series
             Time Series of insolation-weighted aggregated normalized PV energy
         insolation_daily : pandas.Series
-            Time Series of insolation, aggregated at same level as `aggregated`
+            Time Series of insolation, aggregated at same level as energy_normalized_daily
         kwargs :
             Extra parameters passed to soiling.soiling_srr()
 
@@ -520,7 +518,6 @@ class TrendAnalysis():
                                           confidence interval
             'calc_info' : Dict of detailed results (see soiling.soiling_srr() docs)
         '''
-        # suppress RdTools experimental warning
 
         from rdtools import soiling
 
