@@ -444,7 +444,7 @@ class TrendAnalysis():
 
         Parameters
         ----------
-        normalized : pandas.Series
+        energy_normalized : pandas.Series
             Time series of normalized PV energy
         insolation : pandas.Series
             Time Series of insolation associated with each `normalized` point
