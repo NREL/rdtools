@@ -1,5 +1,11 @@
 .. _examples:
 
+Examples
+========
+
+This page shows example usage of the RdTools analysis functions.
+
+
 .. Note that the entries in the list below are nblink filenames, not notebook filenames!
 
 .. There is a limitation in sphinx that I don't understand, but it means that
@@ -13,11 +19,6 @@
    Note: the make_github_url() function in conf.py assumes that the name of the .nblink file
    is the same as the notebook it points to!
 
-
-Examples
-========
-
-This page shows example usage of the RdTools analysis functions.
 
 .. nbgallery::
 
