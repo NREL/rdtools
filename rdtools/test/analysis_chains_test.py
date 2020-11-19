@@ -118,7 +118,7 @@ def clearsky_parameters(basic_parameters, sensor_parameters,
     rd_analysis = TrendAnalysis(**sensor_parameters)
     rd_analysis.set_clearsky(**cs_input)
     rd_analysis.clearsky_preprocess()
-    poa = rd_analysis.clearsky_poa
+    poa = rd_analysis.poa_global_clearsky
     clearsky_parameters = basic_parameters
     clearsky_parameters['poa_global'] = poa
     clearsky_parameters['pv'] = poa * degradation_trend
@@ -138,7 +138,7 @@ def clearsky_optional(cs_input, clearsky_analysis):
     # optional parameters to exercise other branches
     times = clearsky_analysis.poa_global.index
     extras = dict(
-        clearsky_poa=clearsky_analysis.clearsky_poa,
+        poa_global_clearsky=clearsky_analysis.poa_global_clearsky,
         clearsky_temperature_cell=clearsky_analysis.clearsky_temperature_cell,
         clearsky_temperature_ambient=clearsky_analysis.clearsky_temperature_ambient,
         pv_tilt=pd.Series(cs_input['pv_tilt'], index=times),
@@ -258,7 +258,7 @@ def test_errors(sensor_parameters, clearsky_analysis):
 
     # clearsky analysis with no tilt/azm
     clearsky_analysis.pv_tilt = None
-    clearsky_analysis.clearsky_poa = None
+    clearsky_analysis.poa_global_clearsky = None
     with pytest.raises(ValueError, match='pv_tilt and pv_azimuth must be provided'):
         clearsky_analysis.clearsky_preprocess()
 

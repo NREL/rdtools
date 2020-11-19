@@ -131,11 +131,11 @@ class TrendAnalysis():
             del self.filter_params['tcell_filter']
 
     def set_clearsky(self, pvlib_location=None, pv_azimuth=None, pv_tilt=None,
-                     clearsky_poa=None, clearsky_temperature_cell=None,
+                     poa_global_clearsky=None, clearsky_temperature_cell=None,
                      clearsky_temperature_ambient=None, albedo=0.25):
         '''
         Initialize values for a clearsky analysis which requires configuration
-        of location and orientation details. If optional parameters `clearsky_poa`,
+        of location and orientation details. If optional parameters `poa_global_clearsky`,
         `clearsky_temperature_ambient` are not passed, they will be modeled
         based on location and orientation.
 
@@ -147,7 +147,7 @@ class TrendAnalysis():
             Azimuth of PV array in degrees from north
         pv_tilt : numeric
             Tilt of PV array in degrees from horizontal
-        clearsky_poa : pd.Series
+        poa_global_clearsky : pd.Series
             Right-labeled time Series of clear-sky plane of array irradiance
         clearsky_temperature_cell : pd.Series
             Right-labeled time series of cell temperature in clear-sky conditions
@@ -164,9 +164,9 @@ class TrendAnalysis():
         max_timedelta = self.max_timedelta
 
         if interp_freq is not None:
-            if clearsky_poa is not None:
-                clearsky_poa = normalization.interpolate(
-                    clearsky_poa, interp_freq, max_timedelta)
+            if poa_global_clearsky is not None:
+                poa_global_clearsky = normalization.interpolate(
+                    poa_global_clearsky, interp_freq, max_timedelta)
             if clearsky_temperature_cell is not None:
                 clearsky_temperature_cell = normalization.interpolate(
                     clearsky_temperature_cell, interp_freq, max_timedelta)
@@ -183,14 +183,14 @@ class TrendAnalysis():
         self.pvlib_location = pvlib_location
         self.pv_azimuth = pv_azimuth
         self.pv_tilt = pv_tilt
-        self.clearsky_poa = clearsky_poa
+        self.poa_global_clearsky = poa_global_clearsky
         self.clearsky_temperature_cell = clearsky_temperature_cell
         self.clearsky_temperature_ambient = clearsky_temperature_ambient
         self.albedo = albedo
 
     def calc_clearsky_poa(self, times=None, rescale=True, **kwargs):
         '''
-        Calculate clearsky plane-of-array irradiance and stores in self.clearsky_poa
+        Calculate clearsky plane-of-array irradiance and stores in self.poa_global_clearsky
 
         Parameters
         ----------
@@ -239,7 +239,7 @@ class TrendAnalysis():
             clearsky_poa = normalization.irradiance_rescale(
                 self.poa_global, clearsky_poa, method='iterative')
 
-        self.clearsky_poa = clearsky_poa
+        self.poa_global_clearsky = clearsky_poa
 
     def calc_cell_temperature(self, poa_global, windspeed, temperature_ambient):
         '''
@@ -292,7 +292,7 @@ class TrendAnalysis():
         '''
         Calculate clear-sky ambient temperature and store in self.clearsky_temperature_ambient
         '''
-        times = self.clearsky_poa.index
+        times = self.poa_global_clearsky.index
         if self.pvlib_location is None:
             raise ValueError(
                 'pvlib location must be provided using set_clearsky()')
@@ -378,7 +378,7 @@ class TrendAnalysis():
             poa = self.poa_global
             cell_temp = self.temperature_cell
         if case == 'clearsky':
-            poa = self.clearsky_poa
+            poa = self.poa_global_clearsky
             cell_temp = self.clearsky_temperature_cell
 
         if 'normalized_filter' in self.filter_params:
@@ -409,11 +409,11 @@ class TrendAnalysis():
             if self.filter_params['ad_hoc_filter'] is not None:
                 bool_filter = bool_filter & self.filter_params['ad_hoc_filter']
         if case == 'clearsky':
-            if self.poa_global is None or self.clearsky_poa is None:
-                raise ValueError('Both poa_global and clearsky_poa must be available to do clearsky '
+            if self.poa_global is None or self.poa_global_clearsky is None:
+                raise ValueError('Both poa_global and poa_global_clearsky must be available to do clearsky '
                                  'filtering with csi_filter')
             f = filtering.csi_filter(
-                self.poa_global, self.clearsky_poa, **self.filter_params['csi_filter'])
+                self.poa_global, self.poa_global_clearsky, **self.filter_params['csi_filter'])
             bool_filter = bool_filter & f
 
         if case == 'sensor':
@@ -573,23 +573,23 @@ class TrendAnalysis():
         normalize_with_expected_power will be used instead of pvwatts.
         '''
         try:
-            if self.clearsky_poa is None:
+            if self.poa_global_clearsky is None:
                 self.calc_clearsky_poa(model='isotropic')
         except AttributeError:
-            raise AttributeError("No clearsky_poa. 'set_clearsky' must be run " +
+            raise AttributeError("No poa_global_clearsky. 'set_clearsky' must be run " +
                                  "prior to 'clearsky_analysis'")
         if self.clearsky_temperature_cell is None:
             if self.clearsky_temperature_ambient is None:
                 self.calc_clearsky_tamb()
             self.clearsky_temperature_cell = self.calc_cell_temperature(
-                self.clearsky_poa, 0, self.clearsky_temperature_ambient)
+                self.poa_global_clearsky, 0, self.clearsky_temperature_ambient)
             # Note example notebook uses windspeed=0 in the clearskybranch
         if self.power_expected is None:
             cs_normalized, cs_insolation = self.pvwatts_norm(
-                self.clearsky_poa, self.clearsky_temperature_cell)
+                self.poa_global_clearsky, self.clearsky_temperature_cell)
         else:  # self.power_expected passed in by user
             cs_normalized, cs_insolation = normalization.normalize_with_expected_power(
-                self.pv_energy, self.power_expected, self.clearsky_poa, pv_input='energy')
+                self.pv_energy, self.power_expected, self.poa_global_clearsky, pv_input='energy')
         self.filter(cs_normalized, 'clearsky')
         cs_aggregated, cs_aggregated_insolation = self.aggregate(
             cs_normalized[self.clearsky_filter], cs_insolation[self.clearsky_filter])
@@ -812,7 +812,7 @@ class TrendAnalysis():
         if poa_type == 'sensor':
             poa = self.poa_global
         elif poa_type == 'clearsky':
-            poa = self.clearsky_poa
+            poa = self.poa_global_clearsky
         else:
             raise ValueError("result_to_plot must be either 'sensor' or 'clearsky'")
 
