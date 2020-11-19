@@ -28,7 +28,7 @@ class TrendAnalysis():
         back of module temperature works as a good approximation.
     temperature_ambient : pd.Series
         Right-labeled time Series of ambient temperature in Celsius
-    temperature_coefficient : numeric
+    gamma_pdc : numeric
         Fractional PV power temperature coefficient
     aggregation_freq : str or Pandas DateOffset object
         Pandas frequency specification with which to aggregate normalized PV
@@ -74,7 +74,7 @@ class TrendAnalysis():
     '''
 
     def __init__(self, pv, poa_global=None, temperature_cell=None, temperature_ambient=None,
-                 temperature_coefficient=None, aggregation_freq='D', pv_input='power',
+                 gamma_pdc=None, aggregation_freq='D', pv_input='power',
                  windspeed=0, power_expected=None, temperature_model=None,
                  pv_nameplate=None, interp_freq=None, max_timedelta=None):
 
@@ -104,7 +104,7 @@ class TrendAnalysis():
         self.temperature_cell = temperature_cell
         self.temperature_ambient = temperature_ambient
         self.poa_global = poa_global
-        self.temperature_coefficient = temperature_coefficient
+        self.gamma_pdc = gamma_pdc
         self.aggregation_freq = aggregation_freq
         self.windspeed = windspeed
         self.power_expected = power_expected
@@ -326,7 +326,7 @@ class TrendAnalysis():
             renorm = False
             pv_nameplate = self.pv_nameplate
 
-        if self.temperature_coefficient is None:
+        if self.gamma_pdc is None:
             # raise ValueError('Temperature coefficient must be available to perform pvwatts_norm')
             warnings.warn('Temperature coefficient not passed in to TrendAnalysis'
                           '. No temperature correction will be conducted.')
@@ -335,7 +335,7 @@ class TrendAnalysis():
                        "temperature_cell": temperature_cell,
                        "poa_global_ref": 1000,
                        "temperature_cell_ref": 25,
-                       "gamma_pdc": self.temperature_coefficient}
+                       "gamma_pdc": self.gamma_pdc}
 
         energy_normalized, insolation = normalization.normalize_with_pvwatts(
             self.pv_energy, pvwatts_kws)

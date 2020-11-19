@@ -12,7 +12,7 @@ def basic_parameters():
     # basic parameters (no time series data) for the TrendAnalysis class
 
     parameters = dict(
-        temperature_coefficient=-0.005,
+        gamma_pdc=-0.005,
         temperature_model={'a': -3.47, 'b': -0.0594, 'deltaT': 3}
     )
 
@@ -176,7 +176,7 @@ def soiling_parameters(basic_parameters, normalized_daily, cs_input):
         pv=power,
         poa_global=power * 0 + 1000,
         temperature_cell=power * 0 + 25,
-        temperature_coefficient=0,
+        gamma_pdc=0,
         interp_freq='D',
     )
 
