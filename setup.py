@@ -54,7 +54,7 @@ EXTRAS_REQUIRE = {
         'pandas==0.23.0',
         'pvlib==0.7.1',
         'sphinx_rtd_theme==0.4.3',
-        'ipython'
+        'ipython',
          # used for thumbnail galleries (https://nbsphinx.readthedocs.io/en/0.6.0/subdir/gallery.html#Creating-Thumbnail-Galleries)
         'sphinx-gallery==0.8.1',
     ],
