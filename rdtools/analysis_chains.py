@@ -35,10 +35,10 @@ class TrendAnalysis():
         data for analysis
     pv_input : str
         'power' or 'energy' to specify type of input used for pv parameter
-    windspeed : pd.Series
-        Right-labeled Pandas Time Series or numeric indicating wind speed in
-        m/s for use in calculating cell temperature from ambient default value
-        of 0 neglects the wind in this calculation
+    windspeed : pd.Series or numeric
+        Right-labeled Pandas Time Series or single numeric value indicating wind 
+        speed in m/s for use in calculating cell temperature from ambient default
+        value of 0 neglects the wind in this calculation
     power_expected : pd.Series
         Right-labeled time series of expected PV power. (Note: Expected energy
         is not supported.)
@@ -95,6 +95,9 @@ class TrendAnalysis():
             if power_expected is not None:
                 power_expected = normalization.interpolate(
                     power_expected, interp_freq, max_timedelta)
+            if isinstance(windspeed, pd.Series):
+                windspeed = normalization.interpolate(
+                    windspeed, interp_freq, max_timedelta)
 
         if pv_input == 'power':
             self.pv_power = pv
