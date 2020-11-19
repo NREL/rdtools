@@ -666,13 +666,13 @@ class TrendAnalysis():
 
         self.results['clearsky'] = clearsky_results
 
-    def plot_degradation_summary(self, result_to_plot, **kwargs):
+    def plot_degradation_summary(self, case, **kwargs):
         '''
         Return a figure of a scatter plot and a histogram summarizing degradation rate analysis.
 
         Parameters
         ----------
-        result_to_plot : str
+        case : str
             The workflow result to plot, allowed values are 'sensor' and 'clearsky'
         kwargs :
             Extra parameters passed to plotting.degradation_summary_plots()
@@ -683,14 +683,14 @@ class TrendAnalysis():
 
         '''
 
-        if result_to_plot == 'sensor':
+        if case == 'sensor':
             results_dict = self.results['sensor']['yoy_degradation']
             aggregated = self.sensor_aggregated_performance
-        elif result_to_plot == 'clearsky':
+        elif case == 'clearsky':
             results_dict = self.results['clearsky']['yoy_degradation']
             aggregated = self.clearsky_aggregated_performance
         else:
-            raise ValueError("result_to_plot must be either 'sensor' or 'clearsky'")
+            raise ValueError("case must be either 'sensor' or 'clearsky'")
 
         fig = plotting.degradation_summary_plots(
             results_dict['p50_rd'],
@@ -698,14 +698,14 @@ class TrendAnalysis():
             results_dict['calc_info'], aggregated, **kwargs)
         return fig
 
-    def plot_soiling_monte_carlo(self, result_to_plot, **kwargs):
+    def plot_soiling_monte_carlo(self, case, **kwargs):
         '''
         Return a figure visualizing the Monte Carlo of soiling profiles used in
         stochastic rate and recovery soiling analysis.
 
         Parameters
         ----------
-        result_to_plot : str
+        case : str
             The workflow result to plot, allowed values are 'sensor' and 'clearsky'
         kwargs :
             Extra parameters passed to plotting.soiling_monte_carlo_plot()
@@ -715,28 +715,28 @@ class TrendAnalysis():
         matplotlib.figure.Figure
         '''
 
-        if result_to_plot == 'sensor':
+        if case == 'sensor':
             results_dict = self.results['sensor']['srr_soiling']
             aggregated = self.sensor_aggregated_performance
-        elif result_to_plot == 'clearsky':
+        elif case == 'clearsky':
             results_dict = self.results['clearsky']['srr_soiling']
             aggregated = self.clearsky_aggregated_performance
         else:
-            raise ValueError("result_to_plot must be either 'sensor' or 'clearsky'")
+            raise ValueError("case must be either 'sensor' or 'clearsky'")
 
         fig = plotting.soiling_monte_carlo_plot(
             results_dict['calc_info'], aggregated, **kwargs)
 
         return fig
 
-    def plot_soiling_interval(self, result_to_plot, **kwargs):
+    def plot_soiling_interval(self, case, **kwargs):
         '''
         Return a figure visualizing the valid soiling intervals used in
         stochastic rate and recovery soiling analysis.
 
         Parameters
         ----------
-        result_to_plot : str
+        case : str
             The workflow result to plot, allowed values are 'sensor' and 'clearsky'
         kwargs :
             Extra parameters passed to plotting.soiling_interval_plot()
@@ -746,28 +746,28 @@ class TrendAnalysis():
         matplotlib.figure.Figure
         '''
 
-        if result_to_plot == 'sensor':
+        if case == 'sensor':
             results_dict = self.results['sensor']['srr_soiling']
             aggregated = self.sensor_aggregated_performance
-        elif result_to_plot == 'clearsky':
+        elif case == 'clearsky':
             results_dict = self.results['clearsky']['srr_soiling']
             aggregated = self.clearsky_aggregated_performance
         else:
-            raise ValueError("result_to_plot must be either 'sensor' or 'clearsky'")
+            raise ValueError("case must be either 'sensor' or 'clearsky'")
 
         fig = plotting.soiling_interval_plot(
             results_dict['calc_info'], aggregated, **kwargs)
 
         return fig
 
-    def plot_soiling_rate_histogram(self, result_to_plot, **kwargs):
+    def plot_soiling_rate_histogram(self, case, **kwargs):
         '''
         Return a histogram of soiling rates found in the stochastic rate and recovery
         soiling analysis
 
         Parameters
         ----------
-        result_to_plot : str
+        case : str
             The workflow result to plot, allowed values are 'sensor' and 'clearsky'
         kwargs :
             Extra parameters passed to plotting.soiling_rate_histogram()
@@ -777,26 +777,26 @@ class TrendAnalysis():
         matplotlib.figure.Figure
         '''
 
-        if result_to_plot == 'sensor':
+        if case == 'sensor':
             results_dict = self.results['sensor']['srr_soiling']
-        elif result_to_plot == 'clearsky':
+        elif case == 'clearsky':
             results_dict = self.results['clearsky']['srr_soiling']
         else:
-            raise ValueError("result_to_plot must be either 'sensor' or 'clearsky'")
+            raise ValueError("case must be either 'sensor' or 'clearsky'")
 
         fig = plotting.soiling_rate_histogram(
             results_dict['calc_info'], **kwargs)
 
         return fig
 
-    def plot_pv_vs_irradiance(self, poa_type, alpha=0.01, **kwargs):
+    def plot_pv_vs_irradiance(self, case, alpha=0.01, **kwargs):
         '''
         Plot PV energy vs irradiance, useful in diagnosing things like timezone problems or
         transposition errors.
 
         Parameters
         ----------
-        poa_type: str
+        case: str
             The plane of array irradiance type to plot, allowed values are
             'sensor' and 'clearsky'
         alpha : numeric
@@ -809,12 +809,12 @@ class TrendAnalysis():
         matplotlib.figure.Figure
         '''
 
-        if poa_type == 'sensor':
+        if case == 'sensor':
             poa = self.poa_global
-        elif poa_type == 'clearsky':
+        elif case == 'clearsky':
             poa = self.poa_global_clearsky
         else:
-            raise ValueError("result_to_plot must be either 'sensor' or 'clearsky'")
+            raise ValueError("case must be either 'sensor' or 'clearsky'")
 
         to_plot = pd.merge(pd.DataFrame(poa), pd.DataFrame(
             self.pv_energy), left_index=True, right_index=True)
