@@ -53,10 +53,10 @@ def sensor_parameters(basic_parameters, degradation_trend):
     # basic parameters plus time series data
     power = degradation_trend
     poa_global = power * 1000
-    ambient_temperature = power * 0 + 25
+    temperature_ambient = power * 0 + 25
     basic_parameters['pv'] = power
     basic_parameters['poa_global'] = poa_global
-    basic_parameters['ambient_temperature'] = ambient_temperature
+    basic_parameters['temperature_ambient'] = temperature_ambient
     basic_parameters['interp_freq'] = 'H'
     return basic_parameters
 
@@ -140,7 +140,7 @@ def clearsky_optional(cs_input, clearsky_analysis):
     extras = dict(
         clearsky_poa=clearsky_analysis.clearsky_poa,
         clearsky_temperature_cell=clearsky_analysis.clearsky_temperature_cell,
-        clearsky_ambient_temperature=clearsky_analysis.clearsky_ambient_temperature,
+        clearsky_temperature_ambient=clearsky_analysis.clearsky_temperature_ambient,
         pv_tilt=pd.Series(cs_input['pv_tilt'], index=times),
         pv_azimuth=pd.Series(cs_input['pv_azimuth'], index=times)
     )
