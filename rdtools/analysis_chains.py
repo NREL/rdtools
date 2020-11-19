@@ -48,7 +48,7 @@ class TrendAnalysis():
         for sapm model in pvlib.temeprature.TEMPERATURE_MODEL_PARAMETERS. If dict, must
         have keys 'a', 'b', 'deltaT'. See pvlib.pvsystem.sapm_celltemp() documentation
         for details.
-    pv_nameplate : numeric
+    power_dc_rated : numeric
         Nameplate DC rating of PV array in Watts. If omitted, pv output will be internally
         normalized in the normalization step based on it's 95th percentile
         (see TrendAnalysis.pvwatts_norm() source).
@@ -79,7 +79,7 @@ class TrendAnalysis():
     def __init__(self, pv, poa_global=None, temperature_cell=None, temperature_ambient=None,
                  gamma_pdc=None, aggregation_freq='D', pv_input='power',
                  windspeed=0, power_expected=None, temperature_model=None,
-                 pv_nameplate=None, interp_freq=None, max_timedelta=None):
+                 power_dc_rated=None, interp_freq=None, max_timedelta=None):
 
         if interp_freq is not None:
             pv = normalization.interpolate(pv, interp_freq, max_timedelta)
@@ -112,7 +112,7 @@ class TrendAnalysis():
         self.windspeed = windspeed
         self.power_expected = power_expected
         self.temperature_model = temperature_model
-        self.pv_nameplate = pv_nameplate
+        self.power_dc_rated = power_dc_rated
         self.interp_freq = interp_freq
         self.max_timedelta = max_timedelta
         self.results = {}
@@ -322,19 +322,19 @@ class TrendAnalysis():
             Associated insolation
         '''
 
-        if self.pv_nameplate is None:
+        if self.power_dc_rated is None:
             renorm = True
-            pv_nameplate = 1.0
+            power_dc_rated = 1.0
         else:
             renorm = False
-            pv_nameplate = self.pv_nameplate
+            power_dc_rated = self.power_dc_rated
 
         if self.gamma_pdc is None:
             # raise ValueError('Temperature coefficient must be available to perform pvwatts_norm')
             warnings.warn('Temperature coefficient not passed in to TrendAnalysis'
                           '. No temperature correction will be conducted.')
         pvwatts_kws = {"poa_global": poa_global,
-                       "power_dc_rated": pv_nameplate,
+                       "power_dc_rated": power_dc_rated,
                        "temperature_cell": temperature_cell,
                        "poa_global_ref": 1000,
                        "temperature_cell_ref": 25,
