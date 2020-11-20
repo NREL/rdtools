@@ -242,7 +242,7 @@ class TrendAnalysis():
 
         self.poa_global_clearsky = clearsky_poa
 
-    def _calc_cell_temperature(self, poa_global, windspeed, temperature_ambient):
+    def _calc_cell_temperature(self, poa_global, temperature_ambient, windspeed):
         '''
         Return cell temperature calculated from ambient conditions.
 
@@ -250,10 +250,10 @@ class TrendAnalysis():
         ----------
         poa_global : numeric
             Plane of array irradiance in W/m^2
-        windspeed = numeric
-            Wind speed in m/s
         temperature_ambient : numeric
             Ambient temperature in Celsius
+        windspeed = numeric
+            Wind speed in m/s
 
         Returns
         -------
@@ -554,7 +554,7 @@ class TrendAnalysis():
                                  'to perform _sensor_preprocess')
             if self.temperature_cell is None:
                 self.temperature_cell = self._calc_cell_temperature(
-                    self.poa_global, self.windspeed, self.temperature_ambient)
+                    self.poa_global, self.temperature_ambient, self.windspeed)
             energy_normalized, insolation = self._pvwatts_norm(
                 self.poa_global, self.temperature_cell)
         else:  # self.power_expected passed in by user
@@ -582,7 +582,7 @@ class TrendAnalysis():
             if self.temperature_ambient_clearsky is None:
                 self._calc_clearsky_tamb()
             self.temperature_cell_clearsky = self._calc_cell_temperature(
-                self.poa_global_clearsky, 0, self.temperature_ambient_clearsky)
+                self.poa_global_clearsky, self.temperature_ambient_clearsky, 0)
             # Note example notebook uses windspeed=0 in the clearskybranch
         if self.power_expected is None:
             cs_normalized, cs_insolation = self._pvwatts_norm(
