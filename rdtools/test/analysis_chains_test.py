@@ -144,7 +144,7 @@ def test_no_gamma_pdc(sensor_parameters):
     sensor_parameters.pop('gamma_pdc')
     rd_analysis = TrendAnalysis(**sensor_parameters)
 
-    with pytest.warns(None) as record:
+    with pytest.warns(UserWarning) as record:
         rd_analysis.sensor_analysis()
 
     assert len(record) == 1
