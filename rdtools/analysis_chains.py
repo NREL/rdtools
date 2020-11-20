@@ -431,8 +431,12 @@ class TrendAnalysis():
         post_filter : pandas.Series
             Time series filtered by boolean output from self.filter
         '''
-        post_filter_length = post_filter.index[-1] - post_filter.index[0]
-        if post_filter.empty or post_filter_length < pd.Timedelta('730d'):
+
+        if post_filter.empty:
+            post_filter_length = pd.Timedelta('0d')
+        else:
+            post_filter_length = post_filter.index[-1] - post_filter.index[0]
+        if post_filter_length < pd.Timedelta('730d'):
             raise ValueError(
                 "Less than two years of data left after filtering")
 
