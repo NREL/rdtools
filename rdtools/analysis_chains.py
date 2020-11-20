@@ -36,7 +36,7 @@ class TrendAnalysis():
     pv_input : str
         'power' or 'energy' to specify type of input used for pv parameter
     windspeed : pd.Series or numeric
-        Right-labeled Pandas Time Series or single numeric value indicating wind 
+        Right-labeled Pandas Time Series or single numeric value indicating wind
         speed in m/s for use in calculating cell temperature from ambient default
         value of 0 neglects the wind in this calculation
     power_expected : pd.Series
@@ -331,7 +331,6 @@ class TrendAnalysis():
             power_dc_rated = self.power_dc_rated
 
         if self.gamma_pdc is None:
-            # raise ValueError('Temperature coefficient must be available to perform _pvwatts_norm')
             warnings.warn('Temperature coefficient not passed in to TrendAnalysis'
                           '. No temperature correction will be conducted.')
         pvwatts_kws = {"poa_global": poa_global,
@@ -411,8 +410,8 @@ class TrendAnalysis():
                 bool_filter = bool_filter & self.filter_params['ad_hoc_filter']
         if case == 'clearsky':
             if self.poa_global is None or self.poa_global_clearsky is None:
-                raise ValueError('Both poa_global and poa_global_clearsky must be available to do clearsky '
-                                 'filtering with csi_filter')
+                raise ValueError('Both poa_global and poa_global_clearsky must be available to do '
+                                 'clearsky filtering with csi_filter')
             f = filtering.csi_filter(
                 self.poa_global, self.poa_global_clearsky, **self.filter_params['csi_filter'])
             bool_filter = bool_filter & f
@@ -526,9 +525,9 @@ class TrendAnalysis():
         from rdtools import soiling
 
         daily_freq = pd.tseries.offsets.Day()
-        if energy_normalized_daily.index.freq != daily_freq or insolation_daily.index.freq != daily_freq:
-            raise ValueError(
-                'Soiling SRR analysis requires daily aggregation.')
+        if energy_normalized_daily.index.freq != daily_freq or \
+           insolation_daily.index.freq != daily_freq:
+            raise ValueError('Soiling SRR analysis requires daily aggregation.')
 
         sr, sr_ci, soiling_info = soiling.soiling_srr(
             energy_normalized_daily, insolation_daily, **kwargs)
