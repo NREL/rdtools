@@ -12,12 +12,12 @@ This page shows example usage of the RdTools analysis functions.
    you cannot directly access files outside the source directory unless you use
    something like nbsphinx_link, which is what we do here.
    To add a notebook to the gallery, create a .nblink file and add it to the list below.
+   Note: the make_github_url() function in conf.py assumes that the name of the .nblink file
+   is the same as the notebook it points to!
 
 .. To select a thumbnail image, you need to edit the metadata of the cell with the
    desired image to include a special tags value:
         "metadata": {"tags": ["nbsphinx-thumbnail"]},
-   Note: the make_github_url() function in conf.py assumes that the name of the .nblink file
-   is the same as the notebook it points to!
 
 
 .. nbgallery::
