@@ -27,7 +27,7 @@ Full examples are worked out in the example notebooks in the :ref:`examples`.
 To report issues, contribute code, or suggest improvements to this
 documentation, visit the RdTools development repository on `github`_.
 
-Degradation and Soiling
+Trends
 -----------------------
 
 Both degradation and soiling analyses are based on normalized yield, similar to performance
@@ -96,6 +96,13 @@ identified soiling rates for the dataset.
    :alt: RdTools soiling results plot
    :width: 320
    :height: 216
+
+TrendAnalysis
+^^^^^^^^^^^^^
+An object-oriented API for complete soiling and degradation analysis including 
+the normalize, filter, aggregate, analyze steps is available in
+:py:class:`.analysis_chains.TrendAnalysis`. See the `TrendAnalysis example`_ 
+for details. 
 
 Availability
 ------------
@@ -297,6 +304,5 @@ Indices and tables
 
 
 .. links and references
-
 .. _release: https://github.com/NREL/rdtools/releases
 .. _github: https://github.com/NREL/rdtools
