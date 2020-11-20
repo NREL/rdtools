@@ -110,6 +110,47 @@ def test_sensor_analysis_exp_power(sensor_analysis_exp_power):
     assert [0, 0] == pytest.approx(ci, abs=1e-2)
 
 
+def test_sensor_analysis_power_dc_rated(sensor_parameters):
+    rd_analysis = TrendAnalysis(**sensor_parameters, power_dc_rated=1.0)
+    rd_analysis.sensor_analysis(analyses=['yoy_degradation'])
+    yoy_results = rd_analysis.results['sensor']['yoy_degradation']
+    rd = yoy_results['p50_rd']
+    ci = yoy_results['rd_confidence_interval']
+
+    assert -1 == pytest.approx(rd, abs=1e-2)
+    assert [-1, -1] == pytest.approx(ci, abs=1e-2)
+
+
+def test_sensor_analysis_ad_hoc_filter(sensor_parameters):
+    # by excluding all but a few points, we should trigger the <2yr error
+    filt = pd.Series(False, index=sensor_parameters['pv'].index)
+    filt.iloc[-100:] = True
+    rd_analysis = TrendAnalysis(**sensor_parameters, power_dc_rated=1.0)
+    rd_analysis.filter_params['ad_hoc_filter'] = filt
+    with pytest.raises(ValueError, match="Less than two years of data left after filtering"):
+        rd_analysis.sensor_analysis(analyses=['yoy_degradation'])
+
+
+def test_cell_temperature_model_invalid(sensor_parameters):
+    wind = pd.Series(0, index=sensor_parameters['pv'].index)
+    sensor_parameters.pop('temperature_model')
+    rd_analysis = TrendAnalysis(**sensor_parameters, windspeed=wind,
+                                temperature_model={'bad': True})
+    with pytest.raises(ValueError, match='pvlib temperature_model entry is neither'):
+        rd_analysis.sensor_analysis()
+
+
+def test_no_gamma_pdc(sensor_parameters):
+    sensor_parameters.pop('gamma_pdc')
+    rd_analysis = TrendAnalysis(**sensor_parameters)
+
+    with pytest.warns(None) as record:
+        rd_analysis.sensor_analysis()
+
+    assert len(record) == 1
+    assert str(record[0].message).startswith("Temperature coefficient not passed")
+
+
 @pytest.fixture
 def clearsky_parameters(basic_parameters, sensor_parameters,
                         cs_input, degradation_trend):
@@ -166,6 +207,32 @@ def test_clearsky_analysis_optional(clearsky_analysis, clearsky_parameters, clea
     print(f'ci:{ci}')
     assert -4.73 == pytest.approx(rd, abs=1e-2)
     assert [-4.74, -4.72] == pytest.approx(ci, abs=1e-2)
+
+
+@pytest.fixture
+def clearsky_analysis_exp_power(clearsky_parameters, clearsky_optional):
+    power_expected = normalization.pvwatts_dc_power(clearsky_parameters['poa_global'],
+                                                    power_dc_rated=1)
+    clearsky_parameters['power_expected'] = power_expected
+    rd_analysis = TrendAnalysis(**clearsky_parameters)
+    rd_analysis.set_clearsky(**clearsky_optional)
+    rd_analysis.clearsky_analysis(analyses=['yoy_degradation'])
+    return rd_analysis
+
+
+def test_clearsky_analysis_exp_power(clearsky_analysis_exp_power):
+    yoy_results = clearsky_analysis_exp_power.results['clearsky']['yoy_degradation']
+    rd = yoy_results['p50_rd']
+    ci = yoy_results['rd_confidence_interval']
+
+    assert -5.128 == pytest.approx(rd, abs=1e-2)
+    assert [-5.128, -5.127] == pytest.approx(ci, abs=1e-2)
+
+
+def test_no_set_clearsky(clearsky_parameters):
+    rd_analysis = TrendAnalysis(**clearsky_parameters)
+    with pytest.raises(AttributeError, match="No poa_global_clearsky. 'set_clearsky' must be run"):
+        rd_analysis.clearsky_analysis()
 
 
 @pytest.fixture
@@ -266,3 +333,14 @@ def test_errors(sensor_parameters, clearsky_analysis):
     clearsky_analysis.pvlib_location = None
     with pytest.raises(ValueError, match='pvlib location must be provided'):
         clearsky_analysis._clearsky_preprocess()
+
+
+@pytest.mark.parametrize('method_name', ['plot_degradation_summary',
+                                         'plot_soiling_monte_carlo',
+                                         'plot_soiling_interval',
+                                         'plot_soiling_rate_histogram',
+                                         'plot_pv_vs_irradiance'])
+def test_plot_errors(method_name, sensor_analysis):
+    func = getattr(sensor_analysis, method_name)
+    with pytest.raises(ValueError, match="case must be either 'sensor' or 'clearsky'"):
+        func(case='bad')
