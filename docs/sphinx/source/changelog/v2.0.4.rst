@@ -4,8 +4,8 @@ v2.0.4 (MONTH DAY, YEAR)
 
 Bug Fixes
 ---------
-* Fix bug related to leading NaN values with :py:func:`~rdtools.normalization.energy_from_power`
- (:issue:`244`, :pull:`245`)
+* Fix bug related to leading NaN values with
+  :py:func:`~rdtools.normalization.energy_from_power` (:issue:`244`, :pull:`245`)
 
 Contributors
 ------------
