@@ -44,6 +44,7 @@ INSTALL_REQUIRES = [
     'scipy >= 0.19.1',
     'h5py >= 2.7.1',
     'pvlib >= 0.7.0, <0.9.0',
+    'tables >= 3.4.2'
 ]
 
 EXTRAS_REQUIRE = {
@@ -54,8 +55,7 @@ EXTRAS_REQUIRE = {
         'pandas==0.23.0',
         'pvlib==0.7.1',
         'sphinx_rtd_theme==0.4.3',
-        'ipython'
-
+        'ipython',
     ],
     'test': [
         'pytest',
