@@ -1,11 +1,13 @@
-**************************
-v2.0.4 (MONTH DAY, YEAR)
-**************************
+*************************
+v2.0.4 (December 4, 2020)
+*************************
 
 Bug Fixes
 ---------
 * Fix bug related to leading NaN values with
-  :py:func:`~rdtools.normalization.energy_from_power` (:issue:`244`, :pull:`245`)
+  :py:func:`~rdtools.normalization.energy_from_power`. This fixed a small
+  normalization error in ``degradation_and_soiling_example.ipynb`` and
+  slightly changed the clear-sky degradation results (:issue:`244`, :pull:`245`)
 
 Contributors
 ------------
