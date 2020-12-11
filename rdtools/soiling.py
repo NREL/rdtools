@@ -376,7 +376,7 @@ class SRRAnalysis():
             # randomize the extent of the cleaning
             inter_start = 1.0
             start_list = []
-            if method == 'half_norm_clean':
+            if (method == 'half_norm_clean') or (method == 'random_clean'):
                 # Randomize recovery of valid intervals only
                 valid_intervals = results_rand[results_rand.valid].copy()
                 valid_intervals['inferred_recovery'] = \
@@ -388,10 +388,13 @@ class SRRAnalysis():
                     end = inter_start + row.run_loss
                     end_list.append(end)
 
-                    # Use a half normal with the inferred clean at the
-                    # 3sigma point
-                    x = np.clip(end + row.inferred_recovery, 0, 1)
-                    inter_start = 1 - abs(np.random.normal(0.0, (1 - x) / 3))
+                    if method == 'half_norm_clean':
+                        # Use a half normal with the inferred clean at the
+                        # 3sigma point
+                        x = np.clip(end + row.inferred_recovery, 0, 1)
+                        inter_start = 1 - abs(np.random.normal(0.0, (1 - x) / 3))
+                    elif method == 'random_clean':
+                        inter_start = np.random.uniform(end, 1)
 
                 # Update the valid rows in results_rand
                 valid_update = pd.DataFrame()
@@ -431,13 +434,6 @@ class SRRAnalysis():
                     invalid_update['start_loss'] = replace_levels
                     invalid_update.index = invalid_intervals.index
                     results_rand.update(invalid_update)
-
-            elif method == 'random_clean':
-                for i, row in results_rand.iterrows():
-                    start_list.append(inter_start)
-                    end = inter_start + row.run_loss
-                    inter_start = np.random.uniform(end, 1)
-                results_rand['start_loss'] = start_list
 
             elif method == 'perfect_clean':
                 for i, row in results_rand.iterrows():

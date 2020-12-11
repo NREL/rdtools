@@ -93,6 +93,27 @@ def test_soiling_srr(normalized_daily, insolation, times):
         'soiling_info["soiling_ratio_perfect_clean"] not a pandas series'
 
 
+def test_soiling_srr_consecutive_invalid(normalized_daily, insolation, times):
+    reps = 10
+    np.random.seed(1977)
+    sr, sr_ci, soiling_info = soiling_srr(normalized_daily, insolation, reps=reps,
+                                          max_relative_slope_error=20.0, method='random_clean')
+    assert 0.936177 == pytest.approx(sr, abs=1e-6),\
+        'Soiling ratio different from expected value for random_clean with consecutive invalid intervals'
+
+    np.random.seed(1977)
+    sr, sr_ci, soiling_info = soiling_srr(normalized_daily, insolation, reps=reps,
+                                          max_relative_slope_error=20.0, method='half_norm_clean')
+    assert 0.915093 == pytest.approx(sr, abs=1e-6),\
+        'Soiling ratio different from expected value for half_norm_clean with consecutive invalid intervals'
+
+    np.random.seed(1977)
+    sr, sr_ci, soiling_info = soiling_srr(normalized_daily, insolation, reps=reps,
+                                          max_relative_slope_error=20.0, method='perfect_clean')
+    assert 0.977116 == pytest.approx(sr, abs=1e-6),\
+        'Soiling ratio different from expected value for perfect_clean with consecutive invalid intervals'
+
+
 def test_soiling_srr_with_precip(normalized_daily, insolation, times):
     precip = pd.Series(index=times, data=0)
     precip['2019-01-18 00:00:00-07:00'] = 1
