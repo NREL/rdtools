@@ -289,7 +289,6 @@ class SRRAnalysis():
             results.next_inferred_start_loss - results.inferred_end_loss,
             0, 1)
 
-        # Don't consider data outside of first and last valid intervals
         if len(results[results.valid]) == 0:
             raise NoValidIntervalError('No valid soiling intervals were found')
         new_start = results.start.iloc[0]
