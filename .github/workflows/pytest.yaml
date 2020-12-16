@@ -21,6 +21,7 @@ jobs:
             env: '-r requirements-min.txt .[test]'
           - python-version: 3.9
             env: '-r requirements-min.txt .[test]'
+          - python-version: 3.9
             env: '-r requirements.txt .[test]'
 
     steps:
