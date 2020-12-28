@@ -23,5 +23,4 @@ This page shows example usage of the RdTools analysis functions.
 .. nbgallery::
 
     examples/degradation_and_soiling_example_pvdaq_4
-    examples/TrendAnalysis_example_pvdaq4
     examples/system_availability_example
