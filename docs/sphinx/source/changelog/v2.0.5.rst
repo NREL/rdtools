@@ -1,0 +1,33 @@
+**************************
+v2.0.5 (December 28, 2020)
+**************************
+
+
+
+API Changes
+-----------
+
+Deprecations
+------------
+
+Enhancements
+------------
+
+Bug fixes
+---------
+
+Testing
+-------
+
+Documentation
+-------------
+
+Requirements
+------------
+
+Example Updates
+---------------
+
+
+Contributors
+------------
