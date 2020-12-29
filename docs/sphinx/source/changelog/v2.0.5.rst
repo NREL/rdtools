@@ -27,7 +27,7 @@ Documentation
 
 Requirements
 ------------
-* Update ``requirements.txt`` versions for numpy, scipy, pandas,
+* Update ``requirements.txt`` versions for numpy, scipy, pandas, h5py
   and statsmodels to versions that have wheels available for python
   3.6-3.9. Note that the minimum versions are unchanged. (:pull:`249`).
 
