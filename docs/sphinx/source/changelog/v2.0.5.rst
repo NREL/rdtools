@@ -18,6 +18,7 @@ Bug fixes
 
 Testing
 -------
+* Fix test suite error raised when using pandas 1.2.0 (:pull:`251`)
 
 Documentation
 -------------
