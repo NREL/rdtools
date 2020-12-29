@@ -19,6 +19,8 @@ Bug fixes
 Testing
 -------
 * Add Python 3.9 to CI testing (:pull:`249`)
+* Fix test suite error raised when using pandas 1.2.0 (:pull:`251`)
+
 
 Documentation
 -------------

@@ -89,6 +89,12 @@ KEYWORDS = [
     'PV'
 ]
 
+PROJECT_URLS = {
+    "Bug Tracker": "https://github.com/NREL/rdtools/issues",
+    "Documentation": "https://rdtools.readthedocs.io/",
+    "Source Code": "https://github.com/NREL/rdtools",
+}
+
 setuptools_kwargs = {
     'zip_safe': False,
     'scripts': [],
@@ -115,5 +121,6 @@ setup(name=DISTNAME,
       maintainer_email=MAINTAINER_EMAIL,
       license=LICENSE,
       url=URL,
+      project_urls=PROJECT_URLS,
       classifiers=CLASSIFIERS,
       **setuptools_kwargs)
