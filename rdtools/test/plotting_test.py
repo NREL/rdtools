@@ -1,9 +1,7 @@
 import pandas as pd
 import numpy as np
-import rdtools
 from rdtools.degradation import degradation_year_on_year
 from rdtools.soiling import soiling_srr
-from rdtools.normalization import energy_from_power
 from rdtools.plotting import (
     degradation_summary_plots,
     soiling_monte_carlo_plot,
@@ -16,18 +14,6 @@ import pytest
 
 from conftest import assert_isinstance
 
-# bring in soiling pytest fixtures
-from soiling_test import (
-    times, # can't rename this or else the others can't find it
-    normalized_daily as soiling_normalized_daily,
-    insolation as soiling_insolation,
-)
-
-# availability pytest fixture
-from availability_test import (
-    energy_data_outage_single,
-    availability_analysis_object
-)
 
 # can't import degradation fixtures because it's a unittest file.
 # roll our own here instead:
@@ -188,4 +174,3 @@ def test_availability_summary_plots_empty(availability_analysis_object):
         aa.energy_cumulative, aa.energy_expected_rescaled,
         empty)
     assert_isinstance(result, plt.Figure)
-

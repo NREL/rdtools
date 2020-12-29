@@ -1,0 +1,11 @@
+# flake8 linter configurations
+# see https://flake8.pycqa.org/en/latest/user/options.html
+
+[flake8]
+max-line-length = 99
+max-doc-length = 99
+per-file-ignores =
+    # rdtools.x.y imported but unused
+    __init__.py:F401
+    # invalid escape sequence '\s'
+    versioneer.py:W605

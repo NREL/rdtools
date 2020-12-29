@@ -1,5 +1,5 @@
 **************************
-v2.0.5 (December 28, 2020)
+v2.0.5 (December 29, 2020)
 **************************
 
 
@@ -18,7 +18,12 @@ Bug fixes
 
 Testing
 -------
+* Add a flake8 code style check to the continuous integration checks (:pull:`231`)
+* Moved several pytest fixtures from ``soiling_test.py`` and ``availability_test.py`` to ``conftest.py``
+  so that they are shared across test files (:pull:`231`)
+* Add Python 3.9 to CI testing (:pull:`249`)
 * Fix test suite error raised when using pandas 1.2.0 (:pull:`251`)
+
 
 Documentation
 -------------
@@ -26,6 +31,9 @@ Documentation
 
 Requirements
 ------------
+* Update ``requirements.txt`` versions for numpy, scipy, pandas, h5py
+  and statsmodels to versions that have wheels available for python
+  3.6-3.9. Note that the minimum versions are unchanged. (:pull:`249`).
 
 Example Updates
 ---------------

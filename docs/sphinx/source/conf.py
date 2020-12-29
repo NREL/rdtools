@@ -26,7 +26,7 @@ copyright = '2016–2020 kwhanalytics, Alliance for Sustainable Energy, LLC, and
 author = 'kwhanalytics, Alliance for Sustainable Energy, LLC, and SunPower'
 
 # The full version, including alpha/beta/rc tags
-import rdtools
+import rdtools  # noqa: E402
 release = version = rdtools.__version__
 
 
@@ -85,6 +85,8 @@ html_static_path = ['_static', '_images']
 smartquotes = False
 
 master_doc = 'index'
+
+
 # A workaround for the responsive tables always having annoying scrollbars.
 def setup(app):
     app.add_stylesheet("no_scrollbars.css")
@@ -155,7 +157,7 @@ def make_github_url(pagename):
 
     version_map = {
         'stable': 'master',
-        'latest': 'development',        
+        'latest': 'development',
     }
     # for versions other than stable and latest, just use the version number.
     # either a branch name or a git tag will work for the URL
@@ -191,7 +193,7 @@ def make_github_url(pagename):
     display_text = "View on github@" + branch
     link_info = {
         'url': target_url,
-        'text': display_text        
+        'text': display_text
     }
     return link_info
 
