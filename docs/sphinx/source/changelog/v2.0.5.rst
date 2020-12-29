@@ -1,5 +1,5 @@
 **************************
-v2.0.5 (December 28, 2020)
+v2.0.5 (December 29, 2020)
 **************************
 
 
@@ -27,6 +27,7 @@ Testing
 
 Documentation
 -------------
+* Organized example notebooks into a sphinx gallery (:pull:`240`)
 
 Requirements
 ------------
