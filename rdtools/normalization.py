@@ -623,6 +623,9 @@ def _aggregate(time_series, target_frequency, max_timedelta, series_type):
     max_interval_nanoseconds = max_timedelta.total_seconds() * 10.0**9
 
     gap_mask = t_diffs > max_interval_nanoseconds
+    if time_series.index[0] != union_index[0]:
+        # mask leading NaNs
+        gap_mask[:time_series.index[0]] = True
 
     time_series = time_series.reindex(union_index)
     t_diffs = np.diff(time_series.index.astype('int64').values)

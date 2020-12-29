@@ -100,3 +100,12 @@ def test_energy_from_power_single_value_with_target():
     expected_result = pd.Series([100.], index=times, name='energy_Wh')
     result = energy_from_power(power, target_frequency='H')
     pd.testing.assert_series_equal(result, expected_result)
+
+def test_energy_from_power_leading_nans():
+    # GH 244
+    power = pd.Series(1, pd.date_range('2019-01-01', freq='15min', periods=5))
+    power.iloc[:2] = np.nan
+    expected_result = pd.Series([np.nan, np.nan, 0.25, 0.25],
+                                index=power.index[1:], name='energy_Wh')
+    result = energy_from_power(power)
+    pd.testing.assert_series_equal(result, expected_result)
