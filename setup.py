@@ -55,11 +55,11 @@ EXTRAS_REQUIRE = {
         'pvlib==0.7.1',
         'sphinx_rtd_theme==0.4.3',
         'ipython'
-
     ],
     'test': [
         'pytest',
         'coverage',
+        'flake8',
     ]
 }
 EXTRAS_REQUIRE['all'] = sorted(set(sum(EXTRAS_REQUIRE.values(), [])))

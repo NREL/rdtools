@@ -18,6 +18,9 @@ Bug fixes
 
 Testing
 -------
+* Add a flake8 code style check to the continuous integration checks (:pull:`231`)
+* Moved several pytest fixtures from ``soiling_test.py`` and ``availability_test.py`` to ``conftest.py``
+  so that they are shared across test files (:pull:`231`)
 * Add Python 3.9 to CI testing (:pull:`249`)
 * Fix test suite error raised when using pandas 1.2.0 (:pull:`251`)
 
@@ -37,3 +40,4 @@ Example Updates
 
 Contributors
 ------------
+* Kevin Anderson (:ghuser:`kanderso-nrel`)

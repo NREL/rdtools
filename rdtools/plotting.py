@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import warnings
 
+
 def degradation_summary_plots(yoy_rd, yoy_ci, yoy_info, normalized_yield,
                               hist_xmin=None, hist_xmax=None, bins=None,
                               scatter_ymin=None, scatter_ymax=None,

@@ -131,6 +131,26 @@ function isn't tested or a branch inside a function isn't tested.  To get
 specific details, you can run ``coverage html`` to generate a detailed HTML
 report at ``htmlcov/index.html`` to view in a browser.  
 
+
+Checking for code style
+-----------------------
+
+RdTools uses `flake8 <https://flake8.pycqa.org/en/latest/>`_ to validate
+code style. To run this check locally you'll need to have flake8 installed
+(see :ref:`installing-optional-dependencies`). Then navigate to the git repo
+folder and run
+
+::
+
+    flake8
+
+Or, for a more detailed report:
+
+::
+
+    flake8 --count --statistics --show-source
+
+
 Building documentation locally
 ------------------------------
 
