@@ -204,7 +204,7 @@ def test_soiling_srr_recenter_false(normalized_daily, insolation):
 
 def test_soiling_srr_negative_step(normalized_daily, insolation):
     stepped_daily = normalized_daily.copy()
-    stepped_daily.iloc[37:] = stepped_daily.iloc[25:] - 0.1
+    stepped_daily.iloc[37:] = stepped_daily.iloc[37:] - 0.1
 
     np.random.seed(1977)
     sr, sr_ci, soiling_info = soiling_srr(stepped_daily, insolation, reps=10)

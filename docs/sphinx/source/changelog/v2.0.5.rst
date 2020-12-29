@@ -1,0 +1,34 @@
+**************************
+v2.0.5 (December 28, 2020)
+**************************
+
+
+
+API Changes
+-----------
+
+Deprecations
+------------
+
+Enhancements
+------------
+
+Bug fixes
+---------
+
+Testing
+-------
+* Fix test suite error raised when using pandas 1.2.0 (:pull:`251`)
+
+Documentation
+-------------
+
+Requirements
+------------
+
+Example Updates
+---------------
+
+
+Contributors
+------------
