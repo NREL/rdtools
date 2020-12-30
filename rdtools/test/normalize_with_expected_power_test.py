@@ -1,8 +1,6 @@
 import pandas as pd
 import pytest
 from rdtools.normalization import normalize_with_expected_power
-from pandas import Timestamp
-import numpy as np
 
 
 @pytest.fixture()

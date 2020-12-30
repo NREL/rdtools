@@ -1,7 +1,6 @@
 """ Energy Normalization with PVWatts Unit Tests. """
 
 import unittest
-import pytest
 
 import pandas as pd
 import numpy as np

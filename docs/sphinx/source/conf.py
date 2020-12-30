@@ -26,7 +26,7 @@ copyright = '2016–2020 kwhanalytics, Alliance for Sustainable Energy, LLC, and
 author = 'kwhanalytics, Alliance for Sustainable Energy, LLC, and SunPower'
 
 # The full version, including alpha/beta/rc tags
-import rdtools
+import rdtools  # noqa: E402
 release = version = rdtools.__version__
 
 
@@ -42,6 +42,7 @@ extensions = [
     'sphinx.ext.autosummary',
     'nbsphinx',
     'nbsphinx_link',
+    'sphinx_gallery.load_style',
 ]
 
 autosummary_generate = True
@@ -84,6 +85,8 @@ html_static_path = ['_static', '_images']
 smartquotes = False
 
 master_doc = 'index'
+
+
 # A workaround for the responsive tables always having annoying scrollbars.
 def setup(app):
     app.add_stylesheet("no_scrollbars.css")
@@ -148,23 +151,19 @@ def make_github_url(pagename):
 
     # RTD automatically sets READTHEDOCS_VERSION to the version being built.
     rtd_version = os.environ.get('READTHEDOCS_VERSION', None)
-    version_map = {
-        'stable': 'master',
-        'latest': 'development',        
-    }
-    try:
-        branch = version_map[rtd_version]
-    except KeyError:
+    if rtd_version is None:
         # for other builds (PRs, local builds etc), it's unclear where to link
         return None
 
-    URL_BASE = "https://github.com/nrel/rdtools/blob/{}/".format(branch)
-
-    # map notebook pagenames to source files on github
-    notebook_map = {
-        'rd_example': 'degradation_and_soiling_example_pvdaq_4.ipynb',
-        'system_availability_example': 'system_availability_example.ipynb',
+    version_map = {
+        'stable': 'master',
+        'latest': 'development',
     }
+    # for versions other than stable and latest, just use the version number.
+    # either a branch name or a git tag will work for the URL
+    branch = version_map.get(rtd_version, rtd_version)
+
+    URL_BASE = "https://github.com/nrel/rdtools/blob/{}/".format(branch)
 
     # is it an API autogen page?
     if pagename.startswith("generated/"):
@@ -179,21 +178,22 @@ def make_github_url(pagename):
             target_url += '#L{}-L{}'.format(start, end)
 
     # is it an example notebook?
-    elif pagename in notebook_map:
-        target_url = URL_BASE + "docs/" + notebook_map[pagename]
+    elif pagename.startswith('examples/'):
+        notebook_name = pagename.split("/")[-1]
+        target_url = URL_BASE + "docs/" + notebook_name + ".ipynb"
 
     # is the the changelog page?
     elif pagename == "changelog":
         target_url = URL_BASE + "docs/sphinx/source/changelog"
-        
+
     # Just a normal source RST page
     else:
         target_url = URL_BASE + "docs/sphinx/source/" + pagename + ".rst"
 
-    display_text = "View on github/" + branch
+    display_text = "View on github@" + branch
     link_info = {
         'url': target_url,
-        'text': display_text        
+        'text': display_text
     }
     return link_info
 
