@@ -79,21 +79,21 @@ Optional dependencies can be installed with the special
 ::
 
     pip install rdtools[test]  # test suite dependencies
-    pip install rdtools[doc]   # documentation dependecies
+    pip install rdtools[doc]   # documentation dependencies
 
 Or, if your local repository has an updated dependencies list:
 
 ::
 
     pip install .[test]  # test suite dependencies
-    pip install .[doc]   # documentation dependecies
+    pip install .[doc]   # documentation dependencies
 
 
 Running the test suite
 ----------------------
 
 RdTools uses `pytest <https://docs.pytest.org/en/latest/>`_ to run its test
-suite.  If you haven't already, install the testing depencencies
+suite.  If you haven't already, install the testing dependencies
 (:ref:`installing-optional-dependencies`).
 
 To run the entire test suite, navigate to the git repo folder and run
@@ -155,7 +155,7 @@ Building documentation locally
 ------------------------------
 
 RdTools uses `Sphinx <https://www.sphinx-doc.org/>`_ to build its documentation.
-If you haven't already, install the documentation depencencies
+If you haven't already, install the documentation dependencies
 (:ref:`installing-optional-dependencies`).
 
 Once the required packages are installed, change your console's working
@@ -213,7 +213,7 @@ Community participation is welcome!  New contributions should be based on the
 
 RdTools follows the `PEP 8 <https://www.python.org/dev/peps/pep-0008/>`_ style guide.
 We recommend setting up your text editor to automatically highlight style
-violations because it's easy to miss some isses (trailing whitespace, etc) otherwise.
+violations because it's easy to miss some issues (trailing whitespace, etc) otherwise.
 
 Additionally, our documentation is built in part from docstrings in the source
 code.  These docstrings must be in `NumpyDoc format <https://numpydoc.readthedocs.io/en/latest/format.html>`_
