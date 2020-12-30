@@ -22,7 +22,7 @@ analyze systems for system- and subsystem-level availability. RdTools can handle
 both high frequency (hourly or better) or low frequency (daily, weekly,
 etc.) datasets. Best results are obtained with higher frequency data.
 
-Full examples are worked out in the example notebooks in the :ref:`examples`.
+Full examples are worked out in the notebooks shown in :ref:`examples`.
 
 To report issues, contribute code, or suggest improvements to this
 documentation, visit the RdTools development repository on `github`_.

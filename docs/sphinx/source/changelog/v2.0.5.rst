@@ -2,20 +2,6 @@
 v2.0.5 (December 29, 2020)
 **************************
 
-
-
-API Changes
------------
-
-Deprecations
-------------
-
-Enhancements
-------------
-
-Bug fixes
----------
-
 Testing
 -------
 * Add a flake8 code style check to the continuous integration checks (:pull:`231`)
@@ -24,21 +10,19 @@ Testing
 * Add Python 3.9 to CI testing (:pull:`249`)
 * Fix test suite error raised when using pandas 1.2.0 (:pull:`251`)
 
-
 Documentation
 -------------
 * Organized example notebooks into a sphinx gallery (:pull:`240`)
 
 Requirements
 ------------
+* Add support for python 3.9 (:pull:`249`)
 * Update ``requirements.txt`` versions for numpy, scipy, pandas, h5py
   and statsmodels to versions that have wheels available for python
   3.6-3.9. Note that the minimum versions are unchanged. (:pull:`249`).
 
-Example Updates
----------------
-
-
 Contributors
 ------------
 * Kevin Anderson (:ghuser:`kanderso-nrel`)
+* Michael Deceglie (:ghuser:`mdeceglie`)
+* Chris Deline (:ghuser:`cdeline`)
