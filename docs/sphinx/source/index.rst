@@ -57,7 +57,7 @@ The YOY calculation yields in a distribution of degradation rates, the
 central tendency of which is the most representative of the true
 degradation. The width of the distribution provides information about
 the uncertainty in the estimate via a bootstrap calculation. The
-:ref:`examples` uses the output of
+:ref:`examples` use the output of
 :py:func:`.degradation.degradation_year_on_year` to visualize the calculation.
 
 .. image:: _images/Clearsky_result_updated.png
