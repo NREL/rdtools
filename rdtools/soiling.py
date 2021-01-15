@@ -1,8 +1,13 @@
-'''Functions for calculating soiling metrics from photovoltaic system data.'''
+'''
+Functions for calculating soiling metrics from photovoltaic system data.
 
-from __future__ import division
-from rdtools import degradation as RdToolsDeg
-from rdtools.bootstrap import make_time_series_bootstrap_samples
+The soiling module is currently experimental. The API, results,
+and default behaviors may change in future releases (including MINOR
+and PATCH releases) as the code matures.
+'''
+
+import warnings
+
 import pandas as pd
 import numpy as np
 from scipy.stats.mstats import theilslopes
@@ -18,6 +23,14 @@ from statsmodels.tsa.stattools import adfuller
 import statsmodels.api as sm
 lowess = sm.nonparametric.lowess
 
+from rdtools import degradation as RdToolsDeg
+from rdtools.bootstrap import make_time_series_bootstrap_samples
+
+warnings.warn(
+    'The soiling module is currently experimental. The API, results, '
+    'and default behaviors may change in future releases (including MINOR '
+    'and PATCH releases) as the code matures.'
+)
 
 # Custom exception
 class NoValidIntervalError(Exception):
@@ -39,7 +52,7 @@ class SRRAnalysis():
         In either case, data should be insolation-weighted daily aggregates.
     insolation_daily : pd.Series
         Daily plane-of-array insolation corresponding to
-        `energy_normalized_daily`
+        `energy_normalized_daily`. Arbitrary units.
     precipitation_daily : pd.Series, default None
         Daily total precipitation. (Ignored if ``clean_criterion='shift'`` in
         subsequent calculations.)
@@ -161,7 +174,8 @@ class SRRAnalysis():
 
         if clean_criterion == 'precip_and_shift':
             # Detect which cleaning events are associated with rain within a 3 day window
-            precip_event = precip_event.rolling(3, center=True, min_periods=1).apply(any).astype(bool)
+            precip_event = precip_event.rolling(
+                3, center=True, min_periods=1).apply(any).astype(bool)
             df['clean_event'] = (df['clean_event_detected'] & precip_event)
         elif clean_criterion == 'precip_or_shift':
             df['clean_event'] = (df['clean_event_detected'] | precip_event)
@@ -174,7 +188,8 @@ class SRRAnalysis():
                              '{"precip_and_shift", "precip_or_shift", "precip", "shift"}')
 
         df['clean_event'] = df.clean_event | out_start | out_end
-        df['clean_event'] = (df.clean_event) & (~df.clean_event.shift(-1).fillna(False))
+        df['clean_event'] = (df.clean_event) & (
+            ~df.clean_event.shift(-1).fillna(False))
 
         df = df.fillna(0)
 
@@ -262,7 +277,8 @@ class SRRAnalysis():
 
         # Filter results for each interval,
         # setting invalid interval to slope of 0
-        results['slope_err'] = (results.run_slope_high-results.run_slope_low)/abs(results.run_slope)
+        results['slope_err'] = (
+            results.run_slope_high - results.run_slope_low) / abs(results.run_slope)
         # critera for exclusions
         filt = (
             (results.run_slope > 0) |
@@ -284,7 +300,7 @@ class SRRAnalysis():
             results.next_inferred_start_loss - results.inferred_end_loss,
             0, 1)
 
-        # Don't consider data outside of first and last valid interverals
+        # Don't consider data outside of first and last valid intervals
         if len(results[results.valid]) == 0:
             raise NoValidIntervalError('No valid soiling intervals were found')
         new_start = results[results.valid].start.iloc[0]
@@ -335,9 +351,10 @@ class SRRAnalysis():
             * 'random_clean' - a random recovery between 0-100%
             * 'perfect_clean' - each cleaning event returns the performance
               metric to 1
-            * 'half_norm_clean' - The three-sigma lower bound of recovery is
-              inferred from the fit of the following interval, the upper bound
-              is 1 with the magnitude drawn from a half normal centered at 1
+            * 'half_norm_clean' - The starting point of each interval is taken
+              randomly from a half normal distribution with its mode (mu) at 1 and
+              its sigma equal to 1/3 * (1-b) where b is the intercept of the fit to
+              the interval.
         '''
 
         monte_losses = []
@@ -382,10 +399,10 @@ class SRRAnalysis():
                     end = inter_start + row.run_loss
                     end_list.append(end)
 
-                    # Use a half normal with the infered clean at the
+                    # Use a half normal with the inferred clean at the
                     # 3sigma point
                     x = np.clip(end + row.inferred_recovery, 0, 1)
-                    inter_start = 1 - abs(np.random.normal(0.0, (1 - x)/3))
+                    inter_start = 1 - abs(np.random.normal(0.0, (1 - x) / 3))
 
                 # Update the valid rows in results_rand
                 valid_update = pd.DataFrame()
@@ -454,7 +471,7 @@ class SRRAnalysis():
 
             df_rand['soil_insol'] = df_rand.loss * df_rand.insol
 
-            monte_losses.append(df_rand.soil_insol.sum() / df_rand.insol.sum())
+            monte_losses.append(df_rand.soil_insol.sum() / df_rand.insol[~df_rand.soil_insol.isnull()].sum())
             random_profile = df_rand['loss'].copy()
             random_profile.name = 'stochastic_soiling_profile'
             random_profiles.append(random_profile)
@@ -470,7 +487,8 @@ class SRRAnalysis():
         '''
         Run the SRR method from beginning to end.  Perform the stochastic rate
         and recovery soiling loss calculation. Based on the methods presented
-        in Deceglie et al. JPV 8(2) p547 2018.
+        in Deceglie et al. "Quantifying Soiling Loss Directly From PV Yield"
+        JPV 8(2) p547 2018.
 
         Parameters
         ----------
@@ -490,13 +508,13 @@ class SRRAnalysis():
         method : str, default 'half_norm_clean'
             How to treat the recovery of each cleaning event:
 
-            * `random_clean` - a random recovery between 0-100%
-            * `perfect_clean` - each cleaning event returns the performance
+            * 'random_clean' - a random recovery between 0-100%
+            * 'perfect_clean' - each cleaning event returns the performance
               metric to 1
-            * `half_norm_clean` (default) - The three-sigma lower bound of
-              recovery is inferred from the fit of the following interval, the
-              upper bound is 1 with the magnitude drawn from a half normal
-              centered at 1
+            * 'half_norm_clean' - The starting point of each interval is taken
+              randomly from a half normal distribution with its mode (mu) at 1 and
+              its sigma equal to 1/3 * (1-b) where b is the intercept of the fit to
+              the interval.
 
         clean_criterion : {'precip_and_shift', 'precip_or_shift', 'precip', 'shift'} \
                 default 'shift'
@@ -532,23 +550,55 @@ class SRRAnalysis():
         Returns
         -------
         insolation_weighted_soiling_ratio : float
-            P50 insolation weighted soiling ratio based on stochastic rate and
+            P50 insolation-weighted soiling ratio based on stochastic rate and
             recovery analysis
         confidence_interval : np.array
             confidence interval (size specified by confidence_level) of
-            soiling ratio estimate
+            insolation-weighted soiling ratio
         calc_info : dict
-            * `renormalizing_factor` - value used to recenter data
-            * `exceedance_level` - the insolation-weighted soiling ratio that
+            * 'renormalizing_factor' - value used to recenter data
+            * 'exceedance_level' - the insolation-weighted soiling ratio that
               was outperformed with probability of exceedance_prob
-            * `stochastic_soiling_profiles` - List of Pandas series
+            * 'stochastic_soiling_profiles' - List of Pandas series
               corresponding to the Monte Carlo realizations of soiling ratio
               profiles
-            * `soiling_interval_summary` - Pandas dataframe summarizing the
-              soiling intervals identified
-            * `soiling_ratio_perfect_clean` - Pandas series of the soiling
+            * 'soiling_ratio_perfect_clean' - Pandas series of the soiling
               ratio during valid soiling intervals assuming perfect cleaning
-              and P50 slopes.
+              and P50 slopes
+            * 'soiling_interval_summary' - Pandas dataframe summarizing the
+              soiling intervals identified. The columns of the dataframe are
+              as follows:
+
+              +------------------------+----------------------------------------------+
+              | Column Name            | Description                                  |
+              +========================+==============================================+
+              | 'start'                | Start timestamp of the soiling interval      |
+              +------------------------+----------------------------------------------+
+              | 'end'                  | End timestamp of the soiling interval        |
+              +------------------------+----------------------------------------------+
+              | 'soiling_rate'         | P50 Soiling rate for interval, in day^−1     |
+              |                        | Negative value indicates soiling is          |
+              |                        | occurring. E.g. a rate of −0.01 indicates 1% |
+              |                        | soiling loss per day.                        |
+              +------------------------+----------------------------------------------+
+              | 'soiling_rate_low'     | Low edge of confidence interval for soiling  |
+              |                        | rate for interval, in day^−1                 |
+              +------------------------+----------------------------------------------+
+              | 'soiling_rate_high'    | High edge of confidence interval for         |
+              |                        | soiling rate for interval, in day^−1         |
+              +------------------------+----------------------------------------------+
+              | 'inferred_start_loss'  | Estimated performance metric at the start    |
+              |                        | of the interval                              |
+              +------------------------+----------------------------------------------+
+              | 'inferred_end_loss'    | Estimated performance metric at the end      |
+              |                        | of the interval                              |
+              +------------------------+----------------------------------------------+
+              | 'length'               | Number of days in the interval               |
+              +------------------------+----------------------------------------------+
+              | 'valid'                | Whether the interval meets the criteria to   |
+              |                        | be treated as a valid soiling interval       |
+              +------------------------+----------------------------------------------+
+
         '''
         self._calc_daily_df(day_scale=day_scale,
                             clean_threshold=clean_threshold,
@@ -576,9 +626,9 @@ class SRRAnalysis():
             ['start', 'end', 'run_slope', 'run_slope_low',
                 'run_slope_high', 'inferred_start_loss', 'inferred_end_loss',
                 'length', 'valid']].copy()
-        intervals_out.rename(columns={'run_slope': 'slope',
-                                      'run_slope_high': 'slope_high',
-                                      'run_slope_low': 'slope_low',
+        intervals_out.rename(columns={'run_slope': 'soiling_rate',
+                                      'run_slope_high': 'soiling_rate_high',
+                                      'run_slope_low': 'soiling_rate_low',
                                       }, inplace=True)
 
         df_d = self.analyzed_daily_df
@@ -614,7 +664,7 @@ def soiling_srr(energy_normalized_daily, insolation_daily, reps=1000,
         In either case, data should be insolation-weighted daily aggregates.
     insolation_daily : pd.Series
         Daily plane-of-array insolation corresponding to
-        `energy_normalized_daily`
+        `energy_normalized_daily`. Arbitrary units.
     reps : int, default 1000
         number of Monte Carlo realizations to calculate
     precipitation_daily : pd.Series, default None
@@ -633,14 +683,15 @@ def soiling_srr(energy_normalized_daily, insolation_daily, reps=1000,
         Whether to trim (remove) the first and last soiling intervals to avoid
         inclusion of partial intervals
     method : str, default 'half_norm_clean'
-        how to treat the recovery of each cleaning event
+        How to treat the recovery of each cleaning event
 
-        * `random_clean` - a random recovery between 0-100%
-        * `perfect_clean` - each cleaning event returns the performance metric
+        * 'random_clean' - a random recovery between 0-100%
+        * 'perfect_clean' - each cleaning event returns the performance metric
           to 1
-        * `half_norm_clean` (default) - The three-sigma lower bound of recovery
-          is inferred from the fit of the following interval, the upper bound
-          is 1 with the magnitude drawn from a half normal centered at 1
+        * 'half_norm_clean'(default) - The starting point of each interval is taken
+              randomly from a half normal distribution with its mode (mu) at 1 and
+              its sigma equal to 1/3 * (1-b) where b is the intercept of the fit to
+              the interval.
     clean_criterion : {'precip_and_shift', 'precip_or_shift', 'precip', 'shift'} \
                 default 'shift'
             The method of partitioning the dataset into soiling intervals.
@@ -654,7 +705,7 @@ def soiling_srr(energy_normalized_daily, insolation_daily, reps=1000,
         The daily precipitation threshold for defining precipitation cleaning events.
         Units must be consistent with precip.
     min_interval_length : int, default 2
-        The minimum duration for an interval to be considered
+        The minimum duration, in days, for an interval to be considered
         valid.  Cannot be less than 2 (days).
     exceedance_prob : float, default 95.0
         the probability level to use for exceedance value calculation in
@@ -678,22 +729,51 @@ def soiling_srr(energy_normalized_daily, insolation_daily, reps=1000,
         P50 insolation weighted soiling ratio based on stochastic rate and
         recovery analysis
     confidence_interval : np.array
-        confidence interval (size specified by `confidence_level`) of
-        soiling ratio estimate
+        confidence interval (size specified by ``confidence_level``) of
+        degradation rate estimate
     calc_info : dict
-        Calculation information from the SRR process.
-
-        * `renormalizing_factor` - value used to recenter data
-        * `exceedance_level` - the insolation-weighted soiling ratio that
+        * 'renormalizing_factor' - value used to recenter data
+        * 'exceedance_level' - the insolation-weighted soiling ratio that
           was outperformed with probability of exceedance_prob
-        * `stochastic_soiling_profiles` - List of Pandas series
-          corresponding to the Monte Carlo realizations of soiling
-          ratio profiles
-        * `soiling_interval_summary` - Pandas dataframe summarizing the
-          soiling intervals identified
-        * `soiling_ratio_perfect_clean` - Pandas series of the soiling
+        * 'stochastic_soiling_profiles' - List of Pandas series
+          corresponding to the Monte Carlo realizations of soiling ratio
+          profiles
+        * 'soiling_ratio_perfect_clean' - Pandas series of the soiling
           ratio during valid soiling intervals assuming perfect cleaning
-          and P50 slopes.
+          and P50 slopes
+        * 'soiling_interval_summary' - Pandas dataframe summarizing the
+          soiling intervals identified. The columns of the dataframe are
+          as follows:
+
+          +------------------------+----------------------------------------------+
+          | Column Name            | Description                                  |
+          +========================+==============================================+
+          | 'start'                | Start timestamp of the soiling interval      |
+          +------------------------+----------------------------------------------+
+          | 'end'                  | End timestamp of the soiling interval        |
+          +------------------------+----------------------------------------------+
+          | 'soiling_rate'         | P50 Soiling rate for interval, in day^−1     |
+          |                        | Negative value indicates soiling is          |
+          |                        | occurring. E.g. a rate of −0.01 indicates 1% |
+          |                        | soiling loss per day.                        |
+          +------------------------+----------------------------------------------+
+          | 'soiling_rate_low'     | Low edge of confidence interval for soiling  |
+          |                        | rate for interval, in day^−1                 |
+          +------------------------+----------------------------------------------+
+          | 'soiling_rate_high'    | High edge of confidence interval for         |
+          |                        | soiling rate for interval, in day^−1         |
+          +------------------------+----------------------------------------------+
+          | 'inferred_start_loss'  | Estimated performance metric at the start    |
+          |                        | of the interval                              |
+          +------------------------+----------------------------------------------+
+          | 'inferred_end_loss'    | Estimated performance metric at the end      |
+          |                        | of the interval                              |
+          +------------------------+----------------------------------------------+
+          | 'length'               | Number of days in the interval               |
+          +------------------------+----------------------------------------------+
+          | 'valid'                | Whether the interval meets the criteria to   |
+          |                        | be treated as a valid soiling interval       |
+          +------------------------+----------------------------------------------+
     '''
 
     srr = SRRAnalysis(energy_normalized_daily,
@@ -708,6 +788,7 @@ def soiling_srr(energy_normalized_daily, insolation_daily, reps=1000,
         method=method,
         clean_criterion=clean_criterion,
         precip_threshold=precip_threshold,
+        min_interval_length=min_interval_length,
         exceedance_prob=exceedance_prob,
         confidence_level=confidence_level,
         recenter=recenter,
@@ -715,6 +796,214 @@ def soiling_srr(energy_normalized_daily, insolation_daily, reps=1000,
         max_negative_step=max_negative_step)
 
     return sr, sr_ci, soiling_info
+
+
+
+def _count_month_days(start, end):
+    '''Return a dict of number of days between start and end (inclusive) in each month'''
+    days = pd.date_range(start, end)
+    months = [x.month for x in days]
+    out_dict = {}
+    for month in range(1, 13):
+        out_dict[month] = months.count(month)
+
+    return out_dict
+
+
+def annual_soiling_ratios(stochastic_soiling_profiles, insolation_daily, confidence_level=68.2):
+    '''
+    Return annualized soiling ratios and associated confidence intervals based
+    on stochastic soiling profiles from SRR. Note that each year may be affected
+    by previous years' profiles for all SRR cleaning assumptions (i.e. method) except
+    perfect_clean.
+
+    Parameters
+    ----------
+    stochastic_soiling_profiles : list
+        List of pd.Series representing profile realizations from the SRR monte carlo.
+        Typically ``soiling_interval_summary['stochastic_soiling_profiles']`` obtained with
+        :py:func:`rdtools.soiling.soiling_srr` or :py:meth:`rdtools.soiling.SRRAnalysis.run`
+    insolation_daily : pd.Series
+        Daily plane-of-array insolation with DatetimeIndex. Arbitrary units.
+    confidence_level : float, default 68.2
+        The size of the confidence interval to use in determining the upper and lower
+        quantiles reported in the returned DataFrame. (The median is always included in
+        the result.)
+
+    Returns
+    -------
+    pd.DataFrame
+        DataFrame describing annual soiling rates.
+
+        +------------------------+-------------------------------------------+
+        | Column Name            | Description                               |
+        +========================+===========================================+
+        | 'year'                 | Calendar year                             |
+        +------------------------+-------------------------------------------+
+        | 'soiling_ratio_median' | The median insolation-weighted soiling    |
+        |                        | ratio for the year                        |
+        +------------------------+-------------------------------------------+
+        | 'soiling_ratio_low'    | The lower edge of the confidence interval |
+        |                        | for insolation-weighted soiling ratio for |
+        |                        | the year                                  |
+        +------------------------+-------------------------------------------+
+        | 'soiling_ratio_high'   | The upper edge of the confidence interval |
+        |                        | for insolation-weighted soiling ratio for |
+        |                        | the year                                  |
+        +------------------------+-------------------------------------------+
+    '''
+
+    # Create a df with each realization as a column
+    all_profiles = pd.concat(stochastic_soiling_profiles, axis=1)
+    all_profiles = all_profiles.dropna()
+
+    if not all_profiles.index.isin(insolation_daily.index).all():
+        warnings.warn('The indexes of stochastic_soiling_profiles are not entirely contained '
+                      'within the index of insolation_daily. Every day in stochastic_soiling_profiles '
+                      'should be represented in insolation_daily. This may cause erroneous results.')
+
+    insolation_daily = insolation_daily.reindex(all_profiles.index)
+
+    # Weight each day by insolation
+    all_profiles_weighted = all_profiles.multiply(insolation_daily, axis=0)
+
+    # Compute the insolation-weighted soiling ratio (IWSR) for each realization
+    annual_insolation = insolation_daily.groupby(insolation_daily.index.year).sum()
+    all_annual_weighted_sums = all_profiles_weighted.groupby(all_profiles_weighted.index.year).sum()
+    all_annual_iwsr = all_annual_weighted_sums.multiply(1/annual_insolation, axis=0)
+
+    annual_soiling = pd.DataFrame({
+        'soiling_ratio_median': all_annual_iwsr.quantile(0.5, axis=1),
+        'soiling_ratio_low': all_annual_iwsr.quantile(0.5 - confidence_level/2/100, axis=1),
+        'soiling_ratio_high': all_annual_iwsr.quantile(0.5 + confidence_level/2/100, axis=1),
+    })
+    annual_soiling.index.name = 'year'
+    annual_soiling = annual_soiling.reset_index()
+
+    return annual_soiling
+
+
+def monthly_soiling_rates(soiling_interval_summary, min_interval_length=14,
+                          max_relative_slope_error=500.0, reps=100000,
+                          confidence_level=68.2):
+    '''
+    Use Monte Carlo to calculate typical monthly soiling rates. Samples possible
+    soiling rates from soiling rate confidence intervals associated with soiling
+    intervals assuming a uniform distribution. Soiling intervals get samples
+    proportionally to their overlap with each calendar month.
+
+    Parameters
+    ----------
+    soiling_interval_summary : pd.DataFrame
+        DataFrame describing soiling intervals. Typically from
+        ``soiling_info['soiling_interval_summary']`` obtained with
+        :py:func:`rdtools.soiling.soiling_srr` or
+        :py:meth:`rdtools.soiling.SRRAnalysis.run` Must have columns
+        ``soiling_rate_high``, ``soiling_rate_low``, ``soiling_rate``, ``length``, ``valid``,
+        ``start``, and ``end``.
+
+    min_interval_length : int, default 14
+        The minimum number of days a soiling interval must contain to be
+        included in the calculation. Similar to the same parameter in soiling_srr()
+        and SRRAnalysis.run() but with a more conservative default value as a
+        starting point for monthly soiling rate analyses.
+
+    max_relative_slope_error : float, default 500.0
+        The maximum relative size of the slope confidence interval for an
+        interval to be included in the calculation (percentage).
+
+    reps : int, default 100000
+        The number of Monte Carlo samples to take for each month.
+
+    confidence_level : float, default 68.2
+        The size of the confidence interval, as a percentage, to use in determining the
+        upper and lower quantiles reported in the returned DataFrame. (The median is
+        always included in the result.)
+
+    Returns
+    -------
+    pd.DataFrame
+        DataFrame describing monthly soiling rates.
+
+        +-----------------------+--------------------------------------------------+
+        | Column Name           | Description                                      |
+        +=======================+==================================================+
+        | 'month'               | Integer month, January (1) to December (12)      |
+        +-----------------------+--------------------------------------------------+
+        | 'soiling_rate_median' | The median soiling rate for the month over       |
+        |                       | the entire dataset, in units of day^−1.          |
+        |                       | Negative value indicates soiling is occurring.   |
+        |                       | E.g. a rate of −0.01 indicates 1% soiling loss   |
+        |                       | per day.                                         |
+        +-----------------------+--------------------------------------------------+
+        | 'soiling_rate_low'    | The lower edge of the confidence interval        |
+        |                       | for the monthly soiling rate in units of         |
+        |                       | day^−1                                           |
+        +-----------------------+--------------------------------------------------+
+        | 'soiling_rate_high'   | The upper edge of the confidence interval        |
+        |                       | for the monthly soiling rate in units of         |
+        |                       | day^−1                                           |
+        +-----------------------+--------------------------------------------------+
+        | 'interval_count'      | The number of soiling intervals contributing     |
+        |                       | to the monthly calculation. If only a few        |
+        |                       | intervals contribute, the confidence interval    |
+        |                       | is likely to underestimate the true uncertainty. |
+        +-----------------------+--------------------------------------------------+
+    '''
+
+    # filter to intervals of interest
+    rel_error = 100 * abs((soiling_interval_summary['soiling_rate_high'] -
+                           soiling_interval_summary['soiling_rate_low']) / soiling_interval_summary['soiling_rate'])
+    intervals = soiling_interval_summary[(soiling_interval_summary['length'] >= min_interval_length) &
+                                         (soiling_interval_summary['valid']) &
+                                         (rel_error <= max_relative_slope_error)
+                                         ].copy()
+
+    # count the overlap of each interval with each month
+    month_counts = []
+    for _, row in intervals.iterrows():
+        month_counts.append(_count_month_days(row['start'], row['end']))
+
+    # divy up the monte carlo reps based on overlap
+    for month in range(1, 13):
+        days_in_month = np.array([x[month] for x in month_counts])
+        if days_in_month.sum() > 0:
+            intervals[f'samples_for_month_{month}'] = np.ceil(
+                days_in_month / days_in_month.sum() * reps)
+        else:
+            intervals[f'samples_for_month_{month}'] = 0
+        intervals[f'samples_for_month_{month}'] = intervals[f'samples_for_month_{month}'].astype(int)
+
+    # perform the monte carlo month by month
+    ci_quantiles = [0.5 - confidence_level/2/100, 0.5 + confidence_level/2/100]
+    monthly_rate_data = []
+    relevant_interval_count = []
+    for month in range(1, 13):
+        rates = []
+        sample_col = f'samples_for_month_{month}'
+
+        relevant_intervals = intervals[intervals[sample_col] > 0]
+        for _, row in relevant_intervals.iterrows():
+            rates.append(np.random.uniform(
+                row['soiling_rate_low'], row['soiling_rate_high'], row[sample_col]))
+
+        rates = [x for sublist in rates for x in sublist]
+
+        if rates:
+            monthly_rate_data.append(np.quantile(rates, [0.5, ci_quantiles[0], ci_quantiles[1]]))
+        else:
+            monthly_rate_data.append(np.array([np.nan]*3))
+
+        relevant_interval_count.append(len(relevant_intervals))
+    monthly_rate_data = np.array(monthly_rate_data)
+
+    # make a dataframe out of the results
+    monthly_soiling_df = pd.DataFrame(data=monthly_rate_data,
+                                      columns=['soiling_rate_median', 'soiling_rate_low', 'soiling_rate_high'])
+    monthly_soiling_df.insert(0, 'month', range(1, 13))
+    monthly_soiling_df['interval_count'] = relevant_interval_count
+
+    return monthly_soiling_df
 
 
 
@@ -2009,5 +2298,3 @@ def progressBarWithETA(value, endvalue, time, bar_length=20):
         "\r# {:} | Used: {:.1f} min | Left: {:.1f}".format(value, used, left) 
         + " min | Progress: [{:}] {:.0f} %".format(arrow + spaces, percent))
     sys.stdout.flush()
-
-

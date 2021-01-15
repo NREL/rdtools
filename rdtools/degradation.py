@@ -24,7 +24,7 @@ def degradation_ols(energy_normalized, confidence_level=68.2):
     Returns
     -------
     Rd_pct : float
-        Estimated degradation rate in units percent/year.
+        Estimated degradation relative to the year 0 system capacity [%/year]
     Rd_CI : np.array
         The calculated confidence interval bounds.
     calc_info : dict
@@ -97,7 +97,7 @@ def degradation_classical_decomposition(energy_normalized,
     Returns
     -------
     Rd_pct : float
-        Estimated degradation rate in units percent/year.
+        Estimated degradation relative to the year 0 system capacity [%/year]
     Rd_CI : np.array
         The calculated confidence interval bounds.
     calc_info : dict
@@ -195,8 +195,10 @@ def degradation_year_on_year(energy_normalized, recenter=True,
     energy_normalized: pd.Series
         Daily or lower frequency time series of normalized system ouput.
     recenter : bool, default True
-        Specify whether data is centered to normalized yield of 1 based on
-        first year.
+        Specify whether data is internally recentered to normalized yield
+        of 1 based on first year median. If False, ``Rd_pct`` is calculated
+        assuming ``energy_normalized`` is passed already normalized to the
+        year 0 system capacity.
     exceedance_prob : float, default 95
         The probability level to use for exceedance value calculation,
         in percent.
@@ -209,10 +211,10 @@ def degradation_year_on_year(energy_normalized, recenter=True,
 
     Returns
     -------
-    degradation_rate : float
-        rate of relative performance change in %/yr
+    Rd_pct : float
+        Estimated degradation relative to the year 0 median system capacity [%/year]
     confidence_interval : np.array
-        confidence interval (size specified by `confidence_level`) of
+        confidence interval (size specified by ``confidence_level``) of
         degradation rate estimate
     calc_info : dict
 
