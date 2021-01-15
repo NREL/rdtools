@@ -1331,7 +1331,7 @@ class CODSAnalysis():
         residual_shift = df_out.residuals.mean()
         df_out.total_model *= residual_shift
         RMSE = _RMSE(pi, df_out.total_model)
-        adf_res = adfuller(df_out.residuals.dropna(), regression='ctt')
+        adf_res = adfuller(df_out.residuals.dropna(), regression='ctt', autolag=None)
         if verbose:
             print('p-value for the H0 that there is a unit root in the'
                   + 'residuals (using the Augmented Dickey-fuller test):'
@@ -1702,7 +1702,7 @@ class CODSAnalysis():
         df_out.total_model *= self.residual_shift
         self.RMSE = _RMSE(pi, df_out.total_model)
         self.adf_results = adfuller(df_out.residuals.dropna(),
-                                    regression='ctt')
+                                    regression='ctt', autolag=None)
         self.result_df = df_out
         self.errors = errors
 

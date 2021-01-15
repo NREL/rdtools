@@ -1,7 +1,6 @@
 import pandas as pd
 import numpy as np
-from rdtools import soiling_srr, soiling_cods 
-from rdtools.soiling import NoValidIntervalError, CODSAnalysis
+from rdtools.soiling import NoValidIntervalError, CODSAnalysis, soiling_srr, soiling_cods 
 import pytest
 
 
