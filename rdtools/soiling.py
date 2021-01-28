@@ -1037,8 +1037,8 @@ class CODSAnalysis():
         self, order=['SR', 'SC', 'Rd'], degradation_method='YoY',
         max_iterations=18, detection_tuner=.5, convergence_criterium=5e-3,
         pruning_iterations=1, pruning_tuner=.6, soiling_significance_knob=.75,
-        process_noise=1e-4, renormalize_SR=None, perfect_cleaning=True,
-        ffill=True, clip_soiling=True, verbose=False):
+        process_noise=1e-4, renormalize_SR=None, ffill=True, clip_soiling=True,
+        verbose=False):
         '''
         Description
         -----------
@@ -1092,9 +1092,6 @@ class CODSAnalysis():
         renormalize_SR : float, default None
             If not none, defines the percentile for which the SR will be
             normalized to, based on the SR just after cleaning events
-        perfect_cleaning : bool, default False
-            Defines the conversion mode for converting Kalman Filter estimates
-            of the input signal to soiling ratio. See [3] for more details
         ffill : bool, default True
             Whether to use forward fill (default) or backward fill before
             doing the rolling median for cleaning event detection
@@ -1169,15 +1166,12 @@ class CODSAnalysis():
         residual_shift = 1
         convergence_metric = [_RMSE(pi, np.ones((len(pi),)))]
 
-        if not perfect_cleaning:
-            change_point = 0
-
         # Find possible cleaning events based on the performance index
         ce, rm9 = rolling_median_ce_detection(pi.index, pi, ffill=ffill,
                                               tuner=detection_tuner)
         pce = collapse_cleaning_events(ce, rm9.diff().values, 5)
 
-        small_soiling_signal = False
+        small_soiling_signal, perfect_cleaning = False, True
         ic = 0  # iteration counter
 
         if verbose:
