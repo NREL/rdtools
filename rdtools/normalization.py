@@ -170,7 +170,8 @@ def normalize_with_pvwatts(energy, pvwatts_kws):
     power_dc = pvwatts_dc_power(**pvwatts_kws)
     irrad = pvwatts_kws['poa_global']
 
-    energy_normalized, insolation = normalize_with_expected_power(energy, power_dc, irrad, pv_input='energy')
+    energy_normalized, insolation = normalize_with_expected_power(energy, power_dc, irrad,
+                                                                  pv_input='energy')
 
     return energy_normalized, insolation
 
@@ -291,7 +292,8 @@ def normalize_with_sapm(energy, sapm_kws):
 
     power_dc, irrad = sapm_dc_power(**sapm_kws)
 
-    energy_normalized, insolation = normalize_with_expected_power(energy, power_dc, irrad, pv_input='energy')
+    energy_normalized, insolation = normalize_with_expected_power(energy, power_dc, irrad,
+                                                                  pv_input='energy')
 
     return energy_normalized, insolation
 
@@ -471,7 +473,8 @@ def _t_step_nanoseconds(time_series):
     return t_steps
 
 
-def energy_from_power(power, target_frequency=None, max_timedelta=None, power_type='right_labeled'):
+def energy_from_power(power, target_frequency=None, max_timedelta=None,
+                      power_type='right_labeled'):
     '''
     Returns a regular right-labeled energy time series in units of Wh per
     interval from a power time series. For instantaneous timeseries, a
@@ -487,7 +490,7 @@ def energy_from_power(power, target_frequency=None, max_timedelta=None, power_ty
     target_frequency : DatetimeOffset or frequency string, default None
         The frequency of the energy time series to be returned.
         If omitted, use the median timestep of ``power``, or if ``power`` has
-        fewer than two elements, use ``power.index.freq`.
+        fewer than two elements, use ``power.index.freq``.
     max_timedelta : pd.Timedelta, default None
         The maximum allowed gap between power measurements. If the gap between
         consecutive power measurements exceeds ``max_timedelta``, NaN will be
@@ -795,13 +798,13 @@ def interpolate(time_series, target, max_timedelta=None, warning_threshold=0.1):
 
     if isinstance(time_series, pd.Series):
         out = _interpolate_series(time_series, target_index, max_timedelta,
-                                 warning_threshold)
+                                  warning_threshold)
     elif isinstance(time_series, pd.DataFrame):
         out_list = []
         for col in time_series.columns:
             ts = time_series[col]
             series = _interpolate_series(ts, target_index, max_timedelta,
-                                        warning_threshold)
+                                         warning_threshold)
             out_list.append(series)
         out = pd.concat(out_list, axis=1)
     else:

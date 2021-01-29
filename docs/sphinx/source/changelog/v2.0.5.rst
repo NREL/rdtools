@@ -1,0 +1,28 @@
+**************************************************
+v2.0.5 (2020-12-30) and v2.1.0-beta.2 (2021-01-29)
+**************************************************
+
+Testing
+-------
+* Add a flake8 code style check to the continuous integration checks (:pull:`231`)
+* Moved several pytest fixtures from ``soiling_test.py`` and ``availability_test.py`` to ``conftest.py``
+  so that they are shared across test files (:pull:`231`)
+* Add Python 3.9 to CI testing (:pull:`249`)
+* Fix test suite error raised when using pandas 1.2.0 (:pull:`251`)
+
+Documentation
+-------------
+* Organized example notebooks into a sphinx gallery (:pull:`240`)
+
+Requirements
+------------
+* Add support for python 3.9 (:pull:`249`)
+* Update ``requirements.txt`` versions for numpy, scipy, pandas, h5py
+  and statsmodels to versions that have wheels available for python
+  3.6-3.9. Note that the minimum versions are unchanged. (:pull:`249`).
+
+Contributors
+------------
+* Kevin Anderson (:ghuser:`kanderso-nrel`)
+* Michael Deceglie (:ghuser:`mdeceglie`)
+* Chris Deline (:ghuser:`cdeline`)

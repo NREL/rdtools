@@ -22,8 +22,7 @@ analyze systems for system- and subsystem-level availability. RdTools can handle
 both high frequency (hourly or better) or low frequency (daily, weekly,
 etc.) datasets. Best results are obtained with higher frequency data.
 
-Full examples are worked out in the example notebooks in the
-`example notebook`_.
+Full examples are worked out in the notebooks shown in :ref:`examples`.
 
 To report issues, contribute code, or suggest improvements to this
 documentation, visit the RdTools development repository on `github`_.
@@ -43,7 +42,7 @@ supported. A typical analysis of soiling and degradation contains the following:
    soiling loss
 
 Steps 1 and 2 may be accomplished with the clearsky workflow (see the
-`example notebook`_) which can help eliminate problems from irradiance sensor
+:ref:`examples`) which can help eliminate problems from irradiance sensor
 drift.
 
 .. image:: _images/RdTools_workflows.png
@@ -58,7 +57,7 @@ The YOY calculation yields in a distribution of degradation rates, the
 central tendency of which is the most representative of the true
 degradation. The width of the distribution provides information about
 the uncertainty in the estimate via a bootstrap calculation. The
-`example notebook`_ uses the output of
+:ref:`examples` use the output of
 :py:func:`.degradation.degradation_year_on_year` to visualize the calculation.
 
 .. image:: _images/Clearsky_result_updated.png
@@ -151,7 +150,7 @@ RdTools currently is tested on Python 3.6+.
 Usage and examples
 ------------------
 
-Full workflow examples are found in the notebooks in `example notebook`_.
+Full workflow examples are found in the notebooks in :ref:`examples`.
 The examples are designed to work with python 3.7. For a consistent
 experience, we recommend installing the packages and versions documented
 in ``docs/notebook_requirements.txt``. This can be achieved in your
@@ -291,9 +290,7 @@ Documentation Contents
 .. toctree::
    :maxdepth: 2
 
-   Degradation and Soiling <rd_example>
-   TrendAnalysis <TrendAnalysis_example>
-   Inverter Downtime <system_availability_example>
+   Examples <examples>
    API Reference <api>
    Change Log <changelog>
    Developer Notes <developer_notes>
@@ -307,7 +304,6 @@ Indices and tables
 
 
 .. links and references
-.. _TrendAnalysis example: TrendAnalysis_example.nblink 
-.. _example notebook: rd_example.nblink
+
 .. _release: https://github.com/NREL/rdtools/releases
 .. _github: https://github.com/NREL/rdtools

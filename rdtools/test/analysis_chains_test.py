@@ -1,6 +1,5 @@
 from rdtools import TrendAnalysis, normalization
-from soiling_test import normalized_daily, times
-from plotting_test import assert_isinstance
+from conftest import assert_isinstance
 import pytest
 import pvlib
 import pandas as pd
@@ -236,9 +235,9 @@ def test_no_set_clearsky(clearsky_parameters):
 
 
 @pytest.fixture
-def soiling_parameters(basic_parameters, normalized_daily, cs_input):
+def soiling_parameters(basic_parameters, soiling_normalized_daily, cs_input):
     # parameters for soiling analysis with TrendAnalysis
-    power = normalized_daily.resample('1h').interpolate()
+    power = soiling_normalized_daily.resample('1h').interpolate()
     return dict(
         pv=power,
         poa_global=power * 0 + 1000,
