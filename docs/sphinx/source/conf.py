@@ -43,6 +43,7 @@ extensions = [
     'nbsphinx',
     'nbsphinx_link',
     'sphinx_gallery.load_style',
+    'sphinx.ext.intersphinx',
 ]
 
 autosummary_generate = True
@@ -85,6 +86,14 @@ html_static_path = ['_static', '_images']
 smartquotes = False
 
 master_doc = 'index'
+
+# Example configuration for intersphinx: refer to the Python standard library.
+intersphinx_mapping = {
+    'python': ('https://docs.python.org/3.8/', None),
+    'pandas': ('https://pandas.pydata.org/pandas-docs/stable/', None),
+    'numpy': ('https://numpy.org/doc/stable/', None),
+    'scipy': ('https://docs.scipy.org/doc/scipy/reference/', None'),
+}
 
 
 # A workaround for the responsive tables always having annoying scrollbars.
