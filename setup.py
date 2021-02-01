@@ -40,7 +40,7 @@ INSTALL_REQUIRES = [
     'numpy >= 1.15',
     # exclude pandas==1.0.0 & 1.0.1 for GH142, and 0.24.0 for GH114
     'pandas >= 0.23.0,!=0.24.0,!=1.0.0,!=1.0.1',
-    'statsmodels >= 0.11.1',
+    'statsmodels >= 0.12.1',
     'scipy >= 0.19.1',
     'h5py >= 2.7.1',
     'pvlib >= 0.7.0, <0.9.0',
@@ -58,13 +58,10 @@ EXTRAS_REQUIRE = {
         'pvlib==0.7.1',
         'sphinx_rtd_theme==0.4.3',
         'ipython',
-<<<<<<< HEAD
-        'scipy==1.3.2',
-=======
+        'scipy==1.5.4',
         # sphinx-gallery used indirectly for nbsphinx thumbnail galleries; see:
         # https://nbsphinx.readthedocs.io/en/0.6.0/subdir/gallery.html#Creating-Thumbnail-Galleries
         'sphinx-gallery==0.8.1',
->>>>>>> 2249ae580fdb87e20166f7a034b1989f496cdb29
     ],
     'test': [
         'pytest',
