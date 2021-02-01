@@ -58,7 +58,6 @@ EXTRAS_REQUIRE = {
         'pvlib==0.7.1',
         'sphinx_rtd_theme==0.4.3',
         'ipython',
-        'scipy==1.5.4',
         # sphinx-gallery used indirectly for nbsphinx thumbnail galleries; see:
         # https://nbsphinx.readthedocs.io/en/0.6.0/subdir/gallery.html#Creating-Thumbnail-Galleries
         'sphinx-gallery==0.8.1',

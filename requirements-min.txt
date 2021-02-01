@@ -8,3 +8,5 @@ arch==4.11
 filterpy==1.4.5
 statsmodels==0.11.1
 tables == 3.4.2
+numexpr==2.7.1  # https://github.com/pydata/numexpr/issues/369
+

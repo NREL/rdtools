@@ -1,6 +1,5 @@
 from rdtools import TrendAnalysis, normalization
-# from soiling_test import normalized_daily, times
-from plotting_test import assert_isinstance
+from conftest import assert_isinstance
 import pytest
 import pvlib
 import pandas as pd
