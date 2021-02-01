@@ -4,31 +4,9 @@ from rdtools.soiling import NoValidIntervalError, CODSAnalysis, soiling_srr, soi
 import pytest
 
 
-@pytest.fixture()
-def times():
-    tz = 'Etc/GMT+7'
-    times = pd.date_range('2019/01/01', '2021/01/01', freq='D', tz=tz)
-    return times
-
-
-@pytest.fixture()
-def normalized_daily(times):
-    N = len(times)
-    interval_1 = 1 - 0.005 * np.arange(0, 25, 1)
-    interval_2 = 1 - 0.002 * np.arange(0, 25, 1)
-    interval_3 = 1 - 0.001 * np.arange(0, 25, 1)
-    profile = np.concatenate((interval_1, interval_2, interval_3))
-    repeated_profile = np.concatenate([profile for _ in range(int(np.ceil(N / 75)))])
+def test_iterative_signal_decomposition(cods_normalized_daily):
     np.random.seed(1977)
-    noise = 1 + 0.02 * (np.random.rand(N) - 0.5)
-    normalized_daily = pd.Series(data=repeated_profile[:N], index=times)
-    normalized_daily = normalized_daily * noise
-
-    return normalized_daily
-
-def test_iterative_signal_decomposition(normalized_daily):
-    np.random.seed(1977)
-    cods = CODSAnalysis(normalized_daily)
+    cods = CODSAnalysis(cods_normalized_daily)
     df_out, degradation, soiling_loss, rs, RMSE, sss, adf_res = \
         cods.iterative_signal_decomposition()
     assert 0.080563 == pytest.approx(degradation, abs=1e-6),\
@@ -69,10 +47,10 @@ def test_iterative_signal_decomposition(normalized_daily):
     pd.testing.assert_series_equal(expected_means, df_out.mean(),
                                    check_exact=False, check_less_precise=6)
 
-def test_soiling_cods(normalized_daily):
+def test_soiling_cods(cods_normalized_daily):
     reps = 16
     np.random.seed(1977)
-    sr, sr_ci, deg, deg_ci, result_df = soiling_cods(normalized_daily, reps=reps)
+    sr, sr_ci, deg, deg_ci, result_df = soiling_cods(cods_normalized_daily, reps=reps)
     assert 0.962207 == pytest.approx(sr, abs=1e-1),\
         'Soiling ratio different from expected value'
     assert np.array([0.96662419, 0.95692131]) == pytest.approx(sr_ci, abs=1e-1),\
@@ -93,9 +71,9 @@ def test_soiling_cods(normalized_daily):
         assert x in actual_summary_columns,\
             "'{}' was expected as a column, but not in result_df".format(x)
 
-def test_soiling_cods_with_nan_interval(normalized_daily):
+def test_soiling_cods_with_nan_interval(cods_normalized_daily):
     reps = 16
-    normalized_corrupt = normalized_daily.copy()
+    normalized_corrupt = cods_normalized_daily.copy()
     normalized_corrupt[26:50] = np.nan
     np.random.seed(1977)
     sr, sr_ci, deg, deg_ci, result_df = soiling_cods(normalized_corrupt, reps=reps)

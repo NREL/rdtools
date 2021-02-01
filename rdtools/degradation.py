@@ -252,8 +252,7 @@ def degradation_year_on_year(energy_normalized, recenter=True,
     energy_normalized = energy_normalized.reset_index()
     energy_normalized['energy'] = energy_normalized['energy'] / renorm
 
-    energy_normalized['dt_shifted'] = energy_normalized.dt + \
-                                      pd.DateOffset(years=1)
+    energy_normalized['dt_shifted'] = energy_normalized.dt + pd.DateOffset(years=1)
 
     # Merge with what happened one year ago, use tolerance of 8 days to allow
     # for weekly aggregated data
@@ -263,8 +262,7 @@ def degradation_year_on_year(energy_normalized, recenter=True,
                        tolerance=pd.Timedelta('8D')
                        )
 
-    df['time_diff_years'] = (df.dt - df.dt_right).astype('timedelta64[h]') / \
-                            8760.0
+    df['time_diff_years'] = (df.dt - df.dt_right).astype('timedelta64[h]') / 8760.0
     df['yoy'] = 100.0 * (df.energy - df.energy_right) / (df.time_diff_years)
     df.index = df.dt
 

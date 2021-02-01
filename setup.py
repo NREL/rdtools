@@ -52,17 +52,24 @@ INSTALL_REQUIRES = [
 EXTRAS_REQUIRE = {
     'doc': [
         'sphinx==1.8.5',
-        'nbsphinx==0.5.0',
+        'nbsphinx==0.6.0',
         'nbsphinx-link==1.3.0',
         'pandas==0.23.0',
         'pvlib==0.7.1',
         'sphinx_rtd_theme==0.4.3',
         'ipython',
+<<<<<<< HEAD
         'scipy==1.3.2',
+=======
+        # sphinx-gallery used indirectly for nbsphinx thumbnail galleries; see:
+        # https://nbsphinx.readthedocs.io/en/0.6.0/subdir/gallery.html#Creating-Thumbnail-Galleries
+        'sphinx-gallery==0.8.1',
+>>>>>>> 2249ae580fdb87e20166f7a034b1989f496cdb29
     ],
     'test': [
         'pytest',
         'coverage',
+        'flake8',
     ]
 }
 EXTRAS_REQUIRE['all'] = sorted(set(sum(EXTRAS_REQUIRE.values(), [])))
@@ -78,6 +85,7 @@ CLASSIFIERS = [
     'Programming Language :: Python :: 3.6',
     'Programming Language :: Python :: 3.7',
     'Programming Language :: Python :: 3.8',
+    'Programming Language :: Python :: 3.9',
     'Topic :: Scientific/Engineering',
 ]
 
@@ -90,6 +98,12 @@ KEYWORDS = [
     'degradation',
     'PV'
 ]
+
+PROJECT_URLS = {
+    "Bug Tracker": "https://github.com/NREL/rdtools/issues",
+    "Documentation": "https://rdtools.readthedocs.io/",
+    "Source Code": "https://github.com/NREL/rdtools",
+}
 
 setuptools_kwargs = {
     'zip_safe': False,
@@ -117,5 +131,6 @@ setup(name=DISTNAME,
       maintainer_email=MAINTAINER_EMAIL,
       license=LICENSE,
       url=URL,
+      project_urls=PROJECT_URLS,
       classifiers=CLASSIFIERS,
       **setuptools_kwargs)

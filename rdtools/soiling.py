@@ -32,6 +32,7 @@ warnings.warn(
     'and PATCH releases) as the code matures.'
 )
 
+
 # Custom exception
 class NoValidIntervalError(Exception):
     '''raised when no valid rows appear in the result dataframe'''
@@ -471,7 +472,10 @@ class SRRAnalysis():
 
             df_rand['soil_insol'] = df_rand.loss * df_rand.insol
 
-            monte_losses.append(df_rand.soil_insol.sum() / df_rand.insol[~df_rand.soil_insol.isnull()].sum())
+            soiling_ratio = (
+                df_rand.soil_insol.sum() / df_rand.insol[~df_rand.soil_insol.isnull()].sum()
+            )
+            monte_losses.append(soiling_ratio)
             random_profile = df_rand['loss'].copy()
             random_profile.name = 'stochastic_soiling_profile'
             random_profiles.append(random_profile)
@@ -858,9 +862,10 @@ def annual_soiling_ratios(stochastic_soiling_profiles, insolation_daily, confide
     all_profiles = all_profiles.dropna()
 
     if not all_profiles.index.isin(insolation_daily.index).all():
-        warnings.warn('The indexes of stochastic_soiling_profiles are not entirely contained '
-                      'within the index of insolation_daily. Every day in stochastic_soiling_profiles '
-                      'should be represented in insolation_daily. This may cause erroneous results.')
+        warnings.warn(
+            'The indexes of stochastic_soiling_profiles are not entirely contained '
+            'within the index of insolation_daily. Every day in stochastic_soiling_profiles '
+            'should be represented in insolation_daily. This may cause erroneous results.')
 
     insolation_daily = insolation_daily.reindex(all_profiles.index)
 
@@ -869,7 +874,7 @@ def annual_soiling_ratios(stochastic_soiling_profiles, insolation_daily, confide
 
     # Compute the insolation-weighted soiling ratio (IWSR) for each realization
     annual_insolation = insolation_daily.groupby(insolation_daily.index.year).sum()
-    all_annual_weighted_sums = all_profiles_weighted.groupby(all_profiles_weighted.index.year).sum()
+    all_annual_weighted_sums = all_profiles_weighted.groupby(all_profiles_weighted.index.year).sum()  # noqa: E501
     all_annual_iwsr = all_annual_weighted_sums.multiply(1/annual_insolation, axis=0)
 
     annual_soiling = pd.DataFrame({
@@ -952,12 +957,15 @@ def monthly_soiling_rates(soiling_interval_summary, min_interval_length=14,
     '''
 
     # filter to intervals of interest
-    rel_error = 100 * abs((soiling_interval_summary['soiling_rate_high'] -
-                           soiling_interval_summary['soiling_rate_low']) / soiling_interval_summary['soiling_rate'])
-    intervals = soiling_interval_summary[(soiling_interval_summary['length'] >= min_interval_length) &
-                                         (soiling_interval_summary['valid']) &
-                                         (rel_error <= max_relative_slope_error)
-                                         ].copy()
+    high = soiling_interval_summary['soiling_rate_high']
+    low = soiling_interval_summary['soiling_rate_low']
+    rate = soiling_interval_summary['soiling_rate']
+    rel_error = 100 * abs((high - low) / rate)
+    intervals = soiling_interval_summary[
+        (soiling_interval_summary['length'] >= min_interval_length) &
+        (soiling_interval_summary['valid']) &
+        (rel_error <= max_relative_slope_error)
+    ].copy()
 
     # count the overlap of each interval with each month
     month_counts = []
@@ -967,12 +975,13 @@ def monthly_soiling_rates(soiling_interval_summary, min_interval_length=14,
     # divy up the monte carlo reps based on overlap
     for month in range(1, 13):
         days_in_month = np.array([x[month] for x in month_counts])
+        sample_col = f'samples_for_month_{month}'
         if days_in_month.sum() > 0:
-            intervals[f'samples_for_month_{month}'] = np.ceil(
+            intervals[sample_col] = np.ceil(
                 days_in_month / days_in_month.sum() * reps)
         else:
-            intervals[f'samples_for_month_{month}'] = 0
-        intervals[f'samples_for_month_{month}'] = intervals[f'samples_for_month_{month}'].astype(int)
+            intervals[sample_col] = 0
+        intervals[sample_col] = intervals[sample_col].astype(int)
 
     # perform the monte carlo month by month
     ci_quantiles = [0.5 - confidence_level/2/100, 0.5 + confidence_level/2/100]
@@ -999,7 +1008,9 @@ def monthly_soiling_rates(soiling_interval_summary, min_interval_length=14,
 
     # make a dataframe out of the results
     monthly_soiling_df = pd.DataFrame(data=monthly_rate_data,
-                                      columns=['soiling_rate_median', 'soiling_rate_low', 'soiling_rate_high'])
+                                      columns=['soiling_rate_median',
+                                               'soiling_rate_low',
+                                               'soiling_rate_high'])
     monthly_soiling_df.insert(0, 'month', range(1, 13))
     monthly_soiling_df['interval_count'] = relevant_interval_count
 

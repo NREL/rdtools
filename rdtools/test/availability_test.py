@@ -12,7 +12,6 @@ import pvlib
 import pandas as pd
 import numpy as np
 import itertools
-import datetime
 import matplotlib.pyplot as plt
 
 # Values to parametrize power tests across.  One test will be run for each
@@ -189,6 +188,7 @@ def difficult_data():
 
     return df, meter_power, expected_power, relative_sizes
 
+
 def test_calc_loss_subsystem_relative_sizes(difficult_data):
     # test that manually passing in relative_sizes improves the results
     # for pathological datasets with tons of downtime
@@ -213,91 +213,6 @@ def test_calc_loss_subsystem_relative_sizes(difficult_data):
     assert np.allclose(ava.iloc[4], 1.0)
 
 # %%
-
-ENERGY_PARAMETER_SPACE = list(itertools.product(
-    [0, np.nan],  # outage value for power
-    [0, np.nan, None],  # value for cumulative energy (None means real value)
-    [0, 0.25, 0.5, 0.75, 1.0],  # fraction of comms outage that is power outage
-))
-# display names for the test cases.  default is just 0..N
-ENERGY_PARAMETER_IDS = ["_".join(map(str, p)) for p in ENERGY_PARAMETER_SPACE]
-
-
-def _generate_energy_data(power_value, energy_value, outage_fraction):
-    """
-    Generate an artificial mixed communication/power outage.
-    """
-    # a few days of clearsky irradiance for creating a plausible power signal
-    times = pd.date_range('2019-01-01', '2019-01-15 23:59', freq='15min',
-                          tz='US/Eastern')
-    location = pvlib.location.Location(40, -80)
-    # use haurwitz to avoid dependency on `tables`
-    clearsky = location.get_clearsky(times, model='haurwitz')
-
-    # just set base inverter power = ghi+clipping for simplicity
-    base_power = clearsky['ghi'].clip(upper=0.8*clearsky['ghi'].max())
-
-    inverter_power = pd.DataFrame({
-        'inv0': base_power,
-        'inv1': base_power*0.7,
-        'inv2': base_power*1.3,
-    })
-    expected_power = inverter_power.sum(axis=1)
-    # dawn/dusk points
-    expected_power[expected_power < 10] = 0
-    # add noise and bias to the expected power signal
-    np.random.seed(2020)
-    expected_power *= 1.05 + np.random.normal(0, scale=0.05, size=len(times))
-
-    # calculate what part of the comms outage is a power outage
-    comms_outage = slice('2019-01-03 00:00', '2019-01-06 00:00')
-    start = times.get_loc(comms_outage.start)
-    stop = times.get_loc(comms_outage.stop)
-    power_outage = slice(start, int(start + outage_fraction * (stop-start)))
-    expected_loss = inverter_power.iloc[power_outage, :].sum().sum() / 4
-    inverter_power.iloc[power_outage, :] = 0
-    meter_power = inverter_power.sum(axis=1)
-    meter_energy = meter_power.cumsum() / 4
-    # add an offset because in practice cumulative meter data never
-    # actually starts at 0:
-    meter_energy += 100
-
-    meter_power[comms_outage] = power_value
-    if energy_value is not None:
-        meter_energy[comms_outage] = energy_value
-    inverter_power.loc[comms_outage, :] = power_value
-
-    expected_type = 'real' if outage_fraction > 0 else 'comms'
-
-    return (meter_power,
-            meter_energy,
-            inverter_power,
-            expected_power,
-            expected_loss,
-            expected_type)
-
-
-@pytest.fixture(params=ENERGY_PARAMETER_SPACE, ids=ENERGY_PARAMETER_IDS)
-def energy_data(request):
-    # fixture sweeping across the entire parameter space
-    power_value, energy_value, outage_fraction = request.param
-    return _generate_energy_data(power_value, energy_value, outage_fraction)
-
-
-@pytest.fixture
-def energy_data_outage_single():
-    # fixture only using a single parameter combination, for simpler tests.
-    # has one real outage.
-    outage_value, outage_fraction = np.nan, 0.25
-    return _generate_energy_data(outage_value, outage_value, outage_fraction)
-
-
-@pytest.fixture
-def energy_data_comms_single():
-    # fixture only using a single parameter combination, for simpler tests.
-    # has one comms outage.
-    outage_value, outage_fraction = np.nan, 0
-    return _generate_energy_data(outage_value, outage_value, outage_fraction)
 
 
 def test__calc_loss_system(energy_data):
@@ -408,20 +323,6 @@ def test__calc_loss_system_quantiles(energy_data_comms_single):
 
 # %% plotting
 
-@pytest.fixture
-def availability_analysis_object(energy_data_outage_single):
-    (meter_power,
-     meter_energy,
-     inverter_power,
-     expected_power,
-     _, _) = energy_data_outage_single
-
-    aa = AvailabilityAnalysis(meter_power, inverter_power, meter_energy,
-                              expected_power)
-    aa.run()
-    return aa
-
-
 def test_plot(availability_analysis_object):
     result = availability_analysis_object.plot()
     assert_isinstance(result, plt.Figure)
@@ -458,7 +359,7 @@ def test_availability_analysis_index_mismatch(energy_data_outage_single):
         value_shortened = value.iloc[1:]
         kwargs[key] = value_shortened
         with pytest.raises(ValueError, match='timeseries indexes must match'):
-            aa = AvailabilityAnalysis(**kwargs)
+            _ = AvailabilityAnalysis(**kwargs)
 
 
 def test_availability_analysis_doublecount_loss(availability_analysis_object):
