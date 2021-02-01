@@ -5,6 +5,8 @@ The soiling module is currently experimental. The API, results,
 and default behaviors may change in future releases (including MINOR
 and PATCH releases) as the code matures.
 '''
+from rdtools import degradation as RdToolsDeg
+from rdtools.bootstrap import make_time_series_bootstrap_samples
 
 import warnings
 
@@ -17,14 +19,10 @@ import itertools
 import bisect
 import time
 import sys
-from arch.bootstrap import CircularBlockBootstrap
 from statsmodels.tsa.seasonal import STL
 from statsmodels.tsa.stattools import adfuller
 import statsmodels.api as sm
 lowess = sm.nonparametric.lowess
-
-from rdtools import degradation as RdToolsDeg
-from rdtools.bootstrap import make_time_series_bootstrap_samples
 
 warnings.warn(
     'The soiling module is currently experimental. The API, results, '
@@ -802,7 +800,6 @@ def soiling_srr(energy_normalized_daily, insolation_daily, reps=1000,
     return sr, sr_ci, soiling_info
 
 
-
 def _count_month_days(start, end):
     '''Return a dict of number of days between start and end (inclusive) in each month'''
     days = pd.date_range(start, end)
@@ -1017,7 +1014,6 @@ def monthly_soiling_rates(soiling_interval_summary, min_interval_length=14,
     return monthly_soiling_df
 
 
-
 class CODSAnalysis():
     '''
     Class for running the Combined Degradation and Soling (CODS) algorithm
@@ -1034,7 +1030,7 @@ class CODSAnalysis():
 
     def __init__(self, daily_normalized_energy):
         self.pm = daily_normalized_energy  # daily performance metric
-        
+
         if np.isnan(self.pm.iloc[0]):
             first_keeper = self.pm.isna().idxmin()
             self.pm = self.pm.loc[first_keeper:]
@@ -1356,7 +1352,6 @@ class CODSAnalysis():
         return df_out, degradation, soiling_loss, residual_shift, RMSE, \
             small_soiling_signal, adf_res
 
-
     def run_bootstrap(self, reps=512, verbose=False,
                       degradation_method='YoY', process_noise=1e-4,
                       knob_alternatives=[[['SR', 'SC', 'Rd'],
@@ -1600,14 +1595,14 @@ class CODSAnalysis():
                                                    np.random.uniform(.5, .95)])
                 ffill = np.random.choice([True, False])
                 knobs.append([dt, pt, pn, renormalize_SR, ffill])
-    
+
                 # Sample to infer soiling from
                 bootstrap_sample = \
                     all_bootstrap_samples[b] / seasonal_samples[b]
-    
+
                 # Set up a temprary instance of the CODSAnalysis object
                 temporary_cods_instance = CODSAnalysis(bootstrap_sample)
-                
+
                 # Do Signal decomposition for soiling and degradation component
                 kdf, deg, SL, rs, RMSE, sss, adf = \
                     temporary_cods_instance.iterative_signal_decomposition(
@@ -1616,7 +1611,7 @@ class CODSAnalysis():
                         pruning_tuner=pt, process_noise=pn,
                         renormalize_SR=renormalize_SR, ffill=ffill,
                         degradation_method=degradation_method, **kwargs)
-    
+
                 # If we can reject the null-hypothesis that there is a unit
                 # root in the residuals:
                 if adf[1] < .05:  # Save the results
@@ -1660,7 +1655,7 @@ class CODSAnalysis():
         concat_SR = pd.concat([kdf.soiling_ratio for kdf in bt_kdfs], 1)
         concat_r_s = pd.concat([kdf.soiling_rates for kdf in bt_kdfs], 1)
         concat_ce = pd.concat([kdf.cleaning_events for kdf in bt_kdfs], 1)
-        concat_deg = pd.concat([kdf.degradation_trend for kdf in bt_kdfs], 1)
+
 
         # Find confidence intervals for SR and soiling rates
         df_out['SR_low'] = concat_SR.quantile(.025, 1)
@@ -1715,9 +1710,8 @@ class CODSAnalysis():
             print('\nFinal RMSE: {:.5f}'.format(self.RMSE))
             if len(self.errors) > 1:
                 print(self.errors)
-    
-        return self.result_df, self.degradation, self.soiling_loss
 
+        return self.result_df, self.degradation, self.soiling_loss
 
     def Kalman_filter_for_SR(self, zs_series, process_noise=1e-4, zs_std=.05,
                              rate_std=.005, max_soiling_rates=.0005,
@@ -1768,7 +1762,7 @@ class CODSAnalysis():
                 collapse_cleaning_events(ce, rm9.diff().values, 5)
         cleaning_events = prescient_cleaning_events[prescient_cleaning_events
                                                     ].index.to_list()
-        
+
         # Find soiling events (e.g. dust storms)
         soiling_events = soiling_event_detection(
             zs_series.index, zs_series, ffill=ffill, tuner=5)
@@ -2003,7 +1997,7 @@ class CODSAnalysis():
         return f
 
 
-def soiling_cods(energy_normalized_daily, reps=512, verbose=False, 
+def soiling_cods(energy_normalized_daily, reps=512, verbose=False,
                  degradation_method='YoY', process_noise=1e-4,
                  knob_alternatives=[[['SR', 'SC', 'Rd'],
                                     ['SC', 'SR', 'Rd']],
@@ -2223,13 +2217,13 @@ def force_periodicity(in_signal, signal_index, out_index):
     # Make sure the in_signal is a Series
     if isinstance(in_signal, np.ndarray):
         signal = pd.Series(index=pd.DatetimeIndex(signal_index.date),
-            data=in_signal)
+                           data=in_signal)
     elif isinstance(in_signal, pd.Series):
         signal = pd.Series(index=pd.DatetimeIndex(signal_index.date),
-            data=in_signal.values)
+                           data=in_signal.values)
     else:
         raise ValueError('in_signal must be numpy array or pandas Series')
-    
+
     # Make sure that we don't remove too much of the data:
     remove_length = np.min([180, int((len(signal) - 365) / 2)])
     # Remove beginning and end of series
@@ -2238,7 +2232,7 @@ def force_periodicity(in_signal, signal_index, out_index):
 
     unique_years = signal.index.year.unique()  # Years involved in time series
     # Make a signal matrix where each column is a year and each row is a date
-    year_matrix = pd.DataFrame(index=np.arange(0,365), columns=unique_years)
+    year_matrix = pd.DataFrame(index=np.arange(0, 365), columns=unique_years)
     for year in unique_years:
         dates_in_year = pd.date_range(str(year)+'-01-01', str(year)+'-12-31')
         # We cut off the extra day(s) of leap years
@@ -2300,6 +2294,6 @@ def progressBarWithETA(value, endvalue, time, bar_length=20):
     used = time / 60  # Time Used
     left = used / percent*(100-percent)  # Estimated time left
     sys.stdout.write(
-        "\r# {:} | Used: {:.1f} min | Left: {:.1f}".format(value, used, left) 
+        "\r# {:} | Used: {:.1f} min | Left: {:.1f}".format(value, used, left)
         + " min | Progress: [{:}] {:.0f} %".format(arrow + spaces, percent))
     sys.stdout.flush()

@@ -3,13 +3,15 @@ import numpy as np
 from typing import Callable, Tuple
 from arch.bootstrap import CircularBlockBootstrap
 
+
 def make_time_series_bootstrap_samples(
-    signal: pd.Series, model_fit: pd.Series, sample_nr: int = 1000,
-    block_length: int = 90, decomposition_type: str = 'multiplicative'
+        signal: pd.Series, model_fit: pd.Series, sample_nr: int = 1000,
+        block_length: int = 90, decomposition_type: str = 'multiplicative'
     ) -> pd.DataFrame:
-    ''' Generate bootstrap samples based a time series signal and its model fit
-        using circular block bootstrapping 
-    
+    ''' 
+    Generate bootstrap samples based a time series signal and its model fit
+    using circular block bootstrapping.
+
     Parameters
     ----------
     signal : pd.Series
@@ -23,7 +25,7 @@ def make_time_series_bootstrap_samples(
     decomposition_type : string, default 'multiplicative'
         The type of decomposition to use with the model,
         either 'multiplicative' or 'additive'
-    
+
     Returns
     -------
     bootstrap_samples : pd.DataFrame
@@ -51,19 +53,20 @@ def make_time_series_bootstrap_samples(
         elif decomposition_type == 'additive':
             bootstrap_samples.loc[:, b] = \
                 model_fit + bootstrapped_residuals[0][0].values
-    
+
     return bootstrap_samples
 
 
 def construct_confidence_intervals(
-    bootstrap_samples: pd.DataFrame, fitting_function: 
-    Callable[[pd.Series], float], exceedance_prob: float = 95,
-    confidence_level: float = 68.2, **kwargs
+        bootstrap_samples: pd.DataFrame, fitting_function: 
+        Callable[[pd.Series], float], exceedance_prob: float = 95,
+        confidence_level: float = 68.2, **kwargs
     ) -> Tuple[np.array, float, pd.Series]:
-    ''' Construct confidence intervals based on a set of bootstrap samples and
-        a fitting function that takes a pandas series as input and returns a
-        float
-    
+    ''' 
+    Construct confidence intervals based on a set of bootstrap samples and
+    a fitting function that takes a pandas series as input and returns a
+    float
+
     Parameters
     ----------
     bootstrap_samples : pd.DataFrame
@@ -85,7 +88,7 @@ def construct_confidence_intervals(
         The confidence interval of the metric that is estimated in the
         `fitting_function`
     exceedance_level : float
-        the degradation rate that was outperformed with probability of 
+        the degradation rate that was outperformed with probability of
         `exceedance_prob`
     metrics : pd.Series
         Series of result metrics of the `fitting_function`
@@ -99,5 +102,5 @@ def construct_confidence_intervals(
 
     # Estimate exceedance level
     exceedance_level = np.percentile(metrics, 100.0 - exceedance_prob)
-    
+
     return confidence_interval, exceedance_level, metrics

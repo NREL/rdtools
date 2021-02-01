@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-from rdtools.soiling import NoValidIntervalError, CODSAnalysis, soiling_srr, soiling_cods 
+from rdtools.soiling import CODSAnalysis, soiling_cods
 import pytest
 
 
@@ -17,7 +17,7 @@ def test_iterative_signal_decomposition(cods_normalized_daily):
         'Residual shift different from expected value'
     assert 0.008144 == pytest.approx(RMSE, abs=1e-6),\
         'RMSE different from expected value'
-    assert False == pytest.approx(sss, abs=1e-6),\
+    assert not pytest.approx(sss, abs=1e-6),\
         'Small soiling signal assertion different from expected value'
     assert 7.019626e-11 == pytest.approx(adf_res[1], abs=1e-6),\
         'p-value of Augmented Dickey-Fuller test different from expected value'
@@ -47,6 +47,7 @@ def test_iterative_signal_decomposition(cods_normalized_daily):
     pd.testing.assert_series_equal(expected_means, df_out.mean(),
                                    check_exact=False, check_less_precise=6)
 
+
 def test_soiling_cods(cods_normalized_daily):
     reps = 16
     np.random.seed(1977)
@@ -70,6 +71,7 @@ def test_soiling_cods(cods_normalized_daily):
     for x in expected_summary_columns:
         assert x in actual_summary_columns,\
             "'{}' was expected as a column, but not in result_df".format(x)
+
 
 def test_soiling_cods_with_nan_interval(cods_normalized_daily):
     reps = 16

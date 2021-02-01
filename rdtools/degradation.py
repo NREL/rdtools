@@ -396,12 +396,13 @@ def _degradation_CI(results, confidence_level):
 
 
 def bootstrap_YOY(
-    energy_normalized: pd.Series, reps: int = 1000, block_length: int = 30,
-    exceedance_prob: float = 95, confidence_level: float = 68.2 
+        energy_normalized: pd.Series, reps: int = 1000, block_length: int = 30,
+        exceedance_prob: float = 95, confidence_level: float = 68.2
     ) -> Tuple[float, np.array, dict]:
-    ''' Run `degradation_year_on_year` and construct confidence intervals and
-        exceedance probability based on circular block bootstrapping 
-    
+    ''' 
+    Run `degradation_year_on_year` and construct confidence intervals and
+    exceedance probability based on circular block bootstrapping
+
     Parameters
     ----------
     energy_normalized: pd.Series
@@ -416,7 +417,7 @@ def bootstrap_YOY(
         in percent.
     confidence_level : float, default 68.2
         The size of the confidence interval to return, in percent.
-    
+
     Returns
     -------
     degradation_rate : float
@@ -451,7 +452,7 @@ def bootstrap_YOY(
     days_per_index = \
         (energy_renormalized.index[-1] - energy_renormalized.index[0]).days / N
     degradation_trend = 1 + (degradation_rate / 100 / 365.24 * numeric_index
-                        * days_per_index)
+                             * days_per_index)
     degradation_trend = pd.Series(
         index=energy_renormalized.index, data=degradation_trend)
 
@@ -459,18 +460,18 @@ def bootstrap_YOY(
     bootstrap_samples = make_time_series_bootstrap_samples(
         energy_renormalized, degradation_trend, sample_nr=reps,
         block_length=block_length)
-    
+
     # Construct confidence interval
     confidence_interval, exceedance_level, bootstrap_rates = \
         construct_confidence_intervals(
             bootstrap_samples, degradation_year_on_year,
             exceedance_prob=exceedance_prob, confidence_level=confidence_level,
             recenter=False, full_calc=False)
-    
+
     # Save calculation information
     calc_info = {
         'renormalizing_factor': renorm,
-        'exceedance_level' : exceedance_level,
-        'bootstrap_rates' : bootstrap_rates}
-    
+        'exceedance_level': exceedance_level,
+        'bootstrap_rates': bootstrap_rates}
+
     return degradation_rate, confidence_interval, calc_info
