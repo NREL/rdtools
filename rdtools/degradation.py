@@ -396,10 +396,10 @@ def _degradation_CI(results, confidence_level):
 
 
 def bootstrap_YOY(
-        energy_normalized: pd.Series, reps: int = 1000, block_length: int = 30,
-        exceedance_prob: float = 95, confidence_level: float = 68.2
-    ) -> Tuple[float, np.array, dict]:
-    ''' 
+    energy_normalized: pd.Series, reps: int = 1000, block_length: int = 30,
+    exceedance_prob: float = 95, confidence_level: float = 68.2) -> \
+        Tuple[float, np.array, dict]:
+    '''
     Run `degradation_year_on_year` and construct confidence intervals and
     exceedance probability based on circular block bootstrapping
 

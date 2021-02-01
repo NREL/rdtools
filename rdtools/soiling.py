@@ -1041,11 +1041,11 @@ class CODSAnalysis():
                              'represented by NaNs)')
 
     def iterative_signal_decomposition(
-        self, order=['SR', 'SC', 'Rd'], degradation_method='YoY',
-        max_iterations=18, detection_tuner=.5, convergence_criterium=5e-3,
-        pruning_iterations=1, pruning_tuner=.6, soiling_significance_knob=.75,
-        process_noise=1e-4, renormalize_SR=None, ffill=True, clip_soiling=True,
-        verbose=False):
+            self, order=['SR', 'SC', 'Rd'], degradation_method='YoY',
+            max_iterations=18, detection_tuner=.5, convergence_criterium=5e-3,
+            pruning_iterations=1, pruning_tuner=.6, soiling_significance_knob=.75,
+            process_noise=1e-4, renormalize_SR=None, ffill=True, clip_soiling=True,
+            verbose=False):
         '''
         Description
         -----------
@@ -1453,9 +1453,9 @@ class CODSAnalysis():
         '''
         pi = self.pm.copy()
 
-        ########################
-        ####### STAGE 1 ########
-        ########################
+        # ###################### #
+        # ###### STAGE 1 ####### #
+        # ###################### #
 
         # Generate combinations of model knobs/parameters
         index_list = list(itertools.product(
@@ -1572,9 +1572,9 @@ class CODSAnalysis():
                                                  max_multiplier=1.75,
                                                  max_shift=30)
 
-        ########################
-        ####### STAGE 2 ########
-        ########################
+        # ###################### #
+        # ###### STAGE 2 ####### #
+        # ###################### #
 
         if verbose and reps > 0:
             print('\nBootstrapping for uncertainty analysis',
@@ -1646,16 +1646,15 @@ class CODSAnalysis():
         self.knobs_n_weights.columns = ['dt', 'pt', 'pn', 'RSR', 'ffill',
                                         'RMSE', 'ADF', 'SR==1', 'weights']
 
-        ########################
-        ####### STAGE 3 ########
-        ########################
+        # ###################### #
+        # ###### STAGE 3 ####### #
+        # ###################### #
 
         # Concatenate boostrap model fits
         concat_tot_mod = pd.concat([kdf.total_model for kdf in bt_kdfs], 1)
         concat_SR = pd.concat([kdf.soiling_ratio for kdf in bt_kdfs], 1)
         concat_r_s = pd.concat([kdf.soiling_rates for kdf in bt_kdfs], 1)
         concat_ce = pd.concat([kdf.cleaning_events for kdf in bt_kdfs], 1)
-
 
         # Find confidence intervals for SR and soiling rates
         df_out['SR_low'] = concat_SR.quantile(.025, 1)
