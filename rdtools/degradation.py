@@ -293,7 +293,7 @@ def degradation_year_on_year(energy_normalized, recenter=True,
         calc_info['exceedance_level'] = P_level
 
         return (Rd_pct, Rd_CI, calc_info)
-    
+
     else:  # If we do not need confidence intervals and exceedance level
         return Rd_pct
 

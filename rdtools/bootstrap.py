@@ -5,9 +5,9 @@ from arch.bootstrap import CircularBlockBootstrap
 
 
 def make_time_series_bootstrap_samples(
-        signal: pd.Series, model_fit: pd.Series, sample_nr: int = 1000,
-        block_length: int = 90, decomposition_type: str = 'multiplicative'
-    ) -> pd.DataFrame:
+    signal: pd.Series, model_fit: pd.Series, sample_nr: int = 1000,
+    block_length: int = 90, decomposition_type: str = 'multiplicative'
+) -> pd.DataFrame:
     '''
     Generate bootstrap samples based a time series signal and its model fit
     using circular block bootstrapping.
@@ -60,7 +60,8 @@ def make_time_series_bootstrap_samples(
 def construct_confidence_intervals(
     bootstrap_samples: pd.DataFrame, fitting_function:
     Callable[[pd.Series], float], exceedance_prob: float = 95,
-    confidence_level: float = 68.2, **kwargs) -> Tuple[np.array, float, pd.Series]:
+    confidence_level: float = 68.2, **kwargs
+) -> Tuple[np.array, float, pd.Series]:
     '''
     Construct confidence intervals based on a set of bootstrap samples and
     a fitting function that takes a pandas series as input and returns a

@@ -17,7 +17,7 @@ def test_iterative_signal_decomposition(cods_normalized_daily):
         'Residual shift different from expected value'
     assert 0.008144 == pytest.approx(RMSE, abs=1e-6),\
         'RMSE different from expected value'
-    assert not pytest.approx(sss, abs=1e-6),\
+    assert sss, \
         'Small soiling signal assertion different from expected value'
     assert 7.019626e-11 == pytest.approx(adf_res[1], abs=1e-6),\
         'p-value of Augmented Dickey-Fuller test different from expected value'
