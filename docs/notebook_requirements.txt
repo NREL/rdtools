@@ -2,7 +2,7 @@
 # it is meant to be used tandem with ../requirements.txt
 appnope==0.1.0
 backcall==0.1.0
-bleach==3.3.0
+bleach==3.1.4
 decorator==4.3.0
 entrypoints==0.2.3
 html5lib==1.0.1
