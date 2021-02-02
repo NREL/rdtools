@@ -92,7 +92,7 @@ intersphinx_mapping = {
     'python': ('https://docs.python.org/3.8/', None),
     'pandas': ('https://pandas.pydata.org/pandas-docs/stable/', None),
     'numpy': ('https://numpy.org/doc/stable/', None),
-    'scipy': ('https://docs.scipy.org/doc/scipy/reference/', None'),
+    'scipy': ('https://docs.scipy.org/doc/scipy/reference/', None),
 }
 
 
