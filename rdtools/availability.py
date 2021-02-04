@@ -37,18 +37,18 @@ class AvailabilityAnalysis:
 
     Parameters
     ----------
-    power_system : pd.Series
+    power_system : pandas.Series
         Timeseries total system power. In the typical case, this is meter
         power data. Should be a right-labeled interval average (this is what
         is typically recorded in many DAS).
 
-    power_subsystem : pd.DataFrame
+    power_subsystem : pandas.DataFrame
         Timeseries power data, one column per subsystem. In the typical case,
         this is inverter AC power data. Each column is assumed to represent
         a subsystem, so no extra columns may be included. The index must
         match ``power_system``. Should be a right-labeled interval average.
 
-    energy_cumulative : pd.Series
+    energy_cumulative : pandas.Series
         Timeseries cumulative energy data for the entire system (e.g. meter).
         These values must be recorded at the device itself (rather than summed
         by a downstream device like a datalogger or DAS provider) to preserve
@@ -56,7 +56,7 @@ class AvailabilityAnalysis:
         ``power`` integrated to hourly energy (e.g. if ``power`` is in kW then
         ``energy`` must be in kWh).
 
-    power_expected : pd.Series
+    power_expected : pandas.Series
         Expected system power data with the same index as the measured data.
         This can be modeled from on-site weather measurements if instruments
         are well calibrated and there is no risk of data gaps. However, because
@@ -67,7 +67,7 @@ class AvailabilityAnalysis:
 
     Attributes
     ----------
-    results : pd.DataFrame
+    results : pandas.DataFrame
         Rolled-up production, loss, and availability metrics. The index is
         a datetime index of the period passed to
         :py:meth:`AvailabilityAnalysis.run`. The columns of the dataframe are
@@ -87,37 +87,37 @@ class AvailabilityAnalysis:
         |                      | fraction (0-1).                              |
         +----------------------+----------------------------------------------+
 
-    loss_system : pd.Series
+    loss_system : pandas.Series
         Estimated timeseries lost power from system outages.
 
-    loss_subsystem : pd.Series
+    loss_subsystem : pandas.Series
         Estimated timeseries lost power from subsystem outages.
 
-    loss_total : pd.Series
+    loss_total : pandas.Series
         Estimated total lost power from outages.
 
-    reporting_mask : pd.DataFrame
+    reporting_mask : pandas.DataFrame
         Boolean mask indicating whether subsystems appear online or not.
 
-    power_expected_rescaled : pd.Series
+    power_expected_rescaled : pandas.Series
         Expected power rescaled to better match system power during periods
         where the system is performing normally.
 
-    energy_expected_rescaled : pd.Series
+    energy_expected_rescaled : pandas.Series
         Interval expected energy calculated from `power_expected_rescaled`.
 
-    energy_cumulative_corrected : pd.Series
+    energy_cumulative_corrected : pandas.Series
         Cumulative system production after filling in data gaps from outages
         with estimated production.
 
-    error_info : pd.DataFrame
+    error_info : pandas.DataFrame
         Records about the error between expected power and actual power.
 
     interp_lower, interp_upper : function
         Functions to estimate the uncertainty interval bounds of expected
         production based on outage length.
 
-    outage_info : pd.DataFrame
+    outage_info : pandas.DataFrame
         Records about each detected system outage, one row per
         outage. The primary columns of interest are ``type``, which can be
         either ``'real'`` or ``'comms'`` and reports whether the outage
@@ -221,7 +221,7 @@ class AvailabilityAnalysis:
 
         Parameters
         ----------
-        low_threshold : float or pd.Series
+        low_threshold : float or pandas.Series
             An optional threshold used to naively classify subsystems as
             online. If the threshold is a scalar, it will be used for all
             subsystems. For subsystems with different capacities, a pandas
@@ -231,12 +231,12 @@ class AvailabilityAnalysis:
             subsystem independently as 0.001 times the 99th percentile of its
             power data.
 
-        relative_sizes : dict or pd.Series
+        relative_sizes : dict or pandas.Series
             The production capacity of each subsystem, normalized by the mean
             subsystem capacity. If not specified, it will be estimated from
             power data.
 
-        power_system_limit : float or pd.Series, optional
+        power_system_limit : float or pandas.Series, optional
             Maximum allowable system power. This parameter is used to account
             for cases where online subsystems can partially mitigate the loss
             of an offline subsystem, for example a system with a plant
@@ -565,7 +565,7 @@ class AvailabilityAnalysis:
 
         Parameters
         ----------
-        low_threshold : float or pd.Series, optional
+        low_threshold : float or pandas.Series, optional
             An optional threshold used to naively classify subsystems as
             online. If the threshold is a scalar, it will be used for all
             subsystems. For subsystems with different capacities, a pandas
@@ -575,12 +575,12 @@ class AvailabilityAnalysis:
             subsystem independently as 0.001 times the 99th percentile of its
             power data.
 
-        relative_sizes : dict or pd.Series, optional
+        relative_sizes : dict or pandas.Series, optional
             The production capacity of each subsystem, normalized by the mean
             subsystem capacity. If not specified, it will be estimated from
             power data.
 
-        power_system_limit : float or pd.Series, optional
+        power_system_limit : float or pandas.Series, optional
             Maximum allowable system power in the same units as the input
             power timeseries. This parameter is used to account
             for cases where online subsystems can partially mitigate the loss
@@ -595,7 +595,7 @@ class AvailabilityAnalysis:
             no production loss or (2) a power outage with an associated
             production loss estimate.
 
-        rollup_period : pandas DateOffset or alias, default 'M'
+        rollup_period : pandas.DateOffset or alias, default 'M'
             The period on which to roll up losses and calculate availability.
         """
         self._calc_loss_subsystem(low_threshold, relative_sizes,
@@ -612,7 +612,7 @@ class AvailabilityAnalysis:
 
         Returns
         -------
-        fig : matplotlib Figure
+        fig : matplotlib.figure.Figure
         """
         try:
             self.loss_total

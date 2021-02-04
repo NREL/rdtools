@@ -31,15 +31,15 @@ class SRRAnalysis():
 
     Parameters
     ----------
-    energy_normalized_daily : pd.Series
+    energy_normalized_daily : pandas.Series
         Daily performance metric (i.e. performance index, yield, etc.)
         Alternatively, the soiling ratio output of a soiling sensor (e.g. the
         photocurrent ratio between matched dirty and clean PV reference cells).
         In either case, data should be insolation-weighted daily aggregates.
-    insolation_daily : pd.Series
+    insolation_daily : pandas.Series
         Daily plane-of-array insolation corresponding to
         `energy_normalized_daily`. Arbitrary units.
-    precipitation_daily : pd.Series, default None
+    precipitation_daily : pandas.Series, default None
         Daily total precipitation. (Ignored if ``clean_criterion='shift'`` in
         subsequent calculations.)
     '''
@@ -541,7 +541,7 @@ class SRRAnalysis():
         insolation_weighted_soiling_ratio : float
             P50 insolation-weighted soiling ratio based on stochastic rate and
             recovery analysis
-        confidence_interval : np.array
+        confidence_interval : numpy.array
             confidence interval (size specified by confidence_level) of
             insolation-weighted soiling ratio
         calc_info : dict
@@ -646,17 +646,17 @@ def soiling_srr(energy_normalized_daily, insolation_daily, reps=1000,
 
     Parameters
     ----------
-    energy_normalized_daily : pd.Series
+    energy_normalized_daily : pandas.Series
         Daily performance metric (i.e. performance index, yield, etc.)
         Alternatively, the soiling ratio output of a soiling sensor (e.g. the
         photocurrent ratio between matched dirty and clean PV reference cells).
         In either case, data should be insolation-weighted daily aggregates.
-    insolation_daily : pd.Series
+    insolation_daily : pandas.Series
         Daily plane-of-array insolation corresponding to
         `energy_normalized_daily`. Arbitrary units.
     reps : int, default 1000
         number of Monte Carlo realizations to calculate
-    precipitation_daily : pd.Series, default None
+    precipitation_daily : pandas.Series, default None
         Daily total precipitation. Units ambiguous but should be the same as
         precip_threshold. Note default behavior of precip_threshold. (Ignored
         if ``clean_criterion='shift'``.)
@@ -717,7 +717,7 @@ def soiling_srr(energy_normalized_daily, insolation_daily, reps=1000,
     insolation_weighted_soiling_ratio : float
         P50 insolation weighted soiling ratio based on stochastic rate and
         recovery analysis
-    confidence_interval : np.array
+    confidence_interval : numpy.array
         confidence interval (size specified by ``confidence_level``) of
         degradation rate estimate
     calc_info : dict
@@ -811,7 +811,7 @@ def annual_soiling_ratios(stochastic_soiling_profiles, insolation_daily, confide
         List of pd.Series representing profile realizations from the SRR monte carlo.
         Typically ``soiling_interval_summary['stochastic_soiling_profiles']`` obtained with
         :py:func:`rdtools.soiling.soiling_srr` or :py:meth:`rdtools.soiling.SRRAnalysis.run`
-    insolation_daily : pd.Series
+    insolation_daily : pandas.Series
         Daily plane-of-array insolation with DatetimeIndex. Arbitrary units.
     confidence_level : float, default 68.2
         The size of the confidence interval to use in determining the upper and lower
@@ -820,7 +820,7 @@ def annual_soiling_ratios(stochastic_soiling_profiles, insolation_daily, confide
 
     Returns
     -------
-    pd.DataFrame
+    pandas.DataFrame
         DataFrame describing annual soiling rates.
 
         +------------------------+-------------------------------------------+
@@ -883,7 +883,7 @@ def monthly_soiling_rates(soiling_interval_summary, min_interval_length=14,
 
     Parameters
     ----------
-    soiling_interval_summary : pd.DataFrame
+    soiling_interval_summary : pandas.DataFrame
         DataFrame describing soiling intervals. Typically from
         ``soiling_info['soiling_interval_summary']`` obtained with
         :py:func:`rdtools.soiling.soiling_srr` or
@@ -911,7 +911,7 @@ def monthly_soiling_rates(soiling_interval_summary, min_interval_length=14,
 
     Returns
     -------
-    pd.DataFrame
+    pandas.DataFrame
         DataFrame describing monthly soiling rates.
 
         +-----------------------+--------------------------------------------------+
