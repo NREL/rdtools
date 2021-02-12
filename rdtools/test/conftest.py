@@ -79,6 +79,7 @@ def cods_times():
     cods_times = pd.date_range('2019/01/01', '2021/01/01', freq='D', tz=tz)
     return cods_times
 
+
 @pytest.fixture()
 def cods_normalized_daily_wo_noise(cods_times):
     N = len(cods_times)
@@ -89,6 +90,7 @@ def cods_normalized_daily_wo_noise(cods_times):
     repeated_profile = np.concatenate([profile for _ in range(int(np.ceil(N / 75)))])
     cods_normalized_daily_wo_noise = pd.Series(data=repeated_profile[:N], index=cods_times)
     return cods_normalized_daily_wo_noise
+
 
 @pytest.fixture()
 def cods_normalized_daily(cods_normalized_daily_wo_noise):
