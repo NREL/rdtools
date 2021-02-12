@@ -1,24 +1,26 @@
+'''
+Functions for bootstrapping time series models to acquire confidence intervals.
+'''
+
 import pandas as pd
 import numpy as np
-from typing import Callable, Tuple
 from arch.bootstrap import CircularBlockBootstrap
 
 
 def make_time_series_bootstrap_samples(
-    signal: pd.Series, model_fit: pd.Series, sample_nr: int = 1000,
-    block_length: int = 90, decomposition_type: str = 'multiplicative'
-) -> pd.DataFrame:
+    signal, model_fit, sample_nr=1000, block_length=90, decomposition_type='multiplicative'
+):
     '''
     Generate bootstrap samples based a time series signal and its model fit
     using circular block bootstrapping.
 
     Parameters
     ----------
-    signal : pd.Series
+    signal : pandas.Series
         The time series signal that you want to make bootstrap samples of
-    model_fit : pd.Series
+    model_fit : pandas.Series
         A model fit to the signal
-    sample_nr : int, default 10
+    sample_nr : int, default 1000
         The number of bootstrap samples that you want to generate
     block_length : int, default 90
         Length of blocks to shuffle in block bootstrapping
@@ -28,7 +30,7 @@ def make_time_series_bootstrap_samples(
 
     Returns
     -------
-    bootstrap_samples : pd.DataFrame
+    bootstrap_samples : pandas.DataFrame
         A dataframe contianing the bootstrap samples in the columns
     '''
     if decomposition_type == 'multiplicative':
@@ -58,10 +60,8 @@ def make_time_series_bootstrap_samples(
 
 
 def construct_confidence_intervals(
-    bootstrap_samples: pd.DataFrame, fitting_function:
-    Callable[[pd.Series], float], exceedance_prob: float = 95,
-    confidence_level: float = 68.2, **kwargs
-) -> Tuple[np.array, float, pd.Series]:
+    bootstrap_samples, fitting_function, exceedance_prob=95, confidence_level=68.2, **kwargs
+):
     '''
     Construct confidence intervals based on a set of bootstrap samples and
     a fitting function that takes a pandas series as input and returns a
@@ -69,7 +69,7 @@ def construct_confidence_intervals(
 
     Parameters
     ----------
-    bootstrap_samples : pd.DataFrame
+    bootstrap_samples : pandas.DataFrame
         A dataframe contianing the bootstrap samples in the columns
     fitting_function : function
         A function that fits a model to the bootstrap samples. Should take a
