@@ -44,15 +44,15 @@ class SRRAnalysis():
 
     Parameters
     ----------
-    energy_normalized_daily : pd.Series
+    energy_normalized_daily : pandas.Series
         Daily performance metric (i.e. performance index, yield, etc.)
         Alternatively, the soiling ratio output of a soiling sensor (e.g. the
         photocurrent ratio between matched dirty and clean PV reference cells).
         In either case, data should be insolation-weighted daily aggregates.
-    insolation_daily : pd.Series
+    insolation_daily : pandas.Series
         Daily plane-of-array insolation corresponding to
         `energy_normalized_daily`. Arbitrary units.
-    precipitation_daily : pd.Series, default None
+    precipitation_daily : pandas.Series, default None
         Daily total precipitation. (Ignored if ``clean_criterion='shift'`` in
         subsequent calculations.)
     '''
@@ -554,7 +554,7 @@ class SRRAnalysis():
         insolation_weighted_soiling_ratio : float
             P50 insolation-weighted soiling ratio based on stochastic rate and
             recovery analysis
-        confidence_interval : np.array
+        confidence_interval : numpy.array
             confidence interval (size specified by confidence_level) of
             insolation-weighted soiling ratio
         calc_info : dict
@@ -659,17 +659,17 @@ def soiling_srr(energy_normalized_daily, insolation_daily, reps=1000,
 
     Parameters
     ----------
-    energy_normalized_daily : pd.Series
+    energy_normalized_daily : o
         Daily performance metric (i.e. performance index, yield, etc.)
         Alternatively, the soiling ratio output of a soiling sensor (e.g. the
         photocurrent ratio between matched dirty and clean PV reference cells).
         In either case, data should be insolation-weighted daily aggregates.
-    insolation_daily : pd.Series
+    insolation_daily : o
         Daily plane-of-array insolation corresponding to
         `energy_normalized_daily`. Arbitrary units.
     reps : int, default 1000
         number of Monte Carlo realizations to calculate
-    precipitation_daily : pd.Series, default None
+    precipitation_daily : o, default None
         Daily total precipitation. Units ambiguous but should be the same as
         precip_threshold. Note default behavior of precip_threshold. (Ignored
         if ``clean_criterion='shift'``.)
@@ -730,7 +730,7 @@ def soiling_srr(energy_normalized_daily, insolation_daily, reps=1000,
     insolation_weighted_soiling_ratio : float
         P50 insolation weighted soiling ratio based on stochastic rate and
         recovery analysis
-    confidence_interval : np.array
+    confidence_interval : numpy.array
         confidence interval (size specified by ``confidence_level``) of
         degradation rate estimate
     calc_info : dict
@@ -821,10 +821,10 @@ def annual_soiling_ratios(stochastic_soiling_profiles, insolation_daily, confide
     Parameters
     ----------
     stochastic_soiling_profiles : list
-        List of pd.Series representing profile realizations from the SRR monte carlo.
+        List of o representing profile realizations from the SRR monte carlo.
         Typically ``soiling_interval_summary['stochastic_soiling_profiles']`` obtained with
         :py:func:`rdtools.soiling.soiling_srr` or :py:meth:`rdtools.soiling.SRRAnalysis.run`
-    insolation_daily : pd.Series
+    insolation_daily : o
         Daily plane-of-array insolation with DatetimeIndex. Arbitrary units.
     confidence_level : float, default 68.2
         The size of the confidence interval to use in determining the upper and lower
@@ -833,7 +833,7 @@ def annual_soiling_ratios(stochastic_soiling_profiles, insolation_daily, confide
 
     Returns
     -------
-    pd.DataFrame
+    pandas.DataFrame
         DataFrame describing annual soiling rates.
 
         +------------------------+-------------------------------------------+
@@ -896,7 +896,7 @@ def monthly_soiling_rates(soiling_interval_summary, min_interval_length=14,
 
     Parameters
     ----------
-    soiling_interval_summary : pd.DataFrame
+    soiling_interval_summary : pandas.DataFrame
         DataFrame describing soiling intervals. Typically from
         ``soiling_info['soiling_interval_summary']`` obtained with
         :py:func:`rdtools.soiling.soiling_srr` or
@@ -924,7 +924,7 @@ def monthly_soiling_rates(soiling_interval_summary, min_interval_length=14,
 
     Returns
     -------
-    pd.DataFrame
+    pandas.DataFrame
         DataFrame describing monthly soiling rates.
 
         +-----------------------+--------------------------------------------------+
@@ -1016,20 +1016,103 @@ def monthly_soiling_rates(soiling_interval_summary, min_interval_length=14,
 
 class CODSAnalysis():
     '''
-    Class for running the Combined Degradation and Soling (CODS) algorithm
+    Container for the Combined Degradation and Soling (CODS) algorithm
     for degradation and soiling loss analysis. Based on the
-    method presented in Skomedal, Å. and Deceglie, M. G., IEEE Journal of
-    Photovoltaics, Sept. 2020. doi: 10.1109/JPHOTOV.2020.3018219
+    method presented in [1]_.
 
     Parameters
     ----------
-    daily_normalized_energy : pd.Series
+    energy_normalized_daily : pandas.Series
         Daily performance metric (i.e. performance index, yield, etc.)
         Index must be DatetimeIndex with daily frequency
+
+    Attributes
+    ----------
+    pm : pandas.Series
+        Equals `energy_normalized_daily`
+    result_df : pandas.DataFrame with pandas datetimeindex
+        Contains the columns/keys:
+
+        +------------------------+----------------------------------------------+
+        | Column Name            | Description                                  |
+        +========================+==============================================+
+        | 'soiling_ratio'        | soiling ratio (SR) (-)                       |
+        +------------------------+----------------------------------------------+
+        | 'soiling_rates'        | soiling rates (1/day)                        |
+        +------------------------+----------------------------------------------+
+        | 'cleaning_events'      | True at cleaning events                      |
+        +------------------------+----------------------------------------------+
+        | 'seasonal_component'   | seasonal component (SC)                      |
+        +------------------------+----------------------------------------------+
+        | 'degradation_trend'    | degradation trend (Rd)                       |
+        +------------------------+----------------------------------------------+
+        | 'total_model'          | the total model fit, i.e. SR * SC * Rd * rs, |
+        |                        | where SR is the soiling ratio, SC is the     |
+        |                        | seasonal component, Rd is the degradation    |
+        |                        | trend, and rs is the residual shift, i.e.    |
+        |                        | the mean of the residuals (adjusting the     |
+        |                        | position of the model fit to the position of |
+        |                        | the input data)                              |
+        +------------------------+----------------------------------------------+
+        | 'residuals'            | The residuals of the model fit, i.e.         |
+        |                        | PI / (SR * SC * Rd)                          |
+        +------------------------+----------------------------------------------+
+        | 'SR_low'               | lower bound of 95 % conf. interval of SR     |
+        +------------------------+----------------------------------------------+
+        | 'SR_high'              | upper bound of 95 % conf. interval of SR     |
+        +------------------------+----------------------------------------------+
+        | 'rates_low'            | lower bound of 95 % conf. interval of SR     |
+        |                        | soiling rates                                |
+        +------------------------+----------------------------------------------+
+        | 'rates_high'           | upper bound of 95 % conf. interval of        |
+        |                        | soiling rates                                |
+        +------------------------+----------------------------------------------+
+        | 'bt_soiling_ratio'     | Bootstrapped estimate of soiling ratio (SR)  |
+        +------------------------+----------------------------------------------+
+        | 'bt_soiling_rates'     | Bootstrapped estimate of soiling rates       |
+        +------------------------+----------------------------------------------+
+        | 'seasonal_low'         | lower bound of 95 % conf. interval of        |
+        |                        | seasonal component (SC)                      |
+        +------------------------+----------------------------------------------+
+        | 'seasonal_high'        | upper bound of 95 % conf. interval of        |
+        |                        | seasonal component (SC)                      |
+        +------------------------+----------------------------------------------+
+        | 'model_high'           | upper bound of 95 % confidence interval of   |
+        |                        | the model fit                                |
+        +------------------------+----------------------------------------------+
+        | 'model_low'            | lower bound of 95 % confidence interval of   |
+        |                        | the model fit                                |
+        +------------------------+----------------------------------------------+
+
+    degradation : list
+        List of linear degradation rate of system in %/year, lower and
+        upper bound of 95% confidence interval
+    soiling_loss : list
+        List of average soiling losses over the time series in %, lower and
+        upper bound of 95% confidence interval
+    residual_shift : float
+        Mean value of residuals. Multiply total model by this number for
+        complete overlap with input pi
+    RMSE : float
+        Root Means Squared Error of total model vs input pi
+    small_soiling_signal : bool
+        Whether or not the signal is deemed too small to infer anything
+        about it
+    adf_res : list
+        The results of an Augmented Dickey-Fuller test (telling whether the
+        residuals are stationary or not)
+    knobs_n_weights : pandas.DataFrame
+        Contains information about the knobs used in each bootstrap model
+        fit, and the resultant weight
+
+    References
+    ----------
+    .. [1] Skomedal, Å. and Deceglie, M. G., IEEE Journal of
+       Photovoltaics, Sept. 2020. https://doi.org/10.1109/JPHOTOV.2020.3018219
     '''
 
-    def __init__(self, daily_normalized_energy):
-        self.pm = daily_normalized_energy  # daily performance metric
+    def __init__(self, energy_normalized_daily):
+        self.pm = energy_normalized_daily  # daily performance metric
 
         if np.isnan(self.pm.iloc[0]):
             first_keeper = self.pm.isna().idxmin()
@@ -1041,7 +1124,7 @@ class CODSAnalysis():
                              'represented by NaNs)')
 
     def iterative_signal_decomposition(
-            self, order=['SR', 'SC', 'Rd'], degradation_method='YoY',
+            self, order=('SR', 'SC', 'Rd'), degradation_method='YoY',
             max_iterations=18, detection_tuner=.5, convergence_criterium=5e-3,
             pruning_iterations=1, pruning_tuner=.6, soiling_significance_knob=.75,
             process_noise=1e-4, renormalize_SR=None, ffill=True, clip_soiling=True,
@@ -1049,31 +1132,33 @@ class CODSAnalysis():
         '''
         Description
         -----------
-        A function for doing iterative decomposition of Performance Index time
-        series based on PV production data. The assumed underlying model
+        Estimates the soiling losses and the degradation rate of a PV system
+        based on its daily normalized energy, or daily Performance Index (PI).
+        The underlying assumption is that the PI
         consists of a degradation trend, a seasonal component, and a soiling
         signal (defined as 1 if no soiling, decreasing with increasing soiling
-        losses).
+        losses). I.e.: PI = degradation_trend * seasonal_component * soiling_ratio *
+        residuals, or:
 
-            Model = degradation_trend * seasonal_component * soiling_ratio \
-                    * residuals
-              PI  ~         Rd        *         SC         *        SR     * R
+        .. math::
+
+            PI = Rd * SC * SR * R
 
         The function has a huristic for detecting whether the soiling signal is
         significant enough for soiling loss inference, which is based on the
         ratio between the spread in the soiling signal versus the spread in the
         residuals (defined by the 2.5th and 97.5th percentiles)
 
-        The degradation trend is obtained using the native RdTools Year-On-Year
-            method [1]
-        The seasonal component is derived with statsmodels STL [2]
-        The soiling signal is derived with a Kalman Filter with a cleaning
-            detection heuristic [3]
+        * The degradation trend is obtained using the native RdTools Year-On-Year
+          method [1]_.
+        * The seasonal component is derived with statsmodels STL [2]_.
+        * The soiling signal is derived with a Kalman Filter with a cleaning
+          detection heuristic [3]_.
 
         Parameters
         ----------
-        order : list, defualt ['SR', 'SC', 'Rd']
-            List containing 1 to 3 of the following strings 'SR' (soiling
+        order : tuple, defualt ('SR', 'SC', 'Rd')
+            Tuple containing 1 to 3 of the following strings 'SR' (soiling
             ratio), 'SC' (seasonal component), 'Rd' (degradation component),
             defining the order in which these components will be found during
             iterative decomposition
@@ -1083,12 +1168,12 @@ class CODSAnalysis():
             degradation trend (assumes linear trend), or the STL-method (does
             not assume linear trend). The latter is slower.
         max_iterations : int, default 18
-            The number of iterations to perform (each iteration fits only 1
-            component)
+            Max number of iterations to perform. Each iteration fits only one of the
+            components, so three iterations are needed to fit all three components.
         detection_tuner : float, default .5
             Higher value gives lower cleaning event detection sensitivity.
             Should be between 0.1 and 2
-        convergence_criterium : float, default 1e-3
+        convergence_criterium : float, default 5e-3
             the relative change in the convergence metric required for
             convergence
         pruning_iterations : int, default 1
@@ -1111,21 +1196,34 @@ class CODSAnalysis():
         Returns
         -------
         df_out : pandas.DataFrame
-            Contains the followig columns/keys:
-            * `total_model` : the total model fit, i.e. SR * SC * Dtrend * rs,
-                where SR is the soiling ratio, SC is the seasonal component,
-                Dtrend is the degradation trend, and rs is the residual,
-                i.e. the mean of the residuals (adjusting the position of
-                the model fit to the position of the input data)
-            * `total_model_high` : upper bound of 95 % confidence interval
-                of the model fit
-            * `total_model_low` : low bound of 95 % confidence interval of
-                the model fit
-            * `soiling_ratio` : soiling ratio (SR)
-            * `SR_high` : upper bound of 95 % confidence interval of SR
-            * `SR_low` : low bound of 95 % confidence interval of SR
-            * `seasonal_component` : seasonal component (SC)
-            * `degradation_trend` : degradation trend (Dtrend)
+            Dataframe that summarized the results of the iterative signal decomposition.
+            Contains the followig columns:
+
+            +------------------------+----------------------------------------------+
+            | Column Name            | Description                                  |
+            +========================+==============================================+
+            | 'soiling_ratio'        | soiling ratio (SR) (-)                       |
+            +------------------------+----------------------------------------------+
+            | 'soiling_rates'        | soiling rates (1/day)                        |
+            +------------------------+----------------------------------------------+
+            | 'cleaning_events'      | True at cleaning events                      |
+            +------------------------+----------------------------------------------+
+            | 'seasonal_component'   | seasonal component (SC)                      |
+            +------------------------+----------------------------------------------+
+            | 'degradation_trend'    | degradation trend (Rd)                       |
+            +------------------------+----------------------------------------------+
+            | 'total_model'          | the total model fit, i.e. SR * SC * Rd * rs, |
+            |                        | where SR is the soiling ratio, SC is the     |
+            |                        | seasonal component, Rd is the degradation    |
+            |                        | trend, and rs is the residual shift, i.e.    |
+            |                        | the mean of the residuals (adjusting the     |
+            |                        | position of the model fit to the position of |
+            |                        | the input data)                              |
+            +------------------------+----------------------------------------------+
+            | 'residuals'            | The residuals of the model fit, i.e.         |
+            |                        | PI / (SR * SC * Rd)                          |
+            +------------------------+----------------------------------------------+
+
         degradation : list
             List of linear degradation rate of system in %/year, lower and
             upper bound of 95% confidence interval
@@ -1147,17 +1245,20 @@ class CODSAnalysis():
 
         References
         ----------
-        [1] Jordan, D.C., Deline, C., Kurtz, S.R., Kimball, G.M., Anderson, M.,
-            2017. Robust PV Degradation Methodology and Application. IEEE J.
-            Photovoltaics 1–7. https://doi.org/10.1109/JPHOTOV.2017.2779779
-        [2] Deceglie, M.G., Micheli, L., Muller, M., 2018. Quantifying Soiling
-            Loss Directly from PV Yield. IEEE J. Photovoltaics 8, 547–551.
-            https://doi.org/10.1109/JPHOTOV.2017.2784682
-        [3] Skomedal, Å, Deceglie, M, 2020. ...
+        .. [1] Jordan, D.C., Deline, C., Kurtz, S.R., Kimball, G.M., Anderson, M.,
+           2017. Robust PV Degradation Methodology and Application. IEEE J.
+           Photovoltaics 1–7. https://doi.org/10.1109/JPHOTOV.2017.2779779
+
+        .. [2] Deceglie, M.G., Micheli, L., Muller, M., 2018. Quantifying Soiling
+           Loss Directly from PV Yield. IEEE J. Photovoltaics 8, 547–551.
+           https://doi.org/10.1109/JPHOTOV.2017.2784682
+
+        .. [3] Skomedal, Å. and Deceglie, M. G., IEEE Journal of
+           Photovoltaics, Sept. 2020. https://doi.org/10.1109/JPHOTOV.2020.3018219
         '''
         pi = self.pm.copy()
         if degradation_method == 'STL' and 'Rd' in order:
-            order.remove('Rd')
+            order = tuple([c for c in order if c != 'Rd'])
 
         if 'SR' not in order:
             raise ValueError('\'SR\' must be in argument \'order\' '
@@ -1174,9 +1275,9 @@ class CODSAnalysis():
         convergence_metric = [_RMSE(pi, np.ones((len(pi),)))]
 
         # Find possible cleaning events based on the performance index
-        ce, rm9 = rolling_median_ce_detection(pi.index, pi, ffill=ffill,
-                                              tuner=detection_tuner)
-        pce = collapse_cleaning_events(ce, rm9.diff().values, 5)
+        ce, rm9 = _rolling_median_ce_detection(pi.index, pi, ffill=ffill,
+                                               tuner=detection_tuner)
+        pce = _collapse_cleaning_events(ce, rm9.diff().values, 5)
 
         small_soiling_signal, perfect_cleaning = False, True
         ic = 0  # iteration counter
@@ -1195,10 +1296,10 @@ class CODSAnalysis():
                     # the residuals
                     pce = soiling_dfs[-1].cleaning_events.copy()
                     detection_tuner *= 1.2  # Increase value of detection tuner
-                    ce, rm9 = rolling_median_ce_detection(
+                    ce, rm9 = _rolling_median_ce_detection(
                         pi.index, residuals, ffill=ffill,
                         tuner=detection_tuner)
-                    ce = collapse_cleaning_events(ce, rm9.diff().values, 5)
+                    ce = _collapse_cleaning_events(ce, rm9.diff().values, 5)
                     pce[ce] = True
                     pruning_tuner /= 1.1  # Decrease value of pruning tuner
 
@@ -1209,7 +1310,7 @@ class CODSAnalysis():
                                  / residual_shift)
 
                 # Run Kalman Filter for obtaining soiling component
-                kdf, Ps = self.Kalman_filter_for_SR(
+                kdf, Ps = self._Kalman_filter_for_SR(
                                 zs_series=soiling_dummy,
                                 clip_soiling=clip_soiling,
                                 prescient_cleaning_events=pce,
@@ -1237,9 +1338,9 @@ class CODSAnalysis():
                                        pi.index, is_sorted=True, delta=30,
                                        frac=180/len(pi), return_sorted=False)
                 # Ensure periodic seaonal component
-                seasonal_comp = force_periodicity(smooth_season,
-                                                  season_dummy.index,
-                                                  pi.index)
+                seasonal_comp = _force_periodicity(smooth_season,
+                                                   season_dummy.index,
+                                                   pi.index)
                 seasonal_component.append(seasonal_comp)
                 if degradation_method == 'STL':  # If not YoY
                     deg_trend = pd.Series(index=pi.index,
@@ -1288,8 +1389,8 @@ class CODSAnalysis():
                     # From now on, do not assume perfect cleaning
                     perfect_cleaning = False
                     # Reorder to ensure SR first
-                    order = [order[(i+n_steps-1-(ic-1) % n_steps) % n_steps]
-                             for i in range(n_steps)]
+                    order = tuple([order[(i+n_steps-1-(ic-1) % n_steps) % n_steps]
+                                  for i in range(n_steps)])
                     change_point = ic
                     if verbose:
                         print('Now not assuming perfect cleaning')
@@ -1339,8 +1440,8 @@ class CODSAnalysis():
                   + '{:.3e}'.format(adf_res[1]))
 
         # Check size of soiling signal vs residuals
-        SR_amp = float(np.diff(df_out.soiling_ratio.quantile([.025, .975])))
-        residuals_amp = float(np.diff(df_out.residuals.quantile([.025, .975])))
+        SR_amp = float(np.diff(df_out.soiling_ratio.quantile([.1, .9])))
+        residuals_amp = float(np.diff(df_out.residuals.quantile([.1, .9])))
         soiling_signal_strength = SR_amp / residuals_amp
         if soiling_signal_strength < soiling_significance_knob:
             if verbose:
@@ -1352,28 +1453,35 @@ class CODSAnalysis():
         return df_out, degradation, soiling_loss, residual_shift, RMSE, \
             small_soiling_signal, adf_res
 
-    def run_bootstrap(self, reps=512, verbose=False,
-                      degradation_method='YoY', process_noise=1e-4,
-                      knob_alternatives=[[['SR', 'SC', 'Rd'],
-                                          ['SC', 'SR', 'Rd']],
-                                         [.25, .75],
-                                         [1/1.5, 1.5],
-                                         [True, False]], **kwargs):
+    def run_bootstrap(self,
+                      reps=512,
+                      confidence_level=68.2,
+                      verbose=False,
+                      degradation_method='YoY',
+                      process_noise=1e-4,
+                      order_alternatives=(('SR', 'SC', 'Rd'),
+                                          ('SC', 'SR', 'Rd')),
+                      detection_tuner_alternatives=(.25, .75),
+                      pruning_tuner_alternatives=(1/1.5, 1.5),
+                      forward_fill_alternatives=(True, False),
+                      **kwargs):
         '''
-        Boottrapping of iterative signal decomposition alforithm for
-        uncertainty analysis.
+        Bootstrapping of CODS alforithm for uncertainty analysis, inherently accounting
+        for model and parameter choices.
 
-        First, calls on iterative_signal_decomposition to fit N different
-        models. Bootstrap samples are generated based on all of these models.
+        First, calls on :py:func:`iterative_signal_decomposition` to fit N different
+        models. Next, bootstrap samples are generated based on these N initial model fits.
         Each bootstrap sample is generated by bootstrapping the residuals of
-        the respective model (one of the N), using circular block
+        the respective model fit, using circular block
         bootstrapping, then multiplying these new residuals back onto the
-        model. Then, for each bootstrap sample, one of the N models is randomly
-        chosen and fit. The seasonal component is perturbed randomly and
-        divided out, so as to capture its uncertainty. In the end, 95%
-        confidence intervals are calulated based on the models fit to the
-        bootrapped signals. The returned soiling ratio and rates are based on
-        the best fit of the initial 16 models.
+        model. Then, for each bootstrap sample, model parameters are randomly
+        chosen and the CODS model is fit to the bootstrapped signal.
+        The seasonal component is perturbed randomly and
+        divided out, so as to capture its uncertainty. In the end,
+        confidence intervals are calulated based on the percentile levels of the
+        collection of bootstrapped model fits.
+        The returned soiling ratio and rates are based on
+        the best fit of the initial N models. See [1]_ for more details.
 
         Parameters
         ----------
@@ -1381,6 +1489,8 @@ class CODSAnalysis():
             Number of bootstrap realizations to be run
             minimum N, where N is the possible combinations of model
             knobs/parameters defined in knob_alternatives
+        confidence_level : float, default 68.2
+            The size of the confidence intervals to return, in percent
         verbose : bool, default False
             Wheter or not to print information about progress
         degradation_method : string, default 'YoY'
@@ -1388,68 +1498,91 @@ class CODSAnalysis():
             Decides whether to use the YoY method [3] for estimating the
             degradation trend (assumes linear trend), or the STL-method (does
             not assume linear trend). The latter is slower.
-        knob_alternatives : list of lists, default [[['SR', 'SC', 'Rd'],
-                                                     ['SC', 'SR', 'Rd']],
-                                                    [.4, .8],
-                                                    [.75, 1.25],
-                                                    [True, False]]
-            List of model knobs/parameters for the initial N model fits
-        kwargs
-            keyword arguments that are passed on to
-            `iterative_signal_decomposition`
+        order_alternatives : tuple of tuples, default (('SR', 'SC', 'Rd'), \
+            ('SC', 'SR', 'Rd'))
+            Component estimation orders that will be tested during initial
+            model fitting.
+        detection_tuner_alternatives : tuple, default (.4, .8)
+            Detection tuner values that will be tested during initial fitting.
+            Length must be >= 1. First and last values define limits of values
+            that will be used during bootstrapping.
+        pruning_tuner_alternatives : tuple, default (.75, 1.25)
+            Pruning tuner values that will be tested during initial fitting.
+            Length must be >= 1. First and last values define limits of values
+            that will be used during bootstrapping.
+        forward_fill_alternatives : tuple, default (True, False)
+            Forward fill values that will be tested during initial fitting.
+        **kwargs
+            Keyword arguments that are passed on to
+            :py:func:`iterative_signal_decomposition`
 
         Returns
         -------
-
         result_df : pandas.DataFrame with pandas datetimeindex
             Contains the columns/keys:
-            * `soiling_ratio` : soiling ratio (SR) (-)
-            * `soiling_rates` : soiling rates (1/day)
-            * `cleaning_events` : True at cleaning events
-            * `total_model` : the total model fit, i.e. SR * SC * Dtrend *rs,
-                where SR is the soiling ratio, SC is the seasonal component,
-                Dtrend is the degradation trend, and rs is the residual,
-                i.e. the mean of the residuals (adjusting the position of
-                the model fit to the position of the input data)
-            * `model_high` : upper bound of 95 % confidence interval
-                of the model fit
-            * `model_low` : low bound of 95 % confidence interval of
-                the model fit
-            * `residuals` : residuals
-            * `SR_high` : upper bound of 95 % confidence interval of SR
-            * `SR_low` : lower bound of 95 % confidence interval of SR
-            * `rates_low` : lower bound of 95 % confidence interval of soiling
-                rates
-            * `rates_high` : upper bound of 95 % confidence interval of soiling
-                rates
-            * `bt_soiling_ratio` : bootstrapped median of soiling ratio
-            * `bt_soiling_rates` : bootstrapped median of soiling rates
-            * `seasonal_component` : seasonal component (SC)
-            * `seasonal_low` : lower bound of 95 % confidence interval of
-                seasonal component
-            * `seasonal_high` : upper bound of 95 % confidence interval of
-                seasonal component
-            * `degradation_trend` : degradation trend (Dtrend)
+
+            +------------------------+----------------------------------------------+
+            | Column Name            | Description                                  |
+            +========================+==============================================+
+            | 'soiling_ratio'        | soiling ratio (SR) (-)                       |
+            +------------------------+----------------------------------------------+
+            | 'soiling_rates'        | soiling rates (1/day)                        |
+            +------------------------+----------------------------------------------+
+            | 'cleaning_events'      | True at cleaning events                      |
+            +------------------------+----------------------------------------------+
+            | 'seasonal_component'   | seasonal component (SC)                      |
+            +------------------------+----------------------------------------------+
+            | 'degradation_trend'    | degradation trend (Rd)                       |
+            +------------------------+----------------------------------------------+
+            | 'total_model'          | the total model fit, i.e. SR * SC * Rd * rs, |
+            |                        | where SR is the soiling ratio, SC is the     |
+            |                        | seasonal component, Rd is the degradation    |
+            |                        | trend, and rs is the residual shift, i.e.    |
+            |                        | the mean of the residuals (adjusting the     |
+            |                        | position of the model fit to the position of |
+            |                        | the input data)                              |
+            +------------------------+----------------------------------------------+
+            | 'residuals'            | The residuals of the model fit, i.e.         |
+            |                        | PI / (SR * SC * Rd)                          |
+            +------------------------+----------------------------------------------+
+            | 'SR_low'               | lower bound of 95 % conf. interval of SR     |
+            +------------------------+----------------------------------------------+
+            | 'SR_high'              | upper bound of 95 % conf. interval of SR     |
+            +------------------------+----------------------------------------------+
+            | 'rates_low'            | lower bound of 95 % conf. interval of SR     |
+            |                        | soiling rates                                |
+            +------------------------+----------------------------------------------+
+            | 'rates_high'           | upper bound of 95 % conf. interval of        |
+            |                        | soiling rates                                |
+            +------------------------+----------------------------------------------+
+            | 'bt_soiling_ratio'     | Bootstrapped estimate of soiling ratio (SR)  |
+            +------------------------+----------------------------------------------+
+            | 'bt_soiling_rates'     | Bootstrapped estimate of soiling rates       |
+            +------------------------+----------------------------------------------+
+            | 'seasonal_low'         | lower bound of 95 % conf. interval of        |
+            |                        | seasonal component (SC)                      |
+            +------------------------+----------------------------------------------+
+            | 'seasonal_high'        | upper bound of 95 % conf. interval of        |
+            |                        | seasonal component (SC)                      |
+            +------------------------+----------------------------------------------+
+            | 'model_high'           | upper bound of 95 % confidence interval of   |
+            |                        | the model fit                                |
+            +------------------------+----------------------------------------------+
+            | 'model_low'            | lower bound of 95 % confidence interval of   |
+            |                        | the model fit                                |
+            +------------------------+----------------------------------------------+
+
         degradation : list
             List of linear degradation rate of system in %/year, lower and
-            upper bound of 95% confidence interval
+            upper bound of confidence interval.
         soiling_loss : list
             List of average soiling losses over the time series in %, lower and
-            upper bound of 95% confidence interval
-        residual_shift : float
-            Mean value of residuals. Multiply total model by this number for
-            complete overlap with input pi
-        RMSE : float
-            Root Means Squared Error of total model vs input pi
-        small_soiling_signal : bool
-            Whether or not the signal is deemed too small to infer anything
-            about it
-        adf_res : list
-            The results of an Augmented Dickey-Fuller test (telling whether the
-            residuals are stationary or not)
-        knobs_n_weights : pandas.DataFrame
-            Contains information about the knobs used in each bootstrap model
-            fit, and the resultant weight
+            upper bound of confidence interval.
+
+        References
+        ----------
+        .. [1] Skomedal, Å. and Deceglie, M. G., IEEE Journal of
+           Photovoltaics, Sept. 2020. https://doi.org/10.1109/JPHOTOV.2020.3018219
         '''
         pi = self.pm.copy()
 
@@ -1458,8 +1591,11 @@ class CODSAnalysis():
         # ###################### #
 
         # Generate combinations of model knobs/parameters
-        index_list = list(itertools.product(
-                            [0, 1], repeat=len(knob_alternatives)))
+        knob_alternatives = [order_alternatives,
+                             detection_tuner_alternatives,
+                             pruning_tuner_alternatives,
+                             forward_fill_alternatives]
+        index_list = list(itertools.product([0, 1], repeat=len(knob_alternatives)))
         combination_of_knobs = [[knob_alternatives[j][indexes[j]]
                                  for j in range(len(knob_alternatives))]
                                 for indexes in index_list]
@@ -1496,8 +1632,8 @@ class CODSAnalysis():
 
                 # Print progress
                 if verbose:
-                    progressBarWithETA(c+1, nr_models, time.time()-t00,
-                                       bar_length=30)
+                    _progressBarWithETA(c+1, nr_models, time.time()-t00,
+                                        bar_length=30)
             except ValueError as ex:
                 print(ex)
 
@@ -1566,11 +1702,11 @@ class CODSAnalysis():
         sample_nr = int(reps / nr_models)
         list_of_SCs = [results[m][0].seasonal_component
                        for m in range(nr_models) if weights[m] > 0]
-        seasonal_samples = make_seasonal_samples(list_of_SCs,
-                                                 sample_nr=sample_nr,
-                                                 min_multiplier=.8,
-                                                 max_multiplier=1.75,
-                                                 max_shift=30)
+        seasonal_samples = _make_seasonal_samples(list_of_SCs,
+                                                  sample_nr=sample_nr,
+                                                  min_multiplier=.8,
+                                                  max_multiplier=1.75,
+                                                  max_shift=30)
 
         # ###################### #
         # ###### STAGE 2 ####### #
@@ -1579,7 +1715,7 @@ class CODSAnalysis():
         if verbose and reps > 0:
             print('\nBootstrapping for uncertainty analysis',
                   '({:} realizations):'.format(reps))
-        order = ['SR', 'SC' if degradation_method == 'STL' else 'Rd']
+        order = ('SR', 'SC' if degradation_method == 'STL' else 'Rd')
         t0 = time.time()
         bt_kdfs, bt_SL, bt_deg, knobs, adfs, RMSEs, SR_is_1, rss, errors = \
             [], [], [], [], [], [], [], [], ['Bootstrapping errors']
@@ -1587,9 +1723,9 @@ class CODSAnalysis():
             try:
                 # randomly choose model knobs
                 dt = np.random.uniform(knob_alternatives[1][0],
-                                       knob_alternatives[1][1])
+                                       knob_alternatives[1][-1])
                 pt = np.random.uniform(knob_alternatives[2][0],
-                                       knob_alternatives[2][1])
+                                       knob_alternatives[2][-1])
                 pn = np.random.uniform(process_noise / 1.5, process_noise * 1.5)
                 renormalize_SR = np.random.choice([None,
                                                    np.random.uniform(.5, .95)])
@@ -1631,7 +1767,7 @@ class CODSAnalysis():
 
             # Print progress
             if verbose:
-                progressBarWithETA(b+1, reps, time.time()-t0, bar_length=30)
+                _progressBarWithETA(b+1, reps, time.time()-t0, bar_length=30)
 
         # Reweight and save weights
         weights = 1 / np.array(RMSEs) / (1 + np.array(SR_is_1))
@@ -1650,6 +1786,10 @@ class CODSAnalysis():
         # ###### STAGE 3 ####### #
         # ###################### #
 
+        # Set confidence interval edge quantile levels
+        ci_low_edge = (50 - confidence_level / 2) / 100
+        ci_high_edge = (50 + confidence_level / 2) / 100
+
         # Concatenate boostrap model fits
         concat_tot_mod = pd.concat([kdf.total_model for kdf in bt_kdfs], 1)
         concat_SR = pd.concat([kdf.soiling_ratio for kdf in bt_kdfs], 1)
@@ -1657,10 +1797,10 @@ class CODSAnalysis():
         concat_ce = pd.concat([kdf.cleaning_events for kdf in bt_kdfs], 1)
 
         # Find confidence intervals for SR and soiling rates
-        df_out['SR_low'] = concat_SR.quantile(.025, 1)
-        df_out['SR_high'] = concat_SR.quantile(.975, 1)
-        df_out['rates_low'] = concat_r_s.quantile(.025, 1)
-        df_out['rates_high'] = concat_r_s.quantile(.975, 1)
+        df_out['SR_low'] = concat_SR.quantile(ci_low_edge, 1)
+        df_out['SR_high'] = concat_SR.quantile(ci_high_edge, 1)
+        df_out['rates_low'] = concat_r_s.quantile(ci_low_edge, 1)
+        df_out['rates_high'] = concat_r_s.quantile(ci_high_edge, 1)
 
         # Save best estimate and bootstrapped estimates of SR and soiling rates
         df_out.soiling_ratio = df_out.soiling_ratio.clip(lower=0, upper=1)
@@ -1673,27 +1813,27 @@ class CODSAnalysis():
 
         # Find degradation rates
         self.degradation = [np.dot(bt_deg, weights),
-                            np.quantile(bt_deg, .025),
-                            np.quantile(bt_deg, .975)]
+                            np.quantile(bt_deg, ci_low_edge),
+                            np.quantile(bt_deg, ci_high_edge)]
         df_out.degradation_trend = 1 + np.arange(len(pi)) * \
             self.degradation[0] / 100 / 365.24
 
         # Soiling losses
         self.soiling_loss = [np.dot(bt_SL, weights),
-                             np.quantile(bt_SL, .025),
-                             np.quantile(bt_SL, .975)]
+                             np.quantile(bt_SL, ci_low_edge),
+                             np.quantile(bt_SL, ci_high_edge)]
 
         # Save "confidence intervals" for seasonal component
         df_out.seasonal_component = (seasonal_samples * weights).sum(1)
-        df_out['seasonal_low'] = seasonal_samples.quantile(.025, 1)
-        df_out['seasonal_high'] = seasonal_samples.quantile(.975, 1)
+        df_out['seasonal_low'] = seasonal_samples.quantile(ci_low_edge, 1)
+        df_out['seasonal_high'] = seasonal_samples.quantile(ci_high_edge, 1)
 
         # Total model with confidence intervals
         df_out.total_model = (df_out.degradation_trend
                               * df_out.seasonal_component
                               * df_out.soiling_ratio)
-        df_out['model_low'] = concat_tot_mod.quantile(.025, 1)
-        df_out['model_high'] = concat_tot_mod.quantile(.975, 1)
+        df_out['model_low'] = concat_tot_mod.quantile(ci_low_edge, 1)
+        df_out['model_high'] = concat_tot_mod.quantile(ci_high_edge, 1)
 
         # Residuals and residual shift
         df_out.residuals = pi / df_out.total_model
@@ -1712,32 +1852,83 @@ class CODSAnalysis():
 
         return self.result_df, self.degradation, self.soiling_loss
 
-    def Kalman_filter_for_SR(self, zs_series, process_noise=1e-4, zs_std=.05,
-                             rate_std=.005, max_soiling_rates=.0005,
-                             pruning_iterations=1, pruning_tuner=.6,
-                             renormalize_SR=None, perfect_cleaning=False,
-                             prescient_cleaning_events=None,
-                             clip_soiling=True, ffill=True):
+    def _Kalman_filter_for_SR(self, zs_series, process_noise=1e-4, zs_std=.05,
+                              rate_std=.005, max_soiling_rates=.0005,
+                              pruning_iterations=1, pruning_tuner=.6,
+                              renormalize_SR=None, perfect_cleaning=False,
+                              prescient_cleaning_events=None,
+                              clip_soiling=True, ffill=True):
         '''
         A function for estimating the underlying Soiling Ratio (SR) and the
-        rate of change of the SR (soiling rate), based on a noisy time series
-        of SR using a Kalman Filter (KF).
+        rate of change of the SR (the soiling rate), based on a noisy time series
+        of daily (corrected) normalized energy using a Kalman Filter (KF). See
+        [1]_ for more details on Kalman Filters.
 
         Parameters
         ----------
-        zs_series: (pandas.Series) Time series of noisy SR-data
-        window_size: (int)
-        process_noise
-        pi_std
-        rate_std
-        detection_tuner
-        prescient_cleaning_events
-        expected_max_soiling_period
+        zs_series : pandas.Series
+            Time series of daily normalized energy. Ideally corrected for degradation
+            and seasonality
+        process_noise : float, default 1e-4
+            Represents the expected amount of unmodeled variation in the process itself
+        zs_std : float, default 0.05
+            Represents the expected variation in the zs_series
+        rate_std : float, default 0.005
+            Represents the expected variation in the rate of change of the zs_series
+        max_soiling_rates : float, default 0.0005
+            Represents the maximum allowed positive soiling rate (when soiling is removed)
+        pruning_iterations : int, default 1
+            Number of iterations when pruning (removing) cleaning events
+        pruning_tuner : float, default 0.6
+            Sensitivity tuner that decides how easily a cleaning event is pruned
+            (removed). Larger values means a smaller chance of pruning a given event.
+        renormalize_SR : float or None, default None
+            Quantile (of subsequent zs_series-values after cleaning events) for which
+            to normalize SR against.
+        perfect_cleaning : bool, default False
+            Whether or not to assume perfect cleaning, i.e. SR = 1 after every
+            cleaning event
+        prescient_cleaning_events : list, pandas.Series, or None, default None
+            List of "known" cleaning events that is passed on to the algorithm
+        clip_soiling : bool, default True
+            Whether or not to clip SR at a maximum value of 1
+        ffill : bool, default True
+            Whether to forward fill missing values when detecting cleaning events.
 
         Returns
         -------
-            - dfk: (pandas.DataFrame) results dataframe
-            - Ps: (numpy.array) covariance matrix for the states of the KF
+        dfk : pandas.DataFrame
+            Results of the Kalman Filter process. Contains the followig columns:
+
+            +------------------------+----------------------------------------------+
+            | Column Name            | Description                                  |
+            +========================+==============================================+
+            | 'raw_pi'               | Raw state estimate after Kalman Filter pass  |
+            +------------------------+----------------------------------------------+
+            | 'raw_rates'            | Raw rate estimate after Kalman Filter pass   |
+            +------------------------+----------------------------------------------+
+            | 'smooth_pi'            | Smoothed state estimate after running the    |
+            |                        | smoother function                            |
+            +------------------------+----------------------------------------------+
+            | 'smooth_rates'         | Smoothed rate estimate after running the     |
+            |                        | smoother function                            |
+            +------------------------+----------------------------------------------+
+            | 'soiling_ratio'        | soiling ratio (SR) estimate (-)              |
+            +------------------------+----------------------------------------------+
+            | 'soiling_rates'        | soiling rate estimate (1/day)                |
+            +------------------------+----------------------------------------------+
+            | 'cleaning_events'      | True at cleaning events                      |
+            +------------------------+----------------------------------------------+
+            | 'days_since_ce'        | Number of days since previous cleaning event |
+            +------------------------+----------------------------------------------+
+
+        Ps : numpy.array
+            Array of covariance matrices for the states of each iteration of the Kalman
+            Filter (one iteration per entry in zs_series).
+
+        References
+        ----------
+        .. [1] R. R. Labbe, Kalman and Bayesian Filters in Python. 2016.
         '''
 
         # Ensure numeric index
@@ -1747,7 +1938,7 @@ class CODSAnalysis():
             zs_series.index = range(len(zs_series))
 
         # Check prescient_cleaning_events. If not present, find cleaning events
-        if type(prescient_cleaning_events) == list:
+        if isinstance(prescient_cleaning_events, list):
             cleaning_events = prescient_cleaning_events
         elif (isinstance(prescient_cleaning_events, type(zs_series))
               and np.sum(prescient_cleaning_events) > 4
@@ -1755,15 +1946,15 @@ class CODSAnalysis():
             prescient_cleaning_events = prescient_cleaning_events.copy()
             prescient_cleaning_events.index = zs_series.index
         else:  # If no prescient cleaning events, detect cleaning events
-            ce, rm9 = rolling_median_ce_detection(
+            ce, rm9 = _rolling_median_ce_detection(
                 zs_series.index, zs_series, tuner=0.5)
             prescient_cleaning_events = \
-                collapse_cleaning_events(ce, rm9.diff().values, 5)
+                _collapse_cleaning_events(ce, rm9.diff().values, 5)
         cleaning_events = prescient_cleaning_events[prescient_cleaning_events
                                                     ].index.to_list()
 
         # Find soiling events (e.g. dust storms)
-        soiling_events = soiling_event_detection(
+        soiling_events = _soiling_event_detection(
             zs_series.index, zs_series, ffill=ffill, tuner=5)
         soiling_events = soiling_events[soiling_events].index.to_list()
 
@@ -1781,9 +1972,9 @@ class CODSAnalysis():
         dt = 1  # All time stemps are one day
 
         # Initialize Kalman filter
-        f = self.initialize_univariate_model(zs_series, dt, process_noise,
-                                             measurement_noise, rate_std,
-                                             zs_std, initial_slope)
+        f = self._initialize_univariate_model(zs_series, dt, process_noise,
+                                              measurement_noise, rate_std,
+                                              zs_std, initial_slope)
 
         # Initialize miscallenous variables
         dfk = pd.DataFrame(index=zs_series.index, dtype=float,
@@ -1796,11 +1987,11 @@ class CODSAnalysis():
         # Kalman Filter part:
         #######################################################################
         # Call the forward pass function (the actual KF procedure)
-        Xs, Ps, rate_std, zs_std = self.forward_pass(
+        Xs, Ps, rate_std, zs_std = self._forward_pass(
             f, zs_series, rolling_median_7, cleaning_events, soiling_events)
 
         # Save results and smooth with rts smoother
-        dfk, Xs, Ps = self.smooth_results(
+        dfk, Xs, Ps = self._smooth_results(
             dfk, f, Xs, Ps, zs_series, cleaning_events, soiling_events,
             perfect_cleaning)
         #######################################################################
@@ -1815,16 +2006,16 @@ class CODSAnalysis():
                 rm_smooth_pi = dfk.smooth_pi.rolling(7).median().shift(-6)
                 pi_after_cleaning = rm_smooth_pi.loc[cleaning_events]
                 # Detect outiers/false positives
-                false_positives = find_numeric_outliers(pi_after_cleaning,
-                                                        pruning_tuner, 'lower')
+                false_positives = _find_numeric_outliers(pi_after_cleaning,
+                                                         pruning_tuner, 'lower')
                 cleaning_events = \
                     false_positives[~false_positives].index.to_list()
 
             # 2: Remove longer periods with positive (soiling) rates
             if (dfk.smooth_rates > max_soiling_rates).sum() > 1:
                 exceeding_rates = dfk.smooth_rates > max_soiling_rates
-                new_cleaning_events = collapse_cleaning_events(
-                                        exceeding_rates, dfk.smooth_rates, 4)
+                new_cleaning_events = _collapse_cleaning_events(
+                    exceeding_rates, dfk.smooth_rates, 4)
                 cleaning_events.extend(
                     new_cleaning_events[new_cleaning_events].index)
                 cleaning_events.sort()
@@ -1832,15 +2023,15 @@ class CODSAnalysis():
             # 3: If the list of cleaning events has changed, run the Kalman
             #    Filter and smoother again
             if not ce_0 == cleaning_events:
-                f = self.initialize_univariate_model(zs_series, dt,
-                                                     process_noise,
-                                                     measurement_noise,
-                                                     rate_std, zs_std,
-                                                     initial_slope)
-                Xs, Ps, rate_std, zs_std = self.forward_pass(
+                f = self._initialize_univariate_model(zs_series, dt,
+                                                      process_noise,
+                                                      measurement_noise,
+                                                      rate_std, zs_std,
+                                                      initial_slope)
+                Xs, Ps, rate_std, zs_std = self._forward_pass(
                     f, zs_series, rolling_median_7, cleaning_events,
                     soiling_events)
-                dfk, Xs, Ps = self.smooth_results(
+                dfk, Xs, Ps = self._smooth_results(
                     dfk, f, Xs, Ps, zs_series, cleaning_events,
                     soiling_events, perfect_cleaning)
 
@@ -1888,8 +2079,8 @@ class CODSAnalysis():
 
         return dfk, Ps
 
-    def forward_pass(self, f, zs_series, rolling_median_7, cleaning_events,
-                     soiling_events):
+    def _forward_pass(self, f, zs_series, rolling_median_7, cleaning_events,
+                      soiling_events):
         ''' Run the forward pass of the Kalman Filter algortihm '''
         zs = zs_series.values
         N = len(zs)
@@ -1898,8 +2089,8 @@ class CODSAnalysis():
         for i, z in enumerate(zs):
             if 7 < i < N-7 and (i in cleaning_events or i in soiling_events):
                 rolling_median_local = rolling_median_7.loc[i-5:i+5].values
-                u = self.set_control_input(f, rolling_median_local, i,
-                                           cleaning_events)
+                u = self._set_control_input(f, rolling_median_local, i,
+                                            cleaning_events)
                 f.predict(u=u)  # Predict wth control input u
             else:  # If no cleaning detection, predict without control input
                 f.predict()
@@ -1911,8 +2102,8 @@ class CODSAnalysis():
             rate_std, zs_std = Ps[-1, 1, 1], Ps[-1, 0, 0]
         return Xs, Ps, rate_std, zs_std  # Convert to numpy and return
 
-    def set_control_input(self, f, rolling_median_local, index,
-                          cleaning_events):
+    def _set_control_input(self, f, rolling_median_local, index,
+                           cleaning_events):
         '''
         For each cleaning event, sets control input u based on current
         Kalman Filter state estimate (f.x), and the median value for the
@@ -1950,8 +2141,8 @@ class CODSAnalysis():
                 bisect.insort(cleaning_events, index+max_diff_index-HW+1)
         return u
 
-    def smooth_results(self, dfk, f, Xs, Ps, zs_series, cleaning_events,
-                       soiling_events, perfect_cleaning):
+    def _smooth_results(self, dfk, f, Xs, Ps, zs_series, cleaning_events,
+                        soiling_events, perfect_cleaning):
         ''' Smoother for Kalman Filter estimates. Smooths the Kalaman estimate
             between given cleaning events and saves all in DataFrame dfk'''
         # Save unsmoothed estimates
@@ -1977,9 +2168,9 @@ class CODSAnalysis():
 
         return dfk, Xs, Ps
 
-    def initialize_univariate_model(self, zs_series, dt, process_noise,
-                                    measurement_noise, rate_std, zs_std,
-                                    initial_slope):
+    def _initialize_univariate_model(self, zs_series, dt, process_noise,
+                                     measurement_noise, rate_std, zs_std,
+                                     initial_slope):
         ''' Initializes the univariate Kalman Filter model, using the filterpy
             package '''
         f = KalmanFilter(dim_x=2, dim_z=1)
@@ -1996,28 +2187,35 @@ class CODSAnalysis():
         return f
 
 
-def soiling_cods(energy_normalized_daily, reps=512, verbose=False,
-                 degradation_method='YoY', process_noise=1e-4,
-                 knob_alternatives=[[['SR', 'SC', 'Rd'],
-                                    ['SC', 'SR', 'Rd']],
-                                    [.25, .75],
-                                    [1/1.5, 1.5],
-                                    [True, False]], **kwargs):
+def soiling_cods(energy_normalized_daily,
+                 reps=512,
+                 confidence_level=68.2,
+                 verbose=False,
+                 degradation_method='YoY',
+                 process_noise=1e-4,
+                 order_alternatives=(('SR', 'SC', 'Rd'),
+                                     ('SC', 'SR', 'Rd')),
+                 detection_tuner_alternatives=(.25, .75),
+                 pruning_tuner_alternatives=(1/1.5, 1.5),
+                 forward_fill_alternatives=(True, False),
+                 **kwargs):
     '''
-    Functional wrapper for :py:class:`~rdtools.soiling.CODSAnalysis`. Run
-    the combined degradation and soiling algorithm. Based on the
-    methods presented in Skomedal, Å. and Deceglie, M. G., IEEE Journal of
-    Photovoltaics, Sept. 2020. doi: 10.1109/JPHOTOV.2020.3018219
+    Functional wrapper for :py:class:`~rdtools.soiling.CODSAnalysis` and its
+    subroutine :py:func:`~rdtools.soiling.CODSAnalysis.run_bootstrap`. Runs
+    the combined degradation and soiling (CODS) algorithm with bootstrapping.
+    Based on the procedure presented in [1]_.
 
     Parameters
     ----------
-    energy_normalized_daily : pd.Series
+    energy_normalized_daily : pandas.Series
         Daily performance metric (i.e. performance index, yield, etc.)
         Alternatively, the soiling ratio output of a soiling sensor (e.g. the
         photocurrent ratio between matched dirty and clean PV reference cells).
         In either case, data should be insolation-weighted daily aggregates.
     reps : int, default 512
         number of bootstrap realizations to calculate
+    confidence_level : float, default 68.2
+        The size of the confidence interval to return, in percent
     verbose : bool, default False
         Wheter or not to print information about progress
     degradation_method : string, default 'YoY'
@@ -2025,65 +2223,107 @@ def soiling_cods(energy_normalized_daily, reps=512, verbose=False,
         Decides whether to use the YoY method [3] for estimating the
         degradation trend (assumes linear trend), or the STL-method (does
         not assume linear trend). The latter is slower.
-    knob_alternatives : list of lists, default [[['SR', 'SC', 'Rd'],
-                                                 ['SC', 'SR', 'Rd']],
-                                                [.4, .8],
-                                                [.75, 1.25],
-                                                [True, False]]
-        List of model knobs/parameters for the initial N model fits
-    kwargs
-        keyword arguments that are passed on to `iterative_signal_decomposition`
+    order_alternatives : tuple of tuples, default (('SR', 'SC', 'Rd'), \
+        ('SC', 'SR', 'Rd'))
+        Component estimation orders that will be tested during initial
+        model fitting.
+    detection_tuner_alternatives : tuple, default (.4, .8)
+        Detection tuner values that will be tested during initial fitting.
+        Length must be >= 1. First and last values define limits of values
+        that will be used during bootstrapping.
+    pruning_tuner_alternatives : tuple, default (.75, 1.25)
+        Pruning tuner values that will be tested during initial fitting.
+        Length must be >= 1. First and last values define limits of values
+        that will be used during bootstrapping.
+    forward_fill_alternatives : tuple, default (True, False)
+        Forward fill values that will be tested during initial fitting.
+    **kwargs
+        keyword arguments that are passed on to :py:func:`iterative_signal_decomposition`
 
     Returns
     -------
-    soiling_loss : float
-        Average soiling loss based on CODS analysis (%)
-    soiling_loss_confidence_interval : np.array
-        95 % confidence interval of soiling loss estimate (%)
+    soiling_ratio : float
+        Average soiling ratio based on CODS analysis (%)
+    soiling_ratio_confidence_interval : numpy.array
+        95 % confidence interval of soiling ratio estimate (%)
     degradation_rate : float
         Estimated degradation rate (%/year)
-    degradation_rate_confidence_interval : np.array
+    degradation_rate_confidence_interval : numpy.array
         95 % confidence interval for degradation rate estimate (%/year)
     result_df : pandas dataframe
-        Time series results from the CODS algorithm. Contains the following
-        columns:
-        * `soiling_ratio` : soiling ratio (SR) (-)
-        * `soiling_rates` : soiling rates (1/day)
-        * `cleaning_events` : True at cleaning events
-        * `total_model` : the total model fit, i.e. SR * SC * Dtrend *rs,
-            where SR is the soiling ratio, SC is the seasonal component,
-            Dtrend is the degradation trend, and rs is the residual,
-            i.e. the mean of the residuals (adjusting the position of
-            the model fit to the position of the input data)
-        * `model_high` : upper bound of 95 % confidence interval
-            of the model fit
-        * `model_low` : low bound of 95 % confidence interval of
-            the model fit
-        * `residuals` : residuals
-        * `SR_high` : upper bound of 95 % confidence interval of SR
-        * `SR_low` : lower bound of 95 % confidence interval of SR
-        * `rates_low` : lower bound of 95 % confidence interval of soiling
-            rates
-        * `rates_high` : upper bound of 95 % confidence interval of soiling
-            rates
-        * `bt_soiling_ratio` : bootstrapped median of soiling ratio
-        * `bt_soiling_rates` : bootstrapped median of soiling rates
-        * `seasonal_component` : seasonal component (SC)
-        * `seasonal_low` : lower bound of 95 % confidence interval of seasonal
-         component
-        * `seasonal_high` : upper bound of 95 % confidence interval of seasonal
-         component
-        * `degradation_trend` : degradation trend (Dtrend)
+        Time series results from the CODS algorithm. Index is pandas.DatetimeIndex
+        with daily frequency. Contains the following columns:
+
+            +------------------------+----------------------------------------------+
+            | Column Name            | Description                                  |
+            +========================+==============================================+
+            | 'soiling_ratio'        | soiling ratio (SR) (-)                       |
+            +------------------------+----------------------------------------------+
+            | 'soiling_rates'        | soiling rates (1/day)                        |
+            +------------------------+----------------------------------------------+
+            | 'cleaning_events'      | True at cleaning events                      |
+            +------------------------+----------------------------------------------+
+            | 'seasonal_component'   | seasonal component (SC)                      |
+            +------------------------+----------------------------------------------+
+            | 'degradation_trend'    | degradation trend (Rd)                       |
+            +------------------------+----------------------------------------------+
+            | 'total_model'          | the total model fit, i.e. SR * SC * Rd * rs, |
+            |                        | where SR is the soiling ratio, SC is the     |
+            |                        | seasonal component, Rd is the degradation    |
+            |                        | trend, and rs is the residual shift, i.e.    |
+            |                        | the mean of the residuals (adjusting the     |
+            |                        | position of the model fit to the position of |
+            |                        | the input data)                              |
+            +------------------------+----------------------------------------------+
+            | 'residuals'            | The residuals of the model fit, i.e.         |
+            |                        | PI / (SR * SC * Rd)                          |
+            +------------------------+----------------------------------------------+
+            | 'SR_low'               | lower bound of 95 % conf. interval of SR     |
+            +------------------------+----------------------------------------------+
+            | 'SR_high'              | upper bound of 95 % conf. interval of SR     |
+            +------------------------+----------------------------------------------+
+            | 'rates_low'            | lower bound of 95 % conf. interval of SR     |
+            |                        | soiling rates                                |
+            +------------------------+----------------------------------------------+
+            | 'rates_high'           | upper bound of 95 % conf. interval of        |
+            |                        | soiling rates                                |
+            +------------------------+----------------------------------------------+
+            | 'bt_soiling_ratio'     | Bootstrapped estimate of soiling ratio (SR)  |
+            +------------------------+----------------------------------------------+
+            | 'bt_soiling_rates'     | Bootstrapped estimate of soiling rates       |
+            +------------------------+----------------------------------------------+
+            | 'seasonal_low'         | lower bound of 95 % conf. interval of        |
+            |                        | seasonal component (SC)                      |
+            +------------------------+----------------------------------------------+
+            | 'seasonal_high'        | upper bound of 95 % conf. interval of        |
+            |                        | seasonal component (SC)                      |
+            +------------------------+----------------------------------------------+
+            | 'model_high'           | upper bound of 95 % confidence interval of   |
+            |                        | the model fit                                |
+            +------------------------+----------------------------------------------+
+            | 'model_low'            | lower bound of 95 % confidence interval of   |
+            |                        | the model fit                                |
+            +------------------------+----------------------------------------------+
+
+    References
+    ----------
+    .. [1] Skomedal, Å. and Deceglie, M. G., IEEE Journal of Photovoltaics,
+       Sept. 2020. https://doi.org/10.1109/JPHOTOV.2020.3018219
     '''
 
     CODS = CODSAnalysis(energy_normalized_daily)
 
     CODS.run_bootstrap(
         reps=reps,
+        confidence_level=confidence_level,
         verbose=verbose,
         degradation_method=degradation_method,
         process_noise=process_noise,
-        knob_alternatives=knob_alternatives)
+        order_alternatives=order_alternatives,
+        detection_tuner_alternatives=detection_tuner_alternatives,
+        pruning_tuner_alternatives=pruning_tuner_alternatives,
+        forward_fill_alternatives=forward_fill_alternatives,
+        **kwargs)
 
     sr = 1 - CODS.soiling_loss[0] / 100
     sr_ci = 1 - np.array(CODS.soiling_loss[1:3]) / 100
@@ -2092,7 +2332,7 @@ def soiling_cods(energy_normalized_daily, reps=512, verbose=False,
         CODS.result_df
 
 
-def collapse_cleaning_events(inferred_ce_in, metric, f=4):
+def _collapse_cleaning_events(inferred_ce_in, metric, f=4):
     ''' A function for replacing quick successive cleaning events with one
         (most probable) cleaning event.
 
@@ -2100,7 +2340,7 @@ def collapse_cleaning_events(inferred_ce_in, metric, f=4):
     ----------
     inferred_ce_in : pandas.Series
         Contains daily booelan values for cleaning events
-    metric : array/pandas.Series
+    metric : numpy.array/pandas.Series
         A metric which is large when probability of cleaning is large
         (eg. daily difference in rolling median of performance index)
     f : int, default 4
@@ -2150,7 +2390,7 @@ def collapse_cleaning_events(inferred_ce_in, metric, f=4):
     return pd.Series(index=saveindex, data=collapsed_ce.values)
 
 
-def rolling_median_ce_detection(x, y, ffill=True, rolling_window=9, tuner=1.5):
+def _rolling_median_ce_detection(x, y, ffill=True, rolling_window=9, tuner=1.5):
     ''' Finds cleaning events in a time series of performance index (y) '''
     y = pd.Series(index=x, data=y)
     if ffill:  # forward fill NaNs in y before running mean
@@ -2164,7 +2404,7 @@ def rolling_median_ce_detection(x, y, ffill=True, rolling_window=9, tuner=1.5):
     return cleaning_events, rm
 
 
-def soiling_event_detection(x, y, ffill=True, tuner=5):
+def _soiling_event_detection(x, y, ffill=True, tuner=5):
     ''' Finds cleaning events in a time series of performance index (y) '''
     y = pd.Series(index=x, data=y)
     if ffill:  # forward fill NaNs in y before running mean
@@ -2178,8 +2418,8 @@ def soiling_event_detection(x, y, ffill=True, tuner=5):
     return soiling_events
 
 
-def make_seasonal_samples(list_of_SCs, sample_nr=10, min_multiplier=0.5,
-                          max_multiplier=2, max_shift=20):
+def _make_seasonal_samples(list_of_SCs, sample_nr=10, min_multiplier=0.5,
+                           max_multiplier=2, max_shift=20):
     ''' Generate seasonal samples by perturbing the amplitude and the phase of
         a seasonal components found with the fitted CODS model '''
     samples = pd.DataFrame(index=list_of_SCs[0].index,
@@ -2211,7 +2451,7 @@ def make_seasonal_samples(list_of_SCs, sample_nr=10, min_multiplier=0.5,
     return samples
 
 
-def force_periodicity(in_signal, signal_index, out_index):
+def _force_periodicity(in_signal, signal_index, out_index):
     ''' Function for forcing periodicity in a seasonal component signal '''
     # Make sure the in_signal is a Series
     if isinstance(in_signal, np.ndarray):
@@ -2246,7 +2486,7 @@ def force_periodicity(in_signal, signal_index, out_index):
     return output
 
 
-def find_numeric_outliers(x, multiplier=1.5, where='both', verbose=False):
+def _find_numeric_outliers(x, multiplier=1.5, where='both', verbose=False):
     ''' Function for finding numeric outliers '''
     try:  # Calulate third and first quartile
         Q3 = np.quantile(x, .75)
@@ -2279,13 +2519,13 @@ def _RMSE(y_true, y_pred):
     return np.sqrt(np.mean((y_pred[mask]-y_true[mask])**2))
 
 
-def MSD(y_true, y_pred):
+def _MSD(y_true, y_pred):
     '''Calculates the Mean Signed Deviation for y_true and y_pred, where y_pred
         is the "prediction", and y_true is the truth.'''
     return np.mean(y_pred - y_true)
 
 
-def progressBarWithETA(value, endvalue, time, bar_length=20):
+def _progressBarWithETA(value, endvalue, time, bar_length=20):
     ''' Prints a progressbar with an estimated time of "arrival" '''
     percent = float(value) / endvalue * 100
     arrow = '-' * int(round(percent/100 * bar_length)-1) + '>'
