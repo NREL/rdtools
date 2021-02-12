@@ -92,13 +92,13 @@ def test_soiling_cods(cods_normalized_daily):
     reps = 16
     np.random.seed(1977)
     sr, sr_ci, deg, deg_ci, result_df = soiling.soiling_cods(cods_normalized_daily, reps=reps)
-    assert 0.962207 == pytest.approx(sr, abs=1e-1),\
+    assert 0.962207 == pytest.approx(sr, abs=0.5),\
         'Soiling ratio different from expected value'
-    assert np.array([0.96662419, 0.95692131]) == pytest.approx(sr_ci, abs=1e-1),\
+    assert np.array([0.96662419, 0.95692131]) == pytest.approx(sr_ci, abs=0.5),\
         'Confidence interval of SR different from expected value'
-    assert 0.09 == pytest.approx(deg, abs=0.2),\
+    assert 0.09 == pytest.approx(deg, abs=0.5),\
         'Degradation rate different from expected value'
-    assert np.array([-0.17143952,  0.39313724]) == pytest.approx(deg_ci, abs=0.2),\
+    assert np.array([-0.17143952,  0.39313724]) == pytest.approx(deg_ci, abs=0.5),\
         'Confidence interval of degradation rate different from expected value'
 
     # Check result dataframe
