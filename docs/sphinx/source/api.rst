@@ -23,6 +23,7 @@ analysis workflow.
    aggregation
    clearsky_temperature
    plotting
+   bootstrap
 
 Analysis Chains
 ===============
@@ -72,6 +73,7 @@ Soiling
    annual_soiling_ratios
    SRRAnalysis
    SRRAnalysis.run
+   soiling_cods
    CODSAnalysis
    CODSAnalysis.iterative_signal_decomposition
    CODSAnalysis.run_bootstrap
@@ -166,3 +168,16 @@ Plotting
    soiling_interval_plot
    soiling_rate_histogram
    availability_summary_plots
+
+
+Bootstrap
+=========
+
+.. automodule:: rdtools.bootstrap
+   :noindex:
+
+.. autosummary::
+   :toctree: generated/
+
+   make_time_series_bootstrap_samples
+   construct_confidence_intervals
