@@ -413,8 +413,8 @@ class TrendAnalysis():
                 filter_components['normalized_filter'] = self.filter_params['ad_hoc_filter']
         if case == 'clearsky':
             if self.poa_global is None or self.poa_global_clearsky is None:
-                raise ValueError('Both poa_global and poa_global_clearsky must be available to do clearsky '
-                                 'filtering with csi_filter')
+                raise ValueError('Both poa_global and poa_global_clearsky must be available to '
+                                 'do clearsky filtering with csi_filter')
             f = filtering.csi_filter(
                 self.poa_global, self.poa_global_clearsky, **self.filter_params['csi_filter'])
             filter_components['csi_filter'] = f
