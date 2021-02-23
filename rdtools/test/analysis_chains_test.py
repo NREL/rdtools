@@ -130,6 +130,15 @@ def test_sensor_analysis_ad_hoc_filter(sensor_parameters):
         rd_analysis.sensor_analysis(analyses=['yoy_degradation'])
 
 
+def test_filter_components(sensor_parameters):
+    poa = sensor_parameters['poa_global']
+    poa_filter = (poa > 200) & (poa < 1200)
+    poa_filter = poa_filter.iloc[1:]  # remove first element to align index with expected
+    rd_analysis = TrendAnalysis(**sensor_parameters, power_dc_rated=1.0)
+    rd_analysis.sensor_analysis(analyses=['yoy_degradation'])
+    assert (poa_filter == rd_analysis.sensor_filter_components['poa_filter']).all()
+
+
 def test_cell_temperature_model_invalid(sensor_parameters):
     wind = pd.Series(0, index=sensor_parameters['pv'].index)
     sensor_parameters.pop('temperature_model')
