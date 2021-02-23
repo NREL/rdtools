@@ -373,7 +373,9 @@ class TrendAnalysis():
         -------
         None
         '''
-        bool_filter = True
+        filter_components = pd.DataFrame({
+            'default': pd.Series(True, index=energy_normalized.index)
+        })
 
         if case == 'sensor':
             poa = self.poa_global
@@ -385,19 +387,19 @@ class TrendAnalysis():
         if 'normalized_filter' in self.filter_params:
             f = filtering.normalized_filter(
                 energy_normalized, **self.filter_params['normalized_filter'])
-            bool_filter = bool_filter & f
+            filter_components['normalized_filter'] = f
         if 'poa_filter' in self.filter_params:
             if poa is None:
                 raise ValueError('poa must be available to use poa_filter')
             f = filtering.poa_filter(poa, **self.filter_params['poa_filter'])
-            bool_filter = bool_filter & f
+            filter_components['poa_filter'] = f
         if 'tcell_filter' in self.filter_params:
             if cell_temp is None:
                 raise ValueError(
                     'Cell temperature must be available to use tcell_filter')
             f = filtering.tcell_filter(
                 cell_temp, **self.filter_params['tcell_filter'])
-            bool_filter = bool_filter & f
+            filter_components['tcell_filter'] = f
         if 'clip_filter' in self.filter_params:
             if self.pv_power is None:
                 raise ValueError('PV power (not energy) is required for the clipping filter. '
@@ -405,22 +407,26 @@ class TrendAnalysis():
                                  'instantiation, or explicitly assign TrendAnalysis.pv_power.')
             f = filtering.clip_filter(
                 self.pv_power, **self.filter_params['clip_filter'])
-            bool_filter = bool_filter & f
+            filter_components['clip_filter'] = f
         if 'ad_hoc_filter' in self.filter_params:
             if self.filter_params['ad_hoc_filter'] is not None:
-                bool_filter = bool_filter & self.filter_params['ad_hoc_filter']
+                filter_components['normalized_filter'] = self.filter_params['ad_hoc_filter']
         if case == 'clearsky':
             if self.poa_global is None or self.poa_global_clearsky is None:
                 raise ValueError('Both poa_global and poa_global_clearsky must be available to do clearsky '
                                  'filtering with csi_filter')
             f = filtering.csi_filter(
                 self.poa_global, self.poa_global_clearsky, **self.filter_params['csi_filter'])
-            bool_filter = bool_filter & f
+            filter_components['csi_filter'] = f
 
+        bool_filter = filter_components.all(axis=1)
+        filter_components = filter_components.drop(columns=['default'])
         if case == 'sensor':
             self.sensor_filter = bool_filter
+            self.sensor_filter_components = filter_components
         elif case == 'clearsky':
             self.clearsky_filter = bool_filter
+            self.clearsky_filter_components = filter_components
 
     def _filter_check(self, post_filter):
         '''
