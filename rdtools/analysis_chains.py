@@ -410,7 +410,7 @@ class TrendAnalysis():
             filter_components['clip_filter'] = f
         if 'ad_hoc_filter' in self.filter_params:
             if self.filter_params['ad_hoc_filter'] is not None:
-                filter_components['normalized_filter'] = self.filter_params['ad_hoc_filter']
+                filter_components['ad_hoc_filter'] = self.filter_params['ad_hoc_filter']
         if case == 'clearsky':
             if self.poa_global is None or self.poa_global_clearsky is None:
                 raise ValueError('Both poa_global and poa_global_clearsky must be available to '
@@ -419,7 +419,9 @@ class TrendAnalysis():
                 self.poa_global, self.poa_global_clearsky, **self.filter_params['csi_filter'])
             filter_components['csi_filter'] = f
 
-        bool_filter = filter_components.all(axis=1)
+        # note: the previous implementation using the & operator treated NaN
+        # filter values as False, so we do the same here for consistency:
+        bool_filter = filter_components.fillna(False).all(axis=1)
         filter_components = filter_components.drop(columns=['default'])
         if case == 'sensor':
             self.sensor_filter = bool_filter
