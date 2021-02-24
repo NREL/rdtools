@@ -2,6 +2,9 @@
 
 import numpy as np
 import pandas as pd
+from sklearn.ensemble import RandomForestClassifier
+from sklearn import preprocessing
+from sklearn.externals import joblib
 
 
 def normalized_filter(energy_normalized, energy_normalized_low=0.01,
@@ -80,119 +83,6 @@ def tcell_filter(temperature_cell, temperature_cell_low=-50,
             (temperature_cell < temperature_cell_high))
 
 
-def geometric_clip_filter(power_ac, clipping_percentile_cutoff = 0.8,
-                          daily_max_percentile_cutoff = 0.9,
-                          first_order_derivative_threshold = None):
-    """
-    Mask a time series, delineating clipping and non-clipping periods.
-    Returns the time series with clipping periods omitted, as well as a boolean mask, 
-    with 'True' delineating clipping, and 'False' delineating regular periods.
-    
-    Parameters
-    ----------
-    power_ac : pd.Series
-        AC power in Watts. Index of the Pandas series is a Pandas datetime index.
-    clipping_percentile_cutoff: float, default 0.8
-        Cutoff value for the percentile (for the whole time series) where clipping takes place. 
-        So, for example, if the cutoff is set to 0.8, then any value in the normalized time series less than 
-        0.8 will not be considered clipping. The higher the threshold, the more data omitted.
-    daily_max_percentile_cutoff: float, default 0.9
-        Cutoff value for the the daily percentile where clipping takes place. So, for example,
-        if the cutoff is set to 0.9, then any value in a normalized daily time series that is 
-        less than 90% the max daily value will not be considered clipping. The higher the threshold,
-        the more data omitted.
-    first_order_derivative_threshold : float, default None,
-        Cutoff value for the derivative threshold. The higher the value, the less stringent 
-        the function is on defining clipping periods. Represents the cutoff for the first-order
-        derivative across two data points. Default is set to None, where the threshold is derived 
-        based on an experimental equation, which varies threshold by sampling frequency.
-        
-    
-    Returns
-    -------
-    pd.Series: Filtered ac_power time series, with clipping periods excluded.
-    pd. Series: Boolean mask time series for clipping, with True indicating a clipping period
-        and False representing a non-clipping period
-    """
-    #Check that it's a Pandas series with a datetime index. If not, raise an error.
-    if not isinstance(power_ac.index, pd.DatetimeIndex):
-        raise TypeError('Must be a Pandas series with a datetime index.')
-    #Get the names of the series and the datetime index
-    column_name = power_ac.name
-    if column_name is None:
-        column_name = 'power_ac'
-        power_ac = power_ac.rename(column_name)   
-    index_name = power_ac.index.name
-    if index_name is None:
-        index_name = 'datetime'
-        power_ac = power_ac.rename_axis(index_name)   
-    #Get the sampling frequency of the time series
-    time_series_sampling_frequency = power_ac.index.to_series(keep_tz=True).diff().astype('timedelta64[m]').mode()[0]
-    #Based on the sampling frequency, adjust the first order derivative threshold. This is a 
-    #default equation that is experimentally derived from PV Fleets data. Value can also be
-    #manually set by the user.
-    if first_order_derivative_threshold == None:
-        first_order_derivative_threshold = (0.00005 * time_series_sampling_frequency) + 0.0009
-    #Generate a dataframe for the series
-    dataframe = pd.DataFrame(power_ac)
-    #Set all negative values in the data stream to 0
-    dataframe.loc[dataframe[power_ac.name]<0, column_name] = 0
-    #Remove anything more than 3 standard deviations from the mean (outliers)
-    #OR use IQR calculation to remove outliers (Q1 - 5*IQR) or (Q3 - 5*IQR)
-    mean = np.mean(dataframe[column_name], axis=0)
-    std = np.std(dataframe[column_name], axis=0)
-    Q1 = np.quantile(dataframe[dataframe[column_name]>0][column_name], 0.25)
-    Q3 = np.quantile(dataframe[dataframe[column_name]>0][column_name], 0.75)
-    IQR = Q3 - Q1
-    #Outlier cleaning statement--set outliers to 0
-    dataframe.loc[(abs(mean - dataframe[column_name]) > (3*std)) &
-                  (dataframe[column_name] <= 0) & 
-                  (dataframe[column_name] >= (Q3 + 5*IQR))] = 0
-    #Min-max normalize the time series
-    scaled_column = 'scaled_' + column_name
-    dataframe[scaled_column] = (dataframe[column_name] - dataframe[column_name].min()) / (dataframe[column_name].max() - dataframe[column_name].min())
-    #Get the first-order derivative of the time series over one time shift
-    dataframe['first_order_derivative_backward'] = dataframe[scaled_column] - dataframe[scaled_column].shift(1)
-    dataframe['first_order_derivative_forward'] = dataframe[scaled_column] - dataframe[scaled_column].shift(-1)
-    #Get the date of the reading
-    dataframe['date'] = pd.to_datetime(dataframe.index).date
-    #Daily max calculations
-    dataframe['daily_max_' + scaled_column] = dataframe.groupby('date')[scaled_column].transform("max")   
-    dataframe['daily_max_percentile_' + scaled_column] = dataframe[scaled_column] / dataframe['daily_max_' + scaled_column]   
-    ##############################################
-    #Logic for clipping:
-    #-Normalized value must be greater than or equal to clipping_percentile_cutoff value
-    #-First-order derivative (either backward- or forward-calculated) less than 
-    #   first_order_derivative_threshold value
-    #-Value within X percentile of daily max value
-    ##############################################
-    dataframe['daily_max_percentile_threshold'] =  (dataframe['daily_max_percentile_' + scaled_column] >= daily_max_percentile_cutoff)
-    dataframe['top_percentile_threshold_value'] = (dataframe[scaled_column] >= clipping_percentile_cutoff)
-    #First order derivative--compare to hourly average
-    dataframe['low_val_threshold_first_order_derivative_forward'] =  abs(dataframe['first_order_derivative_backward']) <= first_order_derivative_threshold 
-    dataframe['low_val_threshold_first_order_derivative_backward'] =  abs(dataframe['first_order_derivative_forward']) <= first_order_derivative_threshold 
-    #Set default mask to False
-    dataframe[scaled_column +"_clipping_mask"] = False
-    #Boolean statement for detecting clipping sequences
-    dataframe.loc[((dataframe['daily_max_percentile_threshold'] == True) & 
-                   (dataframe['top_percentile_threshold_value'] == True) & 
-                   ((dataframe['low_val_threshold_first_order_derivative_forward'] == True) | 
-                    (dataframe['low_val_threshold_first_order_derivative_backward'] == True))), scaled_column +"_clipping_mask"] = True
-    #Count the subsequent mask categories in the sequence
-    dataframe['subgroup'] = (dataframe[scaled_column +'_clipping_mask'] != dataframe[scaled_column +'_clipping_mask'].shift(1)).cumsum()
-    #Count the subgroup column
-    dataframe['subgroup_count'] = dataframe.groupby("subgroup")["subgroup"].transform('count')
-    #Remove any clipping sequences that are less than two subsequent readings in length
-    dataframe.loc[(dataframe[scaled_column +'_clipping_mask'] == True) & (dataframe['subgroup_count'] <= 2), scaled_column +"_clipping_mask"] = False 
-    #Find daily threshold for clipping, and set anything within +-0.01 as a clipped value
-    clipping_cutoff_df = dataframe.groupby(['date', scaled_column +'_clipping_mask'])[scaled_column].min().reset_index()
-    clipping_cutoff_df = clipping_cutoff_df[clipping_cutoff_df[scaled_column +'_clipping_mask'] == True].rename(columns={scaled_column: 'clipping_cutoff'})
-    #Merge back with the main dataframe
-    dataframe = pd.merge(dataframe.reset_index(), clipping_cutoff_df[['date', 'clipping_cutoff']], on = ['date'], how = 'left')
-    dataframe.set_index(index_name, inplace = True)
-    dataframe.loc[(dataframe['clipping_cutoff'] - dataframe[scaled_column]) <= 0.01, scaled_column +'_clipping_mask'] = True
-    return pd.Series(dataframe[dataframe[scaled_column +'_clipping_mask'] == False][column_name]), pd.Series(dataframe[scaled_column +'_clipping_mask'])
-
 def clip_filter(power_ac, quantile=0.98):
     '''
     Filter data points likely to be affected by clipping
@@ -238,3 +128,219 @@ def csi_filter(poa_global_measured, poa_global_clearsky, threshold=0.15):
 
     csi = poa_global_measured / poa_global_clearsky
     return (csi >= 1.0 - threshold) & (csi <= 1.0 + threshold)
+
+
+def logic_clip_filter(power_ac, 
+                      mounting_type = 'Fixed', 
+                      derivative_cutoff = 0.2):
+    '''
+    This filter is a logic-based filter that is used to filter out 
+    clipping periods in AC power and AC energy time series. 
+    The AC power or energy time series is filtered based on the 
+    maximum derivative over a rolling window, as compared to a user-set 
+    derivate_cutoff (default set to 0.2).  The size of the
+    rolling window is increased when the system is a tracked system.
+    
+    Parameters
+    ----------
+    power_ac : pd.Series
+        Pandas time series, representing PV system power or energy with 
+        a pandas datetime index.
+    mounting_type : String 
+        String representing the mounting configuration associated with the 
+        AC power/energy time series. Can either be "Fixed" or "Tracking".
+        Default set to 'Fixed'.
+    derivative_cutoff : Float
+        Cutoff for max derivative threshold. Defaults to 0.2; however, values 
+        as high as 0.4 have been tested and shown to be effective.  The higher 
+        the cutoff, the more values in the dataset that will be determined as 
+        clipping.
+        
+    Returns
+    -------
+    pd.Series
+        Boolean Series of whether the given measurement is deterimined as clipping.
+        True values delineate clipping periods, and False values delineate non-
+        clipping periods.
+    '''  
+    #Check that it's a Pandas series with a datetime index. If not, raise an error.
+    if not isinstance(power_ac.index, pd.DatetimeIndex):
+        raise TypeError('Must be a Pandas series with a datetime index.')
+    #Check the other input variables to ensure that they are the correct format
+    if (mounting_type != "Tracking") & (mounting_type != "Fixed"):
+        raise ValueError("Variable mounting_type must be string 'Tracking' or 'Fixed'.")
+    #Get the names of the series and the datetime index
+    column_name = power_ac.name
+    if column_name is None:
+        column_name = 'power_ac'
+        power_ac = power_ac.rename(column_name)   
+    index_name = power_ac.index.name
+    if index_name is None:
+        index_name = 'datetime'
+        power_ac = power_ac.rename_axis(index_name)   
+    #Get the sampling frequency of the time series
+    time_series_sampling_frequency = power_ac.index.to_series().diff().astype('timedelta64[m]').mode()[0]
+    #Make copies of the original inputs for the cases that the data is changes for clipping evaluation
+    original_time_series_sampling_frequency = time_series_sampling_frequency
+    power_copy = power_ac.copy()
+    #duplicate indexes are dropped and the a frequency is given to the index
+    #testing shows that pandas.rolling(periods) performs consistently only when the datetime index has a set frequency
+    power_ac = power_ac.reset_index().drop_duplicates(subset = power_ac.index.name, 
+                                                      keep = 'first').set_index(power_ac.index.name)
+    freq_string = str(time_series_sampling_frequency) + 'T'
+    if time_series_sampling_frequency >=10:    
+        power_ac = power_ac.asfreq(freq_string)
+    #High frequency data (less than 10 minutes) has demonstrated potential to have more noise than low
+    #frequency  data. Therefore, the  data is resampled to a 15-minute average before running 
+    #the filter.
+    if time_series_sampling_frequency < 10:
+        power_ac = power_ac.resample('15T').mean()
+        time_series_sampling_frequency = 15
+    #Tracked PV systems typically have much flatter output over the course of the central hours of the day,
+    #as compared to fixed tilt systems. This function determines clipping by looking for a near-zero derivative
+    #over 3 periods for a fixed tilt system, and over 5 periods for a tracked system with a sampling frequency
+    #more frequent than once every 30 minutes.
+    if (mounting_type == "Tracking") & (time_series_sampling_frequency < 30):
+        roll_periods = 5
+    else:
+        roll_periods = 3
+    #Replace the lower 10% of daily data with NaN's
+    daily = 0.1 * power_ac.resample('D').max()
+    power_ac['tenP_daily'] = daily.reindex(index = power_ac.index, method='ffill')
+    power_ac.loc[power_ac[column_name] < power_ac['tenP_daily'], column_name]= np.nan   
+    power_ac = power_ac[column_name]
+    
+    #Calculate the maximum value over a forward-rolling window
+    max_roll = power_ac.iloc[::-1].rolling(roll_periods).max()
+    max_roll = max_roll.reindex(power_ac.index)
+    #calculated the minimum value over a forward-rolling window
+    min_roll = power_ac.iloc[::-1].rolling(roll_periods).min()
+    min_roll = min_roll.reindex(power_ac.index)
+    #Calculate the maximum derivative within the foward-rolling window
+    deriv_max = (max_roll - min_roll) / ((max_roll + min_roll) / 2) * 100
+    #Determine clipping values based on the maximum derivative in the rolling window,
+    #and the user-specified derivative threshold
+    roll_clip_mask = (deriv_max < derivative_cutoff)
+    #the following applies the clipping determination to all data points within
+    #the rolling window
+    #Get max derivative at a certain timestamp, looks at the periods     
+    clipping = roll_clip_mask.copy()
+    if roll_periods > 1:
+        i=0
+        for c in roll_clip_mask:
+            if c==True: 
+                clipping[i+1] = True
+                clipping[i+2] = True
+                if roll_periods > 3:
+                    clipping[i + 3] = True
+                if roll_periods > 4:    
+                    clipping[i + 4] = True
+            i=i+1
+    # high frequency was resampled to 15 minute average data
+    #the following lines apply the 15 minute clipping filter to the
+    #original 15 minute data resulting in a clipping filter on the orginal
+    #data   
+    if original_time_series_sampling_frequency < 10:
+        power_ac = power_copy.copy()
+        clipping = clipping.reindex(index=power_ac.index,
+                                    method='ffill')
+        #Subset the series where clipping filter == True
+        clip_pwr = power_ac[clipping]
+        clip_pwr = clip_pwr.reindex(index = power_ac.index,
+                                    fill_value = np.nan)
+        #Set any values within the clipping max + clipping min threshold as clipping. This is done 
+        #specifically for capturing the noise for high frequency data sets. 
+        daily_mean = clip_pwr.resample('D').mean()
+        daily_std = clip_pwr.resample('D').std()
+        daily_clipping_max = daily_mean + 2 * daily_std
+        daily_clipping_max = daily_clipping_max.reindex(index=power_ac.index,method='ffill')
+        daily_clipping_min = daily_mean - 2 * daily_std
+        daily_clipping_min = daily_clipping_min.reindex(index=power_ac.index,method='ffill')
+    else:  
+        #find the maximum and minimum power level where clipping is found each day
+        clip_pwr = power_ac[clipping]
+        clip_pwr = clip_pwr.reindex(index=power_ac.index,fill_value=np.nan)
+        daily_clipping_max = clip_pwr.resample('D').max()
+        daily_clipping_min = clip_pwr.resample('D').min()
+        daily_clipping_min = daily_clipping_min.reindex(index=power_ac.index,method='ffill')
+        daily_clipping_max = daily_clipping_max.reindex(index=power_ac.index,method='ffill')
+    #set all values to clipping that are between the maximum and minimum power levels
+    #where clipping was found on a daily basis
+    #note that this bins data as clipping that is not necessary clipped
+    #for example, for one day, daily data on a 50 kW is found to be clipped at 49kW
+    # and 30 kW.  This is atypical for PV systems but such a finding brings concern
+    #to what is  happening on the said.   It was thought to be conservative to label
+    #all data between 30 and 49kW as clipping so as to not use this data in further analysis
+    final_clip=(daily_clipping_min <= power_ac) & (power_ac <= daily_clipping_max)
+    final_clip=final_clip.reindex(index = power_copy.index,
+                                  fill_value = False)
+    return final_clip
+
+
+def xgboost_clip_filter(power_ac, 
+                        mounting_type = 'Fixed'):
+    """
+    This function generates the features to run through the XGBoost
+    clipping model, and generates model outputs.
+
+    Parameters
+    ----------
+    power_ac : pd.Series
+        Pandas time series, representing PV system power or energy with 
+        a pandas datetime index.
+    mounting_type : String 
+        String representing the mounting configuration associated with the 
+        AC power/energy time series. Can either be "Fixed" or "Tracking".
+        Default set to 'Fixed'.
+
+    Returns
+    -------
+    pd.Series
+        Boolean Series of whether the given measurement is deterimined as clipping.
+        True values delineate clipping periods, and False values delineate non-
+        clipping periods.
+    """
+    inverter_df = power_ac.to_frame()
+    inverter_df['mounting_config'] = mounting_type
+    #Get the sampling frequency (as a continuous feature variable)
+    inverter_df['sampling_frequency'] = inverter_df.index.to_series().diff().astype('timedelta64[m]').mode()[0]
+    #Min-max normalize
+    min_max_scaler = preprocessing.MinMaxScaler()
+    inverter_df['scaled_value'] = min_max_scaler.fit_transform(inverter_df[['value']])    
+    #Get the rolling derivative
+    sampling_frequency = inverter_df['sampling_frequency'].iloc[0] 
+    if sampling_frequency < 10:
+        rolling_window = 5
+    elif (sampling_frequency >= 10) and (sampling_frequency < 60):
+        rolling_window = 3#max(int(round(60/sampling_frequency, 0)), 1)
+    else:
+        rolling_window = 2
+    inverter_df['rolling_average'] = inverter_df['scaled_value'].rolling(window = rolling_window,
+                                                                         center = True).mean()
+    #First-order derivative
+    inverter_df['first_order_derivative_backward'] = inverter_df.scaled_value.diff()
+    inverter_df['first_order_derivative_forward'] = inverter_df.scaled_value.shift(-1).diff()    
+    #First order derivative for the rolling average
+    inverter_df['first_order_derivative_backward_rolling_avg'] = inverter_df.rolling_average.diff()
+    inverter_df['first_order_derivative_forward_rolling_avg'] = inverter_df.rolling_average.shift(-1).diff()    
+    
+    #Rolling max derivative over time
+    max_roll = inverter_df['scaled_value'].iloc[::-1].rolling(rolling_window).max()
+    max_roll = max_roll.reindex(inverter_df.index)
+    #calculated the minimum value over a set forward rolling window
+    min_roll = inverter_df['scaled_value'].iloc[::-1].rolling(rolling_window).min()
+    min_roll = min_roll.reindex(inverter_df.index)
+    #calculate the maximum derivative within the set foward rolling window
+    inverter_df['deriv_max'] = (max_roll - min_roll) / ((max_roll + min_roll) / 2) * 100
+    #Get the max value for the day and see how each value compares
+    inverter_df['date'] = list(pd.to_datetime(pd.Series(inverter_df.index)).dt.date)
+    inverter_df['daily_max'] = inverter_df.groupby(['date'])['scaled_value'].transform(max)
+    #Get percentage of daily max
+    inverter_df['percent_daily_max'] = inverter_df['scaled_value'] / inverter_df['daily_max']
+    #Convert tracking/fixed tilt to a boolean variable
+    inverter_df.loc[inverter_df['mounting_config'] == 'Tracking', 'mounting_config_bool'] = 1
+    inverter_df.loc[inverter_df['mounting_config'] == 'Fixed', 'mounting_config_bool'] = 0
+    #TODO: Run the inverter_df dataframe through the XGBoost ML model
+    
+    
+    return inverter_df

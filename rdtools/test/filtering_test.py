@@ -5,7 +5,7 @@ import unittest
 import pandas as pd
 import numpy as np
 
-from rdtools import csi_filter, poa_filter, tcell_filter, clip_filter, normalized_filter, geometric_clip_filter
+from rdtools import csi_filter, poa_filter, tcell_filter, clip_filter, normalized_filter, logic_clip_filter
 
 
 class CSIFilterTestCase(unittest.TestCase):
@@ -73,7 +73,7 @@ class ClipFilterTestCase(unittest.TestCase):
         self.assertTrue((expected_result == filtered).all())
         
 
-class GeometricClipFilterTestCase(unittest.TestCase):
+class LogicClipFilterTestCase(unittest.TestCase):
     ''' Unit tests for geometric clipping filter.'''
 
     def setUp(self):
@@ -88,7 +88,7 @@ class GeometricClipFilterTestCase(unittest.TestCase):
         #Test that a Type Error is raised when a pandas series without a datetime index is used.
         self.assertRaises(TypeError,  geometric_clip_filter, self.power_no_datetime_index)
         # Expect none of the sequence to be clipped (as it's constantly increasing)
-        filtered, mask = geometric_clip_filter(self.power_datetime_index)
+        filtered, mask = logic_clip_filter(self.power_datetime_index)
         self.assertTrue(mask.all() == False)
 
 
