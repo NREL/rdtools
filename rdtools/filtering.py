@@ -4,7 +4,13 @@ import numpy as np
 import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
 from sklearn import preprocessing
-from sklearn.externals import joblib
+import joblib
+import os
+import xgboost as xgb
+
+
+#Load in the XGBoost clipping model using joblib.
+xgboost_clipping_model = joblib.load((os.path.dirname(__file__)) + "/models/xgboost_clipping_model.dat")
 
 
 def normalized_filter(energy_normalized, energy_normalized_low=0.01,
@@ -300,47 +306,46 @@ def xgboost_clip_filter(power_ac,
         True values delineate clipping periods, and False values delineate non-
         clipping periods.
     """
-    inverter_df = power_ac.to_frame()
-    inverter_df['mounting_config'] = mounting_type
+    power_ac_df = power_ac.to_frame()
+    power_ac_df['mounting_config'] = mounting_type
     #Get the sampling frequency (as a continuous feature variable)
-    inverter_df['sampling_frequency'] = inverter_df.index.to_series().diff().astype('timedelta64[m]').mode()[0]
+    power_ac_df['sampling_frequency'] = power_ac_df.index.to_series().diff().astype('timedelta64[m]').mode()[0]
     #Min-max normalize
     min_max_scaler = preprocessing.MinMaxScaler()
-    inverter_df['scaled_value'] = min_max_scaler.fit_transform(inverter_df[['value']])    
+    power_ac_df['scaled_value'] = min_max_scaler.fit_transform(power_ac_df[['value']])    
     #Get the rolling derivative
-    sampling_frequency = inverter_df['sampling_frequency'].iloc[0] 
+    sampling_frequency = power_ac_df['sampling_frequency'].iloc[0] 
     if sampling_frequency < 10:
         rolling_window = 5
     elif (sampling_frequency >= 10) and (sampling_frequency < 60):
         rolling_window = 3#max(int(round(60/sampling_frequency, 0)), 1)
     else:
         rolling_window = 2
-    inverter_df['rolling_average'] = inverter_df['scaled_value'].rolling(window = rolling_window,
+    power_ac_df['rolling_average'] = power_ac_df['scaled_value'].rolling(window = rolling_window,
                                                                          center = True).mean()
     #First-order derivative
-    inverter_df['first_order_derivative_backward'] = inverter_df.scaled_value.diff()
-    inverter_df['first_order_derivative_forward'] = inverter_df.scaled_value.shift(-1).diff()    
+    power_ac_df['first_order_derivative_backward'] = power_ac_df.scaled_value.diff()
+    power_ac_df['first_order_derivative_forward'] = power_ac_df.scaled_value.shift(-1).diff()    
     #First order derivative for the rolling average
-    inverter_df['first_order_derivative_backward_rolling_avg'] = inverter_df.rolling_average.diff()
-    inverter_df['first_order_derivative_forward_rolling_avg'] = inverter_df.rolling_average.shift(-1).diff()    
+    power_ac_df['first_order_derivative_backward_rolling_avg'] = power_ac_df.rolling_average.diff()
+    power_ac_df['first_order_derivative_forward_rolling_avg'] = power_ac_df.rolling_average.shift(-1).diff()    
     
     #Rolling max derivative over time
-    max_roll = inverter_df['scaled_value'].iloc[::-1].rolling(rolling_window).max()
-    max_roll = max_roll.reindex(inverter_df.index)
+    max_roll = power_ac_df['scaled_value'].iloc[::-1].rolling(rolling_window).max()
+    max_roll = max_roll.reindex(power_ac_df.index)
     #calculated the minimum value over a set forward rolling window
-    min_roll = inverter_df['scaled_value'].iloc[::-1].rolling(rolling_window).min()
-    min_roll = min_roll.reindex(inverter_df.index)
+    min_roll = power_ac_df['scaled_value'].iloc[::-1].rolling(rolling_window).min()
+    min_roll = min_roll.reindex(power_ac_df.index)
     #calculate the maximum derivative within the set foward rolling window
-    inverter_df['deriv_max'] = (max_roll - min_roll) / ((max_roll + min_roll) / 2) * 100
+    power_ac_df['deriv_max'] = (max_roll - min_roll) / ((max_roll + min_roll) / 2) * 100
     #Get the max value for the day and see how each value compares
-    inverter_df['date'] = list(pd.to_datetime(pd.Series(inverter_df.index)).dt.date)
-    inverter_df['daily_max'] = inverter_df.groupby(['date'])['scaled_value'].transform(max)
+    power_ac_df['date'] = list(pd.to_datetime(pd.Series(power_ac_df.index)).dt.date)
+    power_ac_df['daily_max'] = power_ac_df.groupby(['date'])['scaled_value'].transform(max)
     #Get percentage of daily max
-    inverter_df['percent_daily_max'] = inverter_df['scaled_value'] / inverter_df['daily_max']
+    power_ac_df['percent_daily_max'] = power_ac_df['scaled_value'] / power_ac_df['daily_max']
     #Convert tracking/fixed tilt to a boolean variable
-    inverter_df.loc[inverter_df['mounting_config'] == 'Tracking', 'mounting_config_bool'] = 1
-    inverter_df.loc[inverter_df['mounting_config'] == 'Fixed', 'mounting_config_bool'] = 0
-    #TODO: Run the inverter_df dataframe through the XGBoost ML model
-    
-    
-    return inverter_df
+    power_ac_df.loc[power_ac_df['mounting_config'] == 'Tracking', 'mounting_config_bool'] = 1
+    power_ac_df.loc[power_ac_df['mounting_config'] == 'Fixed', 'mounting_config_bool'] = 0
+    #Run the power_ac_df dataframe through the XGBoost ML model
+    xgb_predictions = xgboost_clipping_model.predict(power_ac_df) 
+    return xgb_predictions
