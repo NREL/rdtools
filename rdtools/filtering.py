@@ -8,7 +8,6 @@ import joblib
 import os
 import xgboost as xgb
 
-
 #Load in the XGBoost clipping model using joblib.
 xgboost_clipping_model = joblib.load((os.path.dirname(__file__)) + "/models/xgboost_clipping_model.dat")
 
@@ -346,6 +345,19 @@ def xgboost_clip_filter(power_ac,
     #Convert tracking/fixed tilt to a boolean variable
     power_ac_df.loc[power_ac_df['mounting_config'] == 'Tracking', 'mounting_config_bool'] = 1
     power_ac_df.loc[power_ac_df['mounting_config'] == 'Fixed', 'mounting_config_bool'] = 0
-    #Run the power_ac_df dataframe through the XGBoost ML model
-    xgb_predictions = xgboost_clipping_model.predict(power_ac_df) 
+    #Subset the dataframe to only include model inputs
+    power_ac_df = power_ac_df[['first_order_derivative_backward',
+                               'first_order_derivative_forward',
+                               'first_order_derivative_backward_rolling_avg',
+                               'first_order_derivative_forward_rolling_avg',
+                               'sampling_frequency',
+                               'mounting_config_bool','scaled_value',
+                               'rolling_average','daily_max', 
+                               'percent_daily_max', 'deriv_max']]
+    #Run the power_ac_df dataframe through the XGBoost ML model,
+    #and return boolean outputs
+    xgb_predictions = pd.Series(xgboost_clipping_model.predict(power_ac_df).astype(bool))
+    #Add datetime as an index
+    xgb_predictions.index = power_ac_df.index
     return xgb_predictions
+

@@ -5,7 +5,7 @@ import unittest
 import pandas as pd
 import numpy as np
 
-from rdtools import csi_filter, poa_filter, tcell_filter, clip_filter, normalized_filter, logic_clip_filter
+from rdtools import csi_filter, poa_filter, tcell_filter, clip_filter, normalized_filter, logic_clip_filter, xgboost_clip_filter
 
 
 class CSIFilterTestCase(unittest.TestCase):
@@ -86,11 +86,30 @@ class LogicClipFilterTestCase(unittest.TestCase):
 
     def test_clip_filter(self):
         #Test that a Type Error is raised when a pandas series without a datetime index is used.
-        self.assertRaises(TypeError,  geometric_clip_filter, self.power_no_datetime_index)
+        self.assertRaises(TypeError,  logic_clip_filter, self.power_no_datetime_index)
         # Expect none of the sequence to be clipped (as it's constantly increasing)
         filtered, mask = logic_clip_filter(self.power_datetime_index)
         self.assertTrue(mask.all() == False)
+        
 
+class XGBoostClipFilterTestCase(unittest.TestCase):
+    ''' Unit tests for geometric clipping filter.'''
+
+    def setUp(self):
+        self.power_no_datetime_index = pd.Series(np.arange(1, 101))
+        self.power_datetime_index = pd.Series(np.arange(1, 101))
+        #Add datetime index to second series
+        time_range = pd.date_range('2016-12-02T11:00:00.000Z', '2017-06-06T07:00:00.000Z', freq='H')
+        self.power_datetime_index.index = pd.to_datetime(time_range[:100])
+        # Note: Power is expected to be Series object with a datetime index.
+
+    def test_clip_filter(self):
+        #Test that a Type Error is raised when a pandas series without a datetime index is used.
+        self.assertRaises(TypeError,  xgboost_clip_filter, self.power_no_datetime_index)
+        # Expect none of the sequence to be clipped (as it's constantly increasing)
+        filtered, mask = xgboost_clip_filter(self.power_datetime_index)
+        self.assertTrue(mask.all() == False)
+        
 
 def test_normalized_filter_default():
     pd.testing.assert_series_equal(normalized_filter(pd.Series([-5, 5])),
