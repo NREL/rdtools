@@ -44,8 +44,9 @@ INSTALL_REQUIRES = [
     'h5py >= 2.7.1',
     'pvlib >= 0.7.0, <0.8.0',
     'plotly>=4.10.0',
-    'scikit-learn >= 0.24.1',
-    'joblib >= 1.0.1'
+    'scikit-learn >= 0.23.2',
+    'joblib >= 0.16.0',
+    'xgboost >= 1.3.3'
 ]
 
 EXTRAS_REQUIRE = {
