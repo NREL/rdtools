@@ -330,7 +330,7 @@ def xgboost_clip_filter(power_ac,
     if sampling_frequency < 10:
         rolling_window = 5
     elif (sampling_frequency >= 10) and (sampling_frequency < 60):
-        rolling_window = 3#max(int(round(60/sampling_frequency, 0)), 1)
+        rolling_window = 3
     else:
         rolling_window = 2
     power_ac_df['rolling_average'] = power_ac_df['scaled_value'].rolling(window = rolling_window,

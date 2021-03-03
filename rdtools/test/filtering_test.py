@@ -84,7 +84,7 @@ class LogicClipFilterTestCase(unittest.TestCase):
         self.power_datetime_index.index = pd.to_datetime(time_range[:100])
         # Note: Power is expected to be Series object with a datetime index.
 
-    def test_clip_filter(self):
+    def test_logic_clip_filter(self):
         #Test that a Type Error is raised when a pandas series without a datetime index is used.
         self.assertRaises(TypeError,  logic_clip_filter, self.power_no_datetime_index)
         # Expect none of the sequence to be clipped (as it's constantly increasing)
@@ -103,7 +103,7 @@ class XGBoostClipFilterTestCase(unittest.TestCase):
         self.power_datetime_index.index = pd.to_datetime(time_range[:100])
         # Note: Power is expected to be Series object with a datetime index.
 
-    def test_clip_filter(self):
+    def test_xgboost_clip_filter(self):
         #Test that a Type Error is raised when a pandas series without a datetime index is used.
         self.assertRaises(TypeError,  xgboost_clip_filter, self.power_no_datetime_index)
         # Expect none of the sequence to be clipped (as it's constantly increasing)

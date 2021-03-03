@@ -43,7 +43,9 @@ INSTALL_REQUIRES = [
     'scipy >= 0.19.1',
     'h5py >= 2.7.1',
     'pvlib >= 0.7.0, <0.8.0',
-    'plotly>=4.10.0'
+    'plotly>=4.10.0',
+    'scikit-learn >= 0.24.1',
+    'joblib >= 1.0.1'
 ]
 
 EXTRAS_REQUIRE = {
