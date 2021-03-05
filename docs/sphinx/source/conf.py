@@ -26,7 +26,7 @@ copyright = '2016–2020 kwhanalytics, Alliance for Sustainable Energy, LLC, and
 author = 'kwhanalytics, Alliance for Sustainable Energy, LLC, and SunPower'
 
 # The full version, including alpha/beta/rc tags
-import rdtools
+import rdtools  # noqa: E402
 release = version = rdtools.__version__
 
 
@@ -42,6 +42,7 @@ extensions = [
     'sphinx.ext.autosummary',
     'nbsphinx',
     'nbsphinx_link',
+    'sphinx_gallery.load_style',
 ]
 
 autosummary_generate = True
@@ -53,7 +54,8 @@ templates_path = ['_templates']
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
 
-exclude_patterns = []
+exclude_patterns = ['changelog/*']
+
 
 source_suffix = ['.rst', '.md']
 
@@ -80,8 +82,11 @@ html_theme_options = {
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static', '_images']
+smartquotes = False
 
 master_doc = 'index'
+
+
 # A workaround for the responsive tables always having annoying scrollbars.
 def setup(app):
     app.add_stylesheet("no_scrollbars.css")
@@ -146,15 +151,17 @@ def make_github_url(pagename):
 
     # RTD automatically sets READTHEDOCS_VERSION to the version being built.
     rtd_version = os.environ.get('READTHEDOCS_VERSION', None)
-    version_map = {
-        'stable': 'master',
-        'latest': 'development',        
-    }
-    try:
-        branch = version_map[rtd_version]
-    except KeyError:
+    if rtd_version is None:
         # for other builds (PRs, local builds etc), it's unclear where to link
         return None
+
+    version_map = {
+        'stable': 'master',
+        'latest': 'development',
+    }
+    # for versions other than stable and latest, just use the version number.
+    # either a branch name or a git tag will work for the URL
+    branch = version_map.get(rtd_version, rtd_version)
 
     URL_BASE = "https://github.com/nrel/rdtools/blob/{}/".format(branch)
 
@@ -170,22 +177,23 @@ def make_github_url(pagename):
         if start and end:
             target_url += '#L{}-L{}'.format(start, end)
 
-    # is it the example notebook?
-    elif pagename == "example":
-        target_url = URL_BASE + "docs/degradation_and_soiling_example.ipynb"
+    # is it an example notebook?
+    elif pagename.startswith('examples/'):
+        notebook_name = pagename.split("/")[-1]
+        target_url = URL_BASE + "docs/" + notebook_name + ".ipynb"
 
     # is the the changelog page?
     elif pagename == "changelog":
         target_url = URL_BASE + "docs/sphinx/source/changelog"
-        
+
     # Just a normal source RST page
     else:
         target_url = URL_BASE + "docs/sphinx/source/" + pagename + ".rst"
 
-    display_text = "View on github/" + branch
+    display_text = "View on github@" + branch
     link_info = {
         'url': target_url,
-        'text': display_text        
+        'text': display_text
     }
     return link_info
 

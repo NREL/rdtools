@@ -1,0 +1,13 @@
+**************************
+v2.0.3 (November 20, 2020)
+**************************
+
+Requirements
+------------
+* Change to ``docs/notebook_requirements.txt``: notebook version from 5.7.8 to
+  6.1.5 and terminado version from 0.8.1 to 0.8.3 (:pull:`239`)
+
+Contributors
+------------
+* Mike Deceglie (:ghuser:`mdeceglie`)
+* :ghuser:`dependabot`

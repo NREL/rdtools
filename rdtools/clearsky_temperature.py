@@ -22,7 +22,7 @@ def get_clearsky_tamb(times, latitude, longitude, window_size=40,
     latitude : float
         Coordinates in decimal degrees.
     longitude : float
-        Coordinates in decimal degrees.
+        Coordinates in decimal degrees. Positive is east of the prime meridian.
     window_size : int, default 40
         The window size in days to use when calculating rolling averages.
     gauss_std : int, default 20

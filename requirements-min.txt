@@ -1,0 +1,9 @@
+h5py==2.7.1
+matplotlib==3.0.0
+numpy==1.15
+pandas==0.23.0
+pvlib==0.7.0
+scipy==0.19.1
+statsmodels==0.8.0
+tables == 3.4.2
+numexpr==2.7.1  # https://github.com/pydata/numexpr/issues/369

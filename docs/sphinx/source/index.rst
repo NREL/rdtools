@@ -17,21 +17,22 @@ time series data from photovoltaic energy systems. The library aims to provide
 best practice analysis routines along with the building blocks for users to
 tailor their own analyses.
 Current applications include the evaluation of PV production over several years to obtain
-rates of performance degradation and soiling loss. RdTools can handle
+rates of performance degradation and soiling loss. They also include the capability to
+analyze systems for system- and subsystem-level availability. RdTools can handle
 both high frequency (hourly or better) or low frequency (daily, weekly,
 etc.) datasets. Best results are obtained with higher frequency data.
 
-Full examples are worked out in the example notebooks in the
-`example notebook`_.
+Full examples are worked out in the notebooks shown in :ref:`examples`.
 
 To report issues, contribute code, or suggest improvements to this
 documentation, visit the RdTools development repository on `github`_.
 
-Workflow
---------
+Trends
+-----------------------
 
-RdTools supports a number of workflows, but a typical analysis follows
-the following:
+Both degradation and soiling analyses are based on normalized yield, similar to performance
+index. Usually, this is computed at the daily level although other aggregation periods are
+supported. A typical analysis of soiling and degradation contains the following:
 
 0. Import and preliminary calculations
 1. Normalize data using a performance metric
@@ -41,22 +42,22 @@ the following:
    soiling loss
 
 Steps 1 and 2 may be accomplished with the clearsky workflow (see the
-`example notebook`_) which can help eliminate problems from irradiance sensor
+:ref:`examples`) which can help eliminate problems from irradiance sensor
 drift.
 
 .. image:: _images/RdTools_workflows.png
   :alt: RdTools workflow diagram
 
-Degradation Results
--------------------
+Degradation
+^^^^^^^^^^^
 
 The preferred method for degradation rate estimation is the year-on-year
-(YOY) approach, available in :py:func:`.degradation.degradation_year_on_year`.
+(YOY) approach (Jordan 2018), available in :py:func:`.degradation.degradation_year_on_year`.
 The YOY calculation yields in a distribution of degradation rates, the
 central tendency of which is the most representative of the true
 degradation. The width of the distribution provides information about
 the uncertainty in the estimate via a bootstrap calculation. The
-`example notebook`_ uses the output of
+:ref:`examples` use the output of
 :py:func:`.degradation.degradation_year_on_year` to visualize the calculation.
 
 .. image:: _images/Clearsky_result_updated.png
@@ -77,8 +78,8 @@ analysis when details such as filtering are changed. We generally recommend
 that the clear-sky analysis be used as a check on the sensor-based results,
 rather than as a stand-alone analysis.
 
-Soiling Results
----------------
+Soiling
+^^^^^^^
 
 Soiling can be estimated with the stochastic rate and recovery (SRR)
 method (Deceglie 2018). This method works well when soiling patterns
@@ -95,6 +96,30 @@ identified soiling rates for the dataset.
    :alt: RdTools soiling results plot
    :width: 320
    :height: 216
+
+TrendAnalysis
+^^^^^^^^^^^^^
+An object-oriented API for complete soiling and degradation analysis including 
+the normalize, filter, aggregate, analyze steps is available in
+:py:class:`.analysis_chains.TrendAnalysis`. See the `TrendAnalysis example`_ 
+for details. 
+
+Availability
+------------
+
+Evaluating system availability can be confounded by data loss from interrupted
+datalogger or system communications. RdTools implements two methods
+(Anderson & Blumenthal 2020) of distinguishing nuisance communication
+interruptions from true production outages
+with the :py:class:`.availability.AvailabilityAnalysis` class. In addition to
+classifying data outages, it estimates lost production and calculates
+energy-weighted system availability.
+
+.. image:: _images/availability_summary.png
+   :alt: RdTools availability analysis plot
+   :width: 696
+   :height: 288
+
 
 Install RdTools using pip
 -------------------------
@@ -125,8 +150,8 @@ RdTools currently is tested on Python 3.6+.
 Usage and examples
 ------------------
 
-Full workflow examples are found in the notebooks in `example notebook`_.
-The examples are designed to work with python 3.6. For a consistent
+Full workflow examples are found in the notebooks in :ref:`examples`.
+The examples are designed to work with python 3.7. For a consistent
 experience, we recommend installing the packages and versions documented
 in ``docs/notebook_requirements.txt``. This can be achieved in your
 environment by first installing RdTools as described above, then running
@@ -143,10 +168,11 @@ The most frequently used functions are:
 
 .. code:: python
 
-   normalization.normalize_with_pvwatts(energy, pvwatts_kws)
+   normalization.normalize_with_expected_power(pv, power_expected, poa_global,
+                                               pv_input='power')
      '''
-     Inputs: Pandas time series of raw energy, PVwatts dict for system analysis 
-       (poa_global, power_dc_rated, temperature_cell, poa_global_ref, temperature_cell_ref, gamma_pdc)
+     Inputs: Pandas time series of raw power or energy, expected power, and
+        plane of array irradiance.
      Outputs: Pandas time series of normalized energy and POA insolation
      '''
 
@@ -187,6 +213,15 @@ The most frequently used functions are:
        `sr_ci`: Confidence interval `soiling_info`: associated analysis data
      '''
 
+.. code:: python
+
+   availability.AvailabilityAnalysis(power_system, power_subsystem,
+                                     energy_cumulative, power_expected)
+     '''
+     Inputs: Pandas time series system and subsystem power and energy data
+     Outputs: DataFrame of production loss and availability metrics
+     '''
+
 Citing RdTools
 --------------
 
@@ -201,6 +236,10 @@ appropriate:
 -  M. G. Deceglie, L. Micheli and M. Muller, "Quantifying Soiling Loss
    Directly From PV Yield," in IEEE Journal of Photovoltaics, 8(2),
    pp. 547-551, 2018
+
+-  K. Anderson and R. Blumenthal, "Overcoming Communications Outages in
+   Inverter Downtime Analysis", 2020 IEEE 47th Photovoltaic Specialists
+   Conference (PVSC)."
    ‌‌
 -  RdTools, version x.x.x, https://github.com/NREL/rdtools,
    https://doi.org/10.5281/zenodo.1210316
@@ -252,7 +291,7 @@ Documentation Contents
 .. toctree::
    :maxdepth: 2
 
-   In-Depth Examples <example>
+   Examples <examples>
    API Reference <api>
    Change Log <changelog>
    Developer Notes <developer_notes>
@@ -267,6 +306,5 @@ Indices and tables
 
 .. links and references
 
-.. _example notebook: https://rdtools.readthedocs.io/en/latest/example.html
 .. _release: https://github.com/NREL/rdtools/releases
 .. _github: https://github.com/NREL/rdtools

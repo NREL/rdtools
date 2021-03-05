@@ -1,6 +1,7 @@
-************************
-v2.0.0b0 (July 31, 2020)
-************************
+*************************
+v2.0.0 (October 20, 2020)
+*************************
+Version 2.0.0 adds experimental soiling and availability modules, plotting capability, and includes updates to normalization work flow. This major release introduces some breaking changes to the API. Details below.
 
 API Changes
 -----------
@@ -10,15 +11,6 @@ API Changes
   right-labeled energy with :py:func:`~rdtools.normalization.energy_from_power`
   before being used with these normalization functions (:pull:`105`, :pull:`108`).
 * Remove ``low_power_cutoff`` parameter in :py:func:`~rdtools.filtering.clip_filter` (:issue:`84`).
-* Rename `soiling.srr_analysis` to :py:class:`~rdtools.soiling.SRRAnalysis` (:pull:`168`).
-* Double the default value of the ``max_timedelta`` in :py:func:`~rdtools.normalization.interpolate`
-  and :py:func:`~rdtools.normalization.interpolate_series` to be twice the
-  median timedelta (:pull:`182`).
-* Support varying logic in soiling module for defining cleaning events from shifts and
-  precipitation with ``clean_criterion`` parameter. Behavior of ``clean_criterion='precip_and_shift'``
-  has changed relative to prior versions using ``precip_clean_only=True`` (:pull:`176`).
-* Remove ``random_seed`` parameter from soiling module. Functionality can be obtained by running
-  ``numpy.random.seed()`` outside of RdTools functions. (:pull:`176`)
 * Many kwargs have changed name (but not input order) to bring nomenclature into 
   closer alignment with the `DuraMAT pv-terms project <https://duramat.github.io/pv-terms>`_: (:pull:`185`)
 
@@ -34,46 +26,68 @@ API Changes
   * :py:func:`~rdtools.filtering.csi_filter` first two kwargs are now ``poa_global_measured``, ``poa_global_clearsky``.
   * :py:func:`~rdtools.normalization.normalize_with_pvwatts` pvwatts_kws dictionary keys have been renamed.
   * :py:func:`~rdtools.normalization.pvwatts_dc_power` input kwargs are now ``poa_global``, ``power_dc_rated``, ``temperature_cell``, ``poa_global_ref``, ``temperature_cell_ref``, ``gamma_pdc``.
+  * :py:func:`~rdtools.normalization.irradiance_rescale` second kwarg is now ``irrad_sim``
+
+Deprecations
+------------
+* The functions :py:func:`~rdtools.normalization.pvwatts_dc_power`,
+  :py:func:`~rdtools.normalization.sapm_dc_power`,
+  :py:func:`~rdtools.normalization.normalize_with_pvwatts`, and
+  :py:func:`~rdtools.normalization.normalize_with_sapm` have been deprecated
+  in favor of :py:func:`~rdtools.normalization.normalize_with_expected_power`.
+  (:pull:`215`)
+* :py:func:`~rdtools.normalization.delta_index` and :py:func:`~rdtools.normalization.check_series_frequency` (:pull:`222`)
 
 Enhancements
 ------------
 * Add new :py:mod:`~rdtools.soiling` module to implement the stochastic rate and
-  recovery method (:pull:`112`).
+  recovery method:
+
+  - Create new class :py:class:`~rdtools.soiling.SRRAnalysis` and helper function
+    :py:func:`~rdtools.soiling.soiling_srr` (:pull:`112`, :pull:`168`, :pull:`169`,
+    :pull:`176`, :pull:`208`, :pull:`213`)
+  - Create functions :py:func:`~rdtools.soiling.monthly_soiling_rates` and
+    :py:func:`~rdtools.soiling.annual_soiling_ratios` (:pull:`193`, :pull:`207`)
+
+* Create new module :py:mod:`~rdtools.availability` with the class
+  :py:class:`~rdtools.availability.AvailabilityAnalysis` for estimating
+  timeseries system availability (:pull:`131`)
 * Add new function :py:func:`~rdtools.normalization.normalize_with_expected_power` (:pull:`173`).
 * Add new functions :py:func:`~rdtools.normalization.energy_from_power` and
-  :py:func:`~rdtools.normalization.interpolate` (:pull:`105`, :pull:`108`).
-* Add new function :py:func:`~rdtools.filtering.normalized_filter`.
-* Add new :py:mod:`~rdtools.plotting` module for generating standard plots.
+  :py:func:`~rdtools.normalization.interpolate` (:pull:`105`, :pull:`108`, :pull:`182`, :pull:`212`).
+* Add new function :py:func:`~rdtools.filtering.normalized_filter` (:pull:`139`)
+* Add new :py:mod:`~rdtools.plotting` module for generating standard plots
+  (:pull:`138`, :pull:`131`)
 * Add parameter ``convergence_threshold`` to
   :py:func:`~rdtools.normalization.irradiance_rescale` (:pull:`152`).
-* Add parameter ``warning_threshold`` to :py:func:`~rdtools.normalization.interpolate`
-  and :py:func:`~rdtools.normalization.interpolate_series` (:pull:`182`).
-* Add new function :py:func:`~rdtools.filtering.geometric_clip_filter` (:pull:`200`).
 
 Bug fixes
 ---------
 * Allow ``max_iterations=0`` in
   :py:func:`~rdtools.normalization.irradiance_rescale` (:pull:`152`).
-* Fix a bug in :py:mod:`~rdtools.soiling` code that caused problems for soiling intervals
-  consisting solely of invalid data. (:pull:`169`)
-
 
 Testing
 -------
 * Add Python 3.7 and 3.8 to CI testing (:pull:`135`).
+* Add CI configuration based on the minimum dependency versions (:pull:`197`)
 
 Documentation
 -------------
 * Create sphinx documentation and set up ReadTheDocs (:pull:`125`).
 * Add guides on running tests and building sphinx docs (:pull:`136`).
 * Improve module-level docstrings (:pull:`137`).
+* Update landing page and add new "Inverter Downtime" documentation page
+  based on the availability notebook (:pull:`131`)
 
 Requirements
 ------------
 * Drop support for Python 2.7, minimum supported version is now 3.6 (:pull:`135`).
-* Increase minimum pvlib version to 0.7.0.
+* Increase minimum pvlib version to 0.7.0 (:pull:`170`)
 * Update requirements.txt and notebook_requirements.txt to avoid conflicting specifications. Taken together,
   they represent the complete environment for the notebook example (:pull:`164`).
+* Add minimum matplotlib requirement of 3.0.0 (released September 18, 2018) (:pull:`197`)
+* Increase minimum numpy version from 1.12 (released January 15, 2017) to
+  1.15 (released July 23, 2018) (:pull:`197`)
 
 Example Updates
 ---------------
@@ -81,14 +95,16 @@ Example Updates
 * Use :py:func:`~rdtools.filtering.normalized_filter` instead of manually
   filtering the normalized energy timeseries.  Also updated the associated mask
   variable names (:pull:`139`).
+* Add soiling section to the original example notebook.
 * Add a new example notebook that analyzes data from a PV system located at
   NREL's South Table Mountain campus (PVDAQ system #4) (:pull:`171`).
 * Explicitly register pandas datetime converters which were `deprecated <https://github.com/pandas-dev/pandas/issues/18301>`_.
-  
+* Add new ``system_availability_example.ipynb`` notebook (:pull:`131`)
+
 
 Contributors
 ------------
 * Mike Deceglie (:ghuser:`mdeceglie`)
 * Kevin Anderson (:ghuser:`kanderso-nrel`)
 * Chris Deline (:ghuser:`cdeline`)
-
+* Will Vining (:ghuser:`wfvining`)
