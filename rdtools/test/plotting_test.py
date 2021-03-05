@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 from rdtools.degradation import degradation_year_on_year
-from rdtools.filtering import geometric_clip_filter
+from rdtools.filtering import logic_clip_filter
 from rdtools.soiling import soiling_srr
 from rdtools.plotting import (
     degradation_summary_plots,
@@ -180,7 +180,7 @@ def clipping_info(clipping_power_degradation_signal):
     clipping, with True indicating a clipping period and False 
     representing a non-clipping period
     '''
-    signal_filtered, clipping_mask_series = geometric_clip_filter(clipping_power_degradation_signal)
+    signal_filtered, clipping_mask_series = logic_clip_filter(clipping_power_degradation_signal)
     return signal_filtered, clipping_mask_series
 
 
