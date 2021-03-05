@@ -8,8 +8,8 @@ from rdtools.plotting import (
     soiling_monte_carlo_plot,
     soiling_interval_plot,
     soiling_rate_histogram,
-    tune_clip_filter_plot
-    availability_summary_plots,
+    tune_clip_filter_plot,
+    availability_summary_plots
 )
 import matplotlib.pyplot as plt
 import plotly
