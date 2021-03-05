@@ -2,7 +2,6 @@
 
 import numpy as np
 import pandas as pd
-from sklearn.ensemble import RandomForestClassifier
 from sklearn import preprocessing
 import joblib
 import os
@@ -177,7 +176,7 @@ def logic_clip_filter(power_ac,
     #Get the names of the series and the datetime index
     column_name = power_ac.name
     if column_name is None:
-        column_name = 'power_ac'
+        column_name = 'value'
         power_ac = power_ac.rename(column_name)   
     index_name = power_ac.index.name
     if index_name is None:
@@ -213,7 +212,6 @@ def logic_clip_filter(power_ac,
     power_ac['ten_percent_daily'] = daily.reindex(index = power_ac.index, method='ffill')
     power_ac.loc[power_ac[column_name] < power_ac['ten_percent_daily'], column_name]= np.nan   
     power_ac = power_ac[column_name]
-    
     #Calculate the maximum value over a forward-rolling window
     max_roll = power_ac.iloc[::-1].rolling(roll_periods).max()
     max_roll = max_roll.reindex(power_ac.index)
@@ -228,7 +226,7 @@ def logic_clip_filter(power_ac,
     #the following applies the clipping determination to all data points within
     #the rolling window
     #Get max derivative at a certain timestamp, looks at the periods     
-    clipping_df = pd.DataFrame(roll_clip_mask.copy())
+    clipping_df = pd.DataFrame(roll_clip_mask.copy(), columns = ['value'])
     #Set values within roll_periods values from a True instance
     #as True as well
     clipping_df['subgroup'] = (clipping_df['value'] != clipping_df['value'].shift(1)).cumsum()
@@ -284,7 +282,7 @@ def logic_clip_filter(power_ac,
     final_clip=(daily_clipping_min <= power_ac) & (power_ac <= daily_clipping_max)
     final_clip=final_clip.reindex(index = power_copy.index,
                                   fill_value = False)
-    return final_clip
+    return power_ac[final_clip==False], final_clip
 
 
 def xgboost_clip_filter(power_ac, 
@@ -316,6 +314,11 @@ def xgboost_clip_filter(power_ac,
     #Check the other input variables to ensure that they are the correct format
     if (mounting_type != "Tracking") & (mounting_type != "Fixed"):
         raise ValueError("Variable mounting_type must be string 'Tracking' or 'Fixed'.")
+    #Change the name of the series to 'value'
+    column_name = power_ac.name
+    if column_name is None:
+        column_name = 'value'
+        power_ac = power_ac.rename(column_name) 
     #Convert the Pandas series to a dataframe, with mounting_type as an 
     #additional column.
     power_ac_df = power_ac.to_frame()
@@ -371,5 +374,5 @@ def xgboost_clip_filter(power_ac,
     xgb_predictions = pd.Series(xgboost_clipping_model.predict(power_ac_df).astype(bool))
     #Add datetime as an index
     xgb_predictions.index = power_ac_df.index
-    return xgb_predictions
+    return power_ac[xgb_predictions==False], xgb_predictions
 
