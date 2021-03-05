@@ -244,15 +244,15 @@ def logic_clip_filter(power_ac,
     clipping_df['subgroup_count'] = clipping_df.groupby(
                                     clipping_df['subgroup']).cumcount() + 1
     if roll_periods > 4:
-        clipping_df.loc[(clipping_df['value'] == False) &
+        clipping_df.loc[(~clipping_df['value']) &
                         (clipping_df['subgroup_count'] <= 4) &
                         (clipping_df['subgroup'] > 1), 'value'] = True
     elif roll_periods > 3:
-        clipping_df.loc[(clipping_df['value'] == False) &
+        clipping_df.loc[(~clipping_df['value']) &
                         (clipping_df['subgroup_count'] <= 3) &
                         (clipping_df['subgroup'] > 1), 'value'] = True
     elif roll_periods > 1:
-        clipping_df.loc[(clipping_df['value'] == False) &
+        clipping_df.loc[(~clipping_df['value']) &
                         (clipping_df['subgroup_count'] <= 2) &
                         (clipping_df['subgroup'] > 1), 'value'] = True
     else:
@@ -299,7 +299,7 @@ def logic_clip_filter(power_ac,
         (power_ac <= daily_clipping_max)
     final_clip = final_clip.reindex(index=power_copy.index,
                                     fill_value=False)
-    return power_ac[final_clip == False], final_clip
+    return power_ac[~final_clip], final_clip
 
 
 def xgboost_clip_filter(power_ac,
@@ -410,4 +410,4 @@ def xgboost_clip_filter(power_ac,
         power_ac_df).astype(bool))
     # Add datetime as an index
     xgb_predictions.index = power_ac_df.index
-    return power_ac[xgb_predictions==False], xgb_predictions
+    return power_ac[~xgb_predictions], xgb_predictions

@@ -71,7 +71,7 @@ class ClipFilterTestCase(unittest.TestCase):
         # Expect 99% of the 98th quantile to be filtered
         expected_result = self.power < (98 * 0.99)
         self.assertTrue((expected_result == filtered).all())
-        
+
 
 class LogicClipFilterTestCase(unittest.TestCase):
     ''' Unit tests for geometric clipping filter.'''
@@ -93,7 +93,7 @@ class LogicClipFilterTestCase(unittest.TestCase):
         # Expect none of the sequence to be clipped (as it's
         # constantly increasing)
         filtered, mask = logic_clip_filter(self.power_datetime_index)
-        self.assertTrue(mask.all() == False)
+        self.assertTrue(not mask.all())
 
 
 class XGBoostClipFilterTestCase(unittest.TestCase):
@@ -116,25 +116,28 @@ class XGBoostClipFilterTestCase(unittest.TestCase):
         # Expect none of the sequence to be clipped (as it's
         # constantly increasing)
         filtered, mask = xgboost_clip_filter(self.power_datetime_index)
-        self.assertTrue(mask.all() == False)       
+        self.assertTrue(not mask.all())
 
 
 def test_normalized_filter_default():
     pd.testing.assert_series_equal(normalized_filter(pd.Series([-5, 5])),
                                    pd.Series([False, True]))
-    pd.testing.assert_series_equal(normalized_filter(pd.Series([-1e6, 1e6]),
-                                                     energy_normalized_low=None,
-                                                     energy_normalized_high=None),
-                                   pd.Series([True, True]))
+    pd.testing.assert_series_equal(normalized_filter(
+                        pd.Series([-1e6, 1e6]),
+                        energy_normalized_low=None,
+                        energy_normalized_high=None),
+                        pd.Series([True, True]))
 
-    pd.testing.assert_series_equal(normalized_filter(pd.Series([-2, 2]),
-                                                     energy_normalized_low=-1,
-                                                     energy_normalized_high=1),
-                                   pd.Series([False, False]))
+    pd.testing.assert_series_equal(normalized_filter(
+                                pd.Series([-2, 2]),
+                                energy_normalized_low=-1,
+                                energy_normalized_high=1),
+                                pd.Series([False, False]))
 
     eps = 1e-16
-    pd.testing.assert_series_equal(normalized_filter(pd.Series([0.01 - eps, 0.01 + eps, 1e308])),
-                                   pd.Series([False, True, True]))
+    pd.testing.assert_series_equal(normalized_filter(
+                        pd.Series([0.01 - eps, 0.01 + eps, 1e308])),
+                        pd.Series([False, True, True]))
 
 
 if __name__ == '__main__':
