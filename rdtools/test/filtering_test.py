@@ -79,18 +79,22 @@ class LogicClipFilterTestCase(unittest.TestCase):
     def setUp(self):
         self.power_no_datetime_index = pd.Series(np.arange(1, 101))
         self.power_datetime_index = pd.Series(np.arange(1, 101))
-        #Add datetime index to second series
-        time_range = pd.date_range('2016-12-02T11:00:00.000Z', '2017-06-06T07:00:00.000Z', freq='H')
+        # Add datetime index to second series
+        time_range = pd.date_range('2016-12-02T11:00:00.000Z',
+                                   '2017-06-06T07:00:00.000Z', freq='H')
         self.power_datetime_index.index = pd.to_datetime(time_range[:100])
         # Note: Power is expected to be Series object with a datetime index.
 
     def test_logic_clip_filter(self):
-        #Test that a Type Error is raised when a pandas series without a datetime index is used.
-        self.assertRaises(TypeError,  logic_clip_filter, self.power_no_datetime_index)
-        # Expect none of the sequence to be clipped (as it's constantly increasing)
+        # Test that a Type Error is raised when a pandas series
+        # without a datetime index is used.
+        self.assertRaises(TypeError,  logic_clip_filter,
+                          self.power_no_datetime_index)
+        # Expect none of the sequence to be clipped (as it's
+        # constantly increasing)
         filtered, mask = logic_clip_filter(self.power_datetime_index)
         self.assertTrue(mask.all() == False)
-        
+
 
 class XGBoostClipFilterTestCase(unittest.TestCase):
     ''' Unit tests for geometric clipping filter.'''
@@ -98,23 +102,26 @@ class XGBoostClipFilterTestCase(unittest.TestCase):
     def setUp(self):
         self.power_no_datetime_index = pd.Series(np.arange(1, 101))
         self.power_datetime_index = pd.Series(np.arange(1, 101))
-        #Add datetime index to second series
-        time_range = pd.date_range('2016-12-02T11:00:00.000Z', '2017-06-06T07:00:00.000Z', freq='H')
+        # Add datetime index to second series
+        time_range = pd.date_range('2016-12-02T11:00:00.000Z',
+                                   '2017-06-06T07:00:00.000Z', freq='H')
         self.power_datetime_index.index = pd.to_datetime(time_range[:100])
         # Note: Power is expected to be Series object with a datetime index.
 
     def test_xgboost_clip_filter(self):
-        #Test that a Type Error is raised when a pandas series without a datetime index is used.
-        self.assertRaises(TypeError,  xgboost_clip_filter, self.power_no_datetime_index)
-        # Expect none of the sequence to be clipped (as it's constantly increasing)
+        # Test that a Type Error is raised when a pandas series
+        # without a datetime index is used.
+        self.assertRaises(TypeError,  xgboost_clip_filter,
+                          self.power_no_datetime_index)
+        # Expect none of the sequence to be clipped (as it's
+        # constantly increasing)
         filtered, mask = xgboost_clip_filter(self.power_datetime_index)
-        self.assertTrue(mask.all() == False)
-        
+        self.assertTrue(mask.all() == False)       
+
 
 def test_normalized_filter_default():
     pd.testing.assert_series_equal(normalized_filter(pd.Series([-5, 5])),
                                    pd.Series([False, True]))
-
     pd.testing.assert_series_equal(normalized_filter(pd.Series([-1e6, 1e6]),
                                                      energy_normalized_low=None,
                                                      energy_normalized_high=None),
