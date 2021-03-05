@@ -2,6 +2,11 @@
 Pending
 *******
 
+Enhancements
+------------
+* Add new function :py:func:`~rdtools.filtering.geometric_clip_filter` (:pull:`200`).
+
+
 Requirements
 ------------
 * Update specified versions of bleach in
@@ -11,5 +16,6 @@ Requirements
 
 Contributors
 ------------
+* Kirsten Perry (:ghuser:`kperrynrel`)
 * Kevin Anderson (:ghuser:`kanderso-nrel`)
 * Michael Deceglie (:ghuser:`mdeceglie`)
