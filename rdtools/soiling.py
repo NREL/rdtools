@@ -677,10 +677,10 @@ def soiling_srr(energy_normalized_daily, insolation_daily, reps=1000,
         * 'random_clean' - a random recovery between 0-100%
         * 'perfect_clean' - each cleaning event returns the performance metric
           to 1
-        * 'half_norm_clean'(default) - The starting point of each interval is taken
-              randomly from a half normal distribution with its mode (mu) at 1 and
-              its sigma equal to 1/3 * (1-b) where b is the intercept of the fit to
-              the interval.
+        * 'half_norm_clean' (default) - The starting point of each interval is taken
+          randomly from a half normal distribution with its mode (mu) at 1 and
+          its sigma equal to 1/3 * (1-b) where b is the intercept of the fit to
+          the interval.
     clean_criterion : {'precip_and_shift', 'precip_or_shift', 'precip', 'shift'} \
                 default 'shift'
             The method of partitioning the dataset into soiling intervals.
@@ -893,8 +893,9 @@ def monthly_soiling_rates(soiling_interval_summary, min_interval_length=14,
 
     min_interval_length : int, default 14
         The minimum number of days a soiling interval must contain to be
-        included in the calculation. Similar to the same parameter in soiling_srr()
-        and SRRAnalysis.run() but with a more conservative default value as a
+        included in the calculation. Similar to the same parameter in
+        :py:func:`soiling_srr` and :py:meth:`SRRAnalysis.run` but with a
+        more conservative default value as a
         starting point for monthly soiling rate analyses.
 
     max_relative_slope_error : float, default 500.0

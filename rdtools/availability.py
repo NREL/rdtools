@@ -113,7 +113,7 @@ class AvailabilityAnalysis:
     error_info : pandas.DataFrame
         Records about the error between expected power and actual power.
 
-    interp_lower, interp_upper : function
+    interp_lower, interp_upper : callable
         Functions to estimate the uncertainty interval bounds of expected
         production based on outage length.
 
@@ -595,7 +595,7 @@ class AvailabilityAnalysis:
             no production loss or (2) a power outage with an associated
             production loss estimate.
 
-        rollup_period : pandas.DateOffset or alias, default 'M'
+        rollup_period : pandas.tseries.offsets.DateOffset or alias, default 'M'
             The period on which to roll up losses and calculate availability.
         """
         self._calc_loss_subsystem(low_threshold, relative_sizes,

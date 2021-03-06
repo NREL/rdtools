@@ -487,7 +487,7 @@ def energy_from_power(power, target_frequency=None, max_timedelta=None,
     ----------
     power : pandas.Series
         Time series of power in Watts
-    target_frequency : DatetimeOffset or frequency string, default None
+    target_frequency : pandas.tseries.offsets.DateOffset or frequency string, default None
         The frequency of the energy time series to be returned.
         If omitted, use the median timestep of ``power``, or if ``power`` has
         fewer than two elements, use ``power.index.freq``.
@@ -754,13 +754,13 @@ def interpolate(time_series, target, max_timedelta=None, warning_threshold=0.1):
 
     Parameters
     ----------
-    time_series : pandas.Series, pd.DataFrame
+    time_series : pandas.Series, pandas.DataFrame
         Original values to be used in generating the interpolation
-    target : pandas.DatetimeIndex, DatetimeOffset, or frequency string
+    target : pandas.DatetimeIndex, pandas.tseries.offsets.DateOffset, frequency string
 
         * If DatetimeIndex: the index onto which the interpolation is to be
           made
-        * If DatetimeOffset or frequency string: the frequency at which to
+        * If DateOffset or frequency string: the frequency at which to
           resample and interpolate
     max_timedelta : pandas.Timedelta, default None
         The maximum allowed gap between values in ``time_series``. Times
@@ -775,7 +775,7 @@ def interpolate(time_series, target, max_timedelta=None, warning_threshold=0.1):
 
     Returns
     -------
-    pandas.Series or pd.DataFrame (matching type of time_series) with DatetimeIndex
+    pandas.Series or pandas.DataFrame (matching type of time_series) with DatetimeIndex
 
     Note
     ----
