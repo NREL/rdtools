@@ -97,7 +97,8 @@ Filtering
    :toctree: generated/
     
    clip_filter
-   geometric_clip_filter
+   logic_clip_filter
+   xgboost_clip_filter
    csi_filter
    poa_filter
    tcell_filter
