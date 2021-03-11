@@ -279,29 +279,15 @@ def tune_clip_filter_plot(power_ac, clipping_mask, display_web_browser=True):
     power_ac : pd.Series
         AC power in Watts. Index of the Pandas series is a Pandas
         datetime index.
-    clipping_percentile_cutoff: float, default 0.8
-        Cutoff value for the percentile (for the whole time series)
-        where clipping takes place.
-        So, for example, if the cutoff is set to 0.8, then any value
-        in the normalized time series less than 0.8 will not be considered
-        clipping. The higher the threshold, the more data omitted.
-    daily_max_percentile_cutoff: float, default 0.9
-        Cutoff value for the the daily percentile where clipping takes
-        place. So, for example, if the cutoff is set to 0.9, then any value
-        in a normalized daily time series that is less than 90% the max
-        daily value will not be considered clipping. The higher the threshold,
-        the more data omitted.
-    first_order_derivative_threshold : float, default None,
-        Cutoff value for the derivative threshold. The higher the value,
-        the less stringent the function is on defining clipping periods.
-        Represents the cutoff for the first-order derivative across two
-        data points. Default is set to None, where the threshold is derived
-        based on an experimental equation, which varies threshold by
-        sampling frequency.
+    clipping_mask : pd.Series
+        Pandas series of booleans, where clipping periods are marked
+        as True, and non-clipping periods are marked as False.
+    display_web_browser : Boolean
+        When set to True, the Plotly graph is displayed in the
+        user's web browser.
     Returns
     ---------
     Interactive Plotly graph, with the masked time series for clipping.
-    Returned via web browser.
     """
     # Get the names of the series and the datetime index
     column_name = power_ac.name
