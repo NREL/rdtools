@@ -39,7 +39,7 @@ def test_poa_filter():
     assert filtered.tolist() == expected_result.tolist()
 
 
-def test_tcell_filter(): 
+def test_tcell_filter():
     ''' Unit tests for cell temperature filter.'''
 
     tcell = np.array([-50, -49, 0, 109, 110])
@@ -52,7 +52,7 @@ def test_tcell_filter():
     assert filtered.tolist() == expected_result.tolist()
 
 
-def test_clip_filter(): 
+def test_clip_filter():
     ''' Unit tests for inverter clipping filter.'''
 
     power = pd.Series(np.arange(1, 101))
@@ -76,10 +76,10 @@ def generate_power_time_series():
     return power_no_datetime_index, power_datetime_index
 
 
-def test_logic_clip_filter(generate_power_time_series): 
+def test_logic_clip_filter(generate_power_time_series):
     ''' Unit tests for geometric clipping filter.'''
     power_no_datetime_index, power_datetime_index = \
-                                generate_power_time_series
+        generate_power_time_series
     # Test that a Type Error is raised when a pandas series
     # without a datetime index is used.
     pytest.raises(TypeError,  logic_clip_filter,
@@ -93,7 +93,7 @@ def test_logic_clip_filter(generate_power_time_series):
 def test_xgboost_clip_filter(generate_power_time_series):
     ''' Unit tests for geometric clipping filter.'''
     power_no_datetime_index, power_datetime_index = \
-                                generate_power_time_series
+        generate_power_time_series
     # Test that a Type Error is raised when a pandas series
     # without a datetime index is used.
     pytest.raises(TypeError,  xgboost_clip_filter,
