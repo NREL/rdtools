@@ -9,11 +9,13 @@ import os
 # Load in the XGBoost clipping model using joblib.
 xgboost_clipping_model = None
 
+
 def _load_xgboost_clipping_model():
     global xgboost_clipping_model
     if xgboost_clipping_model is None:
-        xgboost_clipping_model = joblib.load(os.path.join((os.path.dirname(__file__)),
-                                     "/models/xgboost_clipping_model.dat"))
+        xgboost_clipping_model = joblib.load(os.path.join(
+                                        (os.path.dirname(__file__)),
+                                        "/models/xgboost_clipping_model.dat"))
     return xgboost_clipping_model
 
 
@@ -332,7 +334,7 @@ def xgboost_clip_filter(power_ac,
         True values delineate clipping periods, and False values delineate non-
         clipping periods.
     """
-    #Load in the XGBoost model
+    # Load in the XGBoost model
     xgboost_clipping_model = _load_xgboost_clipping_model()
     # Check that it's a Pandas series with a datetime index. If not,
     # raise an error.
