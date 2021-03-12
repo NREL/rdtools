@@ -183,6 +183,34 @@ def format_clipping_time_series(power_ac, mounting_type):
     return power_ac
 
 
+def calculate_max_derivative(power_ac, roll_periods):
+    """
+    This function calculates the maximum derivative over a rolling
+    time period for an AC power time series. A pandas series of
+    the rolling derivative is returned.
+    Parameters
+    ----------
+    power_ac : pd.Series
+        Pandas time series, representing PV system power or energy with
+        a pandas datetime index.
+    roll_periods: Int
+        Number of readings to calculate the rolling maximum derivative on.
+    Returns
+    -------
+    pd.Series
+        Time series of the rolling maximum derivative.
+    """
+    # Calculate the maximum value over a forward-rolling window
+    max_roll = power_ac.iloc[::-1].rolling(roll_periods).max()
+    max_roll = max_roll.reindex(power_ac.index)
+    # Calculate the minimum value over a forward-rolling window
+    min_roll = power_ac.iloc[::-1].rolling(roll_periods).min()
+    min_roll = min_roll.reindex(power_ac.index)
+    # Calculate the maximum derivative within the foward-rolling window
+    derivative_max = (max_roll - min_roll) / ((max_roll + min_roll) / 2) * 100
+    return derivative_max
+
+
 def logic_clip_filter(power_ac,
                       mounting_type='Fixed',
                       derivative_cutoff=0.2):
@@ -255,14 +283,8 @@ def logic_clip_filter(power_ac,
     power_ac.loc[power_ac['value'] < power_ac['ten_percent_daily'],
                  'value'] = np.nan
     power_ac = power_ac['value']
-    # Calculate the maximum value over a forward-rolling window
-    max_roll = power_ac.iloc[::-1].rolling(roll_periods).max()
-    max_roll = max_roll.reindex(power_ac.index)
-    # Calculate the minimum value over a forward-rolling window
-    min_roll = power_ac.iloc[::-1].rolling(roll_periods).min()
-    min_roll = min_roll.reindex(power_ac.index)
-    # Calculate the maximum derivative within the foward-rolling window
-    deriv_max = (max_roll - min_roll) / ((max_roll + min_roll) / 2) * 100
+    # Calculate the maximum derivative for the power time series.
+    deriv_max = calculate_max_derivative(power_ac, roll_periods)
     # Determine clipping values based on the maximum derivative in
     # the rolling window, and the user-specified derivative threshold
     roll_clip_mask = (deriv_max < derivative_cutoff)
@@ -394,17 +416,9 @@ def xgboost_clip_filter(power_ac,
         power_ac_df.rolling_average.diff()
     power_ac_df['first_order_derivative_forward_rolling_avg'] = \
         power_ac_df.rolling_average.shift(-1).diff()
-    # Rolling max derivative over time
-    max_roll = power_ac_df['scaled_value'].iloc[::-1].rolling(
-        rolling_window).max()
-    max_roll = max_roll.reindex(power_ac_df.index)
-    # Calculate the minimum value over a set forward rolling window
-    min_roll = power_ac_df['scaled_value'].iloc[::-1].rolling(
-        rolling_window).min()
-    min_roll = min_roll.reindex(power_ac_df.index)
-    # Calculate the maximum derivative within the set foward rolling window
-    power_ac_df['deriv_max'] = (max_roll - min_roll) /  \
-        ((max_roll + min_roll) / 2) * 100
+    # Calculate the maximum derivative for the power time series.
+    power_ac_df['deriv_max'] = calculate_max_derivative(
+        power_ac=power_ac_df['scaled_value'], roll_periods=rolling_window)
     # Get the max value for the day and see how each value compares
     power_ac_df['date'] = list(pd.to_datetime(pd.Series(
         power_ac_df.index)).dt.date)
