@@ -63,7 +63,7 @@ def test_soiling_srr(soiling_normalized_daily, soiling_insolation, soiling_times
         'soiling_info["soiling_ratio_perfect_clean"] not a pandas series'
 
 
-def test_soiling_srr_consecutive_invalid(soiling_normalized_daily, soiling_insolation, times):
+def test_soiling_srr_consecutive_invalid(soiling_normalized_daily, soiling_insolation, soiling_times):
     reps = 10
     np.random.seed(1977)
     sr, sr_ci, soiling_info = soiling_srr(soiling_normalized_daily, soiling_insolation, reps=reps,
