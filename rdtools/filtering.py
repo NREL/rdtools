@@ -8,7 +8,7 @@ import os
 
 # Load in the XGBoost clipping model using joblib.
 xgboost_clipping_model = None
-model_path = os.path.dirname((os.path.dirname(__file__))) + \
+model_path = (os.path.dirname(__file__)) + \
                              "/models/xgboost_clipping_model.dat"
 
 
