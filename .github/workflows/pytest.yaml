@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [3.6, 3.7, 3.8]
+        python-version: [3.6, 3.7, 3.8, 3.9]
         env: [
           '-r requirements.txt .[test]',
           '-r requirements-min.txt .[test]',
@@ -19,6 +19,8 @@ jobs:
             env: '-r requirements-min.txt .[test]'
           - python-version: 3.8
             env: '-r requirements-min.txt .[test]'
+          - python-version: 3.9
+            env: '-r requirements-min.txt .[test]'
 
     steps:
     - uses: actions/checkout@v2
@@ -28,7 +30,7 @@ jobs:
         python-version: ${{ matrix.python-version }}
     - name: Install ${{ matrix.env }}
       run: |
-        python -m pip install --upgrade pip
+        python -m pip install --upgrade pip wheel
         pip install ${{ matrix.env }}
     - name: Test with pytest ${{ matrix.env }}
       run: |
