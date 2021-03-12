@@ -142,6 +142,47 @@ def csi_filter(poa_global_measured, poa_global_clearsky, threshold=0.15):
     return (csi >= 1.0 - threshold) & (csi <= 1.0 + threshold)
 
 
+def format_clipping_time_series(power_ac, mounting_type):
+    """
+    Format an AC power time series appropriately for
+    either the logic_clip_filter function or the xgboost_clip_filter
+    function.
+    Parameters
+    ----------
+    power_ac : pd.Series
+        Pandas time series, representing PV system power or energy with
+        a pandas datetime index.
+    mounting_type : String
+        String representing the mounting configuration associated with the
+        AC power/energy time series. Can either be "Fixed" or "Tracking".
+        Default set to 'Fixed'.
+    Returns
+    -------
+    pd.Series
+        AC power time series with renamed 'datetime' column, and
+        renamed 'value' column.
+    """
+    # Check that it's a Pandas series with a datetime index.
+    # If not, raise an error.
+    if not isinstance(power_ac.index, pd.DatetimeIndex):
+        raise TypeError('Must be a Pandas series with a datetime index.')
+    # Check the other input variables to ensure that they are the
+    # correct format
+    if (mounting_type != "Tracking") & (mounting_type != "Fixed"):
+        raise ValueError(
+            "Variable mounting_type must be string 'Tracking' or 'Fixed'.")
+    # Get the names of the series and the datetime index
+    column_name = power_ac.name
+    if column_name is None:
+        column_name = 'value'
+        power_ac = power_ac.rename(column_name)
+    index_name = power_ac.index.name
+    if index_name is None:
+        index_name = 'datetime'
+        power_ac = power_ac.rename_axis(index_name)
+    return power_ac
+
+
 def logic_clip_filter(power_ac,
                       mounting_type='Fixed',
                       derivative_cutoff=0.2):
@@ -173,24 +214,8 @@ def logic_clip_filter(power_ac,
         clipping. True values delineate clipping periods, and False values
         delineate non-clipping periods.
     '''
-    # Check that it's a Pandas series with a datetime index.
-    # If not, raise an error.
-    if not isinstance(power_ac.index, pd.DatetimeIndex):
-        raise TypeError('Must be a Pandas series with a datetime index.')
-    # Check the other input variables to ensure that they are the
-    # correct format
-    if (mounting_type != "Tracking") & (mounting_type != "Fixed"):
-        raise ValueError(
-            "Variable mounting_type must be string 'Tracking' or 'Fixed'.")
-    # Get the names of the series and the datetime index
-    column_name = power_ac.name
-    if column_name is None:
-        column_name = 'value'
-        power_ac = power_ac.rename(column_name)
-    index_name = power_ac.index.name
-    if index_name is None:
-        index_name = 'datetime'
-        power_ac = power_ac.rename_axis(index_name)
+    # Format the power time series
+    power_ac = format_clipping_time_series(power_ac, mounting_type)
     # Get the sampling frequency of the time series
     time_series_sampling_frequency = power_ac.index.to_series().diff()\
         .astype('timedelta64[m]').mode()[0]
@@ -227,9 +252,9 @@ def logic_clip_filter(power_ac,
     daily = 0.25 * power_ac.resample('D').max()
     power_ac['ten_percent_daily'] = daily.reindex(index=power_ac.index,
                                                   method='ffill')
-    power_ac.loc[power_ac[column_name] < power_ac['ten_percent_daily'],
-                 column_name] = np.nan
-    power_ac = power_ac[column_name]
+    power_ac.loc[power_ac['value'] < power_ac['ten_percent_daily'],
+                 'value'] = np.nan
+    power_ac = power_ac['value']
     # Calculate the maximum value over a forward-rolling window
     max_roll = power_ac.iloc[::-1].rolling(roll_periods).max()
     max_roll = max_roll.reindex(power_ac.index)
@@ -336,20 +361,8 @@ def xgboost_clip_filter(power_ac,
     """
     # Load in the XGBoost model
     xgboost_clipping_model = _load_xgboost_clipping_model()
-    # Check that it's a Pandas series with a datetime index. If not,
-    # raise an error.
-    if not isinstance(power_ac.index, pd.DatetimeIndex):
-        raise TypeError('Must be a Pandas series with a datetime index.')
-    # Check the other input variables to ensure that they are the
-    # correct format.
-    if (mounting_type != "Tracking") & (mounting_type != "Fixed"):
-        raise ValueError(
-            "Variable mounting_type must be string 'Tracking' or 'Fixed'.")
-    # Change the name of the series to 'value'
-    column_name = power_ac.name
-    if column_name is None:
-        column_name = 'value'
-        power_ac = power_ac.rename(column_name)
+    # Format the power time series
+    power_ac = format_clipping_time_series(power_ac, mounting_type)
     # Convert the Pandas series to a dataframe, with mounting_type as an
     # additional column.
     power_ac_df = power_ac.to_frame()
