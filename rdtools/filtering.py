@@ -12,8 +12,8 @@ xgboost_clipping_model = None
 
 def _load_xgboost_clipping_model():
     global xgboost_clipping_model
-    model_path = os.path.dirname(os.getcwd()).replace("\\", "/") + \
-        "/models/xgboost_clipping_model.dat"
+    model_path = os.path.dirname((os.path.dirname(__file__)) +
+                                 "/models/xgboost_clipping_model.dat")
     if xgboost_clipping_model is None:
         xgboost_clipping_model = joblib.load(model_path)
     return xgboost_clipping_model
