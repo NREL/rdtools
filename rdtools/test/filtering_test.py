@@ -94,7 +94,6 @@ def test_xgboost_clip_filter(generate_power_time_series):
     ''' Unit tests for geometric clipping filter.'''
     power_no_datetime_index, power_datetime_index = \
         generate_power_time_series
-    
     # Test that a Type Error is raised when a pandas series
     # without a datetime index is used.
     pytest.raises(TypeError,  xgboost_clip_filter,
