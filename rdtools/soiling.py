@@ -359,8 +359,8 @@ class SRRAnalysis():
                               'intervals. This can be problematic with the "half_norm_clean" '
                               'and "random_clean" cleaning assumptions. Consider more permissive '
                               'validity criteria such as increasing "max_relative_slope_error" '
-                              'and/or "max_negative_step" and/or decreasing "min_interval_length". '
-                              'Alternatively, consider using method="perfect_clean".'
+                              'and/or "max_negative_step" and/or decreasing "min_interval_length".'
+                              ' Alternatively, consider using method="perfect_clean".'
                               )
         monte_losses = []
         random_profiles = []

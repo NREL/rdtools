@@ -63,25 +63,26 @@ def test_soiling_srr(soiling_normalized_daily, soiling_insolation, soiling_times
         'soiling_info["soiling_ratio_perfect_clean"] not a pandas series'
 
 
-def test_soiling_srr_consecutive_invalid(soiling_normalized_daily, soiling_insolation, soiling_times):
+def test_soiling_srr_consecutive_invalid(soiling_normalized_daily, soiling_insolation,
+                                         soiling_times):
     reps = 10
     np.random.seed(1977)
     sr, sr_ci, soiling_info = soiling_srr(soiling_normalized_daily, soiling_insolation, reps=reps,
                                           max_relative_slope_error=20.0, method='random_clean')
     assert 0.936177 == pytest.approx(sr, abs=1e-6),\
-        'Soiling ratio different from expected value for random_clean with consecutive invalid intervals'
+        'Soiling ratio different from expected value for random_clean with consecutive invalid intervals'  # noqa: E501
 
     np.random.seed(1977)
     sr, sr_ci, soiling_info = soiling_srr(soiling_normalized_daily, soiling_insolation, reps=reps,
                                           max_relative_slope_error=20.0, method='half_norm_clean')
     assert 0.915093 == pytest.approx(sr, abs=1e-6),\
-        'Soiling ratio different from expected value for half_norm_clean with consecutive invalid intervals'
+        'Soiling ratio different from expected value for half_norm_clean with consecutive invalid intervals'  # noqa: E501
 
     np.random.seed(1977)
     sr, sr_ci, soiling_info = soiling_srr(soiling_normalized_daily, soiling_insolation, reps=reps,
                                           max_relative_slope_error=20.0, method='perfect_clean')
     assert 0.977116 == pytest.approx(sr, abs=1e-6),\
-        'Soiling ratio different from expected value for perfect_clean with consecutive invalid intervals'
+        'Soiling ratio different from expected value for perfect_clean with consecutive invalid intervals'  # noqa: E501
 
 
 def test_soiling_srr_with_precip(soiling_normalized_daily, soiling_insolation, soiling_times):
@@ -209,7 +210,7 @@ def test_soiling_srr_negative_step(soiling_normalized_daily, soiling_insolation)
         is incorporated into the data'
 
     assert 0.936932 == pytest.approx(sr, abs=1e-6),\
-        'Soiling ratio different from expected when a large negative step is incorporated into the data'   # noqa: E501
+        'Soiling ratio different from expected when a large negative step is incorporated into the data'  # noqa: E501
 
 
 def test_soiling_srr_max_negative_slope_error(soiling_normalized_daily, soiling_insolation):
