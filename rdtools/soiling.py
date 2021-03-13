@@ -67,7 +67,8 @@ class SRRAnalysis():
                                  'daily frequency')
 
     def _calc_daily_df(self, day_scale=13, clean_threshold='infer',
-                       recenter=True, clean_criterion='shift', precip_threshold=0.01):
+                       recenter=True, clean_criterion='shift', precip_threshold=0.01,
+                       outlier_factor=1.5):
         '''
         Calculates self.daily_df, a pandas dataframe prepared for SRR analysis,
         and self.renorm_factor, the renormalization factor for the daily
@@ -98,6 +99,10 @@ class SRRAnalysis():
         precip_threshold : float, default 0.01
             The daily precipitation threshold for defining precipitation cleaning events.
             Units must be consistent with ``self.precipitation_daily``.
+        outlier_factor : float, default 1.5
+            The factor used in the Tukey fence definition of outliers for flagging positive shifts
+            in the rolling median used for cleaning detection. A smaller value will cause more and
+            smaller shifts to be classified as cleaning events.
         '''
         if (day_scale % 2 == 0) and ('shift' in clean_criterion):
             warnings.warn('An even value of day_scale was passed. An odd value is '
@@ -159,7 +164,7 @@ class SRRAnalysis():
         if clean_threshold == 'infer':
             deltas = abs(df.delta)
             clean_threshold = deltas.quantile(0.75) + \
-                1.5 * (deltas.quantile(0.75) - deltas.quantile(0.25))
+                outlier_factor * (deltas.quantile(0.75) - deltas.quantile(0.25))
 
         df['clean_event_detected'] = (df.delta > clean_threshold)
         precip_event = (df['precip'] > precip_threshold)
@@ -482,7 +487,7 @@ class SRRAnalysis():
             trim=False, method='half_norm_clean',
             clean_criterion='shift', precip_threshold=0.01, min_interval_length=2,
             exceedance_prob=95.0, confidence_level=68.2, recenter=True,
-            max_relative_slope_error=500.0, max_negative_step=0.05):
+            max_relative_slope_error=500.0, max_negative_step=0.05, outlier_factor=1.5):
         '''
         Run the SRR method from beginning to end.  Perform the stochastic rate
         and recovery soiling loss calculation. Based on the methods presented
@@ -545,6 +550,10 @@ class SRRAnalysis():
             The maximum magnitude of negative discrete steps allowed in an
             interval for the interval to be considered valid (units of
             normalized performance metric).
+        outlier_factor : float, default 1.5
+            The factor used in the Tukey fence definition of outliers for flagging positive shifts
+            in the rolling median used for cleaning detection. A smaller value will cause more and
+            smaller shifts to be classified as cleaning events.
 
         Returns
         -------
@@ -603,7 +612,8 @@ class SRRAnalysis():
                             clean_threshold=clean_threshold,
                             recenter=recenter,
                             clean_criterion=clean_criterion,
-                            precip_threshold=precip_threshold)
+                            precip_threshold=precip_threshold,
+                            outlier_factor=outlier_factor)
         self._calc_result_df(trim=trim,
                              max_relative_slope_error=max_relative_slope_error,
                              max_negative_step=max_negative_step,
@@ -648,7 +658,7 @@ def soiling_srr(energy_normalized_daily, insolation_daily, reps=1000,
                 trim=False, method='half_norm_clean',
                 clean_criterion='shift', precip_threshold=0.01, min_interval_length=2,
                 exceedance_prob=95.0, confidence_level=68.2, recenter=True,
-                max_relative_slope_error=500.0, max_negative_step=0.05):
+                max_relative_slope_error=500.0, max_negative_step=0.05, outlier_factor=1.5):
     '''
     Functional wrapper for :py:class:`~rdtools.soiling.SRRAnalysis`. Perform
     the stochastic rate and recovery soiling loss calculation. Based on the
@@ -721,6 +731,10 @@ def soiling_srr(energy_normalized_daily, insolation_daily, reps=1000,
         The maximum magnitude of negative discrete steps allowed in an interval
         for the interval to be considered valid (units of normalized
         performance metric).
+    outlier_factor : float, default 1.5
+        The factor used in the Tukey fence definition of outliers for flagging positive shifts
+        in the rolling median used for cleaning detection. A smaller value will cause more and
+        smaller shifts to be classified as cleaning events.
 
     Returns
     -------
@@ -792,7 +806,8 @@ def soiling_srr(energy_normalized_daily, insolation_daily, reps=1000,
         confidence_level=confidence_level,
         recenter=recenter,
         max_relative_slope_error=max_relative_slope_error,
-        max_negative_step=max_negative_step)
+        max_negative_step=max_negative_step,
+        outlier_factor=outlier_factor)
 
     return sr, sr_ci, soiling_info
 

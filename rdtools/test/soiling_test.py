@@ -424,3 +424,8 @@ def test_monthly_soiling_rates_reps(soiling_interval_summary):
     expected = _build_monthly_summary(expected)
 
     pd.testing.assert_frame_equal(result, expected, check_dtype=False)
+
+
+# TODO: write a real test for the new outlier factor
+def test_outlier_factor():
+    assert False
