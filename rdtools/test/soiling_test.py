@@ -239,6 +239,13 @@ def test_soiling_srr_with_nan_interval(soiling_normalized_daily, soiling_insolat
         'Soiling ratio different from expected value when an entire interval was NaN'
 
 
+def test_soiling_srr_outlier_factor(soiling_normalized_daily, soiling_insolation):
+    _, _, info = soiling_srr(soiling_normalized_daily, soiling_insolation,
+                             reps=1, outlier_factor=8)
+    assert len(info['soiling_interval_summary']) == 2,\
+        'Increasing the outlier_factor did not result in the expected number of soiling intervals'
+
+
 def test_soiling_srr_kwargs(monkeypatch, soiling_normalized_daily, soiling_insolation):
     '''
     Make sure that all soiling_srr parameters get passed on to SRRAnalysis and
@@ -425,8 +432,3 @@ def test_monthly_soiling_rates_reps(soiling_interval_summary):
     expected = _build_monthly_summary(expected)
 
     pd.testing.assert_frame_equal(result, expected, check_dtype=False)
-
-
-# TODO: write a real test for the new outlier factor
-def test_outlier_factor():
-    assert False
