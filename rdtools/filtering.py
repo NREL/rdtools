@@ -213,7 +213,8 @@ def calculate_max_derivative(power_ac, roll_periods):
 
 def logic_clip_filter(power_ac,
                       mounting_type='Fixed',
-                      derivative_cutoff=0.2):
+                      derivative_cutoff=0.2,
+                      roll_periods=None):
     '''
     This filter is a logic-based filter that is used to filter out
     clipping periods in AC power and AC energy time series.
@@ -235,12 +236,23 @@ def logic_clip_filter(power_ac,
         as high as 0.4 have been tested and shown to be effective.  The higher
         the cutoff, the more values in the dataset that will be determined as
         clipping.
+    roll_periods: Integer.
+        Number of periods to examine when looking for a near-zero derivative
+        in the time series derivative. If roll_periods = 3, the system looks
+        for a near-zero derivative over 3 consecutive readings. Default value
+        is set to None, so the function uses default logic: it looks for a
+        near-zero derivative over 3 periods for a fixed tilt system, and over
+        5 periods for a tracked system with a sampling frequency more frequent
+        than once every 30 minutes.
     Returns
     -------
     pd.Series
-        Boolean Series of whether the given measurement is deterimined as
-        clipping. True values delineate clipping periods, and False values
-        delineate non-clipping periods.
+        The passed time series, filtered to exclude clipping periods.
+    pd.Series
+        Boolean Series of whether to include the point because it is not
+        clipping.
+        True values delineate non-clipping periods, and False values delineate
+        clipping periods.
     '''
     # Format the power time series
     power_ac = format_clipping_time_series(power_ac, mounting_type)
@@ -265,17 +277,14 @@ def logic_clip_filter(power_ac,
     if time_series_sampling_frequency < 10:
         power_ac = power_ac.resample('15T').mean()
         time_series_sampling_frequency = 15
-    # Tracked PV systems typically have much flatter output over
-    # the course of the central hours of the day, as compared to
-    # fixed tilt systems. This function determines clipping by
-    # looking for a near-zero derivative over 3 periods for a
-    # fixed tilt system, and over 5 periods for a tracked system
-    # with a sampling frequency more frequent than once every
-    # 30 minutes.
-    if (mounting_type == "Tracking") & (time_series_sampling_frequency < 30):
-        roll_periods = 5
-    else:
-        roll_periods = 3
+    # If a value for roll_periods is not designated, the function uses
+    # the current default logic to set the roll_periods value.
+    if roll_periods is None:
+        if (mounting_type == "Tracking") & \
+         (time_series_sampling_frequency < 30):
+            roll_periods = 5
+        else:
+            roll_periods = 3
     # Replace the lower 25% of daily data with NaN's
     daily = 0.25 * power_ac.resample('D').max()
     power_ac['ten_percent_daily'] = daily.reindex(index=power_ac.index,
@@ -354,7 +363,7 @@ def logic_clip_filter(power_ac,
         (power_ac <= daily_clipping_max)
     final_clip = final_clip.reindex(index=power_copy.index,
                                     fill_value=False)
-    return power_ac[~final_clip], final_clip
+    return power_ac[~final_clip], ~final_clip
 
 
 def xgboost_clip_filter(power_ac,
@@ -376,9 +385,11 @@ def xgboost_clip_filter(power_ac,
     Returns
     -------
     pd.Series
-        Boolean Series of whether the given measurement is deterimined
-        as clipping.
-        True values delineate clipping periods, and False values delineate non-
+        The passed time series, filtered to exclude clipping periods.
+    pd.Series
+        Boolean Series of whether to include the point because it is not
+        clipping.
+        True values delineate non-clipping periods, and False values delineate
         clipping periods.
     """
     # Load in the XGBoost model
@@ -447,4 +458,4 @@ def xgboost_clip_filter(power_ac,
         power_ac_df).astype(bool))
     # Add datetime as an index
     xgb_predictions.index = power_ac_df.index
-    return power_ac[~xgb_predictions], xgb_predictions
+    return power_ac[~xgb_predictions], ~xgb_predictions

@@ -280,8 +280,9 @@ def tune_clip_filter_plot(power_ac, clipping_mask, display_web_browser=True):
         AC power in Watts. Index of the Pandas series is a Pandas
         datetime index.
     clipping_mask : pd.Series
-        Pandas series of booleans, where clipping periods are marked
-        as True, and non-clipping periods are marked as False.
+        Pandas series of booleans, where good data periods (no clipping)
+        are marked as True, and omitted-data periods where clipping
+        occurs are marked as False.
     display_web_browser : Boolean
         When set to True, the Plotly graph is displayed in the
         user's web browser.

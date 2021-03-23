@@ -1,10 +1,8 @@
 """ Filtering Module Tests. """
 
 import pytest
-
 import pandas as pd
 import numpy as np
-
 from rdtools import (csi_filter,
                      poa_filter,
                      tcell_filter,
@@ -87,7 +85,7 @@ def test_logic_clip_filter(generate_power_time_series):
     # Expect none of the sequence to be clipped (as it's
     # constantly increasing)
     filtered, mask = logic_clip_filter(power_datetime_index)
-    assert (not mask.all())
+    assert (mask.all())
 
 
 def test_xgboost_clip_filter(generate_power_time_series):
@@ -101,7 +99,7 @@ def test_xgboost_clip_filter(generate_power_time_series):
     # Expect none of the sequence to be clipped (as it's
     # constantly increasing)
     filtered, mask = xgboost_clip_filter(power_datetime_index)
-    assert (not mask.all())
+    assert (mask.all())
 
 
 def test_normalized_filter_default():
