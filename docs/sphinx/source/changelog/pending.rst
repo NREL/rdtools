@@ -2,6 +2,11 @@
 Pending
 *******
 
+Documentation
+-------------
+* Corrected a typo in the :py:class:`~rdtools.analysis_chains.TrendAnalysis`
+  docstring (:pull:`264`)
+
 Requirements
 ------------
 * Update specified versions of bleach in
