@@ -10,7 +10,7 @@ jobs:
       matrix:
         python-version: [3.7]
         env: [
-          '-r docs/notebook_requirements.txt .[test]',
+          '-r requirements.txt -r docs/notebook_requirements.txt .[test]',
         ]
 
     steps:
