@@ -8,6 +8,5 @@ statsmodels==0.8.0
 tables==3.4.2
 numexpr==2.7.1  # https://github.com/pydata/numexpr/issues/369
 plotly==4.0.0
-scikit-learn==0.21.0
 joblib==0.14.0
 xgboost==1.0.0

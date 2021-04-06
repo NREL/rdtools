@@ -63,7 +63,7 @@ def test_clip_filter():
 
 
 @pytest.fixture
-def generate_power_time_series():
+def generate_power_time_series_no_clipping():
     power_no_datetime_index = pd.Series(np.arange(1, 101))
     power_datetime_index = pd.Series(np.arange(1, 101))
     # Add datetime index to second series
@@ -74,32 +74,59 @@ def generate_power_time_series():
     return power_no_datetime_index, power_datetime_index
 
 
+@pytest.fixture
+def generate_power_time_series_clipping():
+    power_no_datetime_index = pd.Series(np.arange(1, 51))
+    power_no_datetime_index = pd.concat([power_no_datetime_index,
+                                         power_no_datetime_index[::-1]])
+    power_no_datetime_index[48:52] = 50
+    power_no_datetime_index = power_no_datetime_index.reset_index(drop=True)
+    power_datetime_index = power_no_datetime_index.copy()
+    # Add datetime index to second series
+    time_range = pd.date_range('2016-12-02T11:00:00.000Z',
+                               '2017-06-06T07:00:00.000Z', freq='H')
+    power_datetime_index.index = pd.to_datetime(time_range[:100])
+    # Note: Power is expected to be Series object with a datetime index.
+    return power_no_datetime_index, power_datetime_index
+
+
 def test_logic_clip_filter(generate_power_time_series):
-    ''' Unit tests for geometric clipping filter.'''
-    power_no_datetime_index, power_datetime_index = \
-        generate_power_time_series
+    ''' Unit tests for logic clipping filter.'''
+    power_no_datetime_index_nc, power_datetime_index_nc = \
+        generate_power_time_series_no_clipping
     # Test that a Type Error is raised when a pandas series
     # without a datetime index is used.
     pytest.raises(TypeError,  logic_clip_filter,
-                  power_no_datetime_index)
+                  power_no_datetime_index_nc)
     # Expect none of the sequence to be clipped (as it's
     # constantly increasing)
-    filtered, mask = logic_clip_filter(power_datetime_index)
-    assert (mask.all())
+    filtered_nc, mask_nc = logic_clip_filter(power_datetime_index_nc)
+    # Test the time series where the data is clipped
+    power_no_datetime_index_c, power_datetime_index_c = \
+        generate_power_time_series_clipping
+    # Expect 4 values in middle of sequence to be clipped (when x=50)
+    filtered_c, mask_c = logic_clip_filter(power_datetime_index_c)
+    assert (mask_nc.all()) & (len(filtered_c) == 96)
 
 
 def test_xgboost_clip_filter(generate_power_time_series):
     ''' Unit tests for geometric clipping filter.'''
-    power_no_datetime_index, power_datetime_index = \
-        generate_power_time_series
+    # Test the time series where the data isn't clipped
+    power_no_datetime_index_nc, power_datetime_index_nc = \
+        generate_power_time_series_no_clipping
     # Test that a Type Error is raised when a pandas series
     # without a datetime index is used.
     pytest.raises(TypeError,  xgboost_clip_filter,
-                  power_no_datetime_index)
+                  power_no_datetime_index_nc)
     # Expect none of the sequence to be clipped (as it's
     # constantly increasing)
-    filtered, mask = xgboost_clip_filter(power_datetime_index)
-    assert (mask.all())
+    filtered_nc, mask_nc = xgboost_clip_filter(power_datetime_index_nc)
+    # Test the time series where the data is clipped
+    power_no_datetime_index_c, power_datetime_index_c = \
+        generate_power_time_series_clipping
+    # Expect 4 values in middle of sequence to be clipped (when x=50)
+    filtered_c, mask_c = xgboost_clip_filter(power_datetime_index_c)
+    assert (mask_nc.all()) & (len(filtered_c) == 96)
 
 
 def test_normalized_filter_default():

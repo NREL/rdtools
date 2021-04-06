@@ -6,7 +6,6 @@ import plotly.express as px
 import plotly.io as pio
 import numpy as np
 import warnings
-pio.renderers.default = "browser"
 
 
 def degradation_summary_plots(yoy_rd, yoy_ci, yoy_info, normalized_yield,
@@ -274,6 +273,7 @@ def tune_clip_filter_plot(power_ac, clipping_mask, display_web_browser=True):
     a matplotlib plot, after tweaking the function's different
     hyperparameters. The plot can be zoomed in on, for an in-depth look at
     clipping in the AC power time series.
+
     Parameters
     ----------
     power_ac : pd.Series
@@ -283,9 +283,10 @@ def tune_clip_filter_plot(power_ac, clipping_mask, display_web_browser=True):
         Pandas series of booleans, where good data periods (no clipping)
         are marked as True, and omitted-data periods where clipping
         occurs are marked as False.
-    display_web_browser : Boolean
+    display_web_browser : boolean, default True
         When set to True, the Plotly graph is displayed in the
         user's web browser.
+
     Returns
     ---------
     Interactive Plotly graph, with the masked time series for clipping.
@@ -309,8 +310,7 @@ def tune_clip_filter_plot(power_ac, clipping_mask, display_web_browser=True):
     # If display_web_browser is set to True, the time series with clipping
     # is rendered via the web browser.
     if display_web_browser is True:
-        pio.renderers.default = "browser"
-        fig.show()
+        fig.show(renderer = "browser")
     return fig
 
 

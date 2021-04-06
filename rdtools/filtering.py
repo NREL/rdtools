@@ -2,7 +2,6 @@
 
 import numpy as np
 import pandas as pd
-from sklearn import preprocessing
 import joblib
 import os
 
@@ -142,11 +141,12 @@ def csi_filter(poa_global_measured, poa_global_clearsky, threshold=0.15):
     return (csi >= 1.0 - threshold) & (csi <= 1.0 + threshold)
 
 
-def format_clipping_time_series(power_ac, mounting_type):
+def _format_clipping_time_series(power_ac, mounting_type):
     """
     Format an AC power time series appropriately for
     either the logic_clip_filter function or the xgboost_clip_filter
     function.
+    
     Parameters
     ----------
     power_ac : pd.Series
@@ -156,6 +156,7 @@ def format_clipping_time_series(power_ac, mounting_type):
         String representing the mounting configuration associated with the
         AC power/energy time series. Can either be "Fixed" or "Tracking".
         Default set to 'Fixed'.
+        
     Returns
     -------
     pd.Series
@@ -183,11 +184,12 @@ def format_clipping_time_series(power_ac, mounting_type):
     return power_ac
 
 
-def calculate_max_derivative(power_ac, roll_periods):
+def _calculate_max_derivative(power_ac, roll_periods):
     """
     This function calculates the maximum derivative over a rolling
     time period for an AC power time series. A pandas series of
     the rolling derivative is returned.
+    
     Parameters
     ----------
     power_ac : pd.Series
@@ -195,6 +197,7 @@ def calculate_max_derivative(power_ac, roll_periods):
         a pandas datetime index.
     roll_periods: Int
         Number of readings to calculate the rolling maximum derivative on.
+
     Returns
     -------
     pd.Series
@@ -222,16 +225,17 @@ def logic_clip_filter(power_ac,
     maximum derivative over a rolling window, as compared to a user-set
     derivate_cutoff (default set to 0.2).  The size of the
     rolling window is increased when the system is a tracked system.
+    
     Parameters
     ----------
     power_ac : pd.Series
         Pandas time series, representing PV system power or energy with
         a pandas datetime index.
-    mounting_type : String
+    mounting_type: string, default 'Fixed'
         String representing the mounting configuration associated with the
         AC power/energy time series. Can either be "Fixed" or "Tracking".
         Default set to 'Fixed'.
-    derivative_cutoff : Float
+    derivative_cutoff : float, default 0.2
         Cutoff for max derivative threshold. Defaults to 0.2; however, values
         as high as 0.4 have been tested and shown to be effective.  The higher
         the cutoff, the more values in the dataset that will be determined as
@@ -244,6 +248,7 @@ def logic_clip_filter(power_ac,
         near-zero derivative over 3 periods for a fixed tilt system, and over
         5 periods for a tracked system with a sampling frequency more frequent
         than once every 30 minutes.
+
     Returns
     -------
     pd.Series
@@ -255,7 +260,7 @@ def logic_clip_filter(power_ac,
         clipping periods.
     '''
     # Format the power time series
-    power_ac = format_clipping_time_series(power_ac, mounting_type)
+    power_ac = _format_clipping_time_series(power_ac, mounting_type)
     # Get the sampling frequency of the time series
     time_series_sampling_frequency = power_ac.index.to_series().diff()\
         .astype('timedelta64[m]').mode()[0]
@@ -293,7 +298,7 @@ def logic_clip_filter(power_ac,
                  'value'] = np.nan
     power_ac = power_ac['value']
     # Calculate the maximum derivative for the power time series.
-    deriv_max = calculate_max_derivative(power_ac, roll_periods)
+    deriv_max = _calculate_max_derivative(power_ac, roll_periods)
     # Determine clipping values based on the maximum derivative in
     # the rolling window, and the user-specified derivative threshold
     roll_clip_mask = (deriv_max < derivative_cutoff)
@@ -377,10 +382,9 @@ def xgboost_clip_filter(power_ac,
     power_ac : pd.Series
         Pandas time series, representing PV system power or energy with
         a pandas datetime index.
-    mounting_type : String
+    mounting_type: string, default 'Fixed'
         String representing the mounting configuration associated with the
         AC power/energy time series. Can either be "Fixed" or "Tracking".
-        Default set to 'Fixed'.
 
     Returns
     -------
@@ -395,7 +399,7 @@ def xgboost_clip_filter(power_ac,
     # Load in the XGBoost model
     xgboost_clipping_model = _load_xgboost_clipping_model()
     # Format the power time series
-    power_ac = format_clipping_time_series(power_ac, mounting_type)
+    power_ac = _format_clipping_time_series(power_ac, mounting_type)
     # Convert the Pandas series to a dataframe, with mounting_type as an
     # additional column.
     power_ac_df = power_ac.to_frame()
@@ -404,9 +408,7 @@ def xgboost_clip_filter(power_ac,
     power_ac_df['sampling_frequency'] = power_ac_df.index.to_series()\
         .diff().astype('timedelta64[m]').mode()[0]
     # Min-max normalize
-    min_max_scaler = preprocessing.MinMaxScaler()
-    power_ac_df['scaled_value'] = min_max_scaler.fit_transform(
-                        power_ac_df[['value']])
+    power_ac_df['scaled_value'] = (power_ac_df['value'] - power_ac_df['value'].min()) / (power_ac_df['value'].max() - power_ac_df['value'].min())
     # Get the rolling derivative
     sampling_frequency = power_ac_df['sampling_frequency'].iloc[0]
     if sampling_frequency < 10:
@@ -428,7 +430,7 @@ def xgboost_clip_filter(power_ac,
     power_ac_df['first_order_derivative_forward_rolling_avg'] = \
         power_ac_df.rolling_average.shift(-1).diff()
     # Calculate the maximum derivative for the power time series.
-    power_ac_df['deriv_max'] = calculate_max_derivative(
+    power_ac_df['deriv_max'] = _calculate_max_derivative(
         power_ac=power_ac_df['scaled_value'], roll_periods=rolling_window)
     # Get the max value for the day and see how each value compares
     power_ac_df['date'] = list(pd.to_datetime(pd.Series(

@@ -164,3 +164,4 @@ Plotting
    soiling_interval_plot
    soiling_rate_histogram
    availability_summary_plots
+   tune_clip_filter_plot
