@@ -1,0 +1,28 @@
+name: nbval
+
+on: [pull_request, push]
+
+jobs:
+  notebook-check:
+
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.7]
+        env: [
+          '-r docs/notebook_requirements.txt .[test]',
+        ]
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Install ${{ matrix.env }}
+      run: |
+        python -m pip install --upgrade pip wheel
+        pip install ${{ matrix.env }}
+    - name: Test with pytest ${{ matrix.env }}
+      run: |
+        pytest --nbval --sanitize-with docs\nbval_sanitization_rules.cfg docs\*.ipynb

@@ -35,6 +35,7 @@ TESTS_REQUIRE = [
     'pytest >= 3.6.3',
     'coverage',
     'flake8',
+    'nbval',
 ]
 
 INSTALL_REQUIRES = [
