@@ -9,6 +9,10 @@ Requirements
   in ``requirements.txt`` (:pull:`261`)
 
 
+Testing
+-------
+* Added a CI notebook check (:pull:`270`)
+
 Contributors
 ------------
 * Kevin Anderson (:ghuser:`kanderso-nrel`)
