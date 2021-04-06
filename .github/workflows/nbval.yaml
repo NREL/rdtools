@@ -25,4 +25,4 @@ jobs:
         pip install ${{ matrix.env }}
     - name: Test with pytest ${{ matrix.env }}
       run: |
-        pytest --nbval --sanitize-with docs\nbval_sanitization_rules.cfg docs/*.ipynb
+        pytest --nbval --sanitize-with docs\nbval_sanitization_rules.cfg docs
