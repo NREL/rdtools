@@ -101,12 +101,13 @@ def test_logic_clip_filter(generate_power_time_series_no_clipping,
                   power_no_datetime_index_nc)
     # Expect none of the sequence to be clipped (as it's
     # constantly increasing)
-    filtered_nc, mask_nc = logic_clip_filter(power_datetime_index_nc)
+    mask_nc = logic_clip_filter(power_datetime_index_nc)
     # Test the time series where the data is clipped
     power_no_datetime_index_c, power_datetime_index_c = \
         generate_power_time_series_clipping
     # Expect 4 values in middle of sequence to be clipped (when x=50)
-    filtered_c, mask_c = logic_clip_filter(power_datetime_index_c)
+    mask_c = logic_clip_filter(power_datetime_index_c)
+    filtered_c = power_datetime_index_c[mask_c]
     assert (mask_nc.all()) & (len(filtered_c) == 96)
 
 
@@ -122,12 +123,13 @@ def test_xgboost_clip_filter(generate_power_time_series_no_clipping,
                   power_no_datetime_index_nc)
     # Expect none of the sequence to be clipped (as it's
     # constantly increasing)
-    filtered_nc, mask_nc = xgboost_clip_filter(power_datetime_index_nc)
+    mask_nc = xgboost_clip_filter(power_datetime_index_nc)
     # Test the time series where the data is clipped
     power_no_datetime_index_c, power_datetime_index_c = \
         generate_power_time_series_clipping
     # Expect 4 values in middle of sequence to be clipped (when x=50)
-    filtered_c, mask_c = xgboost_clip_filter(power_datetime_index_c)
+    mask_c = xgboost_clip_filter(power_datetime_index_c)
+    filtered_c = power_datetime_index_c[mask_c]
     assert (mask_nc.all()) & (len(filtered_c) == 96)
 
 

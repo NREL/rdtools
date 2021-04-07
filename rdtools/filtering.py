@@ -252,8 +252,6 @@ def logic_clip_filter(power_ac,
     Returns
     -------
     pd.Series
-        The passed time series, filtered to exclude clipping periods.
-    pd.Series
         Boolean Series of whether to include the point because it is not
         clipping.
         True values delineate non-clipping periods, and False values delineate
@@ -368,7 +366,7 @@ def logic_clip_filter(power_ac,
         (power_ac <= daily_clipping_max)
     final_clip = final_clip.reindex(index=power_copy.index,
                                     fill_value=False)
-    return power_ac[~final_clip], ~final_clip
+    return ~final_clip
 
 
 def xgboost_clip_filter(power_ac,
@@ -388,8 +386,6 @@ def xgboost_clip_filter(power_ac,
 
     Returns
     -------
-    pd.Series
-        The passed time series, filtered to exclude clipping periods.
     pd.Series
         Boolean Series of whether to include the point because it is not
         clipping.
@@ -462,4 +458,4 @@ def xgboost_clip_filter(power_ac,
         power_ac_df).astype(bool))
     # Add datetime as an index
     xgb_predictions.index = power_ac_df.index
-    return power_ac[~xgb_predictions], ~xgb_predictions
+    return ~xgb_predictions
