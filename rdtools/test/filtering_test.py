@@ -90,7 +90,8 @@ def generate_power_time_series_clipping():
     return power_no_datetime_index, power_datetime_index
 
 
-def test_logic_clip_filter(generate_power_time_series):
+def test_logic_clip_filter(generate_power_time_series_no_clipping,
+                           generate_power_time_series_clipping):
     ''' Unit tests for logic clipping filter.'''
     power_no_datetime_index_nc, power_datetime_index_nc = \
         generate_power_time_series_no_clipping
@@ -109,7 +110,8 @@ def test_logic_clip_filter(generate_power_time_series):
     assert (mask_nc.all()) & (len(filtered_c) == 96)
 
 
-def test_xgboost_clip_filter(generate_power_time_series):
+def test_xgboost_clip_filter(generate_power_time_series_no_clipping,
+                             generate_power_time_series_clipping):
     ''' Unit tests for geometric clipping filter.'''
     # Test the time series where the data isn't clipped
     power_no_datetime_index_nc, power_datetime_index_nc = \

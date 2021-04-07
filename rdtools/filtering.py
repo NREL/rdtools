@@ -408,7 +408,9 @@ def xgboost_clip_filter(power_ac,
     power_ac_df['sampling_frequency'] = power_ac_df.index.to_series()\
         .diff().astype('timedelta64[m]').mode()[0]
     # Min-max normalize
-    power_ac_df['scaled_value'] = (power_ac_df['value'] - power_ac_df['value'].min()) / (power_ac_df['value'].max() - power_ac_df['value'].min())
+    max_min_diff = (power_ac_df['value'].max() - power_ac_df['value'].min())
+    power_ac_df['scaled_value'] = (power_ac_df['value'] -
+                                   power_ac_df['value'].min()) / max_min_diff
     # Get the rolling derivative
     sampling_frequency = power_ac_df['sampling_frequency'].iloc[0]
     if sampling_frequency < 10:
