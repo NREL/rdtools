@@ -160,8 +160,11 @@ def _format_clipping_time_series(power_ac, mounting_type):
     Returns
     -------
     pd.Series
-        AC power time series with renamed 'datetime' column, and
-        renamed 'value' column.
+        AC power time series
+    String
+        AC Power time series name
+    String
+        Datetime Index name
     """
     # Check that it's a Pandas series with a datetime index.
     # If not, raise an error.
@@ -174,14 +177,13 @@ def _format_clipping_time_series(power_ac, mounting_type):
             "Variable mounting_type must be string 'Tracking' or 'Fixed'.")
     # Get the names of the series and the datetime index
     column_name = power_ac.name
-    if column_name is None:
-        column_name = 'value'
-        power_ac = power_ac.rename(column_name)
+    column_name = 'value'
+    power_ac = power_ac.rename(column_name)
     index_name = power_ac.index.name
     if index_name is None:
         index_name = 'datetime'
         power_ac = power_ac.rename_axis(index_name)
-    return power_ac
+    return power_ac, power_ac.index.name
 
 
 def _calculate_max_derivative(power_ac, roll_periods):
@@ -258,7 +260,8 @@ def logic_clip_filter(power_ac,
         clipping periods.
     '''
     # Format the power time series
-    power_ac = _format_clipping_time_series(power_ac, mounting_type)
+    power_ac, index_name = _format_clipping_time_series(power_ac, 
+                                                        mounting_type)
     # Get the sampling frequency of the time series
     time_series_sampling_frequency = power_ac.index.to_series().diff()\
         .astype('timedelta64[m]').mode()[0]
@@ -395,7 +398,8 @@ def xgboost_clip_filter(power_ac,
     # Load in the XGBoost model
     xgboost_clipping_model = _load_xgboost_clipping_model()
     # Format the power time series
-    power_ac = _format_clipping_time_series(power_ac, mounting_type)
+    power_ac, index_name = _format_clipping_time_series(power_ac, 
+                                                        mounting_type)
     # Convert the Pandas series to a dataframe, with mounting_type as an
     # additional column.
     power_ac_df = power_ac.to_frame()

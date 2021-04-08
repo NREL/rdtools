@@ -310,7 +310,7 @@ def tune_clip_filter_plot(power_ac, clipping_mask, display_web_browser=True):
     # If display_web_browser is set to True, the time series with clipping
     # is rendered via the web browser.
     if display_web_browser is True:
-        fig.show(renderer = "browser")
+        fig.show(renderer="browser")
     return fig
 
 
