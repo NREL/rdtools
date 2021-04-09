@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import joblib
 import os
+import warnings
 
 # Load in the XGBoost clipping model using joblib.
 xgboost_clipping_model = None
@@ -94,29 +95,6 @@ def tcell_filter(temperature_cell, temperature_cell_low=-50,
             (temperature_cell < temperature_cell_high))
 
 
-def clip_filter(power_ac, quantile=0.98):
-    '''
-    Filter data points likely to be affected by clipping
-    with power greater than or equal to 99% of the `quant`
-    quantile.
-
-    Parameters
-    ----------
-    power_ac : pd.Series
-        AC power in Watts
-    quantile : float, default 0.98
-        Value for upper threshold quantile
-
-    Returns
-    -------
-    pd.Series
-        Boolean Series of whether the given measurement is below 99% of the
-        quantile filter.
-    '''
-    v = power_ac.quantile(quantile)
-    return (power_ac < v * 0.99)
-
-
 def csi_filter(poa_global_measured, poa_global_clearsky, threshold=0.15):
     '''
     Filtering based on clear-sky index (csi)
@@ -139,6 +117,72 @@ def csi_filter(poa_global_measured, poa_global_clearsky, threshold=0.15):
 
     csi = poa_global_measured / poa_global_clearsky
     return (csi >= 1.0 - threshold) & (csi <= 1.0 + threshold)
+
+
+def clip_filter(power_ac, model = "quantile_clip_filter", **kwargs):
+    """
+    Master wrapper for running one of the desired clipping filters.
+    The default filter run is the quantile clipping filter.
+    
+    Parameters
+    ----------
+    power_ac : pd.Series
+        Pandas time series, representing PV system power or energy with
+        a pandas datetime index.
+    model : string, default 'quantile_clip_filter'
+        Clipping filter model to run. Can be 'quantile_clip_filter', 
+        'xgboost_clip_filter', or 'logic_clip_filter'.
+    kwargs : 
+        Additional clipping filter args, specific to the model being
+        used. Keyword must be passed with value.
+
+    Returns
+    -------
+    pd.Series
+        Boolean Series of whether to include the point because it is not
+        clipping.
+        True values delineate non-clipping periods, and False values delineate
+        clipping periods.   
+    """ 
+    if (model == 'quantile_clip_filter') | (isinstance(model, float)):
+        clip_mask = quantile_clip_filter(power_ac, **kwargs)
+        # Pass a deprecation warning for previous function behavior.
+        if (isinstance(model, float)):
+            warnings.warn("Function clip_filter has been changed to quantile_clip_filter.\
+                          This new function acts as a wrapper for different clipping filter\
+                          options.")
+    elif model == 'xgboost_clip_filter':
+        clip_mask = xgboost_clip_filter(power_ac, **kwargs)
+    elif model == 'logic_clip_filter':
+        clip_mask = logic_clip_filter(power_ac, **kwargs)
+    else:
+        raise ValueError(
+            "Variable model must be 'quantile_clip_filter', 'xgboost_clip_filter', or \
+            'logic_clip_filter'.")        
+    return clip_mask
+
+
+def quantile_clip_filter(power_ac, quantile=0.98):
+    '''
+    Filter data points likely to be affected by clipping
+    with power greater than or equal to 99% of the `quant`
+    quantile.
+
+    Parameters
+    ----------
+    power_ac : pd.Series
+        AC power in Watts
+    quantile : float, default 0.98
+        Value for upper threshold quantile
+
+    Returns
+    -------
+    pd.Series
+        Boolean Series of whether the given measurement is below 99% of the
+        quantile filter.
+    '''
+    v = power_ac.quantile(quantile)
+    return (power_ac < v * 0.99)
 
 
 def _format_clipping_time_series(power_ac, mounting_type):

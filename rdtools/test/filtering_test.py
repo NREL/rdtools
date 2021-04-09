@@ -7,6 +7,7 @@ from rdtools import (csi_filter,
                      poa_filter,
                      tcell_filter,
                      clip_filter,
+                     quantile_clip_filter,
                      normalized_filter,
                      logic_clip_filter,
                      xgboost_clip_filter)
@@ -50,18 +51,6 @@ def test_tcell_filter():
     assert filtered.tolist() == expected_result.tolist()
 
 
-def test_clip_filter():
-    ''' Unit tests for inverter clipping filter.'''
-
-    power = pd.Series(np.arange(1, 101))
-    # Note: Power is expected to be Series object because clip_filter makes
-    #       use of the Series.quantile() method.
-    filtered = clip_filter(power, quantile=0.98)
-    # Expect 99% of the 98th quantile to be filtered
-    expected_result = power < (98 * 0.99)
-    assert ((expected_result == filtered).all())
-
-
 @pytest.fixture
 def generate_power_time_series_no_clipping():
     power_no_datetime_index = pd.Series(np.arange(1, 101))
@@ -88,6 +77,17 @@ def generate_power_time_series_clipping():
     power_datetime_index.index = pd.to_datetime(time_range[:100])
     # Note: Power is expected to be Series object with a datetime index.
     return power_no_datetime_index, power_datetime_index
+
+
+def test_quantile_clip_filter():
+    ''' Unit tests for inverter clipping filter.'''
+    power = pd.Series(np.arange(1, 101))
+    # Note: Power is expected to be Series object because clip_filter makes
+    #       use of the Series.quantile() method.
+    filtered = quantile_clip_filter(power, quantile=0.98)
+    # Expect 99% of the 98th quantile to be filtered
+    expected_result = power < (98 * 0.99)
+    assert ((expected_result == filtered).all())
 
 
 def test_logic_clip_filter(generate_power_time_series_no_clipping,
@@ -131,6 +131,33 @@ def test_xgboost_clip_filter(generate_power_time_series_no_clipping,
     mask_c = xgboost_clip_filter(power_datetime_index_c)
     filtered_c = power_datetime_index_c[mask_c]
     assert (mask_nc.all()) & (len(filtered_c) == 96)
+
+
+def test_clip_filter(generate_power_time_series_no_clipping):
+    ''' Unit tests for inverter clipping filter.'''
+    # Create a time series to test
+    power_no_datetime_index_nc, power_datetime_index_nc = \
+        generate_power_time_series_no_clipping
+    # Check that the master wrapper defaults to the
+    # quantile_clip_filter_function.
+    # Note: Power is expected to be Series object because clip_filter makes
+    #       use of the Series.quantile() method.
+    filtered_quantile = clip_filter(power_no_datetime_index_nc, quantile=0.98)
+    # Expect 99% of the 98th quantile to be filtered
+    expected_result_quantile = power_no_datetime_index_nc < (98 * 0.99)
+    # Check that the wrapper handles the xgboost clipping
+    # function with kwargs.
+    filtered_xgboost = clip_filter(power_datetime_index_nc, 
+                           'xgboost_clip_filter',
+                           mounting_type = "Fixed")
+    # Check that the wrapper handles the logic clipping
+    # function with kwargs.
+    filtered_logic = clip_filter(power_datetime_index_nc, 
+                           'logic_clip_filter',
+                           mounting_type = "Fixed",
+                           derivative_cutoff=0.3)
+    assert ((expected_result_quantile == filtered_quantile).all()) &\
+            (filtered_xgboost.all()) & (filtered_logic.all())
 
 
 def test_normalized_filter_default():
