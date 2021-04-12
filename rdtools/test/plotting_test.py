@@ -182,8 +182,7 @@ def clipping_info(clipping_power_degradation_signal):
     clipping, with True indicating a clipping period and False
     representing a non-clipping period
     '''
-    signal_filtered, clipping_mask_series = logic_clip_filter(
-        clipping_power_degradation_signal)
+    clipping_mask_series = logic_clip_filter(clipping_power_degradation_signal)
     return signal_filtered, clipping_mask_series
 
 
