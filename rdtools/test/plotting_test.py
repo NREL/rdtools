@@ -183,12 +183,12 @@ def clipping_info(clipping_power_degradation_signal):
     representing a non-clipping period
     '''
     clipping_mask_series = logic_clip_filter(clipping_power_degradation_signal)
-    return signal_filtered, clipping_mask_series
+    return clipping_mask_series
 
 
 def test_clipping_filter_plots(clipping_info,
                                clipping_power_degradation_signal):
-    signal_filtered, clipping_mask_series = clipping_info
+    clipping_mask_series = clipping_info
     # test defaults
     result = tune_clip_filter_plot(clipping_power_degradation_signal,
                                    clipping_mask_series,
@@ -198,7 +198,7 @@ def test_clipping_filter_plots(clipping_info,
 
 def test_clipping_filter_plots_kwargs(clipping_info,
                                       clipping_power_degradation_signal):
-    signal_filtered, clipping_mask_series = clipping_info
+    clipping_mask_series = clipping_info
 
     # test kwargs
     kwargs = dict(
