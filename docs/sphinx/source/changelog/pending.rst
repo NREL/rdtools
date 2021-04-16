@@ -14,7 +14,7 @@ API Changes
   "invalid" intervals are retained at the beginning and end of the dataset for the
   purposes of the SRR Monte Carlo.  Invalid intervals are those that do not qualify
   to be fit as soiling intervals based on  ``min_interval_length``,
-  ``max_relative_slope_error``, and ``max_negative_step``.
+  ``max_relative_slope_error``, and ``max_negative_step``. (:pull:`199`, :issue:`272`)
 
 
 Enhancements
