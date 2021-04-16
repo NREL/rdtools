@@ -299,7 +299,7 @@ class SRRAnalysis():
             raise NoValidIntervalError('No valid soiling intervals were found')
         new_start = results.start.iloc[0]
         new_end = results.end.iloc[-1]
-        pm_frame_out = daily_df[new_start:new_end].copy()
+        pm_frame_out = daily_df[new_start:new_end]
         pm_frame_out = pm_frame_out.reset_index() \
                                    .merge(results, how='left', on='run') \
                                    .set_index('date')
@@ -353,7 +353,7 @@ class SRRAnalysis():
 
         # Raise a warning if there is >20% invalid data
         if (method == 'half_norm_clean') or (method == 'random_clean'):
-            valid_fraction = self.analyzed_daily_df['valid'].sum()/len(self.analyzed_daily_df)
+            valid_fraction = self.analyzed_daily_df['valid'].mean()
             if valid_fraction <= 0.8:
                 warnings.warn('20% or more of the daily data is assigned to invalid soiling '
                               'intervals. This can be problematic with the "half_norm_clean" '
