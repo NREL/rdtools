@@ -13,12 +13,14 @@ API Changes
 Enhancements
 ------------
 
-* A new parameter `outlier_factor` was added to soiling functions and methods to
+* A new parameter ``outlier_factor`` was added to soiling functions and methods to
   enable better control of cleaning event detection. (:pull:`199`)
 
 
 Bug fixes
 ---------
+* Unexpected recoveries when using ``method=random_clean`` in the soiling module
+  have been fixed. (:pull:`199`, :issue:`234`)
 
 
 Testing
