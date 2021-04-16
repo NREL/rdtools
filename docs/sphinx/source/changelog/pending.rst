@@ -8,7 +8,8 @@ API Changes
   consecutive cleaning events are no longer removed. (:pull:`199`, :issue:`189`)
 
 * The default ``day_scale`` parameter in soiling functions and methods was changed
-  from 14 to 13. (:pull:`199`, :issue:`189`)
+  from 14 to 13. A recommendation to use an odd value along with a warning for even
+  values was also added. (:pull:`199`, :issue:`189`)
 
 * The calculations internal to the soiling SRR algorithm have changed such that
   "invalid" intervals are retained at the beginning and end of the dataset for the
