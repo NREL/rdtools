@@ -63,29 +63,27 @@ def test_soiling_srr(soiling_normalized_daily, soiling_insolation, soiling_times
         'soiling_info["soiling_ratio_perfect_clean"] not a pandas series'
 
 
+@pytest.mark.parametrize('method,expected_sr',
+                         [('random_clean', 0.936177),
+                          ('half_norm_clean', 0.915093),
+                          ('perfect_clean', 0.977116)])
 def test_soiling_srr_consecutive_invalid(soiling_normalized_daily, soiling_insolation,
-                                         soiling_times):
+                                         soiling_times, method, expected_sr):
     reps = 10
     np.random.seed(1977)
     sr, sr_ci, soiling_info = soiling_srr(soiling_normalized_daily, soiling_insolation, reps=reps,
-                                          max_relative_slope_error=20.0, method='random_clean')
-    assert 0.936177 == pytest.approx(sr, abs=1e-6),\
-        'Soiling ratio different from expected value for random_clean with consecutive invalid intervals'  # noqa: E501
-
-    np.random.seed(1977)
-    sr, sr_ci, soiling_info = soiling_srr(soiling_normalized_daily, soiling_insolation, reps=reps,
-                                          max_relative_slope_error=20.0, method='half_norm_clean')
-    assert 0.915093 == pytest.approx(sr, abs=1e-6),\
-        'Soiling ratio different from expected value for half_norm_clean with consecutive invalid intervals'  # noqa: E501
-
-    np.random.seed(1977)
-    sr, sr_ci, soiling_info = soiling_srr(soiling_normalized_daily, soiling_insolation, reps=reps,
-                                          max_relative_slope_error=20.0, method='perfect_clean')
-    assert 0.977116 == pytest.approx(sr, abs=1e-6),\
-        'Soiling ratio different from expected value for perfect_clean with consecutive invalid intervals'  # noqa: E501
+                                          max_relative_slope_error=20.0, method=method)
+    assert expected_sr == pytest.approx(sr, abs=1e-6),\
+        f'Soiling ratio different from expected value for {method} with consecutive invalid intervals'  # noqa: E501
 
 
-def test_soiling_srr_with_precip(soiling_normalized_daily, soiling_insolation, soiling_times):
+@pytest.mark.parametrize('clean_criterion,expected_sr',
+                         [('precip_and_shift', 0.982546),
+                          ('precip_or_shift', 0.973433),
+                          ('precip', 0.976196),
+                          ('shift', 0.964369)])
+def test_soiling_srr_with_precip(soiling_normalized_daily, soiling_insolation, soiling_times,
+                                 clean_criterion, expected_sr):
     precip = pd.Series(index=soiling_times, data=0)
     precip['2019-01-18 00:00:00-07:00'] = 1
     precip['2019-02-20 00:00:00-07:00'] = 1
@@ -96,24 +94,9 @@ def test_soiling_srr_with_precip(soiling_normalized_daily, soiling_insolation, s
     }
     np.random.seed(1977)
     sr, sr_ci, soiling_info = soiling_srr(soiling_normalized_daily, soiling_insolation,
-                                          clean_criterion='precip_and_shift', **kwargs)
-    assert 0.982546 == pytest.approx(sr, abs=1e-6),\
-        "Soiling ratio with clean_criterion='precip_and_shift' different from expected"
-    np.random.seed(1977)
-    sr, sr_ci, soiling_info = soiling_srr(soiling_normalized_daily, soiling_insolation,
-                                          clean_criterion='precip_or_shift', **kwargs)
-    assert 0.973433 == pytest.approx(sr, abs=1e-6),\
-        "Soiling ratio with clean_criterion='precip_or_shift' different from expected"
-    np.random.seed(1977)
-    sr, sr_ci, soiling_info = soiling_srr(soiling_normalized_daily, soiling_insolation,
-                                          clean_criterion='precip', **kwargs)
-    assert 0.976196 == pytest.approx(sr, abs=1e-6),\
-        "Soiling ratio with clean_criterion='precip' different from expected"
-    np.random.seed(1977)
-    sr, sr_ci, soiling_info = soiling_srr(soiling_normalized_daily, soiling_insolation,
-                                          clean_criterion='shift', **kwargs)
-    assert 0.964369 == pytest.approx(sr, abs=1e-6),\
-        "Soiling ratio with clean_criterion='shift' different from expected"
+                                          clean_criterion=clean_criterion, **kwargs)
+    assert expected_sr == pytest.approx(sr, abs=1e-6),\
+        f"Soiling ratio with clean_criterion='{clean_criterion}' different from expected"
 
 
 def test_soiling_srr_confidence_levels(soiling_normalized_daily, soiling_insolation):
@@ -161,18 +144,16 @@ def test_soiling_srr_trim(soiling_normalized_daily, soiling_insolation):
         'Wrong number of soiling intervals found with trim=True'
 
 
-def test_soiling_srr_method(soiling_normalized_daily, soiling_insolation):
+@pytest.mark.parametrize('method,expected_sr',
+                         [('random_clean', 0.920444),
+                          ('perfect_clean', 0.966912)
+                          ])
+def test_soiling_srr_method(soiling_normalized_daily, soiling_insolation, method, expected_sr):
     np.random.seed(1977)
     sr, sr_ci, soiling_info = soiling_srr(soiling_normalized_daily, soiling_insolation, reps=10,
-                                          method='random_clean')
-    assert 0.920444 == pytest.approx(sr, abs=1e-6),\
-        'Soiling ratio with method="random_clean" different from expected value'
-
-    np.random.seed(1977)
-    sr, sr_ci, soiling_info = soiling_srr(soiling_normalized_daily, soiling_insolation, reps=10,
-                                          method='perfect_clean')
-    assert 0.966912 == pytest.approx(sr, abs=1e-6),\
-        'Soiling ratio with method="perfect_clean" different from expected value'
+                                          method=method)
+    assert expected_sr == pytest.approx(sr, abs=1e-6),\
+        f'Soiling ratio with method="{method}" different from expected value'
 
 
 def test_soiling_srr_min_interval_length(soiling_normalized_daily, soiling_insolation):
