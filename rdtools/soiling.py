@@ -196,7 +196,7 @@ class SRRAnalysis():
         self.daily_df = df
 
     def _calc_result_df(self, trim=False, max_relative_slope_error=500.0,
-                        max_negative_step=0.05, min_interval_length=2):
+                        max_negative_step=0.05, min_interval_length=7):
         '''
         Calculates self.result_df, a pandas dataframe summarizing the soiling
         intervals identified and self.analyzed_daily_df, a version of
@@ -214,7 +214,7 @@ class SRRAnalysis():
             The maximum magnitude of negative discrete steps allowed in an
             interval for the interval to be considered valid (units of
             normalized performance metric).
-        min_interval_length : int, default 2
+        min_interval_length : int, default 7
             The minimum duration for an interval to be considered
             valid.  Cannot be less than 2 (days).
         '''
@@ -486,7 +486,7 @@ class SRRAnalysis():
 
     def run(self, reps=1000, day_scale=13, clean_threshold='infer',
             trim=False, method='half_norm_clean',
-            clean_criterion='shift', precip_threshold=0.01, min_interval_length=2,
+            clean_criterion='shift', precip_threshold=0.01, min_interval_length=7,
             exceedance_prob=95.0, confidence_level=68.2, recenter=True,
             max_relative_slope_error=500.0, max_negative_step=0.05, outlier_factor=1.5):
         '''
@@ -533,7 +533,7 @@ class SRRAnalysis():
         precip_threshold : float, default 0.01
             The daily precipitation threshold for defining precipitation cleaning events.
             Units must be consistent with ``self.precipitation_daily``
-        min_interval_length : int, default 2
+        min_interval_length : int, default 7
             The minimum duration for an interval to be considered
             valid.  Cannot be less than 2 (days).
         exceedance_prob : float, default 95.0
@@ -657,7 +657,7 @@ class SRRAnalysis():
 def soiling_srr(energy_normalized_daily, insolation_daily, reps=1000,
                 precipitation_daily=None, day_scale=13, clean_threshold='infer',
                 trim=False, method='half_norm_clean',
-                clean_criterion='shift', precip_threshold=0.01, min_interval_length=2,
+                clean_criterion='shift', precip_threshold=0.01, min_interval_length=7,
                 exceedance_prob=95.0, confidence_level=68.2, recenter=True,
                 max_relative_slope_error=500.0, max_negative_step=0.05, outlier_factor=1.5):
     '''
@@ -714,7 +714,7 @@ def soiling_srr(energy_normalized_daily, insolation_daily, reps=1000,
     precip_threshold : float, default 0.01
         The daily precipitation threshold for defining precipitation cleaning events.
         Units must be consistent with precip.
-    min_interval_length : int, default 2
+    min_interval_length : int, default 7
         The minimum duration, in days, for an interval to be considered
         valid.  Cannot be less than 2 (days).
     exceedance_prob : float, default 95.0

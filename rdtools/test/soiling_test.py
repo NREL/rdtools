@@ -240,6 +240,19 @@ def test_soiling_srr_kwargs(monkeypatch, soiling_normalized_daily, soiling_insol
     _ = soiling_srr(soiling_normalized_daily, soiling_insolation, reps=10)
 
 
+@pytest.mark.parametrize(('start,expected_sr'),
+                         [(18, 0.984779), (17, 0.981258)])
+def test_soiling_srr_min_interval_length_default(soiling_normalized_daily, soiling_insolation, start, expected_sr):
+    '''
+    Make sure that the default value of min_interval_length is 7 days by testing
+    on a cropped version of the example data
+    '''
+    reps = 10
+    np.random.seed(1977)
+    sr, sr_ci, soiling_info = soiling_srr(soiling_normalized_daily[start:], soiling_insolation[start:], reps=reps)
+    assert expected_sr == pytest.approx(sr, abs=1e-6),\
+        'Soiling ratio different from expected value'
+
 # ###########################
 # annual_soiling_ratios tests
 # ###########################

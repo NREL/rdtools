@@ -7,16 +7,18 @@ API Changes
 * The calculations internal to the soiling SRR algorithm have changed such that
   consecutive cleaning events are no longer removed. (:pull:`199`, :issue:`189`)
 
-* The default ``day_scale`` parameter in soiling functions and methods was changed
-  from 14 to 13. A recommendation to use an odd value along with a warning for even
-  values was also added. (:pull:`199`, :issue:`189`)
-
 * The calculations internal to the soiling SRR algorithm have changed such that
   "invalid" intervals are retained at the beginning and end of the dataset for the
   purposes of the SRR Monte Carlo.  Invalid intervals are those that do not qualify
   to be fit as soiling intervals based on  ``min_interval_length``,
   ``max_relative_slope_error``, and ``max_negative_step``. (:pull:`199`, :issue:`272`)
 
+* The default ``day_scale`` parameter in soiling functions and methods was changed
+  from 14 to 13. A recommendation to use an odd value along with a warning for even
+  values was also added. (:pull:`199`, :issue:`189`)
+
+* The default ``min_interval_length`` in soiling functions and methods was changed
+  from 2 to 7. (:pull:`199`)
 
 Enhancements
 ------------
