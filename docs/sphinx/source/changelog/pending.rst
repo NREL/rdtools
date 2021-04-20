@@ -56,4 +56,5 @@ Contributors
 ------------
 * Kevin Anderson (:ghuser:`kanderso-nrel`)
 * Michael Deceglie (:ghuser:`mdeceglie`)
+* Matthew Muller (:ghuser:`matt14muller`)
 
