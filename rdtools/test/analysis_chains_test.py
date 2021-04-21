@@ -3,6 +3,7 @@ from conftest import assert_isinstance
 import pytest
 import pvlib
 import pandas as pd
+import numpy as np
 import matplotlib.pyplot as plt
 
 
@@ -268,6 +269,7 @@ def soiling_parameters(basic_parameters, soiling_normalized_daily, cs_input):
 @pytest.fixture
 def soiling_analysis_sensor(soiling_parameters):
     soiling_analysis = TrendAnalysis(**soiling_parameters)
+    np.random.seed(1977)
     soiling_analysis.sensor_analysis(analyses=['srr_soiling'],
                                      srr_kwargs={'reps': 10})
     return soiling_analysis
@@ -277,6 +279,7 @@ def soiling_analysis_sensor(soiling_parameters):
 def soiling_analysis_clearsky(soiling_parameters, cs_input):
     soiling_analysis = TrendAnalysis(**soiling_parameters)
     soiling_analysis.set_clearsky(**cs_input)
+    np.random.seed(1977)
     soiling_analysis.clearsky_analysis(analyses=['srr_soiling'],
                                        srr_kwargs={'reps': 10})
     return soiling_analysis
@@ -288,9 +291,9 @@ def test_srr_soiling(soiling_analysis_sensor):
     ci = srr_results['sratio_confidence_interval']
     renorm_factor = srr_results['calc_info']['renormalizing_factor']
     print(f'soiling ci:{ci}')
-    assert 0.959 == pytest.approx(sratio, abs=1e-3),\
+    assert 0.965 == pytest.approx(sratio, abs=1e-3),\
         'Soiling ratio different from expected value in TrendAnalysis.srr_soiling'
-    assert [0.95, 0.96] == pytest.approx(ci, abs=1e-2),\
+    assert [0.96, 0.97] == pytest.approx(ci, abs=1e-2),\
         'Soiling confidence interval different from expected value in TrendAnalysis.srr_soiling'
     assert 0.974 == pytest.approx(renorm_factor, abs=1e-3),\
         'Renormalization factor different from expected value in TrendAnalysis.srr_soiling'
