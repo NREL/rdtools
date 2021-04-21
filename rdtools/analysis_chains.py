@@ -373,9 +373,7 @@ class TrendAnalysis():
         -------
         None
         '''
-        filter_components = pd.DataFrame({
-            'default': pd.Series(True, index=energy_normalized.index)
-        })
+        filter_components = pd.DataFrame(index=energy_normalized.index)
 
         if case == 'sensor':
             poa = self.poa_global
@@ -422,7 +420,6 @@ class TrendAnalysis():
         # note: the previous implementation using the & operator treated NaN
         # filter values as False, so we do the same here for consistency:
         bool_filter = filter_components.fillna(False).all(axis=1)
-        filter_components = filter_components.drop(columns=['default'])
         if case == 'sensor':
             self.sensor_filter = bool_filter
             self.sensor_filter_components = filter_components

@@ -139,6 +139,15 @@ def test_filter_components(sensor_parameters):
     assert (poa_filter == rd_analysis.sensor_filter_components['poa_filter']).all()
 
 
+def test_filter_components_no_filters(sensor_parameters):
+    rd_analysis = TrendAnalysis(**sensor_parameters, power_dc_rated=1.0)
+    rd_analysis.filter_params = {}  # disable all filters
+    rd_analysis.sensor_analysis(analyses=['yoy_degradation'])
+    expected = pd.Series(True, index=rd_analysis.pv_energy.index)
+    pd.testing.assert_series_equal(rd_analysis.sensor_filter, expected)
+    assert rd_analysis.sensor_filter_components.empty
+
+
 def test_cell_temperature_model_invalid(sensor_parameters):
     wind = pd.Series(0, index=sensor_parameters['pv'].index)
     sensor_parameters.pop('temperature_model')
