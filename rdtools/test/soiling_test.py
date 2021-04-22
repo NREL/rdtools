@@ -115,7 +115,7 @@ def test_soiling_srr_dayscale(soiling_normalized_daily, soiling_insolation):
     with pytest.raises(NoValidIntervalError):
         np.random.seed(1977)
         sr, sr_ci, soiling_info = soiling_srr(soiling_normalized_daily, soiling_insolation,
-                                              confidence_level=68.2, reps=10, day_scale=90)
+                                              confidence_level=68.2, reps=10, day_scale=91)
 
 
 def test_soiling_srr_clean_threshold(soiling_normalized_daily, soiling_insolation):
