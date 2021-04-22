@@ -50,8 +50,8 @@ def test_soiling_srr(soiling_normalized_daily, soiling_insolation, soiling_times
     expected_means = expected_means[['soiling_rate', 'soiling_rate_low', 'soiling_rate_high',
                                      'inferred_start_loss', 'inferred_end_loss',
                                      'length', 'valid']]
-    pd.testing.assert_series_equal(expected_means, soiling_info['soiling_interval_summary'].mean(),
-                                   check_exact=False)
+    actual_means = soiling_info['soiling_interval_summary'][expected_means.index].mean()
+    pd.testing.assert_series_equal(expected_means, actual_means, check_exact=False)
 
     # Check soiling_info['soiling_ratio_perfect_clean']
     pd.testing.assert_index_equal(soiling_info['soiling_ratio_perfect_clean'].index, soiling_times,
