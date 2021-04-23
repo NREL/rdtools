@@ -63,12 +63,12 @@ class TrendAnalysis():
     Attributes
     ----------
     (not all attributes documented here)
-    filter_parameters: dict
+    filter_params: dict
         parameters to be passed to rdtools.filtering functions. Keys are the
         names of the rdtools.filtering functions. Values are dicts of parameters
         to be passed to those functions. Also has a special key `ad_hoc_filter`
         the associated value is a boolean mask joined with the rest of the filters.
-        filter_parameters defaults to empty dicts for each function in rdtools.filtering,
+        filter_params defaults to empty dicts for each function in rdtools.filtering,
         in which case those functions use default parameter values,  `ad_hoc_filter`
         defaults to None. See examples for more information.
     results : dict
