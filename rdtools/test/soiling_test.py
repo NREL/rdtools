@@ -72,9 +72,8 @@ def test_soiling_srr_consecutive_invalid(soiling_normalized_daily, soiling_insol
                                          soiling_times, method, expected_sr):
     reps = 10
     np.random.seed(1977)
-    sr, sr_ci, soiling_info = soiling_srr(soiling_normalized_daily, soiling_insolation,
-                                          reps=reps, max_relative_slope_error=20.0,
-                                          method=method)
+    sr, sr_ci, soiling_info = soiling_srr(soiling_normalized_daily, soiling_insolation, reps=reps,
+                                          max_relative_slope_error=20.0, method=method)
     assert expected_sr == pytest.approx(sr, abs=1e-6),\
         f'Soiling ratio different from expected value for {method} with consecutive invalid intervals'  # noqa: E501
 
