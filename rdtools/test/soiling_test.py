@@ -7,8 +7,6 @@ from rdtools.soiling import monthly_soiling_rates
 from rdtools.soiling import NoValidIntervalError
 import pytest
 
-import contextlib
-
 
 def test_soiling_srr(soiling_normalized_daily, soiling_insolation, soiling_times):
 
@@ -65,6 +63,7 @@ def test_soiling_srr(soiling_normalized_daily, soiling_insolation, soiling_times
         'soiling_info["soiling_ratio_perfect_clean"] not a pandas series'
 
 
+@pytest.mark.filterwarnings("ignore:.*20% or more of the daily data.*:UserWarning")
 @pytest.mark.parametrize('method,expected_sr',
                          [('random_clean', 0.936177),
                           ('half_norm_clean', 0.915093),
@@ -73,16 +72,9 @@ def test_soiling_srr_consecutive_invalid(soiling_normalized_daily, soiling_insol
                                          soiling_times, method, expected_sr):
     reps = 10
     np.random.seed(1977)
-    # 'perfect_clean' doesn't warn, so use ExitStack to be able to use
-    # pytest.warns in a conditional manner:
-    with contextlib.ExitStack() as stack:
-        if method in ['random_clean', 'half_norm_clean']:
-            match = '20% or more of the daily data'
-            stack.enter_context(pytest.warns(UserWarning, match=match))
-
-        sr, sr_ci, soiling_info = soiling_srr(soiling_normalized_daily, soiling_insolation,
-                                              reps=reps, max_relative_slope_error=20.0,
-                                              method=method)
+    sr, sr_ci, soiling_info = soiling_srr(soiling_normalized_daily, soiling_insolation,
+                                          reps=reps, max_relative_slope_error=20.0,
+                                          method=method)
     assert expected_sr == pytest.approx(sr, abs=1e-6),\
         f'Soiling ratio different from expected value for {method} with consecutive invalid intervals'  # noqa: E501
 
