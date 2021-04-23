@@ -5,6 +5,7 @@ import pandas as pd
 import joblib
 import os
 import warnings
+from numbers import Number
 
 # Load in the XGBoost clipping model using joblib.
 xgboost_clipping_model = None
@@ -119,7 +120,7 @@ def csi_filter(poa_global_measured, poa_global_clearsky, threshold=0.15):
     return (csi >= 1.0 - threshold) & (csi <= 1.0 + threshold)
 
 
-def clip_filter(power_ac, model = "quantile_clip_filter", **kwargs):
+def clip_filter(power_ac, model="quantile_clip_filter", **kwargs):
     """
     Master wrapper for running one of the desired clipping filters.
     The default filter run is the quantile clipping filter.
@@ -130,9 +131,9 @@ def clip_filter(power_ac, model = "quantile_clip_filter", **kwargs):
         Pandas time series, representing PV system power or energy with
         a pandas datetime index.
     model : string, default 'quantile_clip_filter'
-        Clipping filter model to run. Can be 'quantile_clip_filter', 
+        Clipping filter model to run. Can be 'quantile_clip_filter',
         'xgboost_clip_filter', or 'logic_clip_filter'.
-    kwargs : 
+    kwargs :
         Additional clipping filter args, specific to the model being
         used. Keyword must be passed with value.
 
@@ -142,8 +143,8 @@ def clip_filter(power_ac, model = "quantile_clip_filter", **kwargs):
         Boolean Series of whether to include the point because it is not
         clipping.
         True values delineate non-clipping periods, and False values delineate
-        clipping periods.   
-    """ 
+        clipping periods.
+    """
     if isinstance(model, Number):
         quantile = model
         warnings.warn("Function clip_filter is now a wrapper for different clipping filters. "
@@ -266,7 +267,7 @@ def _calculate_max_derivative(power_ac, roll_periods):
 
 def logic_clip_filter(power_ac,
                       mounting_type='Fixed',
-                      derivative_cutoff=0.2,
+                      max_rolling_derivative_cutoff=0.2,
                       roll_periods=None):
     '''
     This filter is a logic-based filter that is used to filter out
@@ -285,11 +286,11 @@ def logic_clip_filter(power_ac,
         String representing the mounting configuration associated with the
         AC power/energy time series. Can either be "Fixed" or "Tracking".
         Default set to 'Fixed'.
-    derivative_cutoff : float, default 0.2
-        Cutoff for max derivative threshold. Defaults to 0.2; however, values
-        as high as 0.4 have been tested and shown to be effective.  The higher
-        the cutoff, the more values in the dataset that will be determined as
-        clipping.
+    max_rolling_derivative_cutoff : float, default 0.2
+        Cutoff for max rolling derivative threshold. Defaults to 0.2; however,
+        values as high as 0.4 have been tested and shown to be effective.
+        The higher the cutoff, the more values in the dataset that will be
+        determined as clipping.
     roll_periods: Integer.
         Number of periods to examine when looking for a near-zero derivative
         in the time series derivative. If roll_periods = 3, the system looks
@@ -308,7 +309,7 @@ def logic_clip_filter(power_ac,
         clipping periods.
     '''
     # Format the power time series
-    power_ac, index_name = _format_clipping_time_series(power_ac, 
+    power_ac, index_name = _format_clipping_time_series(power_ac,
                                                         mounting_type)
     # Get the sampling frequency of the time series
     time_series_sampling_frequency = power_ac.index.to_series().diff()\
@@ -350,7 +351,7 @@ def logic_clip_filter(power_ac,
     deriv_max = _calculate_max_derivative(power_ac, roll_periods)
     # Determine clipping values based on the maximum derivative in
     # the rolling window, and the user-specified derivative threshold
-    roll_clip_mask = (deriv_max < derivative_cutoff)
+    roll_clip_mask = (deriv_max < max_rolling_derivative_cutoff)
     # The following applies the clipping determination to all data
     # points within the rolling window.
     # Get max derivative at a certain timestamp, and look at the periods
@@ -446,7 +447,7 @@ def xgboost_clip_filter(power_ac,
     # Load in the XGBoost model
     xgboost_clipping_model = _load_xgboost_clipping_model()
     # Format the power time series
-    power_ac, index_name = _format_clipping_time_series(power_ac, 
+    power_ac, index_name = _format_clipping_time_series(power_ac,
                                                         mounting_type)
     # Convert the Pandas series to a dataframe, with mounting_type as an
     # additional column.
