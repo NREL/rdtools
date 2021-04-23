@@ -144,13 +144,17 @@ def clip_filter(power_ac, model = "quantile_clip_filter", **kwargs):
         True values delineate non-clipping periods, and False values delineate
         clipping periods.   
     """ 
-    if (model == 'quantile_clip_filter') | (isinstance(model, float)):
+    if isinstance(model, Number):
+        quantile = model
+        warnings.warn("Function clip_filter is now a wrapper for different clipping filters. "
+                      "To reproduce prior behavior, parameters have been interpreted as "
+                      f"model= 'quantile_clip_filter', quantile={quantile}. This syntax will be "
+                      "removed in a future version.", DeprecationWarning)
+        kwargs['quantile'] = quantile
+        model = 'quantile_clip_filter'
+
+    if (model == 'quantile_clip_filter'):
         clip_mask = quantile_clip_filter(power_ac, **kwargs)
-        # Pass a deprecation warning for previous function behavior.
-        if (isinstance(model, float)):
-            warnings.warn("Function clip_filter has been changed to quantile_clip_filter.\
-                          This new function acts as a wrapper for different clipping filter\
-                          options.")
     elif model == 'xgboost_clip_filter':
         clip_mask = xgboost_clip_filter(power_ac, **kwargs)
     elif model == 'logic_clip_filter':
