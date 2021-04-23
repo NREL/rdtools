@@ -128,7 +128,7 @@ def clip_filter(power_ac, model="quantile_clip_filter", **kwargs):
     Parameters
     ----------
     power_ac : pd.Series
-        Pandas time series, representing PV system power or energy with
+        Pandas time series, representing PV system with
         a pandas datetime index.
     model : string, default 'quantile_clip_filter'
         Clipping filter model to run. Can be 'quantile_clip_filter',
@@ -199,11 +199,11 @@ def _format_clipping_time_series(power_ac, mounting_type):
     Parameters
     ----------
     power_ac : pd.Series
-        Pandas time series, representing PV system power or energy with
+        Pandas time series, representing PV system power with
         a pandas datetime index.
     mounting_type : String
         String representing the mounting configuration associated with the
-        AC power/energy time series. Can either be "Fixed" or "Tracking".
+        AC power time series. Can either be "Fixed" or "Tracking".
         Default set to 'Fixed'.
         
     Returns
@@ -244,7 +244,7 @@ def _calculate_max_derivative(power_ac, roll_periods):
     Parameters
     ----------
     power_ac : pd.Series
-        Pandas time series, representing PV system power or energy with
+        Pandas time series, representing PV system power with
         a pandas datetime index.
     roll_periods: Int
         Number of readings to calculate the rolling maximum derivative on.
@@ -271,8 +271,8 @@ def logic_clip_filter(power_ac,
                       roll_periods=None):
     '''
     This filter is a logic-based filter that is used to filter out
-    clipping periods in AC power and AC energy time series.
-    The AC power or energy time series is filtered based on the
+    clipping periods in AC power time series.
+    The AC power time series is filtered based on the
     maximum derivative over a rolling window, as compared to a user-set
     derivate_cutoff (default set to 0.2).  The size of the
     rolling window is increased when the system is a tracked system.
@@ -280,11 +280,11 @@ def logic_clip_filter(power_ac,
     Parameters
     ----------
     power_ac : pd.Series
-        Pandas time series, representing PV system power or energy with
+        Pandas time series, representing PV system power with
         a pandas datetime index.
     mounting_type: string, default 'Fixed'
         String representing the mounting configuration associated with the
-        AC power/energy time series. Can either be "Fixed" or "Tracking".
+        AC power time series. Can either be "Fixed" or "Tracking".
         Default set to 'Fixed'.
     max_rolling_derivative_cutoff : float, default 0.2
         Cutoff for max rolling derivative threshold. Defaults to 0.2; however,
@@ -430,11 +430,11 @@ def xgboost_clip_filter(power_ac,
     Parameters
     ----------
     power_ac : pd.Series
-        Pandas time series, representing PV system power or energy with
+        Pandas time series, representing PV system power with
         a pandas datetime index.
     mounting_type: string, default 'Fixed'
         String representing the mounting configuration associated with the
-        AC power/energy time series. Can either be "Fixed" or "Tracking".
+        AC power time series. Can either be "Fixed" or "Tracking".
 
     Returns
     -------
