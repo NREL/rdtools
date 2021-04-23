@@ -373,7 +373,14 @@ class TrendAnalysis():
         -------
         None
         '''
-        filter_components = pd.DataFrame(index=energy_normalized.index)
+        # Combining filters is non-trivial because of the possibility of index
+        # mismatch.  Adding columns to an existing dataframe performs a left index
+        # join, but probably we actually want an outer join.  We can get an outer
+        # join by keeping this as a dictionary and converting it to a dataframe all
+        # at once.  However, we add a default value of True, with the same index as
+        # energy_normalized, so that the output is still correct even when all
+        # filters have been disabled.
+        filter_components = {'default': pd.Series(True, index=energy_normalized.index)}
 
         if case == 'sensor':
             poa = self.poa_global
@@ -419,7 +426,9 @@ class TrendAnalysis():
 
         # note: the previous implementation using the & operator treated NaN
         # filter values as False, so we do the same here for consistency:
-        bool_filter = filter_components.fillna(False).all(axis=1)
+        filter_components = pd.DataFrame(filter_components).fillna(False)
+        bool_filter = filter_components.all(axis=1)
+        filter_components = filter_components.drop(columns=['default'])
         if case == 'sensor':
             self.sensor_filter = bool_filter
             self.sensor_filter_components = filter_components
