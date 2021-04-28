@@ -147,10 +147,12 @@ def clip_filter(power_ac, model="quantile_clip_filter", **kwargs):
     """
     if isinstance(model, Number):
         quantile = model
-        warnings.warn("Function clip_filter is now a wrapper for different clipping filters. "
-                      "To reproduce prior behavior, parameters have been interpreted as "
-                      f"model= 'quantile_clip_filter', quantile={quantile}. This syntax will be "
-                      "removed in a future version.", DeprecationWarning)
+        warnings.warn("Function clip_filter is now a wrapper for different "
+                      "clipping filters. To reproduce prior behavior, "
+                      "parameters have been interpreted as model= "
+                      "'quantile_clip_filter', quantile={quantile}. "
+                      "This syntax will be removed in a future version.",
+                      DeprecationWarning)
         kwargs['quantile'] = quantile
         model = 'quantile_clip_filter'
 
@@ -162,8 +164,8 @@ def clip_filter(power_ac, model="quantile_clip_filter", **kwargs):
         clip_mask = logic_clip_filter(power_ac, **kwargs)
     else:
         raise ValueError(
-            "Variable model must be 'quantile_clip_filter', 'xgboost_clip_filter', or \
-            'logic_clip_filter'.")        
+            "Variable model must be 'quantile_clip_filter', "
+            "'xgboost_clip_filter', or 'logic_clip_filter'.")
     return clip_mask
 
 
@@ -224,8 +226,11 @@ def _format_clipping_time_series(power_ac, mounting_type):
     if (mounting_type != "Tracking") & (mounting_type != "Fixed"):
         raise ValueError(
             "Variable mounting_type must be string 'Tracking' or 'Fixed'.")
+    # Check that there is enough data in the dataframe. Must be greater than
+    # 10 readings.
+    if len(power_ac) <= 10:
+        raise Exception('<=10 readings in the time series, cannot run filter.')
     # Get the names of the series and the datetime index
-    column_name = power_ac.name
     column_name = 'value'
     power_ac = power_ac.rename(column_name)
     index_name = power_ac.index.name
@@ -319,12 +324,10 @@ def logic_clip_filter(power_ac,
     original_time_series_sampling_frequency = time_series_sampling_frequency
     power_copy = power_ac.copy()
     # Drop duplciate indices
-    power_ac = power_ac.reset_index().drop_duplicates(
-                        subset=power_ac.index.name,
-                        keep='first').set_index(power_ac.index.name)
+    power_ac = pd.DataFrame(power_ac[~power_ac.index.duplicated(keep='first')])
     freq_string = str(time_series_sampling_frequency) + 'T'
     if time_series_sampling_frequency >= 10:
-        power_ac = power_ac.asfreq(freq_string)
+        power_ac = power_ac.resample(freq_string).asfreq()
     # High frequency data (less than 10 minutes) has demonstrated
     # potential to have more noise than low frequency  data.
     # Therefore, the  data is resampled to a 15-minute average
@@ -352,42 +355,20 @@ def logic_clip_filter(power_ac,
     # Determine clipping values based on the maximum derivative in
     # the rolling window, and the user-specified derivative threshold
     roll_clip_mask = (deriv_max < max_rolling_derivative_cutoff)
-    # The following applies the clipping determination to all data
-    # points within the rolling window.
-    # Get max derivative at a certain timestamp, and look at the periods
-    clipping_df = pd.DataFrame(roll_clip_mask.copy(), columns=['value'])
     # Set values within roll_periods values from a True instance
     # as True as well
-    clipping_df['subgroup'] = (clipping_df['value'] !=
-                               clipping_df['value'].shift(1)).cumsum()
-    clipping_df['subgroup_count'] = clipping_df.groupby(
-                                    clipping_df['subgroup']).cumcount() + 1
-    if roll_periods > 4:
-        clipping_df.loc[(~clipping_df['value']) &
-                        (clipping_df['subgroup_count'] <= 4) &
-                        (clipping_df['subgroup'] > 1), 'value'] = True
-    elif roll_periods > 3:
-        clipping_df.loc[(~clipping_df['value']) &
-                        (clipping_df['subgroup_count'] <= 3) &
-                        (clipping_df['subgroup'] > 1), 'value'] = True
-    elif roll_periods > 1:
-        clipping_df.loc[(~clipping_df['value']) &
-                        (clipping_df['subgroup_count'] <= 2) &
-                        (clipping_df['subgroup'] > 1), 'value'] = True
-    else:
-        pass
-    clipping = clipping_df['value']
+    clipping = (roll_clip_mask.rolling(roll_periods).sum() >= 1)
     # High frequency was resampled to 15-minute average data.
     # The following lines apply the 15-minute clipping filter to the
     # original 15-minute data resulting in a clipping filter on the original
     # data.
     if (original_time_series_sampling_frequency < 10):
         power_ac = power_copy.copy()
-        clipping = clipping.reindex(index=power_ac.index,
+        clipping = clipping.reindex(index=power_copy.index,
                                     method='ffill')
         # Subset the series where clipping filter == True
         clip_pwr = power_ac[clipping]
-        clip_pwr = clip_pwr.reindex(index=power_ac.index,
+        clip_pwr = clip_pwr.reindex(index=power_copy.index,
                                     fill_value=np.nan)
         # Set any values within the clipping max + clipping min threshold
         # as clipping. This is done specifically for capturing the noise
@@ -395,29 +376,29 @@ def logic_clip_filter(power_ac,
         daily_mean = clip_pwr.resample('D').mean()
         daily_std = clip_pwr.resample('D').std()
         daily_clipping_max = daily_mean + 2 * daily_std
-        daily_clipping_max = daily_clipping_max.reindex(index=power_ac.index,
+        daily_clipping_max = daily_clipping_max.reindex(index=power_copy.index,
                                                         method='ffill')
         daily_clipping_min = daily_mean - 2 * daily_std
-        daily_clipping_min = daily_clipping_min.reindex(index=power_ac.index,
+        daily_clipping_min = daily_clipping_min.reindex(index=power_copy.index,
                                                         method='ffill')
     else:
         # Find the maximum and minimum power level where clipping is
         # detected each day.
         clip_pwr = power_ac[clipping]
-        clip_pwr = clip_pwr.reindex(index=power_ac.index,
+        clip_pwr = clip_pwr.reindex(index=power_copy.index,
                                     fill_value=np.nan)
         daily_clipping_max = clip_pwr.resample('D').max()
         daily_clipping_min = clip_pwr.resample('D').min()
-        daily_clipping_min = daily_clipping_min.reindex(index=power_ac.index,
+        daily_clipping_min = daily_clipping_min.reindex(index=power_copy.index,
                                                         method='ffill')
-        daily_clipping_max = daily_clipping_max.reindex(index=power_ac.index,
+        daily_clipping_max = daily_clipping_max.reindex(index=power_copy.index,
                                                         method='ffill')
+    power_ac = power_ac.reindex(index=power_copy.index,
+                                method='ffill')
     # Set all values to clipping that are between the maximum and minimum
     # power levels where clipping was found on a daily basis.
     final_clip = (daily_clipping_min <= power_ac) & \
         (power_ac <= daily_clipping_max)
-    final_clip = final_clip.reindex(index=power_copy.index,
-                                    fill_value=False)
     return ~final_clip
 
 
