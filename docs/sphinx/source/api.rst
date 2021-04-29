@@ -56,7 +56,6 @@ Degradation
    degradation_classical_decomposition
    degradation_ols
    degradation_year_on_year
-   bootstrap_YOY
 
 
 Soiling
@@ -179,5 +178,3 @@ Bootstrap
 .. autosummary::
    :toctree: generated/
 
-   make_time_series_bootstrap_samples
-   construct_confidence_intervals
