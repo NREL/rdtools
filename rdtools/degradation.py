@@ -4,8 +4,8 @@ import pandas as pd
 import numpy as np
 import statsmodels.api as sm
 from typing import Tuple
-from rdtools.bootstrap import make_time_series_bootstrap_samples, \
-    construct_confidence_intervals
+from rdtools.bootstrap import _make_time_series_bootstrap_samples, \
+    _construct_confidence_intervals
 
 
 def degradation_ols(energy_normalized, confidence_level=68.2):
@@ -185,7 +185,7 @@ def degradation_classical_decomposition(energy_normalized,
 
 def degradation_year_on_year(energy_normalized, recenter=True,
                              exceedance_prob=95, confidence_level=68.2,
-                             full_calc=True):
+                             uncertainty_method='simple_bootstrap', block_length=30):
     '''
     Estimate the trend of a timeseries using the year-on-year decomposition
     approach and calculate a Monte Carlo-derived confidence interval of slope.
@@ -204,10 +204,15 @@ def degradation_year_on_year(energy_normalized, recenter=True,
         in percent.
     confidence_level : float, default 68.2
         The size of the confidence interval to return, in percent.
-    full_calc : bool, default True
-        Determines whether or not confidence intervals and exceedance levels
-        should be calculated (If False, the algorithm is considerably faster,
-        and only returns the `degradation_rate`)
+    uncertainty_method : string, default 'simple_bootstrap'
+        Either 'simple_bootstrap', 'circular_block_bootstrap', or 'none'
+        Determines what bootstrapping method to use to construct confidence
+        intervals and exceedance levels. If 'none' (or anything other than the three
+        alternatives), the algorithm does not construct confidence intervals,
+        is considerably faster, and only returns the `Rd_pct`.
+    block_length : int, default 30
+        If `uncertainty_method` is 'circular_block_bootstrap', `block_length`
+        determines the length of the blocks used in the circular block bootstrapping,
 
     Returns
     -------
@@ -241,6 +246,14 @@ def degradation_year_on_year(energy_normalized, recenter=True,
         raise ValueError('must provide at least two years of '
                          'normalized energy')
 
+    # If circular block bootstrapping...
+    if uncertainty_method == 'circular_block_bootstrap':
+        # ... require regular logging frequency
+        freq = pd.infer_freq(energy_normalized.index)
+        if isinstance(freq, type(None)):
+            raise ValueError('energy_normalized must have a fixed frequency')
+        # ... require a block length shorter than 
+
     # Auto center
     if recenter:
         start = energy_normalized.index[0]
@@ -273,7 +286,7 @@ def degradation_year_on_year(energy_normalized, recenter=True,
 
     Rd_pct = yoy_result.median()
 
-    if full_calc:  # If we need the full results
+    if uncertainty_method == 'simple_bootstrap':  # If we need the full results
         calc_info = {
             'YoY_values': yoy_result,
             'renormalizing_factor': renorm
@@ -292,6 +305,40 @@ def degradation_year_on_year(energy_normalized, recenter=True,
 
         calc_info['exceedance_level'] = P_level
 
+        return (Rd_pct, Rd_CI, calc_info)
+    
+    elif uncertainty_method == 'circular_block_bootstrap':
+        # Number of bootstrap repetitions
+        reps = 1000
+
+        # Construct degradation trend time series
+        N = len(energy_normalized)
+        numeric_index = np.arange(N)
+        days_per_index = \
+            (energy_normalized.dt.iloc[-1] - energy_normalized.dt.iloc[0]).days / N
+        degradation_trend = 1 + (Rd_pct / 100 / 365.24 * numeric_index
+                                * days_per_index)
+        degradation_trend = pd.Series(
+            index=energy_normalized.dt, data=degradation_trend)
+
+        # Generate bootstrap_samples
+        bootstrap_samples = _make_time_series_bootstrap_samples(
+            energy_normalized.set_index('dt')['energy'], degradation_trend,
+            sample_nr=reps, block_length=block_length)
+
+        # Construct confidence interval
+        Rd_CI, exceedance_level, bootstrap_rates = \
+            _construct_confidence_intervals(
+                bootstrap_samples, degradation_year_on_year,
+                exceedance_prob=exceedance_prob, confidence_level=confidence_level,
+                recenter=False, uncertainty_method='none')
+
+        # Save calculation information
+        calc_info = {
+            'renormalizing_factor': renorm,
+            'exceedance_level': exceedance_level,
+            'bootstrap_rates': bootstrap_rates}
+        
         return (Rd_pct, Rd_CI, calc_info)
 
     else:  # If we do not need confidence intervals and exceedance level
@@ -394,84 +441,3 @@ def _degradation_CI(results, confidence_level):
     Rd_CI = np.percentile(dist, [50.0 - half_ci, 50.0 + half_ci]) * 100.0
     return Rd_CI
 
-
-def bootstrap_YOY(
-    energy_normalized: pd.Series, reps: int = 1000, block_length: int = 30,
-    exceedance_prob: float = 95, confidence_level: float = 68.2) -> \
-        Tuple[float, np.array, dict]:
-    '''
-    Run `degradation_year_on_year` and construct confidence intervals and
-    exceedance probability based on circular block bootstrapping
-
-    Parameters
-    ----------
-    energy_normalized: pd.Series
-        Daily or lower frequency time series of normalized system ouput. Must
-        have a DatetimeIndex with fixed frequency.
-    reps : int, default 1000
-        The number of s samples that you want to generate
-    block_length : int, default 30
-        Length of blocks to shuffle in block bootstrapping
-    exceedance_prob : float, default 95
-        The probability level to use for exceedance value calculation,
-        in percent.
-    confidence_level : float, default 68.2
-        The size of the confidence interval to return, in percent.
-
-    Returns
-    -------
-    degradation_rate : float
-        rate of relative performance change in %/yr
-    confidence_interval : np.array
-        confidence interval (size specified by `confidence_level`) of
-        degradation rate estimate
-    calc_info : dict
-        * `YoY_values` - pandas series of right-labeled year on year slopes
-        * `renormalizing_factor` - float of value used to recenter data
-        * `exceedance_level` - the degradation rate that was outperformed with
-          probability of `exceedance_prob`
-    '''
-    # Check for regular logging frequency
-    freq = pd.infer_freq(energy_normalized.index)
-    if isinstance(freq, type(None)):
-        raise ValueError('energy_normalized must have a fixed frequency')
-
-    # Renormalize energy
-    start = energy_normalized.index[0]
-    oneyear = start + pd.Timedelta('364d')
-    renorm = energy_normalized[start:oneyear].median()
-    energy_renormalized = energy_normalized / renorm
-
-    # Estimate degradation rate
-    degradation_rate = degradation_year_on_year(
-        energy_renormalized, recenter=False, full_calc=False)
-
-    # Construct degradation trend time series
-    N = len(energy_renormalized)
-    numeric_index = np.arange(N)
-    days_per_index = \
-        (energy_renormalized.index[-1] - energy_renormalized.index[0]).days / N
-    degradation_trend = 1 + (degradation_rate / 100 / 365.24 * numeric_index
-                             * days_per_index)
-    degradation_trend = pd.Series(
-        index=energy_renormalized.index, data=degradation_trend)
-
-    # Generate bootstrap_samples
-    bootstrap_samples = make_time_series_bootstrap_samples(
-        energy_renormalized, degradation_trend, sample_nr=reps,
-        block_length=block_length)
-
-    # Construct confidence interval
-    confidence_interval, exceedance_level, bootstrap_rates = \
-        construct_confidence_intervals(
-            bootstrap_samples, degradation_year_on_year,
-            exceedance_prob=exceedance_prob, confidence_level=confidence_level,
-            recenter=False, full_calc=False)
-
-    # Save calculation information
-    calc_info = {
-        'renormalizing_factor': renorm,
-        'exceedance_level': exceedance_level,
-        'bootstrap_rates': bootstrap_rates}
-
-    return degradation_rate, confidence_interval, calc_info
