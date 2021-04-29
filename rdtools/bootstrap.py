@@ -1,5 +1,12 @@
 '''
-Functions for bootstrapping time series models to acquire confidence intervals.
+Functions for circular block bootstrapping of time series models to acquire
+confidence intervals.
+
+References
+----------
+[1] Skomedal, Å. and Deceglie, M. G., IEEE Journal of
+    Photovoltaics, Sept. 2020. https://doi.org/10.1109/JPHOTOV.2020.3018219
+
 '''
 
 import pandas as pd
@@ -7,7 +14,7 @@ import numpy as np
 from arch.bootstrap import CircularBlockBootstrap
 
 
-def make_time_series_bootstrap_samples(
+def _make_time_series_bootstrap_samples(
     signal, model_fit, sample_nr=1000, block_length=90, decomposition_type='multiplicative'
 ):
     '''
@@ -59,7 +66,7 @@ def make_time_series_bootstrap_samples(
     return bootstrap_samples
 
 
-def construct_confidence_intervals(
+def _construct_confidence_intervals(
     bootstrap_samples, fitting_function, exceedance_prob=95, confidence_level=68.2, **kwargs
 ):
     '''

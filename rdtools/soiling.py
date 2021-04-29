@@ -6,7 +6,7 @@ and default behaviors may change in future releases (including MINOR
 and PATCH releases) as the code matures.
 '''
 from rdtools import degradation as RdToolsDeg
-from rdtools.bootstrap import make_time_series_bootstrap_samples
+from rdtools.bootstrap import _make_time_series_bootstrap_samples
 
 import warnings
 
@@ -1347,7 +1347,7 @@ class CODSAnalysis():
                                           data=STL_res.trend.apply(np.exp))
                     degradation_trend.append(deg_trend / deg_trend.iloc[0])
                     yoy_save.append(RdToolsDeg.degradation_year_on_year(
-                        degradation_trend[-1], full_calc=False))
+                        degradation_trend[-1], uncertainty_method='none'))
 
             # Find degradation component
             if order[(ic-1) % n_steps] == 'Rd':
@@ -1357,7 +1357,7 @@ class CODSAnalysis():
                                / soiling_ratio[-1])
                 # Run YoY
                 yoy = RdToolsDeg.degradation_year_on_year(
-                    trend_dummy, full_calc=False)
+                    trend_dummy, uncertainty_method='none')
                 # Convert degradation rate to trend
                 degradation_trend.append(pd.Series(
                     index=pi.index, data=(1 + day * yoy / 100 / 365.24)))
@@ -1626,7 +1626,7 @@ class CODSAnalysis():
                 if adf[1] < .05:
                     # ... generate bootstrap samples based on the fit:
                     bootstrap_samples_list.append(
-                        make_time_series_bootstrap_samples(
+                        _make_time_series_bootstrap_samples(
                             pi, result[0].total_model,
                             sample_nr=int(reps / nr_models)))
 
