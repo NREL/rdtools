@@ -8,10 +8,10 @@ import warnings
 from numbers import Number
 
 # Load in the XGBoost clipping model using joblib.
-xgboost_clipping_model = None
+# xgboost_clipping_model = None
 model_path = (os.path.dirname(__file__)) + \
                              "/models/xgboost_clipping_model.dat"
-
+xgboost_clipping_model = joblib.load(model_path)
 
 def _load_xgboost_clipping_model():
     #global xgboost_clipping_model
@@ -426,7 +426,7 @@ def xgboost_clip_filter(power_ac,
         clipping periods.
     """
     # Load in the XGBoost model
-    xgboost_clipping_model = _load_xgboost_clipping_model()
+    # xgboost_clipping_model = _load_xgboost_clipping_model()
     # Format the power time series
     power_ac, index_name = _format_clipping_time_series(power_ac,
                                                         mounting_type)
