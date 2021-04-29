@@ -117,11 +117,31 @@ class DegradationTestCase(unittest.TestCase):
         # test YOY degradation calc
         for input_freq in self.list_YOY_input_freq:
             logging.debug('Frequency: {}'.format(input_freq))
+            print(self.test_corr_energy[input_freq])
             rd_result = degradation_year_on_year(
                 self.test_corr_energy[input_freq])
             self.assertAlmostEqual(rd_result[0], 100 * self.rd, places=1)
             logging.debug('Actual: {}'.format(100 * self.rd))
             logging.debug('Estimated: {}'.format(rd_result[0]))
+
+
+    def test_degradation_year_on_year_circular_block_bootstrap(self):
+        ''' Test degradation with year on year approach with circular block bootstrapping. '''
+
+        funcName = sys._getframe().f_code.co_name
+        logging.debug('Running {}'.format(funcName))
+
+        # test YOY degradation calc
+        for input_freq in self.list_YOY_input_freq:
+            if input_freq != 'Irregular_D':
+                logging.debug('Frequency: {}'.format(input_freq))
+                rd_result = degradation_year_on_year(
+                    self.test_corr_energy[input_freq],
+                    uncertainty_method='circular_block_bootstrap')
+                self.assertAlmostEqual(rd_result[0], 100 * self.rd, places=1)
+                logging.debug('Actual: {}'.format(100 * self.rd))
+                logging.debug('Estimated: {}'.format(rd_result[0]))
+
 
     def test_confidence_intervals(self):
 
