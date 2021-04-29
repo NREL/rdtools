@@ -45,7 +45,7 @@ INSTALL_REQUIRES = [
     'h5py >= 2.7.1',
     'plotly>=4.0.0',
     'joblib >= 0.16.0',
-    'xgboost >= 1.0.0',
+    'xgboost >= 1.3.3',
     'pvlib >= 0.7.0, <0.9.0',
     'tables >= 3.4.2',
 ]
