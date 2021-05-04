@@ -485,11 +485,13 @@ def xgboost_clip_filter(power_ac,
                                'sampling_frequency',
                                'mounting_config_bool', 'scaled_value',
                                'rolling_average', 'daily_max',
-                               'percent_daily_max', 'deriv_max']]
+                               'percent_daily_max', 'deriv_max']].dropna()
     # Run the power_ac_df dataframe through the XGBoost ML model,
     # and return boolean outputs
     xgb_predictions = pd.Series(xgboost_clipping_model.predict(
         power_ac_df).astype(bool))
     # Add datetime as an index
     xgb_predictions.index = power_ac_df.index
+    xgb_predictions = xgb_predictions.reindex(power_ac.index,
+                                              fill_value=False)
     return ~xgb_predictions
