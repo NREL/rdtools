@@ -88,7 +88,7 @@ def get_clearsky_tamb(times, latitude, longitude, window_size=40,
         # Following code results in errors, likely incorrect
         '''
         if pd.isnull(day):
-            day = a[:, lat_index, k]  
+            day = a[:, lat_index, k]
         if pd.isnull(night):
             night = a[:, lat_index, k]
         '''
