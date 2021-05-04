@@ -1,6 +1,11 @@
 *******
 Pending
 *******
+*
+Bug fixes
+---------
+* Improved NaN pixel handling in
+  :py:func:`~rdtools.clearsky_temperature.get_clearsky_tamb` (:pull:`274`).
 
 Documentation
 -------------
