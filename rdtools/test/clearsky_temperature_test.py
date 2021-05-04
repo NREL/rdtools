@@ -29,3 +29,9 @@ def test_hour_offset(china_cs_tamb):
     assert west_hottest_hour > east_hottest_hour
 
 
+def test_not_on_land():
+    # test that specifying a point in the ocean returns NaN and warns
+    dt = pd.date_range('2015-01-01', freq='15min', periods=1, tz='UTC')
+    with pytest.warns(UserWarning, match='possibly invalid Lat/Lon coordinates'):
+        ocean_cs_tamb = get_clearsky_tamb(dt, 40, -60)
+    assert ocean_cs_tamb.isnull().all()
