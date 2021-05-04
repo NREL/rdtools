@@ -48,6 +48,7 @@ INSTALL_REQUIRES = [
     'xgboost >= 1.3.3',
     'pvlib >= 0.7.0, <0.9.0',
     'tables >= 3.4.2',
+    'scikit-learn >= 0.22.0',
 ]
 
 EXTRAS_REQUIRE = {
