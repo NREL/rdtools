@@ -85,11 +85,6 @@ def get_clearsky_tamb(times, latitude, longitude, window_size=40,
         day = _get_pixel_value(a, lon_index, lat_index, k, radius)
         night = _get_pixel_value(b, lon_index, lat_index, k, radius)
 
-        if pd.isnull(day):
-            day = a[:, lat_index, k]
-        if pd.isnull(night):
-            night = a[:, lat_index, k]
-
         ave_day.append(day)
         ave_night.append(night)
 
@@ -118,6 +113,9 @@ def get_clearsky_tamb(times, latitude, longitude, window_size=40,
             df['night'].values,
             df['day'].values,
             df['solar_noon_offset'].values)
+    if df['Clear Sky Temperature (C)'].isna().any():
+        warnings.warn("Clear Sky Temperature includes NaNs, "
+                      "possibly invalid Lat/Lon coordinates.", UserWarning)
     return df['Clear Sky Temperature (C)']
 
 

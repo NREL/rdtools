@@ -1,5 +1,6 @@
 ************************
 Pending
+
 ************************
 
 API Changes
@@ -32,13 +33,12 @@ Bug fixes
 * Unexpected recoveries when using ``method=random_clean`` in the soiling module
   have been fixed. (:pull:`199`, :issue:`234`)
 
+* Improved NaN pixel handling in
+  :py:func:`~rdtools.clearsky_temperature.get_clearsky_tamb` (:pull:`274`).
 
 Testing
 -------
 
-
-Documentation
--------------
 
 
 Documentation
