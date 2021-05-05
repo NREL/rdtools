@@ -4,9 +4,12 @@ Pending
 
 Requirements
 ------------
-* Update specified versions of bleach in
-  ``docs/notebook_requirements.txt`` and matplotlib
-  in ``requirements.txt`` (:pull:`261`)
+* Update pinned versions of several dependencies (:pull:`261`, :pull:`275`):
+
+    * ``requirements.txt``: cached-property, certifi, chardet, idna, matplotlib, numpy, Pillow,
+      requests, urllib
+    * ``docs/notebook_requirements.txt``: argon2-cffi, bleach, cffi, colorama, Jinja2,
+      numexpr, packaging, pycparser, pygments
 
 
 Contributors
