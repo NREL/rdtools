@@ -85,13 +85,6 @@ def get_clearsky_tamb(times, latitude, longitude, window_size=40,
         day = _get_pixel_value(a, lon_index, lat_index, k, radius)
         night = _get_pixel_value(b, lon_index, lat_index, k, radius)
 
-        # Following code results in errors, likely incorrect
-        '''
-        if pd.isnull(day):
-            day = a[:, lat_index, k]
-        if pd.isnull(night):
-            night = a[:, lat_index, k]
-        '''
         ave_day.append(day)
         ave_night.append(night)
 
