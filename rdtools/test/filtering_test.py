@@ -64,6 +64,17 @@ def generate_power_time_series_no_clipping():
 
 
 @pytest.fixture
+def generate_power_time_series_irregular_intervals():
+    power_datetime_index = pd.Series(np.arange(1, 101))
+    # Add datetime index to second series
+    time_range = pd.date_range('2016-12-02T11:00:00.000Z',
+                               '2017-06-06T07:00:00.000Z', freq='H')
+    power_datetime_index.index = pd.to_datetime(time_range[:100])
+    # Note: Power is expected to be Series object with a datetime index.
+    return power_datetime_index
+
+
+@pytest.fixture
 def generate_power_time_series_clipping():
     power_no_datetime_index = pd.Series(np.arange(1, 51))
     power_no_datetime_index = pd.concat([power_no_datetime_index,
@@ -161,6 +172,16 @@ def test_clip_filter(generate_power_time_series_no_clipping):
     filtered_quantile = clip_filter(power_no_datetime_index_nc, quantile=0.98)
     # Expect 99% of the 98th quantile to be filtered
     expected_result_quantile = power_no_datetime_index_nc < (98 * 0.99)
+    # Check that the clip filter defaults to quantile clip filter when
+    # deprecated params are passed
+    pytest.raises(Warning, clip_filter,
+                  power_datetime_index_nc,
+                  0.98)
+    # Check that a ValueError is thrown when a model is passed that
+    # is not in the acceptable list.
+    pytest.raises(ValueError, clip_filter,
+                  power_datetime_index_nc,
+                  'random_forest')
     # Check that the wrapper handles the xgboost clipping
     # function with kwargs.
     filtered_xgboost = clip_filter(power_datetime_index_nc,
