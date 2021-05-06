@@ -99,6 +99,14 @@ def test_logic_clip_filter(generate_power_time_series_no_clipping,
     # without a datetime index is used.
     pytest.raises(TypeError,  logic_clip_filter,
                   power_no_datetime_index_nc)
+    # Test that an error is thrown when we don't include the correct
+    # mounting configuration input
+    pytest.raises(ValueError,  logic_clip_filter,
+                  power_datetime_index_nc, 'not_fixed')
+    # Test that an error is thrown when there are 10 or fewer readings
+    # in the time series
+    pytest.raises(Exception,  xgboost_clip_filter,
+                  power_datetime_index_nc[:9])
     # Expect none of the sequence to be clipped (as it's
     # constantly increasing)
     mask_nc = logic_clip_filter(power_datetime_index_nc)
@@ -121,6 +129,14 @@ def test_xgboost_clip_filter(generate_power_time_series_no_clipping,
     # without a datetime index is used.
     pytest.raises(TypeError,  xgboost_clip_filter,
                   power_no_datetime_index_nc)
+    # Test that an error is thrown when we don't include the correct
+    # mounting configuration input
+    pytest.raises(ValueError,  xgboost_clip_filter,
+                  power_datetime_index_nc, 'not_fixed')
+    # Test that an error is thrown when there are 10 or fewer readings
+    # in the time series
+    pytest.raises(Exception,  xgboost_clip_filter,
+                  power_datetime_index_nc[:9])   
     # Expect none of the sequence to be clipped (as it's
     # constantly increasing)
     mask_nc = xgboost_clip_filter(power_datetime_index_nc)
