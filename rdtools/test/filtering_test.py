@@ -155,12 +155,12 @@ def test_clip_filter(generate_power_time_series_no_clipping):
     filtered_logic = clip_filter(power_datetime_index_nc,
                                  'logic_clip_filter',
                                  mounting_type="Fixed",
-                                 max_rolling_derivative_cutoff=0.3)
+                                 rolling_range_max_cutoff=0.3)
     # Check that the function returns a Typr Error if a wrong keyword
     # arg is passed in the kwarg arguments.
     pytest.raises(TypeError, clip_filter, power_datetime_index_nc,
                   'xgboost_clip_filter',
-                  max_rolling_derivative_cutoff=0.3)
+                  rolling_range_max_cutoff=0.3)
     assert ((expected_result_quantile == filtered_quantile).all()) &\
         (filtered_xgboost.all()) & (filtered_logic.all())
 

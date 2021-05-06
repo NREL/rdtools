@@ -240,11 +240,11 @@ def _format_clipping_time_series(power_ac, mounting_type):
     return power_ac, power_ac.index.name
 
 
-def _calculate_max_derivative(power_ac, roll_periods):
+def _calculate_max_rolling_range(power_ac, roll_periods):
     """
-    This function calculates the maximum derivative over a rolling
+    This function calculates the maximum range over a rolling
     time period for an AC power time series. A pandas series of
-    the rolling derivative is returned.
+    the rolling range is returned.
     
     Parameters
     ----------
@@ -252,12 +252,12 @@ def _calculate_max_derivative(power_ac, roll_periods):
         Pandas time series, representing PV system power with
         a pandas datetime index.
     roll_periods: Int
-        Number of readings to calculate the rolling maximum derivative on.
+        Number of readings to calculate the rolling maximum range on.
 
     Returns
     -------
     pd.Series
-        Time series of the rolling maximum derivative.
+        Time series of the rolling maximum range.
     """
     # Calculate the maximum value over a forward-rolling window
     max_roll = power_ac.iloc[::-1].rolling(roll_periods).max()
@@ -265,21 +265,21 @@ def _calculate_max_derivative(power_ac, roll_periods):
     # Calculate the minimum value over a forward-rolling window
     min_roll = power_ac.iloc[::-1].rolling(roll_periods).min()
     min_roll = min_roll.reindex(power_ac.index)
-    # Calculate the maximum derivative within the foward-rolling window
-    derivative_max = (max_roll - min_roll) / ((max_roll + min_roll) / 2) * 100
-    return derivative_max
+    # Calculate the maximum rolling range within the foward-rolling window
+    rolling_range_max = (max_roll - min_roll) / ((max_roll + min_roll) / 2) * 100
+    return rolling_range_max
 
 
 def logic_clip_filter(power_ac,
                       mounting_type='Fixed',
-                      max_rolling_derivative_cutoff=0.2,
+                      rolling_range_max_cutoff=0.2,
                       roll_periods=None):
     '''
     This filter is a logic-based filter that is used to filter out
     clipping periods in AC power time series.
     The AC power time series is filtered based on the
-    maximum derivative over a rolling window, as compared to a user-set
-    derivate_cutoff (default set to 0.2).  The size of the
+    maximum range over a rolling window, as compared to a user-set
+    rolling_range_max_cutoff (default set to 0.2).  The size of the
     rolling window is increased when the system is a tracked system.
     
     Parameters
@@ -291,8 +291,8 @@ def logic_clip_filter(power_ac,
         String representing the mounting configuration associated with the
         AC power time series. Can either be "Fixed" or "Tracking".
         Default set to 'Fixed'.
-    max_rolling_derivative_cutoff : float, default 0.2
-        Cutoff for max rolling derivative threshold. Defaults to 0.2; however,
+    rolling_range_max_cutoff : float, default 0.2
+        Cutoff for max rolling range threshold. Defaults to 0.2; however,
         values as high as 0.4 have been tested and shown to be effective.
         The higher the cutoff, the more values in the dataset that will be
         determined as clipping.
@@ -350,11 +350,11 @@ def logic_clip_filter(power_ac,
     power_ac.loc[power_ac['value'] < power_ac['ten_percent_daily'],
                  'value'] = np.nan
     power_ac = power_ac['value']
-    # Calculate the maximum derivative for the power time series.
-    deriv_max = _calculate_max_derivative(power_ac, roll_periods)
-    # Determine clipping values based on the maximum derivative in
-    # the rolling window, and the user-specified derivative threshold
-    roll_clip_mask = (deriv_max < max_rolling_derivative_cutoff)
+    # Calculate the maximum rolling range for the power time series.
+    rolling_range_max = _calculate_max_rolling_range(power_ac, roll_periods)
+    # Determine clipping values based on the maximum rolling range in
+    # the rolling window, and the user-specified rolling range threshold
+    roll_clip_mask = (rolling_range_max < rolling_range_max_cutoff)
     # Set values within roll_periods values from a True instance
     # as True as well
     clipping = (roll_clip_mask.rolling(roll_periods).sum() >= 1)
@@ -461,8 +461,8 @@ def xgboost_clip_filter(power_ac,
         power_ac_df.rolling_average.diff()
     power_ac_df['first_order_derivative_forward_rolling_avg'] = \
         power_ac_df.rolling_average.shift(-1).diff()
-    # Calculate the maximum derivative for the power time series.
-    power_ac_df['deriv_max'] = _calculate_max_derivative(
+    # Calculate the maximum rolling range for the power time series.
+    power_ac_df['rolling_range_max'] = _calculate_max_rolling_range(
         power_ac=power_ac_df['scaled_value'], roll_periods=rolling_window)
     # Get the max value for the day and see how each value compares
     power_ac_df['date'] = list(pd.to_datetime(pd.Series(
@@ -485,7 +485,7 @@ def xgboost_clip_filter(power_ac,
                                'sampling_frequency',
                                'mounting_config_bool', 'scaled_value',
                                'rolling_average', 'daily_max',
-                               'percent_daily_max', 'deriv_max']].dropna()
+                               'percent_daily_max', 'rolling_range_max']].dropna()
     # Run the power_ac_df dataframe through the XGBoost ML model,
     # and return boolean outputs
     xgb_predictions = pd.Series(xgboost_clipping_model.predict(
