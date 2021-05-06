@@ -120,7 +120,7 @@ def csi_filter(poa_global_measured, poa_global_clearsky, threshold=0.15):
     return (csi >= 1.0 - threshold) & (csi <= 1.0 + threshold)
 
 
-def clip_filter(power_ac, model="quantile_clip_filter", **kwargs):
+def clip_filter(power_ac, model="quantile", **kwargs):
     """
     Master wrapper for running one of the desired clipping filters.
     The default filter run is the quantile clipping filter.
@@ -131,8 +131,8 @@ def clip_filter(power_ac, model="quantile_clip_filter", **kwargs):
         Pandas time series, representing PV system with
         a pandas datetime index.
     model : string, default 'quantile_clip_filter'
-        Clipping filter model to run. Can be 'quantile_clip_filter',
-        'xgboost_clip_filter', or 'logic_clip_filter'.
+        Clipping filter model to run. Can be 'quantile',
+        'xgboost', or 'logic'.
     kwargs :
         Additional clipping filter args, specific to the model being
         used. Keyword must be passed with value.
@@ -154,18 +154,18 @@ def clip_filter(power_ac, model="quantile_clip_filter", **kwargs):
                       "This syntax will be removed in a future version.",
                       DeprecationWarning)
         kwargs['quantile'] = quantile
-        model = 'quantile_clip_filter'
+        model = 'quantile'
 
-    if (model == 'quantile_clip_filter'):
+    if (model == 'quantile'):
         clip_mask = quantile_clip_filter(power_ac, **kwargs)
-    elif model == 'xgboost_clip_filter':
+    elif model == 'xgboost':
         clip_mask = xgboost_clip_filter(power_ac, **kwargs)
-    elif model == 'logic_clip_filter':
+    elif model == 'logic':
         clip_mask = logic_clip_filter(power_ac, **kwargs)
     else:
         raise ValueError(
-            "Variable model must be 'quantile_clip_filter', "
-            "'xgboost_clip_filter', or 'logic_clip_filter'.")
+            "Variable model must be 'quantile', "
+            "'xgboost', or 'logic'.")
     return clip_mask
 
 

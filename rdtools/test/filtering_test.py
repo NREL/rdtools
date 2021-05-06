@@ -147,7 +147,7 @@ def test_xgboost_clip_filter(generate_power_time_series_no_clipping,
     # Test that an error is thrown when there are 10 or fewer readings
     # in the time series
     pytest.raises(Exception,  xgboost_clip_filter,
-                  power_datetime_index_nc[:9])   
+                  power_datetime_index_nc[:9])
     # Expect none of the sequence to be clipped (as it's
     # constantly increasing)
     mask_nc = xgboost_clip_filter(power_datetime_index_nc)
@@ -185,18 +185,18 @@ def test_clip_filter(generate_power_time_series_no_clipping):
     # Check that the wrapper handles the xgboost clipping
     # function with kwargs.
     filtered_xgboost = clip_filter(power_datetime_index_nc,
-                                   'xgboost_clip_filter',
+                                   'xgboost',
                                    mounting_type="fixed")
     # Check that the wrapper handles the logic clipping
     # function with kwargs.
     filtered_logic = clip_filter(power_datetime_index_nc,
-                                 'logic_clip_filter',
+                                 'logic',
                                  mounting_type="fixed",
                                  rolling_range_max_cutoff=0.3)
     # Check that the function returns a Typr Error if a wrong keyword
     # arg is passed in the kwarg arguments.
     pytest.raises(TypeError, clip_filter, power_datetime_index_nc,
-                  'xgboost_clip_filter',
+                  'xgboost',
                   rolling_range_max_cutoff=0.3)
     assert ((expected_result_quantile == filtered_quantile).all()) &\
         (filtered_xgboost.all()) & (filtered_logic.all())
