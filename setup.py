@@ -45,7 +45,7 @@ INSTALL_REQUIRES = [
     'h5py >= 2.7.1',
     'pvlib >= 0.7.0, <0.9.0',
     'tables >= 3.4.2',
-    'arch >= 4.11',
+    'arch >= 4.11, <4.18',
     'filterpy >= 1.4.5',
 ]
 
