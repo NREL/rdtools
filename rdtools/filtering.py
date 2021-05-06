@@ -462,7 +462,7 @@ def xgboost_clip_filter(power_ac,
     power_ac_df['first_order_derivative_forward_rolling_avg'] = \
         power_ac_df.rolling_average.shift(-1).diff()
     # Calculate the maximum rolling range for the power time series.
-    power_ac_df['rolling_range_max'] = _calculate_max_rolling_range(
+    power_ac_df['deriv_max'] = _calculate_max_rolling_range(
         power_ac=power_ac_df['scaled_value'], roll_periods=rolling_window)
     # Get the max value for the day and see how each value compares
     power_ac_df['date'] = list(pd.to_datetime(pd.Series(
@@ -485,7 +485,7 @@ def xgboost_clip_filter(power_ac,
                                'sampling_frequency',
                                'mounting_config_bool', 'scaled_value',
                                'rolling_average', 'daily_max',
-                               'percent_daily_max', 'rolling_range_max']].dropna()
+                               'percent_daily_max', 'deriv_max']].dropna()
     # Run the power_ac_df dataframe through the XGBoost ML model,
     # and return boolean outputs
     xgb_predictions = pd.Series(xgboost_clipping_model.predict(
