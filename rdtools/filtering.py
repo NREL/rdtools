@@ -225,7 +225,8 @@ def _format_clipping_time_series(power_ac, mounting_type):
     # correct format
     if (mounting_type != "single_axis_tracking") & (mounting_type != "fixed"):
         raise ValueError(
-            "Variable mounting_type must be string 'single_axis_tracking' or 'fixed'.")
+            "Variable mounting_type must be string 'single_axis_tracking' or "
+            "'fixed'.")
     # Check that there is enough data in the dataframe. Must be greater than
     # 10 readings.
     if len(power_ac) <= 10:
@@ -266,7 +267,7 @@ def _calculate_max_rolling_range(power_ac, roll_periods):
     min_roll = power_ac.iloc[::-1].rolling(roll_periods).min()
     min_roll = min_roll.reindex(power_ac.index)
     # Calculate the maximum rolling range within the foward-rolling window
-    rolling_range_max = (max_roll - min_roll) / ((max_roll + min_roll) / 2) * 100
+    rolling_range_max = (max_roll - min_roll)/((max_roll + min_roll)/2)*100
     return rolling_range_max
 
 
