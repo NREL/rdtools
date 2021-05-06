@@ -267,29 +267,29 @@ def soiling_rate_histogram(soiling_info, bins=None):
     return fig
 
 
-def tune_clip_filter_plot(power_ac, clipping_mask, display_web_browser=True):
+def tune_filter_plot(power_ac, mask, display_web_browser=True):
     """
-    This function allows the user to visualize a clipping filter in
+    This function allows the user to visualize filtered data in
     a matplotlib plot, after tweaking the function's different
     hyperparameters. The plot can be zoomed in on, for an in-depth look at
-    clipping in the AC power time series.
+    the mask in the AC power time series.
 
     Parameters
     ----------
     power_ac : pd.Series
         AC power in Watts. Index of the Pandas series is a Pandas
         datetime index.
-    clipping_mask : pd.Series
-        Pandas series of booleans, where good data periods (no clipping)
-        are marked as True, and omitted-data periods where clipping
-        occurs are marked as False.
+    mask : pd.Series
+        Pandas series of booleans, where included data periods
+        are marked as True, and omitted-data periods occurs are
+        marked as False.
     display_web_browser : boolean, default True
         When set to True, the Plotly graph is displayed in the
         user's web browser.
 
     Returns
     ---------
-    Interactive Plotly graph, with the masked time series for clipping.
+    Interactive Plotly graph, with the masked time series for the filter.
     """
     # Get the names of the series and the datetime index
     column_name = power_ac.name
@@ -303,10 +303,10 @@ def tune_clip_filter_plot(power_ac, clipping_mask, display_web_browser=True):
     # Visualize the power_ac time series, delineating clipping periods
     # using the clipping_mask series. Use plotly to visualize.
     df = pd.DataFrame(power_ac)
-    # Add the clipping mask as a column
-    df['clipping_mask'] = clipping_mask
+    # Add the mask as a column
+    df['mask'] = mask
     df = df.reset_index()
-    fig = px.scatter(df, x=index_name, y=column_name, color='clipping_mask')
+    fig = px.scatter(df, x=index_name, y=column_name, color='mask')
     # If display_web_browser is set to True, the time series with clipping
     # is rendered via the web browser.
     if display_web_browser is True:

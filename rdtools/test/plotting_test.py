@@ -8,7 +8,7 @@ from rdtools.plotting import (
     soiling_monte_carlo_plot,
     soiling_interval_plot,
     soiling_rate_histogram,
-    tune_clip_filter_plot,
+    tune_filter_plot,
     availability_summary_plots
 )
 import matplotlib.pyplot as plt
@@ -179,8 +179,8 @@ def clipping_info(clipping_power_degradation_signal):
     -------
     signal_filtered: Pandas series, filtered degradation power signal
     clipping_mask_series: Pandas series, boolean mask time series for
-    clipping, with True indicating a clipping period and False
-    representing a non-clipping period
+    clipping, with True indicating a non-clipping period and False
+    representing a clipping period
     '''
     clipping_mask_series = logic_clip_filter(clipping_power_degradation_signal)
     return clipping_mask_series
@@ -190,23 +190,23 @@ def test_clipping_filter_plots(clipping_info,
                                clipping_power_degradation_signal):
     clipping_mask_series = clipping_info
     # test defaults
-    result = tune_clip_filter_plot(clipping_power_degradation_signal,
-                                   clipping_mask_series,
-                                   display_web_browser=False)
+    result = tune_filter_plot(clipping_power_degradation_signal,
+                              clipping_mask_series,
+                              display_web_browser=False)
     assert_isinstance(result, plotly.graph_objs._figure.Figure)
 
 
-def test_clipping_filter_plots_kwargs(clipping_info,
-                                      clipping_power_degradation_signal):
+def test_filter_plots_kwargs(clipping_info,
+                             clipping_power_degradation_signal):
     clipping_mask_series = clipping_info
 
     # test kwargs
     kwargs = dict(
         display_web_browser=False
     )
-    result = tune_clip_filter_plot(clipping_power_degradation_signal,
-                                   clipping_mask_series,
-                                   **kwargs)
+    result = tune_filter_plot(clipping_power_degradation_signal,
+                              clipping_mask_series,
+                              **kwargs)
     assert_isinstance(result, plotly.graph_objs._figure.Figure)
 
 

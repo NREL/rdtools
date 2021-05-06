@@ -11,6 +11,7 @@ from rdtools import (csi_filter,
                      normalized_filter,
                      logic_clip_filter,
                      xgboost_clip_filter)
+import warnings
 
 
 def test_csi_filter():
@@ -174,9 +175,10 @@ def test_clip_filter(generate_power_time_series_no_clipping):
     expected_result_quantile = power_no_datetime_index_nc < (98 * 0.99)
     # Check that the clip filter defaults to quantile clip filter when
     # deprecated params are passed
-    pytest.raises(Warning, clip_filter,
-                  power_datetime_index_nc,
-                  0.98)
+    warnings.simplefilter("always")
+    with warnings.catch_warnings(record=True) as w:
+        clip_filter(power_datetime_index_nc, 0.98)
+        assert len(w) == 1
     # Check that a ValueError is thrown when a model is passed that
     # is not in the acceptable list.
     pytest.raises(ValueError, clip_filter,
