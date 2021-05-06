@@ -205,8 +205,8 @@ def _format_clipping_time_series(power_ac, mounting_type):
         a pandas datetime index.
     mounting_type : String
         String representing the mounting configuration associated with the
-        AC power time series. Can either be "Fixed" or "Tracking".
-        Default set to 'Fixed'.
+        AC power time series. Can either be "fixed" or "single_axis_tracking".
+        Default set to 'fixed'.
         
     Returns
     -------
@@ -223,9 +223,9 @@ def _format_clipping_time_series(power_ac, mounting_type):
         raise TypeError('Must be a Pandas series with a datetime index.')
     # Check the other input variables to ensure that they are the
     # correct format
-    if (mounting_type != "Tracking") & (mounting_type != "Fixed"):
+    if (mounting_type != "single_axis_tracking") & (mounting_type != "fixed"):
         raise ValueError(
-            "Variable mounting_type must be string 'Tracking' or 'Fixed'.")
+            "Variable mounting_type must be string 'single_axis_tracking' or 'fixed'.")
     # Check that there is enough data in the dataframe. Must be greater than
     # 10 readings.
     if len(power_ac) <= 10:
@@ -271,7 +271,7 @@ def _calculate_max_rolling_range(power_ac, roll_periods):
 
 
 def logic_clip_filter(power_ac,
-                      mounting_type='Fixed',
+                      mounting_type='fixed',
                       rolling_range_max_cutoff=0.2,
                       roll_periods=None):
     '''
@@ -287,10 +287,10 @@ def logic_clip_filter(power_ac,
     power_ac : pd.Series
         Pandas time series, representing PV system power with
         a pandas datetime index.
-    mounting_type: string, default 'Fixed'
+    mounting_type: string, default 'fixed'
         String representing the mounting configuration associated with the
-        AC power time series. Can either be "Fixed" or "Tracking".
-        Default set to 'Fixed'.
+        AC power time series. Can either be "fixed" or "single_axis_tracking".
+        Default set to 'fixed'.
     rolling_range_max_cutoff : float, default 0.2
         Cutoff for max rolling range threshold. Defaults to 0.2; however,
         values as high as 0.4 have been tested and shown to be effective.
@@ -338,7 +338,7 @@ def logic_clip_filter(power_ac,
     # If a value for roll_periods is not designated, the function uses
     # the current default logic to set the roll_periods value.
     if roll_periods is None:
-        if (mounting_type == "Tracking") & \
+        if (mounting_type == "single_axis_tracking") & \
          (time_series_sampling_frequency < 30):
             roll_periods = 5
         else:
@@ -403,7 +403,7 @@ def logic_clip_filter(power_ac,
 
 
 def xgboost_clip_filter(power_ac,
-                        mounting_type='Fixed'):
+                        mounting_type='fixed'):
     """
     This function generates the features to run through the XGBoost
     clipping model, and generates model outputs.
@@ -413,9 +413,9 @@ def xgboost_clip_filter(power_ac,
     power_ac : pd.Series
         Pandas time series, representing PV system power with
         a pandas datetime index.
-    mounting_type: string, default 'Fixed'
+    mounting_type: string, default 'fixed'
         String representing the mounting configuration associated with the
-        AC power time series. Can either be "Fixed" or "Tracking".
+        AC power time series. Can either be "fixed" or "single_axis_tracking".
 
     Returns
     -------
@@ -472,10 +472,10 @@ def xgboost_clip_filter(power_ac,
     # Get percentage of daily max
     power_ac_df['percent_daily_max'] = power_ac_df['scaled_value'] \
         / power_ac_df['daily_max']
-    # Convert tracking/fixed tilt to a boolean variable
-    power_ac_df.loc[power_ac_df['mounting_config'] == 'Tracking',
+    # Convert single-axis tracking/fixed tilt to a boolean variable
+    power_ac_df.loc[power_ac_df['mounting_config'] == "single_axis_tracking",
                     'mounting_config_bool'] = 1
-    power_ac_df.loc[power_ac_df['mounting_config'] == 'Fixed',
+    power_ac_df.loc[power_ac_df['mounting_config'] == 'fixed',
                     'mounting_config_bool'] = 0
     # Subset the dataframe to only include model inputs
     power_ac_df = power_ac_df[['first_order_derivative_backward',

@@ -149,12 +149,12 @@ def test_clip_filter(generate_power_time_series_no_clipping):
     # function with kwargs.
     filtered_xgboost = clip_filter(power_datetime_index_nc,
                                    'xgboost_clip_filter',
-                                   mounting_type="Fixed")
+                                   mounting_type="fixed")
     # Check that the wrapper handles the logic clipping
     # function with kwargs.
     filtered_logic = clip_filter(power_datetime_index_nc,
                                  'logic_clip_filter',
-                                 mounting_type="Fixed",
+                                 mounting_type="fixed",
                                  rolling_range_max_cutoff=0.3)
     # Check that the function returns a Typr Error if a wrong keyword
     # arg is passed in the kwarg arguments.
