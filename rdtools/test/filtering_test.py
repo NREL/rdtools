@@ -79,8 +79,7 @@ def generate_power_time_series_irregular_intervals():
 def generate_power_time_series_one_min_intervals():
     power_datetime_index = pd.Series(np.arange(1, 51))
     power_datetime_index = pd.concat([power_datetime_index,
-                                         power_datetime_index[::-1]])
-    power_datetime_index[48:52] = 50
+                                      power_datetime_index[::-1]])
     # Add datetime index to second series
     time_range = pd.date_range('2016-12-02T11:00:00.000Z',
                                '2017-06-06T07:00:00.000Z', freq='1T')
@@ -154,8 +153,9 @@ def test_logic_clip_filter(generate_power_time_series_no_clipping,
 
 
 def test_xgboost_clip_filter(generate_power_time_series_no_clipping,
-                             generate_power_time_series_clipping):
-    ''' Unit tests for geometric clipping filter.'''
+                             generate_power_time_series_clipping,
+                             power_datetime_index_one_min_intervals):
+    ''' Unit tests for XGBoost clipping filter.'''
     # Test the time series where the data isn't clipped
     power_no_datetime_index_nc, power_datetime_index_nc = \
         generate_power_time_series_no_clipping
@@ -171,6 +171,11 @@ def test_xgboost_clip_filter(generate_power_time_series_no_clipping,
     # in the time series
     pytest.raises(Exception,  xgboost_clip_filter,
                   power_datetime_index_nc[:9])
+    # Generate 1-minute interval data, run it through the function, and
+    # check that the associated data returned is 1-minute
+    power_datetime_index_one_min_intervals = \
+        generate_power_time_series_one_min_intervals
+    mask_one_min = xgboost_clip_filter(power_datetime_index_one_min_intervals)
     # Expect none of the sequence to be clipped (as it's
     # constantly increasing)
     mask_nc = xgboost_clip_filter(power_datetime_index_nc)
@@ -180,7 +185,9 @@ def test_xgboost_clip_filter(generate_power_time_series_no_clipping,
     # Expect 4 values in middle of sequence to be clipped (when x=50)
     mask_c = xgboost_clip_filter(power_datetime_index_c)
     filtered_c = power_datetime_index_c[mask_c]
-    assert (mask_nc.all()) & (len(filtered_c) == 96)
+    assert (mask_nc.all()) & (len(filtered_c) == 96) & \
+        (mask_one_min.index.to_series().diff()[1:] ==
+         np.timedelta64(60, 's')).all()
 
 
 def test_clip_filter(generate_power_time_series_no_clipping):
