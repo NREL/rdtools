@@ -154,7 +154,7 @@ def test_logic_clip_filter(generate_power_time_series_no_clipping,
 
 def test_xgboost_clip_filter(generate_power_time_series_no_clipping,
                              generate_power_time_series_clipping,
-                             power_datetime_index_one_min_intervals):
+                             generate_power_time_series_one_min_intervals):
     ''' Unit tests for XGBoost clipping filter.'''
     # Test the time series where the data isn't clipped
     power_no_datetime_index_nc, power_datetime_index_nc = \
