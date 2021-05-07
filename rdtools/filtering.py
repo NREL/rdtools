@@ -344,12 +344,12 @@ def logic_clip_filter(power_ac,
         True values delineate non-clipping periods, and False values delineate
         clipping periods.
     '''
-    # Test if the data sampling frequency is variable, and flag it if the time
-    # series sampling frequency is less than 95% consistent.
-    _check_data_sampling_frequency(power_ac)
     # Format the power time series
     power_ac, index_name = _format_clipping_time_series(power_ac,
                                                         mounting_type)
+    # Test if the data sampling frequency is variable, and flag it if the time
+    # series sampling frequency is less than 95% consistent.
+    _check_data_sampling_frequency(power_ac)
     # Get the sampling frequency of the time series
     time_series_sampling_frequency = power_ac.index.to_series().diff()\
         .astype('timedelta64[m]').mode()[0]
