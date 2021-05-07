@@ -208,12 +208,6 @@ def test_xgboost_clip_filter(generate_power_time_series_no_clipping,
     # Generate irregular interval data, and run it through the XGBoost model
     power_datetime_index_irregular = \
         generate_power_time_series_irregular_intervals
-    # Make sure that the routine throws a warning when the data sampling
-    # frequency is less than 95% consistent
-    warnings.simplefilter("always")
-    with warnings.catch_warnings(record=True) as w:
-        xgboost_clip_filter(power_datetime_index_irregular)
-        assert len(w) == 1
     # Check that the returned time series index for XGBoost is the same
     # as the passed time series index
     mask_irregular = xgboost_clip_filter(power_datetime_index_irregular)
