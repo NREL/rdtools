@@ -66,11 +66,25 @@ def generate_power_time_series_no_clipping():
 
 @pytest.fixture
 def generate_power_time_series_irregular_intervals():
-    power_datetime_index = pd.Series(np.arange(1, 101))
+    power_datetime_index = pd.Series(np.arange(1, 62))
     # Add datetime index to second series
-    time_range = pd.date_range('2016-12-02T11:00:00.000Z',
-                               '2017-06-06T07:00:00.000Z', freq='H')
-    power_datetime_index.index = pd.to_datetime(time_range[:100])
+    time_range_1 = pd.date_range('2016-12-02T11:00:00.000Z',
+                                 '2017-06-06T07:00:00.000Z', freq='1T')
+    power_datetime_index.index = pd.to_datetime(time_range_1[:61])
+    power_datetime_index_2 = pd.Series(np.arange(100, 200))
+    time_range_2 = pd.date_range(power_datetime_index.index.max(),
+                                 '2017-06-06T07:00:00.000Z', freq='15T')
+    power_datetime_index_2.index = pd.to_datetime(time_range_2[:100])
+    power_datetime_index_2 = power_datetime_index_2.iloc[1:]
+    power_datetime_index = pd.concat([power_datetime_index,
+                                      power_datetime_index_2])
+    power_datetime_index_3 = pd.Series(list(reversed(np.arange(100, 200))))
+    time_range_3 = pd.date_range(power_datetime_index.index.max(),
+                                 '2017-06-06T07:00:00.000Z', freq='5T')
+    power_datetime_index_3.index = pd.to_datetime(time_range_3[:100])
+    power_datetime_index_3 = power_datetime_index_3.iloc[1:]
+    power_datetime_index = pd.concat([power_datetime_index,
+                                      power_datetime_index_3])
     # Note: Power is expected to be Series object with a datetime index.
     return power_datetime_index
 
@@ -117,7 +131,8 @@ def test_quantile_clip_filter():
 
 def test_logic_clip_filter(generate_power_time_series_no_clipping,
                            generate_power_time_series_clipping,
-                           generate_power_time_series_one_min_intervals):
+                           generate_power_time_series_one_min_intervals,
+                           generate_power_time_series_irregular_intervals):
     ''' Unit tests for logic clipping filter.'''
     power_no_datetime_index_nc, power_datetime_index_nc = \
         generate_power_time_series_no_clipping
@@ -138,6 +153,18 @@ def test_logic_clip_filter(generate_power_time_series_no_clipping,
     power_datetime_index_one_min_intervals = \
         generate_power_time_series_one_min_intervals
     mask_one_min = logic_clip_filter(power_datetime_index_one_min_intervals)
+    # Generate irregular interval data, and run it through the XGBoost model
+    power_datetime_index_irregular = \
+        generate_power_time_series_irregular_intervals
+    # Make sure that the routine throws a warning when the data sampling
+    # frequency is less than 95% consistent
+    warnings.simplefilter("always")
+    with warnings.catch_warnings(record=True) as w:
+        logic_clip_filter(power_datetime_index_irregular)
+        assert len(w) == 1
+    # Check that the returned time series index for the logic filter is
+    # the same as the passed time series index
+    mask_irregular = logic_clip_filter(power_datetime_index_irregular)
     # Expect none of the sequence to be clipped (as it's
     # constantly increasing)
     mask_nc = logic_clip_filter(power_datetime_index_nc)
@@ -149,12 +176,14 @@ def test_logic_clip_filter(generate_power_time_series_no_clipping,
     filtered_c = power_datetime_index_c[mask_c]
     assert (mask_nc.all()) & (len(filtered_c) == 96) & \
         (mask_one_min.index.to_series().diff()[1:] ==
-         np.timedelta64(60, 's')).all()
+         np.timedelta64(60, 's')).all() & \
+        (mask_irregular.index == power_datetime_index_irregular.index).all()
 
 
 def test_xgboost_clip_filter(generate_power_time_series_no_clipping,
                              generate_power_time_series_clipping,
-                             generate_power_time_series_one_min_intervals):
+                             generate_power_time_series_one_min_intervals,
+                             generate_power_time_series_irregular_intervals):
     ''' Unit tests for XGBoost clipping filter.'''
     # Test the time series where the data isn't clipped
     power_no_datetime_index_nc, power_datetime_index_nc = \
@@ -176,6 +205,18 @@ def test_xgboost_clip_filter(generate_power_time_series_no_clipping,
     power_datetime_index_one_min_intervals = \
         generate_power_time_series_one_min_intervals
     mask_one_min = xgboost_clip_filter(power_datetime_index_one_min_intervals)
+    # Generate irregular interval data, and run it through the XGBoost model
+    power_datetime_index_irregular = \
+        generate_power_time_series_irregular_intervals
+    # Make sure that the routine throws a warning when the data sampling
+    # frequency is less than 95% consistent
+    warnings.simplefilter("always")
+    with warnings.catch_warnings(record=True) as w:
+        xgboost_clip_filter(power_datetime_index_irregular)
+        assert len(w) == 1
+    # Check that the returned time series index for XGBoost is the same
+    # as the passed time series index
+    mask_irregular = xgboost_clip_filter(power_datetime_index_irregular)
     # Expect none of the sequence to be clipped (as it's
     # constantly increasing)
     mask_nc = xgboost_clip_filter(power_datetime_index_nc)
@@ -187,7 +228,8 @@ def test_xgboost_clip_filter(generate_power_time_series_no_clipping,
     filtered_c = power_datetime_index_c[mask_c]
     assert (mask_nc.all()) & (len(filtered_c) == 96) & \
         (mask_one_min.index.to_series().diff()[1:] ==
-         np.timedelta64(60, 's')).all()
+         np.timedelta64(60, 's')).all() & \
+        (mask_irregular.index == power_datetime_index_irregular.index).all()
 
 
 def test_clip_filter(generate_power_time_series_no_clipping):

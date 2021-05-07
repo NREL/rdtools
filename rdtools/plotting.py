@@ -267,10 +267,10 @@ def soiling_rate_histogram(soiling_info, bins=None):
     return fig
 
 
-def tune_filter_plot(power_ac, mask, display_web_browser=True):
+def tune_filter_plot(power_ac, mask, display_web_browser=False):
     """
     This function allows the user to visualize filtered data in
-    a matplotlib plot, after tweaking the function's different
+    a Plotly plot, after tweaking the function's different
     hyperparameters. The plot can be zoomed in on, for an in-depth look at
     the mask in the AC power time series.
 
@@ -283,7 +283,7 @@ def tune_filter_plot(power_ac, mask, display_web_browser=True):
         Pandas series of booleans, where included data periods
         are marked as True, and omitted-data periods occurs are
         marked as False.
-    display_web_browser : boolean, default True
+    display_web_browser : boolean, default False
         When set to True, the Plotly graph is displayed in the
         user's web browser.
 

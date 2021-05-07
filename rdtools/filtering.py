@@ -241,6 +241,36 @@ def _format_clipping_time_series(power_ac, mounting_type):
     return power_ac, power_ac.index.name
 
 
+def _check_data_sampling_frequency(power_ac):
+    """
+    Check the data sampling frequency of the time series. If the sampling
+    frequency is not >=95% consistent, the time series is flagged with a
+    warning.
+    
+    Parameters
+    ----------
+    power_ac : pd.Series
+        Pandas time series, representing PV system power with
+        a pandas datetime index.
+    
+    Returns
+    ----------
+    None
+    """
+    # Get the sampling frequency counts--if the sampling frequency is not
+    # consistently >=95% the same, then throw a warning.
+    sampling_frequency_df = pd.DataFrame(power_ac.index.to_series()
+                                         .diff().astype('timedelta64[s]')
+                                         .value_counts())/len(power_ac)
+    sampling_frequency_df.columns = ["count"]
+    if (sampling_frequency_df["count"] < .95).all():
+        warnings.warn("Variable sampling frequency across time series. "
+                      "Less than 95% of the time series is sampled at the "
+                      "same interval. This function was not tested "
+                      "on variable frequency data--use at your own risk!")
+    return 
+
+
 def _calculate_max_rolling_range(power_ac, roll_periods):
     """
     This function calculates the maximum range over a rolling
@@ -314,6 +344,9 @@ def logic_clip_filter(power_ac,
         True values delineate non-clipping periods, and False values delineate
         clipping periods.
     '''
+    # Test if the data sampling frequency is variable, and flag it if the time
+    # series sampling frequency is less than 95% consistent.
+    _check_data_sampling_frequency(power_ac)
     # Format the power time series
     power_ac, index_name = _format_clipping_time_series(power_ac,
                                                         mounting_type)
@@ -431,13 +464,23 @@ def xgboost_clip_filter(power_ac,
     # Format the power time series
     power_ac, index_name = _format_clipping_time_series(power_ac,
                                                         mounting_type)
+    # Test if the data sampling frequency is variable, and flag it if the time
+    # series sampling frequency is less than 95% consistent.
+    _check_data_sampling_frequency(power_ac)
+    # Get the most common sampling frequency
+    sampling_frequency = int(power_ac.index.to_series().diff()
+                             .astype('timedelta64[s]').mode()[0])
+    freq_string = str(sampling_frequency) + "S"
+    # Min-max normalize
+    # Resample the series based on the most common sampling frequency
+    power_ac_interpolated = power_ac.resample(freq_string)\
+        .asfreq().interpolate()
     # Convert the Pandas series to a dataframe, with mounting_type as an
     # additional column.
-    power_ac_df = power_ac.to_frame()
+    power_ac_df = power_ac_interpolated.to_frame()
     power_ac_df['mounting_config'] = mounting_type
     # Get the sampling frequency (as a continuous feature variable)
-    power_ac_df['sampling_frequency'] = power_ac_df.index.to_series()\
-        .diff().astype('timedelta64[m]').mode()[0]
+    power_ac_df['sampling_frequency'] = sampling_frequency
     # Min-max normalize
     max_min_diff = (power_ac_df['value'].max() - power_ac_df['value'].min())
     power_ac_df['scaled_value'] = (power_ac_df['value'] -
@@ -494,5 +537,6 @@ def xgboost_clip_filter(power_ac,
     # Add datetime as an index
     xgb_predictions.index = power_ac_df.index
     xgb_predictions = xgb_predictions.reindex(power_ac.index,
-                                              fill_value=False)
+                                              method='ffill')
+    xgb_predictions = xgb_predictions.fillna(False)
     return ~xgb_predictions
