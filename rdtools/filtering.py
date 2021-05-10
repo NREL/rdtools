@@ -124,7 +124,7 @@ def clip_filter(power_ac, model="quantile", **kwargs):
     """
     Master wrapper for running one of the desired clipping filters.
     The default filter run is the quantile clipping filter.
-    
+
     Parameters
     ----------
     power_ac : pd.Series
@@ -197,7 +197,7 @@ def _format_clipping_time_series(power_ac, mounting_type):
     Format an AC power time series appropriately for
     either the logic_clip_filter function or the xgboost_clip_filter
     function.
-    
+
     Parameters
     ----------
     power_ac : pd.Series
@@ -207,7 +207,7 @@ def _format_clipping_time_series(power_ac, mounting_type):
         String representing the mounting configuration associated with the
         AC power time series. Can either be "fixed" or "single_axis_tracking".
         Default set to 'fixed'.
-        
+
     Returns
     -------
     pd.Series
@@ -246,13 +246,13 @@ def _check_data_sampling_frequency(power_ac):
     Check the data sampling frequency of the time series. If the sampling
     frequency is not >=95% consistent, the time series is flagged with a
     warning.
-    
+
     Parameters
     ----------
     power_ac : pd.Series
         Pandas time series, representing PV system power with
         a pandas datetime index.
-    
+
     Returns
     ----------
     None
@@ -268,7 +268,7 @@ def _check_data_sampling_frequency(power_ac):
                       "Less than 95% of the time series is sampled at the "
                       "same interval. This function was not tested "
                       "on variable frequency data--use at your own risk!")
-    return 
+    return
 
 
 def _calculate_max_rolling_range(power_ac, roll_periods):
@@ -276,7 +276,7 @@ def _calculate_max_rolling_range(power_ac, roll_periods):
     This function calculates the maximum range over a rolling
     time period for an AC power time series. A pandas series of
     the rolling range is returned.
-    
+
     Parameters
     ----------
     power_ac : pd.Series
@@ -312,7 +312,7 @@ def logic_clip_filter(power_ac,
     maximum range over a rolling window, as compared to a user-set
     rolling_range_max_cutoff (default set to 0.2).  The size of the
     rolling window is increased when the system is a tracked system.
-    
+
     Parameters
     ----------
     power_ac : pd.Series
