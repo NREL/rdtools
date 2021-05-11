@@ -469,8 +469,8 @@ def xgboost_clip_filter(power_ac,
     _check_data_sampling_frequency(power_ac)
     # Get the most common sampling frequency
     sampling_frequency = int(power_ac.index.to_series().diff()
-                             .astype('timedelta64[s]').mode()[0])
-    freq_string = str(sampling_frequency) + "S"
+                             .astype('timedelta64[m]').mode()[0])
+    freq_string = str(sampling_frequency) + "T"
     # Min-max normalize
     # Resample the series based on the most common sampling frequency
     power_ac_interpolated = power_ac.resample(freq_string)\
@@ -485,8 +485,6 @@ def xgboost_clip_filter(power_ac,
     max_min_diff = (power_ac_df['value'].max() - power_ac_df['value'].min())
     power_ac_df['scaled_value'] = (power_ac_df['value'] -
                                    power_ac_df['value'].min()) / max_min_diff
-    # Get the rolling derivative
-    sampling_frequency = power_ac_df['sampling_frequency'].iloc[0]
     if sampling_frequency < 10:
         rolling_window = 5
     elif (sampling_frequency >= 10) and (sampling_frequency < 60):
