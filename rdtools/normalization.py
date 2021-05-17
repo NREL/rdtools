@@ -83,9 +83,9 @@ def pvwatts_dc_power(poa_global, power_dc_rated, temperature_cell=None,
     Parameters
     ----------
     poa_global : pd.Series
-        Total effective plane of array irradiance.
+        Total effective plane of array irradiance [W/m**2].
     power_dc_rated : float
-        Rated DC power of array in watts
+        Rated DC power of array [W]
     temperature_cell : pd.Series, optional
         Measured or derived cell temperature [degrees Celsius].
         Time series assumed to be same frequency as ``poa_global``.
@@ -106,7 +106,7 @@ def pvwatts_dc_power(poa_global, power_dc_rated, temperature_cell=None,
     Returns
     -------
     power_dc : pd.Series
-        DC power in watts determined by PVWatts v5 equation.
+        DC power determined by PVWatts v5 equation [W].
     '''
 
     power_dc = power_dc_rated * poa_global / poa_global_ref
@@ -130,18 +130,18 @@ def normalize_with_pvwatts(energy, pvwatts_kws):
     Parameters
     ----------
     energy : pd.Series
-        Energy time series to be normalized in watt hours.
+        Energy time series to be normalized [Wh].
         Must be a right-labeled regular time series.
     pvwatts_kws : dict
         Dictionary of parameters used in the pvwatts_dc_power function.  See
         Other Parameters.
 
     Other Parameters
-    ------------------
+    ----------------
     poa_global : pd.Series
-        Total effective plane of array irradiance.
+        Total effective plane of array irradiance [W/m**2].
     power_dc_rated : float
-        Rated DC power of array in watts
+        Rated DC power of array [W]
     temperature_cell : pd.Series, optional
         Measured or derived cell temperature [degrees Celsius].
         Time series assumed to be same frequency as `poa_global`.
@@ -162,9 +162,9 @@ def normalize_with_pvwatts(energy, pvwatts_kws):
     Returns
     -------
     energy_normalized : pd.Series
-        Energy divided by PVWatts DC energy.
+        Energy divided by PVWatts DC energy [unitless].
     insolation : pd.Series
-        Insolation associated with each normalized point
+        Insolation associated with each normalized point [Wh/m**2]
     '''
 
     power_dc = pvwatts_dc_power(**pvwatts_kws)
