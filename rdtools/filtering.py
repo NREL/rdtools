@@ -364,10 +364,10 @@ def logic_clip_filter(power_ac,
         power_ac = power_ac.resample(freq_string).asfreq()
     # High frequency data (less than 10 minutes) has demonstrated
     # potential to have more noise than low frequency  data.
-    # Therefore, the  data is resampled to a 15-minute average
+    # Therefore, the  data is resampled to a 15-minute median
     # before running the filter.
     if time_series_sampling_frequency < 10:
-        power_ac = power_ac.resample('15T').mean()
+        power_ac = power_ac.resample('15T').median()
         time_series_sampling_frequency = 15
     # If a value for roll_periods is not designated, the function uses
     # the current default logic to set the roll_periods value.
@@ -431,8 +431,8 @@ def logic_clip_filter(power_ac,
                                 method='ffill')
     # Set all values to clipping that are between the maximum and minimum
     # power levels where clipping was found on a daily basis.
-    final_clip = (daily_clipping_min <= power_ac) & \
-        (power_ac <= daily_clipping_max)
+    final_clip = ((daily_clipping_min <= power_ac) &
+                  (power_ac <= daily_clipping_max)) | (power_ac.isna())
     return ~final_clip
 
 
@@ -536,5 +536,5 @@ def xgboost_clip_filter(power_ac,
     xgb_predictions.index = power_ac_df.index
     xgb_predictions = xgb_predictions.reindex(power_ac.index,
                                               method='ffill')
-    xgb_predictions = xgb_predictions.fillna(False)
+    xgb_predictions = xgb_predictions.fillna(True)
     return ~xgb_predictions

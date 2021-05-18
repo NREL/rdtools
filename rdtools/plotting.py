@@ -305,7 +305,8 @@ def tune_filter_plot(power_ac, mask, display_web_browser=False):
     # Add the mask as a column
     df['mask'] = mask
     df = df.reset_index()
-    fig = px.scatter(df, x=index_name, y=column_name, color='mask')
+    fig = px.scatter(df, x=index_name, y=column_name, color='mask',
+                     color_discrete_sequence=["blue", "goldenrod"])
     # If display_web_browser is set to True, the time series with clipping
     # is rendered via the web browser.
     if display_web_browser is True:
