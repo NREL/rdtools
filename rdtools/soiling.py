@@ -512,7 +512,7 @@ class SRRAnalysis():
             Whether to trim (remove) the first and last soiling intervals to
             avoid inclusion of partial intervals
         method : str, {'half_norm_clean', 'random_clean', 'perfect_clean'} \
-                default 'half_norm_clean'
+            default 'half_norm_clean'
             how to treat the recovery of each cleaning event:
             * 'random_clean' - a random recovery between 0-100%
             * 'perfect_clean' - each cleaning event returns the performance
@@ -522,7 +522,7 @@ class SRRAnalysis():
               its sigma equal to 1/3 * (1-b) where b is the intercept of the fit to
               the interval.
         clean_criterion : str, {'shift', 'precip_and_shift', 'precip_or_shift', 'precip'} \
-                default 'shift'
+            default 'shift'
             The method of partitioning the dataset into soiling intervals.
             * 'precip_and_shift' - rolling median shifts must coincide
               with precipitation to be a valid cleaning event.
@@ -693,7 +693,7 @@ def soiling_srr(energy_normalized_daily, insolation_daily, reps=1000,
         Whether to trim (remove) the first and last soiling intervals to avoid
         inclusion of partial intervals
     method : str, {'half_norm_clean', 'random_clean', 'perfect_clean'} \
-            default 'half_norm_clean'
+        default 'half_norm_clean'
         how to treat the recovery of each cleaning event:
         * 'random_clean' - a random recovery between 0-100%
         * 'perfect_clean' - each cleaning event returns the performance
@@ -703,7 +703,7 @@ def soiling_srr(energy_normalized_daily, insolation_daily, reps=1000,
           its sigma equal to 1/3 * (1-b) where b is the intercept of the fit to
           the interval.
     clean_criterion : str, {'shift', 'precip_and_shift', 'precip_or_shift', 'precip'} \
-            default 'shift'
+        default 'shift'
         The method of partitioning the dataset into soiling intervals.
         * 'precip_and_shift' - rolling median shifts must coincide
           with precipitation to be a valid cleaning event.
