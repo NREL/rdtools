@@ -588,8 +588,8 @@ class AvailabilityAnalysis:
             controller and dynamic inverter setpoints. This constraint is
             only applied to the subsystem loss calculation.
 
-        quantiles : 2-element tuple, default (0.01, 0.99)
-            The quantiles of the error distribution used for the expected
+        quantiles : tuple, default (0.01, 0.99)
+            (lower, upper) quantiles of the error distribution used for the expected
             energy confidence interval. The lower bound is used to classify
             outages as either (1) a simple communication interruption with
             no production loss or (2) a power outage with an associated
