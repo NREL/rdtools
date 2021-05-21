@@ -521,7 +521,7 @@ class SRRAnalysis():
               randomly from a half normal distribution with its mode (mu) at 1 and
               its sigma equal to 1/3 * (1-b) where b is the intercept of the fit to
               the interval.
-    clean_criterion : str, {'shift', 'precip_and_shift', 'precip_or_shift', 'precip'} \
+        clean_criterion : str, {'shift', 'precip_and_shift', 'precip_or_shift', 'precip'} \
                 default 'shift'
             The method of partitioning the dataset into soiling intervals.
             * 'precip_and_shift' - rolling median shifts must coincide
@@ -703,14 +703,14 @@ def soiling_srr(energy_normalized_daily, insolation_daily, reps=1000,
           its sigma equal to 1/3 * (1-b) where b is the intercept of the fit to
           the interval.
     clean_criterion : str, {'shift', 'precip_and_shift', 'precip_or_shift', 'precip'} \
-                default 'shift'
-            The method of partitioning the dataset into soiling intervals.
-            * 'precip_and_shift' - rolling median shifts must coincide
-              with precipitation to be a valid cleaning event.
-            * 'precip_or_shift' - rolling median shifts and precipitation
-              events are each sufficient on their own to be a cleaning event.
-            * 'shift', only rolling median shifts are treated as cleaning events.
-            * 'precip', only precipitation events are treated as cleaning events.
+            default 'shift'
+        The method of partitioning the dataset into soiling intervals.
+        * 'precip_and_shift' - rolling median shifts must coincide
+          with precipitation to be a valid cleaning event.
+        * 'precip_or_shift' - rolling median shifts and precipitation
+          events are each sufficient on their own to be a cleaning event.
+        * 'shift', only rolling median shifts are treated as cleaning events.
+        * 'precip', only precipitation events are treated as cleaning events.
     precip_threshold : float, default 0.01
         The daily precipitation threshold for defining precipitation cleaning events.
         Units must be consistent with precip.
