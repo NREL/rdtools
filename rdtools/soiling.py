@@ -90,6 +90,7 @@ class SRRAnalysis():
         clean_criterion : str, {'shift', 'precip_and_shift', 'precip_or_shift', 'precip'} \
                 default 'shift'
             The method of partitioning the dataset into soiling intervals.
+
             * 'precip_and_shift' - rolling median shifts must coincide
               with precipitation to be a valid cleaning event.
             * 'precip_or_shift' - rolling median shifts and precipitation
@@ -342,7 +343,8 @@ class SRRAnalysis():
             number of Monte Carlo simulations to run
         method : str, {'half_norm_clean', 'random_clean', 'perfect_clean'} \
                 default 'half_norm_clean'
-            how to treat the recovery of each cleaning event:
+            How to treat the recovery of each cleaning event
+
             * 'random_clean' - a random recovery between 0-100%
             * 'perfect_clean' - each cleaning event returns the performance
               metric to 1
@@ -513,7 +515,8 @@ class SRRAnalysis():
             avoid inclusion of partial intervals
         method : str, {'half_norm_clean', 'random_clean', 'perfect_clean'} \
             default 'half_norm_clean'
-            how to treat the recovery of each cleaning event:
+            How to treat the recovery of each cleaning event
+
             * 'random_clean' - a random recovery between 0-100%
             * 'perfect_clean' - each cleaning event returns the performance
               metric to 1
@@ -523,7 +526,8 @@ class SRRAnalysis():
               the interval.
         clean_criterion : str, {'shift', 'precip_and_shift', 'precip_or_shift', 'precip'} \
             default 'shift'
-            The method of partitioning the dataset into soiling intervals.
+            The method of partitioning the dataset into soiling intervals
+
             * 'precip_and_shift' - rolling median shifts must coincide
               with precipitation to be a valid cleaning event.
             * 'precip_or_shift' - rolling median shifts and precipitation
@@ -694,7 +698,8 @@ def soiling_srr(energy_normalized_daily, insolation_daily, reps=1000,
         inclusion of partial intervals
     method : str, {'half_norm_clean', 'random_clean', 'perfect_clean'} \
         default 'half_norm_clean'
-        how to treat the recovery of each cleaning event:
+        How to treat the recovery of each cleaning event
+
         * 'random_clean' - a random recovery between 0-100%
         * 'perfect_clean' - each cleaning event returns the performance
           metric to 1
@@ -704,7 +709,8 @@ def soiling_srr(energy_normalized_daily, insolation_daily, reps=1000,
           the interval.
     clean_criterion : str, {'shift', 'precip_and_shift', 'precip_or_shift', 'precip'} \
         default 'shift'
-        The method of partitioning the dataset into soiling intervals.
+        The method of partitioning the dataset into soiling intervals
+
         * 'precip_and_shift' - rolling median shifts must coincide
           with precipitation to be a valid cleaning event.
         * 'precip_or_shift' - rolling median shifts and precipitation
