@@ -613,8 +613,9 @@ class TrendAnalysis():
 
         Parameters
         ---------
-        analyses : list of str
-            Analyses to perform, valid entries are 'yoy_degradation' and 'srr_soiling'
+        analyses : list
+            Analyses to perform as a list of strings. Valid entries are 'yoy_degradation'
+            and 'srr_soiling'
         yoy_kwargs : dict
             kwargs to pass to degradation.degradation_year_on_year()
         srr_kwargs : dict
@@ -648,8 +649,9 @@ class TrendAnalysis():
 
         Parameters
         ---------
-        analyses : list of str
-            Analyses to perform, valid entries are 'yoy_degradation' and 'srr_soiling'
+        analyses : list
+            Analyses to perform as a list of strings. Valid entries are 'yoy_degradation'
+            and 'srr_soiling'
         yoy_kwargs : dict
             kwargs to pass to degradation.degradation_year_on_year()
         srr_kwargs : dict
