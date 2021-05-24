@@ -59,7 +59,7 @@ class TrendAnalysis():
         data, rather than up or down sampling. Analysis requires regular time series.
         For more information see
         https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#dateoffset-objects
-    max_timedelta : datetime.timedelta
+    max_timedelta : pandas.timedelta
         The maximum gap in the data to be interpolated/integrated across when
         interpolating or calculating energy from power
 
