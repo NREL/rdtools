@@ -97,6 +97,11 @@ intersphinx_mapping = {
     'pvlib': ('https://pvlib-python.readthedocs.io/en/stable/', None),
 }
 
+napoleon_use_param = True
+napoleon_type_aliases = {
+    'numeric': ":term:`numeric`",
+}
+
 
 # A workaround for the responsive tables always having annoying scrollbars.
 def setup(app):
