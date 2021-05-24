@@ -12,8 +12,10 @@ def aggregation_insol(energy_normalized, insolation, frequency='D'):
     insolation : pandas.Series
         Time series of insolation associated with each `energy_normalized`
         point
-    frequency : Pandas offset string, default 'D'
-        Target frequency at which to aggregate
+    frequency : str or pandas.tseries.offsets.DateOffset
+        Pandas frequency specification at which to aggregate. Default is daily aggregation.
+        For more information see
+        https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#dateoffset-objects
 
     Returns
     -------

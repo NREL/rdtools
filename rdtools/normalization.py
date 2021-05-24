@@ -30,7 +30,7 @@ def normalize_with_expected_power(pv, power_expected, poa_global,
     poa_global : pandas.Series
         Right-labeled time series of plane-of-array irradiance associated with
         ``expected_power``
-    pv_input : {'power' or 'energy'}
+    pv_input : str, {'power' or 'energy'}
         Specifies the type of input used for ``pv`` parameter. Default: 'power'
 
     Returns
@@ -497,7 +497,7 @@ def energy_from_power(power, target_frequency=None, max_timedelta=None,
         returned for that interval. If omitted, ``max_timedelta`` is set
         internally to the median time delta in ``power``. Ignored when ``power``
         has fewer than two elements.
-    power_type : {'right_labeled', 'instantaneous'}
+    power_type : str, {'right_labeled', 'instantaneous'}
         The labeling convention used in power. Default: 'right_labeled'
 
     Returns
