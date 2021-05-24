@@ -37,7 +37,7 @@ class TrendAnalysis():
     pv_input : str
         'power' or 'energy' to specify type of input used for pv parameter
     windspeed : numeric
-        Right-labeled Pandas Time Series or single numeric value indicating wind 
+        Right-labeled Pandas Time Series or single numeric value indicating wind
         speed in m/s for use in calculating cell temperature from ambient default
         value of 0 neglects the wind in this calculation
     power_expected : pandas.Series
