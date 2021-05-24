@@ -232,7 +232,7 @@ take one of several types, we document them using the type alises listed below:
 .. glossary ::
 
    ``numeric``
-      scalar, ``numpy.array``, ``pandas.Series``. Typically int or float dtype.
+      scalar or ``pandas.Series``. Typically int or float dtype.
 
 
 Citing RdTools
