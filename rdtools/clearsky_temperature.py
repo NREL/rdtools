@@ -17,7 +17,7 @@ def get_clearsky_tamb(times, latitude, longitude, window_size=40,
 
     Parameters
     ----------
-    times : pd.DatetimeIndex
+    times : pandas.DatetimeIndex
         A pandas DatetimeIndex, localized to local time
     latitude : float
         Coordinates in decimal degrees.
@@ -30,7 +30,7 @@ def get_clearsky_tamb(times, latitude, longitude, window_size=40,
 
     Returns
     -------
-    pd.Series
+    pandas.Series
         clear sky ambient temperature
 
     Notes

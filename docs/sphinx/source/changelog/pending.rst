@@ -46,6 +46,12 @@ Documentation
 * Corrected a typo in the :py:class:`~rdtools.analysis_chains.TrendAnalysis`
   docstring (:pull:`264`)
 
+Documentation
+-------------
+* Enabled intersphinx so that function parameter types are linked to external
+  documentation (:pull:`258`)
+
+
 Requirements
 ------------
 * Update pinned versions of several dependencies (:pull:`261`, :pull:`275`):
@@ -62,6 +68,7 @@ Example Updates
 
 Contributors
 ------------
+* Mark Mikofski (:ghuser:`mikofski`)
 * Kevin Anderson (:ghuser:`kanderso-nrel`)
 * Michael Deceglie (:ghuser:`mdeceglie`)
 * Matthew Muller (:ghuser:`matt14muller`)
