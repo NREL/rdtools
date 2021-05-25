@@ -413,9 +413,6 @@ class TrendAnalysis():
             f = filtering.clip_filter(
                 self.pv_power, **self.filter_params['clip_filter'])
             filter_components['clip_filter'] = f
-        if 'ad_hoc_filter' in self.filter_params:
-            if self.filter_params['ad_hoc_filter'] is not None:
-                filter_components['ad_hoc_filter'] = self.filter_params['ad_hoc_filter']
         if case == 'clearsky':
             if self.poa_global is None or self.poa_global_clearsky is None:
                 raise ValueError('Both poa_global and poa_global_clearsky must be available to '
@@ -427,6 +424,23 @@ class TrendAnalysis():
         # note: the previous implementation using the & operator treated NaN
         # filter values as False, so we do the same here for consistency:
         filter_components = pd.DataFrame(filter_components).fillna(False)
+
+        # apply special checks to ad_hoc_filter, as it is likely more prone to user error
+        if self.filter_params.get('ad_hoc_filter', None) is not None:
+            ad_hoc_filter = self.filter_params['ad_hoc_filter']
+
+            if ad_hoc_filter.isnull().any():
+                warnings.warn('ad_hoc_filter contains NaN values; setting to False')
+                ad_hoc_filter = ad_hoc_filter.fillna(False)
+
+            if not filter_components.index.equals(ad_hoc_filter.index):
+                warnings.warn('ad_hoc_filter index does not match index of other filters; missing '
+                              'values will be set to True. Align the index with the index of the '
+                              'filter_components attribute to prevent this warning')
+                ad_hoc_filter = ad_hoc_filter.reindex(filter_components.index).fillna(True)
+
+            filter_components['ad_hoc_filter'] = ad_hoc_filter
+
         bool_filter = filter_components.all(axis=1)
         filter_components = filter_components.drop(columns=['default'])
         if case == 'sensor':
