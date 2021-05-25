@@ -32,7 +32,9 @@ def test_energy_from_power_max_timedelta_inference(power):
     expected = power.iloc[1:]*0.25
     expected.name = 'energy_Wh'
     expected.iloc[:2] = np.nan
-    result = energy_from_power(power.drop(power.index[1]))
+    match = 'Fraction of excluded data (.*) exceeded threshold'
+    with pytest.warns(UserWarning, match=match):
+        result = energy_from_power(power.drop(power.index[1]))
     pd.testing.assert_series_equal(result, expected)
 
 

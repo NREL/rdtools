@@ -18,28 +18,29 @@ class TrendAnalysis():
 
     Parameters
     ----------
-    pv : pd.Series
+    pv : pandas.Series
         Right-labeled time series PV energy or power. If energy, should *not*
         be cumulative, but only for preceding time step.
-    poa_global : pd.Series
+    poa_global : pandas.Series
         Right-labeled time series measured plane of array irradiance in W/m^2
-    temperature_cell : pd.Series
+    temperature_cell : pandas.Series
         Right-labeled time series of cell temperature in Celsius. In practice,
         back of module temperature works as a good approximation.
-    temperature_ambient : pd.Series
+    temperature_ambient : pandas.Series
         Right-labeled time Series of ambient temperature in Celsius
-    gamma_pdc : numeric
+    gamma_pdc : float
         Fractional PV power temperature coefficient
-    aggregation_freq : str or Pandas DateOffset object
+    aggregation_freq : str or pandas.tseries.offsets.DateOffset
         Pandas frequency specification with which to aggregate normalized PV
-        data for analysis
+        data for analysis. For more information, see
+        https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#dateoffset-objects
     pv_input : str
         'power' or 'energy' to specify type of input used for pv parameter
-    windspeed : pd.Series or numeric
-        Right-labeled Pandas Time Series or single numeric value indicating wind 
+    windspeed : numeric
+        Right-labeled Pandas Time Series or single numeric value indicating wind
         speed in m/s for use in calculating cell temperature from ambient default
         value of 0 neglects the wind in this calculation
-    power_expected : pd.Series
+    power_expected : pandas.Series
         Right-labeled time series of expected PV power. (Note: Expected energy
         is not supported.)
     temperature_model : str or dict
@@ -48,15 +49,17 @@ class TrendAnalysis():
         for sapm model in pvlib.temperature.TEMPERATURE_MODEL_PARAMETERS. If dict, must
         have keys 'a', 'b', 'deltaT'. See pvlib.temperature.sapm_cell() documentation
         for details.
-    power_dc_rated : numeric
+    power_dc_rated : float
         Nameplate DC rating of PV array in Watts. If omitted, pv output will be internally
         normalized in the normalization step based on it's 95th percentile
         (see TrendAnalysis._pvwatts_norm() source).
-    interp_freq : str or Pandas DateOffset object
+    interp_freq : str or pandas.tseries.offsets.DateOffset
         Pandas frequency specification used to interpolate all pandas.Series
         passed at instantiation. We recommend using the natural frequency of the
         data, rather than up or down sampling. Analysis requires regular time series.
-    max_timedelta : datetime.timedelta
+        For more information see
+        https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#dateoffset-objects
+    max_timedelta : pandas.timedelta
         The maximum gap in the data to be interpolated/integrated across when
         interpolating or calculating energy from power
 
@@ -147,20 +150,23 @@ class TrendAnalysis():
         pvlib_location : pvlib.location.Location
             Used for calculating clearsky temperature and irradiance
         pv_azimuth : numeric
-            Azimuth of PV array in degrees from north
+            Azimuth of PV array in degrees from north. Can be right-labeled
+            Pandas Time Series or single numeric value.
         pv_tilt : numeric
-            Tilt of PV array in degrees from horizontal
-        poa_global_clearsky : pd.Series
+            Tilt of PV array in degrees from horizontal. Can be right-labeled
+            Pandas Time Series or single numeric value.
+        poa_global_clearsky : pandas.Series
             Right-labeled time Series of clear-sky plane of array irradiance
-        temperature_cell_clearsky : pd.Series
+        temperature_cell_clearsky : pandas.Series
             Right-labeled time series of cell temperature in clear-sky conditions
             in Celsius. In practice, back of module temperature works as a good
             approximation.
-        temperature_ambient_clearsky : pd.Series
+        temperature_ambient_clearsky : pandas.Series
             Right-label time series of ambient temperature in clear sky conditions
             in Celsius
         albedo : numeric
-            Albedo to be used in irradiance transposition calculations
+            Albedo to be used in irradiance transposition calculations. Can be right-labeled
+            Pandas Time Series or single numeric value.
 
         '''
         interp_freq = self.interp_freq
@@ -607,8 +613,9 @@ class TrendAnalysis():
 
         Parameters
         ---------
-        analyses : list of str
-            Analyses to perform, valid entries are 'yoy_degradation' and 'srr_soiling'
+        analyses : list
+            Analyses to perform as a list of strings. Valid entries are 'yoy_degradation'
+            and 'srr_soiling'
         yoy_kwargs : dict
             kwargs to pass to degradation.degradation_year_on_year()
         srr_kwargs : dict
@@ -642,8 +649,9 @@ class TrendAnalysis():
 
         Parameters
         ---------
-        analyses : list of str
-            Analyses to perform, valid entries are 'yoy_degradation' and 'srr_soiling'
+        analyses : list
+            Analyses to perform as a list of strings. Valid entries are 'yoy_degradation'
+            and 'srr_soiling'
         yoy_kwargs : dict
             kwargs to pass to degradation.degradation_year_on_year()
         srr_kwargs : dict
@@ -803,7 +811,7 @@ class TrendAnalysis():
         case: str
             The plane of array irradiance type to plot, allowed values are
             'sensor' and 'clearsky'
-        alpha : numeric
+        alpha : float
             transparency of the scatter plot
         kwargs :
             Extra parameters passed to matplotlib.pyplot.axis.plot()

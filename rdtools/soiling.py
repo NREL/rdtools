@@ -100,15 +100,16 @@ class SRRAnalysis():
         recenter : bool, default True
             Whether to recenter (renormalize) the daily performance to the
             median of the first year
-        clean_criterion : {'precip_and_shift', 'precip_or_shift', 'precip', 'shift'} \
+        clean_criterion : str, {'shift', 'precip_and_shift', 'precip_or_shift', 'precip'} \
                 default 'shift'
             The method of partitioning the dataset into soiling intervals.
-            If 'precip_and_shift', rolling median shifts must coincide
-            with precipitation to be a valid cleaning event.
-            If 'precip_or_shift', rolling median shifts and precipitation
-            events are each sufficient on their own to be a cleaning event.
-            If 'shift', only rolling median shifts are treated as cleaning events.
-            If 'precip', only precipitation events are treated as cleaning events.
+
+            * 'precip_and_shift' - rolling median shifts must coincide
+              with precipitation to be a valid cleaning event.
+            * 'precip_or_shift' - rolling median shifts and precipitation
+              events are each sufficient on their own to be a cleaning event.
+            * 'shift', only rolling median shifts are treated as cleaning events.
+            * 'precip', only precipitation events are treated as cleaning events.
         precip_threshold : float, default 0.01
             The daily precipitation threshold for defining precipitation cleaning events.
             Units must be consistent with ``self.precipitation_daily``.
@@ -353,8 +354,10 @@ class SRRAnalysis():
         ----------
         monte : int
             number of Monte Carlo simulations to run
-        method : str, default 'half_norm_clean'
-            how to treat the recovery of each cleaning event:
+        method : str, {'half_norm_clean', 'random_clean', 'perfect_clean'} \
+                default 'half_norm_clean'
+            How to treat the recovery of each cleaning event
+
             * 'random_clean' - a random recovery between 0-100%
             * 'perfect_clean' - each cleaning event returns the performance
               metric to 1
@@ -523,8 +526,9 @@ class SRRAnalysis():
         trim : bool, default False
             Whether to trim (remove) the first and last soiling intervals to
             avoid inclusion of partial intervals
-        method : str, default 'half_norm_clean'
-            How to treat the recovery of each cleaning event:
+        method : str, {'half_norm_clean', 'random_clean', 'perfect_clean'} \
+            default 'half_norm_clean'
+            How to treat the recovery of each cleaning event
 
             * 'random_clean' - a random recovery between 0-100%
             * 'perfect_clean' - each cleaning event returns the performance
@@ -533,16 +537,16 @@ class SRRAnalysis():
               randomly from a half normal distribution with its mode (mu) at 1 and
               its sigma equal to 1/3 * (1-b) where b is the intercept of the fit to
               the interval.
+        clean_criterion : str, {'shift', 'precip_and_shift', 'precip_or_shift', 'precip'} \
+            default 'shift'
+            The method of partitioning the dataset into soiling intervals
 
-        clean_criterion : {'precip_and_shift', 'precip_or_shift', 'precip', 'shift'} \
-                default 'shift'
-            The method of partitioning the dataset into soiling intervals.
-            If 'precip_and_shift', rolling median shifts must coincide
-            with precipitation to be a valid cleaning event.
-            If 'precip_or_shift', rolling median shifts and precipitation
-            events are each sufficient on their own to be a cleaning event.
-            If 'shift', only rolling median shifts are treated as cleaning events.
-            If 'precip', only precipitation events are treated as cleaning events.
+            * 'precip_and_shift' - rolling median shifts must coincide
+              with precipitation to be a valid cleaning event.
+            * 'precip_or_shift' - rolling median shifts and precipitation
+              events are each sufficient on their own to be a cleaning event.
+            * 'shift', only rolling median shifts are treated as cleaning events.
+            * 'precip', only precipitation events are treated as cleaning events.
         precip_threshold : float, default 0.01
             The daily precipitation threshold for defining precipitation cleaning events.
             Units must be consistent with ``self.precipitation_daily``
@@ -680,17 +684,17 @@ def soiling_srr(energy_normalized_daily, insolation_daily, reps=1000,
 
     Parameters
     ----------
-    energy_normalized_daily : o
+    energy_normalized_daily : pandas.Series
         Daily performance metric (i.e. performance index, yield, etc.)
         Alternatively, the soiling ratio output of a soiling sensor (e.g. the
         photocurrent ratio between matched dirty and clean PV reference cells).
         In either case, data should be insolation-weighted daily aggregates.
-    insolation_daily : o
+    insolation_daily : pandas.Series
         Daily plane-of-array insolation corresponding to
         `energy_normalized_daily`. Arbitrary units.
     reps : int, default 1000
         number of Monte Carlo realizations to calculate
-    precipitation_daily : o, default None
+    precipitation_daily : pandas.Series, default None
         Daily total precipitation. Units ambiguous but should be the same as
         precip_threshold. Note default behavior of precip_threshold. (Ignored
         if ``clean_criterion='shift'``.)
@@ -705,25 +709,27 @@ def soiling_srr(energy_normalized_daily, insolation_daily, reps=1000,
     trim : bool, default False
         Whether to trim (remove) the first and last soiling intervals to avoid
         inclusion of partial intervals
-    method : str, default 'half_norm_clean'
+    method : str, {'half_norm_clean', 'random_clean', 'perfect_clean'} \
+        default 'half_norm_clean'
         How to treat the recovery of each cleaning event
 
         * 'random_clean' - a random recovery between 0-100%
-        * 'perfect_clean' - each cleaning event returns the performance metric
-          to 1
-        * 'half_norm_clean'(default) - The starting point of each interval is taken
-              randomly from a half normal distribution with its mode (mu) at 1 and
-              its sigma equal to 1/3 * (1-b) where b is the intercept of the fit to
-              the interval.
-    clean_criterion : {'precip_and_shift', 'precip_or_shift', 'precip', 'shift'} \
-                default 'shift'
-            The method of partitioning the dataset into soiling intervals.
-            If 'precip_and_shift', rolling median shifts must coincide
-            with precipitation to be a valid cleaning event.
-            If 'precip_or_shift', rolling median shifts and precipitation
-            events are each sufficient on their own to be a cleaning event.
-            If 'shift', only rolling median shifts are treated as cleaning events.
-            If 'precip', only precipitation events are treated as cleaning events.
+        * 'perfect_clean' - each cleaning event returns the performance
+          metric to 1
+        * 'half_norm_clean' - The starting point of each interval is taken
+          randomly from a half normal distribution with its mode (mu) at 1 and
+          its sigma equal to 1/3 * (1-b) where b is the intercept of the fit to
+          the interval.
+    clean_criterion : str, {'shift', 'precip_and_shift', 'precip_or_shift', 'precip'} \
+        default 'shift'
+        The method of partitioning the dataset into soiling intervals
+
+        * 'precip_and_shift' - rolling median shifts must coincide
+          with precipitation to be a valid cleaning event.
+        * 'precip_or_shift' - rolling median shifts and precipitation
+          events are each sufficient on their own to be a cleaning event.
+        * 'shift', only rolling median shifts are treated as cleaning events.
+        * 'precip', only precipitation events are treated as cleaning events.
     precip_threshold : float, default 0.01
         The daily precipitation threshold for defining precipitation cleaning events.
         Units must be consistent with precip.
@@ -850,7 +856,7 @@ def annual_soiling_ratios(stochastic_soiling_profiles, insolation_daily, confide
         List of o representing profile realizations from the SRR monte carlo.
         Typically ``soiling_interval_summary['stochastic_soiling_profiles']`` obtained with
         :py:func:`rdtools.soiling.soiling_srr` or :py:meth:`rdtools.soiling.SRRAnalysis.run`
-    insolation_daily : o
+    insolation_daily : pandas.Series
         Daily plane-of-array insolation with DatetimeIndex. Arbitrary units.
     confidence_level : float, default 68.2
         The size of the confidence interval to use in determining the upper and lower
@@ -932,8 +938,9 @@ def monthly_soiling_rates(soiling_interval_summary, min_interval_length=14,
 
     min_interval_length : int, default 14
         The minimum number of days a soiling interval must contain to be
-        included in the calculation. Similar to the same parameter in soiling_srr()
-        and SRRAnalysis.run() but with a more conservative default value as a
+        included in the calculation. Similar to the same parameter in
+        :py:func:`soiling_srr` and :py:meth:`SRRAnalysis.run` but with a
+        more conservative default value as a
         starting point for monthly soiling rate analyses.
 
     max_relative_slope_error : float, default 500.0

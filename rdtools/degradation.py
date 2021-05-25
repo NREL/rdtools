@@ -16,7 +16,7 @@ def degradation_ols(energy_normalized, confidence_level=68.2):
 
     Parameters
     ----------
-    energy_normalized: pd.Series
+    energy_normalized: pandas.Series
         Daily or lower frequency time series of normalized system ouput.
     confidence_level: float, default 68.2
         The size of the confidence interval to return, in percent.
@@ -25,7 +25,7 @@ def degradation_ols(energy_normalized, confidence_level=68.2):
     -------
     Rd_pct : float
         Estimated degradation relative to the year 0 system capacity [%/year]
-    Rd_CI : np.array
+    Rd_CI : numpy.array
         The calculated confidence interval bounds.
     calc_info : dict
         A dict that contains slope, intercept,
@@ -88,7 +88,7 @@ def degradation_classical_decomposition(energy_normalized,
 
     Parameters
     ----------
-    energy_normalized: pd.Series
+    energy_normalized: pandas.Series
         Daily or lower frequency time series of normalized system ouput.
         Must be regular time series.
     confidence_level: float, default 68.2
@@ -98,7 +98,7 @@ def degradation_classical_decomposition(energy_normalized,
     -------
     Rd_pct : float
         Estimated degradation relative to the year 0 system capacity [%/year]
-    Rd_CI : np.array
+    Rd_CI : numpy.array
         The calculated confidence interval bounds.
     calc_info : dict
         A dict that contains slope, intercept,
@@ -192,7 +192,7 @@ def degradation_year_on_year(energy_normalized, recenter=True,
 
     Parameters
     ----------
-    energy_normalized: pd.Series
+    energy_normalized: pandas.Series
         Daily or lower frequency time series of normalized system ouput.
     recenter : bool, default True
         Specify whether data is internally recentered to normalized yield
@@ -218,7 +218,7 @@ def degradation_year_on_year(energy_normalized, recenter=True,
     -------
     Rd_pct : float
         Estimated degradation relative to the year 0 median system capacity [%/year]
-    confidence_interval : np.array
+    confidence_interval : numpy.array
         confidence interval (size specified by ``confidence_level``) of
         degradation rate estimate
     calc_info : dict
