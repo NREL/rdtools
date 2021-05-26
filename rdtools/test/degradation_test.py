@@ -124,7 +124,6 @@ class DegradationTestCase(unittest.TestCase):
             logging.debug('Actual: {}'.format(100 * self.rd))
             logging.debug('Estimated: {}'.format(rd_result[0]))
 
-
     def test_degradation_year_on_year_circular_block_bootstrap(self):
         ''' Test degradation with year on year approach with circular block bootstrapping. '''
 
@@ -141,7 +140,6 @@ class DegradationTestCase(unittest.TestCase):
                 self.assertAlmostEqual(rd_result[0], 100 * self.rd, places=1)
                 logging.debug('Actual: {}'.format(100 * self.rd))
                 logging.debug('Estimated: {}'.format(rd_result[0]))
-
 
     def test_confidence_intervals(self):
 

@@ -9,10 +9,10 @@ def test_bootstrap_module(cods_normalized_daily, cods_normalized_daily_wo_noise)
     ''' Test make time serie bootstrap samples and construct of confidence intervals. '''
     # Test make bootstrap samples
     bootstrap_samples = _make_time_series_bootstrap_samples(cods_normalized_daily,
-                                                           cods_normalized_daily_wo_noise,
-                                                           sample_nr=10,
-                                                           block_length=90,
-                                                           decomposition_type='multiplicative')
+                                                            cods_normalized_daily_wo_noise,
+                                                            sample_nr=10,
+                                                            block_length=90,
+                                                            decomposition_type='multiplicative')
     # Check if results are as expected
     assert (bootstrap_samples.index == cods_normalized_daily.index).all(), \
         "Index of bootstrapped signals is not as expected"

@@ -3,7 +3,6 @@
 import pandas as pd
 import numpy as np
 import statsmodels.api as sm
-from typing import Tuple
 from rdtools.bootstrap import _make_time_series_bootstrap_samples, \
     _construct_confidence_intervals
 
@@ -252,7 +251,7 @@ def degradation_year_on_year(energy_normalized, recenter=True,
         freq = pd.infer_freq(energy_normalized.index)
         if isinstance(freq, type(None)):
             raise ValueError('energy_normalized must have a fixed frequency')
-        # ... require a block length shorter than 
+        # ... require a block length shorter than
 
     # Auto center
     if recenter:
@@ -306,7 +305,7 @@ def degradation_year_on_year(energy_normalized, recenter=True,
         calc_info['exceedance_level'] = P_level
 
         return (Rd_pct, Rd_CI, calc_info)
-    
+
     elif uncertainty_method == 'circular_block_bootstrap':
         # Number of bootstrap repetitions
         reps = 1000
@@ -317,7 +316,7 @@ def degradation_year_on_year(energy_normalized, recenter=True,
         days_per_index = \
             (energy_normalized.dt.iloc[-1] - energy_normalized.dt.iloc[0]).days / N
         degradation_trend = 1 + (Rd_pct / 100 / 365.24 * numeric_index
-                                * days_per_index)
+                                 * days_per_index)
         degradation_trend = pd.Series(
             index=energy_normalized.dt, data=degradation_trend)
 
@@ -338,7 +337,7 @@ def degradation_year_on_year(energy_normalized, recenter=True,
             'renormalizing_factor': renorm,
             'exceedance_level': exceedance_level,
             'bootstrap_rates': bootstrap_rates}
-        
+
         return (Rd_pct, Rd_CI, calc_info)
 
     else:  # If we do not need confidence intervals and exceedance level
@@ -440,4 +439,3 @@ def _degradation_CI(results, confidence_level):
     half_ci = confidence_level / 2.0
     Rd_CI = np.percentile(dist, [50.0 - half_ci, 50.0 + half_ci]) * 100.0
     return Rd_CI
-
