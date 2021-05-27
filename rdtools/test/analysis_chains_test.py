@@ -148,6 +148,22 @@ def test_filter_components_no_filters(sensor_parameters):
     assert rd_analysis.sensor_filter_components.empty
 
 
+def test_filter_ad_hoc_warnings(sensor_parameters):
+    rd_analysis = TrendAnalysis(**sensor_parameters, power_dc_rated=1.0)
+    # warning for incomplete index
+    ad_hoc_filter = pd.Series(True, index=sensor_parameters['pv'].index[:-5])
+    rd_analysis.filter_params['ad_hoc_filter'] = ad_hoc_filter
+    with pytest.warns(UserWarning, match='ad_hoc_filter index does not match index'):
+        rd_analysis.sensor_analysis(analyses=['yoy_degradation'])
+
+    # warning about NaNs
+    ad_hoc_filter = pd.Series(True, index=sensor_parameters['pv'])
+    ad_hoc_filter.iloc[10] = np.nan
+    rd_analysis.filter_params['ad_hoc_filter'] = ad_hoc_filter
+    with pytest.warns(UserWarning, match='ad_hoc_filter contains NaN values; setting to False'):
+        rd_analysis.sensor_analysis(analyses=['yoy_degradation'])
+
+
 def test_cell_temperature_model_invalid(sensor_parameters):
     wind = pd.Series(0, index=sensor_parameters['pv'].index)
     sensor_parameters.pop('temperature_model')
