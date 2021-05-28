@@ -317,8 +317,9 @@ def soiling_analysis_clearsky(soiling_parameters, cs_input):
     soiling_analysis = TrendAnalysis(**soiling_parameters)
     soiling_analysis.set_clearsky(**cs_input)
     np.random.seed(1977)
-    soiling_analysis.clearsky_analysis(analyses=['srr_soiling'],
-                                       srr_kwargs={'reps': 10})
+    with pytest.warns(UserWarning, match='20% or more of the daily data'):
+        soiling_analysis.clearsky_analysis(analyses=['srr_soiling'],
+                                           srr_kwargs={'reps': 10})
     return soiling_analysis
 
 
