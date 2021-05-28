@@ -148,20 +148,42 @@ def test_filter_components_no_filters(sensor_parameters):
     assert rd_analysis.sensor_filter_components.empty
 
 
-def test_filter_ad_hoc_warnings(sensor_parameters):
+@pytest.mark.parametrize('workflow', ['sensor', 'clearsky'])
+def test_filter_ad_hoc_warnings(workflow, sensor_parameters):
     rd_analysis = TrendAnalysis(**sensor_parameters, power_dc_rated=1.0)
+    rd_analysis.set_clearsky(pvlib_location=pvlib.location.Location(40, -80),
+                             poa_global_clearsky=rd_analysis.poa_global)
+
     # warning for incomplete index
     ad_hoc_filter = pd.Series(True, index=sensor_parameters['pv'].index[:-5])
     rd_analysis.filter_params['ad_hoc_filter'] = ad_hoc_filter
     with pytest.warns(UserWarning, match='ad_hoc_filter index does not match index'):
-        rd_analysis.sensor_analysis(analyses=['yoy_degradation'])
+        if workflow == 'sensor':
+            rd_analysis.sensor_analysis(analyses=['yoy_degradation'])
+            components = rd_analysis.sensor_filter_components
+        else:
+            rd_analysis.clearsky_analysis(analyses=['yoy_degradation'])
+            components = rd_analysis.clearsky_filter_components
+
+    # missing values set to True
+    assert components['ad_hoc_filter'].all()
 
     # warning about NaNs
-    ad_hoc_filter = pd.Series(True, index=sensor_parameters['pv'])
+    ad_hoc_filter = pd.Series(True, index=sensor_parameters['pv'].index)
     ad_hoc_filter.iloc[10] = np.nan
     rd_analysis.filter_params['ad_hoc_filter'] = ad_hoc_filter
     with pytest.warns(UserWarning, match='ad_hoc_filter contains NaN values; setting to False'):
-        rd_analysis.sensor_analysis(analyses=['yoy_degradation'])
+        if workflow == 'sensor':
+            rd_analysis.sensor_analysis(analyses=['yoy_degradation'])
+            components = rd_analysis.sensor_filter_components
+        else:
+            rd_analysis.clearsky_analysis(analyses=['yoy_degradation'])
+            components = rd_analysis.clearsky_filter_components
+
+    # NaN values set to False
+    assert not components['ad_hoc_filter'].iloc[10]
+    assert components.drop(components.index[10])['ad_hoc_filter'].all()
+
 
 
 def test_cell_temperature_model_invalid(sensor_parameters):
