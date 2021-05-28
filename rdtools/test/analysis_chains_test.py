@@ -131,6 +131,60 @@ def test_sensor_analysis_ad_hoc_filter(sensor_parameters):
         rd_analysis.sensor_analysis(analyses=['yoy_degradation'])
 
 
+def test_filter_components(sensor_parameters):
+    poa = sensor_parameters['poa_global']
+    poa_filter = (poa > 200) & (poa < 1200)
+    rd_analysis = TrendAnalysis(**sensor_parameters, power_dc_rated=1.0)
+    rd_analysis.sensor_analysis(analyses=['yoy_degradation'])
+    assert (poa_filter == rd_analysis.sensor_filter_components['poa_filter']).all()
+
+
+def test_filter_components_no_filters(sensor_parameters):
+    rd_analysis = TrendAnalysis(**sensor_parameters, power_dc_rated=1.0)
+    rd_analysis.filter_params = {}  # disable all filters
+    rd_analysis.sensor_analysis(analyses=['yoy_degradation'])
+    expected = pd.Series(True, index=rd_analysis.pv_energy.index)
+    pd.testing.assert_series_equal(rd_analysis.sensor_filter, expected)
+    assert rd_analysis.sensor_filter_components.empty
+
+
+@pytest.mark.parametrize('workflow', ['sensor', 'clearsky'])
+def test_filter_ad_hoc_warnings(workflow, sensor_parameters):
+    rd_analysis = TrendAnalysis(**sensor_parameters, power_dc_rated=1.0)
+    rd_analysis.set_clearsky(pvlib_location=pvlib.location.Location(40, -80),
+                             poa_global_clearsky=rd_analysis.poa_global)
+
+    # warning for incomplete index
+    ad_hoc_filter = pd.Series(True, index=sensor_parameters['pv'].index[:-5])
+    rd_analysis.filter_params['ad_hoc_filter'] = ad_hoc_filter
+    with pytest.warns(UserWarning, match='ad_hoc_filter index does not match index'):
+        if workflow == 'sensor':
+            rd_analysis.sensor_analysis(analyses=['yoy_degradation'])
+            components = rd_analysis.sensor_filter_components
+        else:
+            rd_analysis.clearsky_analysis(analyses=['yoy_degradation'])
+            components = rd_analysis.clearsky_filter_components
+
+    # missing values set to True
+    assert components['ad_hoc_filter'].all()
+
+    # warning about NaNs
+    ad_hoc_filter = pd.Series(True, index=sensor_parameters['pv'].index)
+    ad_hoc_filter.iloc[10] = np.nan
+    rd_analysis.filter_params['ad_hoc_filter'] = ad_hoc_filter
+    with pytest.warns(UserWarning, match='ad_hoc_filter contains NaN values; setting to False'):
+        if workflow == 'sensor':
+            rd_analysis.sensor_analysis(analyses=['yoy_degradation'])
+            components = rd_analysis.sensor_filter_components
+        else:
+            rd_analysis.clearsky_analysis(analyses=['yoy_degradation'])
+            components = rd_analysis.clearsky_filter_components
+
+    # NaN values set to False
+    assert not components['ad_hoc_filter'].iloc[10]
+    assert components.drop(components.index[10])['ad_hoc_filter'].all()
+
+
 def test_cell_temperature_model_invalid(sensor_parameters):
     wind = pd.Series(0, index=sensor_parameters['pv'].index)
     sensor_parameters.pop('temperature_model')

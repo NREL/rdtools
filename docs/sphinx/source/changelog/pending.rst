@@ -27,6 +27,9 @@ Enhancements
 * A new parameter ``outlier_factor`` was added to soiling functions and methods to
   enable better control of cleaning event detection. (:pull:`199`)
 
+* Add ``sensor_filter_components`` and ``clearsky_filter_components`` to
+  :py:class:`~rdtools.analysis_chains.TrendAnalysis` (:issue:`236`, :pull:`263`)
+
 
 Bug fixes
 ---------

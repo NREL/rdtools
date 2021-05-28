@@ -379,7 +379,14 @@ class TrendAnalysis():
         -------
         None
         '''
-        bool_filter = True
+        # Combining filters is non-trivial because of the possibility of index
+        # mismatch.  Adding columns to an existing dataframe performs a left index
+        # join, but probably we actually want an outer join.  We can get an outer
+        # join by keeping this as a dictionary and converting it to a dataframe all
+        # at once.  However, we add a default value of True, with the same index as
+        # energy_normalized, so that the output is still correct even when all
+        # filters have been disabled.
+        filter_components = {'default': pd.Series(True, index=energy_normalized.index)}
 
         if case == 'sensor':
             poa = self.poa_global
@@ -391,19 +398,19 @@ class TrendAnalysis():
         if 'normalized_filter' in self.filter_params:
             f = filtering.normalized_filter(
                 energy_normalized, **self.filter_params['normalized_filter'])
-            bool_filter = bool_filter & f
+            filter_components['normalized_filter'] = f
         if 'poa_filter' in self.filter_params:
             if poa is None:
                 raise ValueError('poa must be available to use poa_filter')
             f = filtering.poa_filter(poa, **self.filter_params['poa_filter'])
-            bool_filter = bool_filter & f
+            filter_components['poa_filter'] = f
         if 'tcell_filter' in self.filter_params:
             if cell_temp is None:
                 raise ValueError(
                     'Cell temperature must be available to use tcell_filter')
             f = filtering.tcell_filter(
                 cell_temp, **self.filter_params['tcell_filter'])
-            bool_filter = bool_filter & f
+            filter_components['tcell_filter'] = f
         if 'clip_filter' in self.filter_params:
             if self.pv_power is None:
                 raise ValueError('PV power (not energy) is required for the clipping filter. '
@@ -411,22 +418,43 @@ class TrendAnalysis():
                                  'instantiation, or explicitly assign TrendAnalysis.pv_power.')
             f = filtering.clip_filter(
                 self.pv_power, **self.filter_params['clip_filter'])
-            bool_filter = bool_filter & f
-        if 'ad_hoc_filter' in self.filter_params:
-            if self.filter_params['ad_hoc_filter'] is not None:
-                bool_filter = bool_filter & self.filter_params['ad_hoc_filter']
+            filter_components['clip_filter'] = f
         if case == 'clearsky':
             if self.poa_global is None or self.poa_global_clearsky is None:
-                raise ValueError('Both poa_global and poa_global_clearsky must be available to do clearsky '
-                                 'filtering with csi_filter')
+                raise ValueError('Both poa_global and poa_global_clearsky must be available to '
+                                 'do clearsky filtering with csi_filter')
             f = filtering.csi_filter(
                 self.poa_global, self.poa_global_clearsky, **self.filter_params['csi_filter'])
-            bool_filter = bool_filter & f
+            filter_components['csi_filter'] = f
 
+        # note: the previous implementation using the & operator treated NaN
+        # filter values as False, so we do the same here for consistency:
+        filter_components = pd.DataFrame(filter_components).fillna(False)
+
+        # apply special checks to ad_hoc_filter, as it is likely more prone to user error
+        if self.filter_params.get('ad_hoc_filter', None) is not None:
+            ad_hoc_filter = self.filter_params['ad_hoc_filter']
+
+            if ad_hoc_filter.isnull().any():
+                warnings.warn('ad_hoc_filter contains NaN values; setting to False (excluding)')
+                ad_hoc_filter = ad_hoc_filter.fillna(False)
+
+            if not filter_components.index.equals(ad_hoc_filter.index):
+                warnings.warn('ad_hoc_filter index does not match index of other filters; missing '
+                              'values will be set to True (kept). Align the index with the index '
+                              'of the filter_components attribute to prevent this warning')
+                ad_hoc_filter = ad_hoc_filter.reindex(filter_components.index).fillna(True)
+
+            filter_components['ad_hoc_filter'] = ad_hoc_filter
+
+        bool_filter = filter_components.all(axis=1)
+        filter_components = filter_components.drop(columns=['default'])
         if case == 'sensor':
             self.sensor_filter = bool_filter
+            self.sensor_filter_components = filter_components
         elif case == 'clearsky':
             self.clearsky_filter = bool_filter
+            self.clearsky_filter_components = filter_components
 
     def _filter_check(self, post_filter):
         '''
