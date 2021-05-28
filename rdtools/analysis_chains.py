@@ -430,13 +430,13 @@ class TrendAnalysis():
             ad_hoc_filter = self.filter_params['ad_hoc_filter']
 
             if ad_hoc_filter.isnull().any():
-                warnings.warn('ad_hoc_filter contains NaN values; setting to False')
+                warnings.warn('ad_hoc_filter contains NaN values; setting to False (excluding)')
                 ad_hoc_filter = ad_hoc_filter.fillna(False)
 
             if not filter_components.index.equals(ad_hoc_filter.index):
                 warnings.warn('ad_hoc_filter index does not match index of other filters; missing '
-                              'values will be set to True. Align the index with the index of the '
-                              'filter_components attribute to prevent this warning')
+                              'values will be set to True (kept). Align the index with the index '
+                              'of the filter_components attribute to prevent this warning')
                 ad_hoc_filter = ad_hoc_filter.reindex(filter_components.index).fillna(True)
 
             filter_components['ad_hoc_filter'] = ad_hoc_filter
