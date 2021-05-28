@@ -185,7 +185,6 @@ def test_filter_ad_hoc_warnings(workflow, sensor_parameters):
     assert components.drop(components.index[10])['ad_hoc_filter'].all()
 
 
-
 def test_cell_temperature_model_invalid(sensor_parameters):
     wind = pd.Series(0, index=sensor_parameters['pv'].index)
     sensor_parameters.pop('temperature_model')
