@@ -558,4 +558,4 @@ def xgboost_clip_filter(power_ac,
     final_clip = final_clip.reindex(index = power_ac.index,
                                   fill_value = False)
     final_clip = final_clip.fillna(True)    
-    return ~xgb_predictions
+    return ~final_clip
