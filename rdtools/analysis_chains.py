@@ -88,19 +88,19 @@ class TrendAnalysis():
             pv = normalization.interpolate(pv, interp_freq, max_timedelta)
             if poa_global is not None:
                 poa_global = normalization.interpolate(
-                    poa_global, interp_freq, max_timedelta)
+                    poa_global, pv.index, max_timedelta)
             if temperature_cell is not None:
                 temperature_cell = normalization.interpolate(
-                    temperature_cell, interp_freq, max_timedelta)
+                    temperature_cell, pv.index, max_timedelta)
             if temperature_ambient is not None:
                 temperature_ambient = normalization.interpolate(
-                    temperature_ambient, interp_freq, max_timedelta)
+                    temperature_ambient, pv.index, max_timedelta)
             if power_expected is not None:
                 power_expected = normalization.interpolate(
-                    power_expected, interp_freq, max_timedelta)
+                    power_expected, pv.index, max_timedelta)
             if isinstance(windspeed, pd.Series):
                 windspeed = normalization.interpolate(
-                    windspeed, interp_freq, max_timedelta)
+                    windspeed, pv.index, max_timedelta)
 
         if pv_input == 'power':
             self.pv_power = pv
@@ -169,25 +169,24 @@ class TrendAnalysis():
             Pandas Time Series or single numeric value.
 
         '''
-        interp_freq = self.interp_freq
         max_timedelta = self.max_timedelta
 
-        if interp_freq is not None:
+        if self.interp_freq is not None:
             if poa_global_clearsky is not None:
                 poa_global_clearsky = normalization.interpolate(
-                    poa_global_clearsky, interp_freq, max_timedelta)
+                    poa_global_clearsky, self.pv_energy.index, max_timedelta)
             if temperature_cell_clearsky is not None:
                 temperature_cell_clearsky = normalization.interpolate(
-                    temperature_cell_clearsky, interp_freq, max_timedelta)
+                    temperature_cell_clearsky, self.pv_energy.index, max_timedelta)
             if temperature_ambient_clearsky is not None:
                 temperature_ambient_clearsky = normalization.interpolate(
-                    temperature_ambient_clearsky, interp_freq, max_timedelta)
+                    temperature_ambient_clearsky, self.pv_energy.index, max_timedelta)
             if isinstance(pv_azimuth, (pd.Series, pd.DataFrame)):
                 pv_azimuth = normalization.interpolate(
-                    pv_azimuth, interp_freq, max_timedelta)
+                    pv_azimuth, self.pv_energy.index, max_timedelta)
             if isinstance(pv_tilt, (pd.Series, pd.DataFrame)):
                 pv_tilt = normalization.interpolate(
-                    pv_tilt, interp_freq, max_timedelta)
+                    pv_tilt, self.pv_energy.index, max_timedelta)
 
         self.pvlib_location = pvlib_location
         self.pv_azimuth = pv_azimuth
