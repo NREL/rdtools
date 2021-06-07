@@ -357,7 +357,7 @@ def logic_clip_filter(power_ac,
     # changes for clipping evaluation
     original_time_series_sampling_frequency = time_series_sampling_frequency
     power_copy = power_ac.copy()
-    # Drop duplciate indices
+    # Drop duplicate indices
     power_ac = pd.DataFrame(power_ac[~power_ac.index.duplicated(keep='first')])
     freq_string = str(time_series_sampling_frequency) + 'T'
     if time_series_sampling_frequency >= 10:
@@ -367,22 +367,22 @@ def logic_clip_filter(power_ac,
     # Therefore, the  data is resampled to a 15-minute median
     # before running the filter.
     if time_series_sampling_frequency < 10:
-        power_ac = power_ac.resample('15T').median()
+        power_ac = power_ac.resample('15T').mean()
         time_series_sampling_frequency = 15
     # If a value for roll_periods is not designated, the function uses
     # the current default logic to set the roll_periods value.
     if roll_periods is None:
         if (mounting_type == "single_axis_tracking") & \
-         (time_series_sampling_frequency < 30):
+          (time_series_sampling_frequency < 30):
             roll_periods = 5
         else:
             roll_periods = 3
     # Replace the lower 25% of daily data with NaN's
-    daily = 0.25 * power_ac.resample('D').max()
+    daily = 0.1 * power_ac.resample('D').max()
     power_ac['ten_percent_daily'] = daily.reindex(index=power_ac.index,
                                                   method='ffill')
     power_ac.loc[power_ac['value'] < power_ac['ten_percent_daily'],
-                 'value'] = np.nan
+                  'value'] = np.nan
     power_ac = power_ac['value']
     # Calculate the maximum rolling range for the power time series.
     rolling_range_max = _calculate_max_rolling_range(power_ac, roll_periods)
@@ -398,11 +398,11 @@ def logic_clip_filter(power_ac,
     # data.
     if (original_time_series_sampling_frequency < 10):
         power_ac = power_copy.copy()
-        clipping = clipping.reindex(index=power_copy.index,
+        clipping = clipping.reindex(index=power_ac.index,
                                     method='ffill')
         # Subset the series where clipping filter == True
         clip_pwr = power_ac[clipping]
-        clip_pwr = clip_pwr.reindex(index=power_copy.index,
+        clip_pwr = clip_pwr.reindex(index=power_ac.index,
                                     fill_value=np.nan)
         # Set any values within the clipping max + clipping min threshold
         # as clipping. This is done specifically for capturing the noise
@@ -410,10 +410,10 @@ def logic_clip_filter(power_ac,
         daily_mean = clip_pwr.resample('D').mean()
         daily_std = clip_pwr.resample('D').std()
         daily_clipping_max = daily_mean + 2 * daily_std
-        daily_clipping_max = daily_clipping_max.reindex(index=power_copy.index,
+        daily_clipping_max = daily_clipping_max.reindex(index=power_ac.index,
                                                         method='ffill')
         daily_clipping_min = daily_mean - 2 * daily_std
-        daily_clipping_min = daily_clipping_min.reindex(index=power_copy.index,
+        daily_clipping_min = daily_clipping_min.reindex(index=power_ac.index,
                                                         method='ffill')
     else:
         # Find the maximum and minimum power level where clipping is
@@ -423,16 +423,27 @@ def logic_clip_filter(power_ac,
                                     fill_value=np.nan)
         daily_clipping_max = clip_pwr.resample('D').max()
         daily_clipping_min = clip_pwr.resample('D').min()
-        daily_clipping_min = daily_clipping_min.reindex(index=power_copy.index,
+        daily_clipping_min = daily_clipping_min.reindex(index=power_ac.index,
                                                         method='ffill')
-        daily_clipping_max = daily_clipping_max.reindex(index=power_copy.index,
+        daily_clipping_max = daily_clipping_max.reindex(index=power_ac.index,
                                                         method='ffill')
-    power_ac = power_ac.reindex(index=power_copy.index,
-                                method='ffill')
     # Set all values to clipping that are between the maximum and minimum
     # power levels where clipping was found on a daily basis.
     final_clip = ((daily_clipping_min <= power_ac) &
-                  (power_ac <= daily_clipping_max)) | (power_ac.isna())
+                  (power_ac <= daily_clipping_max)) #| (power_ac.isna())
+    final_clip=final_clip.reindex(index=power_copy.index,
+                                   fill_value=False)
+    #Check for an overall clipping threshold that should apply to all data
+    clip_power=power_copy[final_clip]
+    power_copy = pd.DataFrame(power_copy)
+    clip_power = pd.DataFrame(clip_power)
+    final_clip = pd.DataFrame(final_clip)
+    upperbound_pct_diff = abs((power_copy.value.quantile(.99) - clip_power.value.quantile(.99))/
+                              ((power_copy.value.quantile(.99) + clip_power.value.quantile(.99))/2))
+    if upperbound_pct_diff < 0.01:
+        max_clip = power_copy.value >= power_copy.value.quantile(0.99)
+        final_clip = final_clip.value | max_clip
+    final_clip = final_clip.fillna(True)
     return ~final_clip
 
 
@@ -534,7 +545,17 @@ def xgboost_clip_filter(power_ac,
         power_ac_df).astype(bool))
     # Add datetime as an index
     xgb_predictions.index = power_ac_df.index
-    xgb_predictions = xgb_predictions.reindex(power_ac.index,
-                                              method='ffill')
-    xgb_predictions = xgb_predictions.fillna(True)
+    power_ac_df['xgb_predictions'] = xgb_predictions
+    power_ac_df_clipping = power_ac_df[power_ac_df['xgb_predictions'] == True]
+    #Add Matt's logic at the end, where we make everything between the 
+    #max and min values found for clipping each day as clipping
+    power_ac_df_clipping_min = power_ac_df_clipping['scaled_value'].resample('D').min()
+    daily_clipping_min = power_ac_df_clipping_min.reindex(index=power_ac_df.index,
+                                                          method='ffill')
+    final_clip = (daily_clipping_min <= power_ac_df['scaled_value']) & \
+                    (power_ac_df['percent_daily_max'] >= .98) & \
+                    (power_ac_df['scaled_value'] >= .25)
+    final_clip = final_clip.reindex(index = power_ac.index,
+                                  fill_value = False)
+    final_clip = final_clip.fillna(True)    
     return ~xgb_predictions
