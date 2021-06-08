@@ -553,7 +553,7 @@ def xgboost_clip_filter(power_ac,
     daily_clipping_min = power_ac_df_clipping_min.reindex(index=power_ac_df.index,
                                                           method='ffill')
     final_clip = (daily_clipping_min <= power_ac_df['scaled_value']) & \
-                    (power_ac_df['percent_daily_max'] >= .98) & \
+                    (power_ac_df['percent_daily_max'] >= .95) & \
                     (power_ac_df['scaled_value'] >= .25)
     final_clip = final_clip.reindex(index = power_ac.index,
                                   fill_value = False)
