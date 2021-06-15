@@ -287,6 +287,25 @@ def test_soiling_srr_non_daily_inputs(test_param):
         _ = SRRAnalysis(**kwargs)
 
 
+def test_soiling_srr_argument_checks(soiling_normalized_daily, soiling_insolation):
+    '''
+    Make sure various argument validation warnings and errors are raised
+    '''
+    kwargs = {
+        'energy_normalized_daily': soiling_normalized_daily,
+        'insolation_daily': soiling_insolation,
+        'reps': 10
+    }
+    with pytest.warns(UserWarning, match='An even value of day_scale was passed'):
+        _ = soiling_srr(day_scale=12, **kwargs)
+
+    with pytest.raises(ValueError, match='clean_criterion must be one of'):
+        _ = soiling_srr(clean_criterion='bad', **kwargs)
+
+    with pytest.raises(ValueError, match='Invalid method specification'):
+        _ = soiling_srr(method='bad', **kwargs)
+
+
 # ###########################
 # annual_soiling_ratios tests
 # ###########################
