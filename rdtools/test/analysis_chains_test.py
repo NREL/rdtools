@@ -247,8 +247,8 @@ def test_clearsky_analysis(clearsky_analysis):
     ci = yoy_results['rd_confidence_interval']
     rd = yoy_results['p50_rd']
     print(ci)
-    assert -4.73 == pytest.approx(rd, abs=1e-2)
-    assert [-4.74, -4.72] == pytest.approx(ci, abs=1e-2)
+    assert -4.70 == pytest.approx(rd, abs=1e-2)
+    assert [-4.71, -4.69] == pytest.approx(ci, abs=1e-2)
 
 
 def test_clearsky_analysis_optional(clearsky_analysis, clearsky_parameters, clearsky_optional):
@@ -259,8 +259,8 @@ def test_clearsky_analysis_optional(clearsky_analysis, clearsky_parameters, clea
     ci = yoy_results['rd_confidence_interval']
     rd = yoy_results['p50_rd']
     print(f'ci:{ci}')
-    assert -4.73 == pytest.approx(rd, abs=1e-2)
-    assert [-4.74, -4.72] == pytest.approx(ci, abs=1e-2)
+    assert -4.70 == pytest.approx(rd, abs=1e-2)
+    assert [-4.71, -4.69] == pytest.approx(ci, abs=1e-2)
 
 
 @pytest.fixture
