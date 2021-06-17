@@ -204,7 +204,9 @@ class TrendAnalysis():
         Parameters
         ----------
         times : pandas.DateTimeIndex
-            times on for which to calculate clearsky poa
+            times on for which to calculate clearsky poa.  If not provided then
+            it will be simulated at 1-minute frequency and averaged to match the
+            index of self.poa_global
         rescale : bool
             Whether to attempt to rescale clearsky irradiance to measured
         kwargs :
@@ -214,17 +216,18 @@ class TrendAnalysis():
         -------
         None
         '''
+        aggregate = False
         if times is None:
-            times = self.poa_global.index
+            times = pd.date_range(self.poa_global.index.min(), self.poa_global.index.max(),
+                                  freq='1min')
+            aggregate = True
+
         if self.pvlib_location is None:
             raise ValueError(
                 'pvlib location must be provided using set_clearsky()')
         if self.pv_tilt is None or self.pv_azimuth is None:
             raise ValueError(
                 'pv_tilt and pv_azimuth must be provided using set_clearsky()')
-        if rescale is True and not times.equals(self.poa_global.index):
-            raise ValueError(
-                'rescale=True can only be used when clearsky poa is on same index as poa')
 
         loc = self.pvlib_location
         sun = loc.get_solarposition(times)
@@ -242,7 +245,17 @@ class TrendAnalysis():
             **kwargs)
         clearsky_poa = clearsky_poa['poa_global']
 
+        if aggregate:
+            interval_id = pd.Series(range(len(self.poa_global)), index=self.poa_global.index)
+            interval_id = interval_id.reindex(times).bfill()
+            clearsky_poa = clearsky_poa.groupby(interval_id).mean()
+            clearsky_poa.index = self.poa_global.index
+
         if rescale is True:
+            if not clearsky_poa.index.equals(self.poa_global.index):
+                raise ValueError(
+                    'rescale=True can only be used when clearsky poa is on same index as poa')
+
             clearsky_poa = normalization.irradiance_rescale(
                 self.poa_global, clearsky_poa, method='iterative')
 
