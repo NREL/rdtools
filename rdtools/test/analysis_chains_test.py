@@ -78,6 +78,48 @@ def sensor_analysis_exp_power(sensor_parameters):
     return rd_analysis
 
 
+def test_interpoloation(basic_parameters, degradation_trend):
+
+    power = degradation_trend
+    shifted_index = power.index + pd.to_timedelta('8 minutes')
+
+    poa_global = power * 1000
+    poa_global.index = shifted_index
+
+    temperature_ambient = power * 0 + 25
+    temperature_ambient.index = shifted_index
+
+    temperature_cell = power * 0 + 25
+    temperature_cell.index = shifted_index
+
+    windspeed = power * 0 + 25
+    windspeed.index = shifted_index
+
+    power_expected = power.copy()
+    power_expected.index = shifted_index
+
+    basic_parameters['pv'] = power
+    basic_parameters['poa_global'] = poa_global
+    basic_parameters['temperature_ambient'] = temperature_ambient
+    basic_parameters['temperature_cell'] = temperature_cell
+    basic_parameters['windspeed'] = windspeed
+    basic_parameters['power_expected'] = power_expected
+    basic_parameters['interp_freq'] = 'H'
+
+    rd_analysis = TrendAnalysis(**basic_parameters)
+
+    pd.testing.assert_index_equal(rd_analysis.pv_energy.index,
+                                  rd_analysis.poa_global.index[1:])
+    pd.testing.assert_index_equal(rd_analysis.pv_energy.index,
+                                  rd_analysis.temperature_ambient.index[1:])
+    pd.testing.assert_index_equal(rd_analysis.pv_energy.index,
+                                  rd_analysis.temperature_cell.index[1:])
+    pd.testing.assert_index_equal(rd_analysis.pv_energy.index,
+                                  rd_analysis.windspeed.index[1:])
+    pd.testing.assert_index_equal(rd_analysis.pv_energy.index,
+                                  rd_analysis.power_expected.index[1:])
+
+
 def test_sensor_analysis(sensor_analysis):
     yoy_results = sensor_analysis.results['sensor']['yoy_degradation']
     rd = yoy_results['p50_rd']
