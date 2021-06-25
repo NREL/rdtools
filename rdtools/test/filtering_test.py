@@ -190,7 +190,7 @@ def test_xgboost_clip_filter(generate_power_time_series_no_clipping,
     ''' Unit tests for XGBoost clipping filter.'''
     # Test the time series where the data isn't clipped
     power_no_datetime_index_nc, power_datetime_index_nc = \
-        generate_power_time_series_no_clipping()
+        generate_power_time_series_no_clipping
     # Test that a Type Error is raised when a pandas series
     # without a datetime index is used.
     pytest.raises(TypeError,  xgboost_clip_filter,
@@ -206,11 +206,11 @@ def test_xgboost_clip_filter(generate_power_time_series_no_clipping,
     # Generate 1-minute interval data, run it through the function, and
     # check that the associated data returned is 1-minute
     power_datetime_index_one_min_intervals = \
-        generate_power_time_series_one_min_intervals()
+        generate_power_time_series_one_min_intervals
     mask_one_min = xgboost_clip_filter(power_datetime_index_one_min_intervals)
     # Generate irregular interval data, and run it through the XGBoost model
     power_datetime_index_irregular = \
-        generate_power_time_series_irregular_intervals()
+        generate_power_time_series_irregular_intervals
     # Check that the returned time series index for XGBoost is the same
     # as the passed time series index
     mask_irregular = xgboost_clip_filter(power_datetime_index_irregular)
@@ -234,7 +234,7 @@ def test_clip_filter(generate_power_time_series_no_clipping):
     ''' Unit tests for inverter clipping filter.'''
     # Create a time series to test
     power_no_datetime_index_nc, power_datetime_index_nc = \
-        generate_power_time_series_no_clipping()
+        generate_power_time_series_no_clipping
     # Check that the master wrapper defaults to the
     # quantile_clip_filter_function.
     # Note: Power is expected to be Series object because clip_filter makes
