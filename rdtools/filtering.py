@@ -563,5 +563,5 @@ def xgboost_clip_filter(power_ac,
                     (power_ac_df['scaled_value'] >= .25)
     final_clip = final_clip.reindex(index = power_ac.index,
                                   fill_value = False)
-    final_clip = final_clip.fillna(True)    
+    final_clip = final_clip.fillna(True)
     return ~final_clip
