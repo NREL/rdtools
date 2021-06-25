@@ -553,7 +553,7 @@ def xgboost_clip_filter(power_ac,
     # Add datetime as an index
     xgb_predictions.index = power_ac_df.index
     power_ac_df['xgb_predictions'] = xgb_predictions
-    power_ac_df_clipping = power_ac_df[power_ac_df['xgb_predictions'] == True]
+    power_ac_df_clipping = power_ac_df[power_ac_df['xgb_predictions']]
     # Make everything between the
     # max and min values found for clipping each day as clipping
     power_ac_df_clipping_min = power_ac_df_clipping['scaled_value']\
