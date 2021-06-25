@@ -385,7 +385,7 @@ def logic_clip_filter(power_ac,
     power_ac['ten_percent_daily'] = daily.reindex(index=power_ac.index,
                                                   method='ffill')
     power_ac.loc[power_ac['value'] < power_ac['ten_percent_daily'],
-                  'value'] = np.nan
+                 'value'] = np.nan
     power_ac = power_ac['value']
     # Calculate the maximum rolling range for the power time series.
     rolling_range_max = _calculate_max_rolling_range(power_ac, roll_periods)
@@ -433,16 +433,17 @@ def logic_clip_filter(power_ac,
     # Set all values to clipping that are between the maximum and minimum
     # power levels where clipping was found on a daily basis.
     final_clip = ((daily_clipping_min <= power_ac) &
-                  (power_ac <= daily_clipping_max)) #| (power_ac.isna())
-    final_clip=final_clip.reindex(index=power_copy.index,
-                                   fill_value=False)
-    #Check for an overall clipping threshold that should apply to all data
-    clip_power=power_copy[final_clip]
+                  (power_ac <= daily_clipping_max))
+    final_clip = final_clip.reindex(index=power_copy.index, fill_value=False)
+    # Check for an overall clipping threshold that should apply to all data
+    clip_power = power_copy[final_clip]
     power_copy = pd.DataFrame(power_copy)
     clip_power = pd.DataFrame(clip_power)
     final_clip = pd.DataFrame(final_clip)
-    upperbound_pct_diff = abs((power_copy.value.quantile(.99) - clip_power.value.quantile(.99))/
-                              ((power_copy.value.quantile(.99) + clip_power.value.quantile(.99))/2))
+    upperbound_pct_diff = abs((power_copy.value.quantile(.99) -
+                              clip_power.value.quantile(.99)) /
+                              ((power_copy.value.quantile(.99) +
+                                clip_power.value.quantile(.99))/2))
     if upperbound_pct_diff < 0.01:
         max_clip = power_copy.value >= power_copy.value.quantile(0.99)
         final_clip = final_clip.value | max_clip
@@ -475,7 +476,7 @@ def xgboost_clip_filter(power_ac,
     """
     # Throw a warning that this is still an experimental filter
     warnings.warn("The XGBoost filter is an experimental clipping filter "
-                  "that is still under development. Use at your own risk!")    
+                  "that is still under development. Use at your own risk!")
     # Load in the XGBoost model
     xgboost_clipping_model = _load_xgboost_clipping_model()
     # Format the power time series
@@ -553,15 +554,16 @@ def xgboost_clip_filter(power_ac,
     xgb_predictions.index = power_ac_df.index
     power_ac_df['xgb_predictions'] = xgb_predictions
     power_ac_df_clipping = power_ac_df[power_ac_df['xgb_predictions'] == True]
-    #Add Matt's logic at the end, where we make everything between the 
-    #max and min values found for clipping each day as clipping
-    power_ac_df_clipping_min = power_ac_df_clipping['scaled_value'].resample('D').min()
-    daily_clipping_min = power_ac_df_clipping_min.reindex(index=power_ac_df.index,
-                                                          method='ffill')
+    # Make everything between the
+    # max and min values found for clipping each day as clipping
+    power_ac_df_clipping_min = power_ac_df_clipping['scaled_value']\
+        .resample('D').min()
+    daily_clipping_min = power_ac_df_clipping_min.reindex(
+                                        index=power_ac_df.index,
+                                        method='ffill')
     final_clip = (daily_clipping_min <= power_ac_df['scaled_value']) & \
-                    (power_ac_df['percent_daily_max'] >= .95) & \
-                    (power_ac_df['scaled_value'] >= .25)
-    final_clip = final_clip.reindex(index = power_ac.index,
-                                  fill_value = False)
+        (power_ac_df['percent_daily_max'] >= .95) & \
+        (power_ac_df['scaled_value'] >= .25)
+    final_clip = final_clip.reindex(index=power_ac.index, fill_value=False)
     final_clip = final_clip.fillna(True)
     return ~final_clip
