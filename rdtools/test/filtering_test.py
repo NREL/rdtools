@@ -179,7 +179,8 @@ def test_logic_clip_filter(generate_power_time_series_no_clipping,
     assert (mask_nc.all(axis=None)) & (len(filtered_c) == 96) & \
         (mask_one_min.index.to_series().diff()[1:] ==
          np.timedelta64(60, 's')).all() & \
-        (mask_irregular.index == power_datetime_index_irregular.index).all()
+        (mask_irregular.index == power_datetime_index_irregular.index)\
+            .all(axis=None)
 
 
 def test_xgboost_clip_filter(generate_power_time_series_no_clipping,
@@ -225,7 +226,8 @@ def test_xgboost_clip_filter(generate_power_time_series_no_clipping,
     assert (mask_nc.all()) & (len(filtered_c) == 96) & \
         (mask_one_min.index.to_series().diff()[1:] ==
          np.timedelta64(60, 's')).all() & \
-        (mask_irregular.index == power_datetime_index_irregular.index).all()
+        (mask_irregular.index == power_datetime_index_irregular.index)\
+        .all(axis=None)
 
 
 def test_clip_filter(generate_power_time_series_no_clipping):
@@ -267,7 +269,7 @@ def test_clip_filter(generate_power_time_series_no_clipping):
     pytest.raises(TypeError, clip_filter, power_datetime_index_nc,
                   'xgboost',
                   rolling_range_max_cutoff=0.3)
-    assert ((expected_result_quantile == filtered_quantile).all()) &\
+    assert ((expected_result_quantile == filtered_quantile).all(axis=None)) &\
         (filtered_xgboost.all(axis=None)) & (filtered_logic.all(axis=None))
 
 
