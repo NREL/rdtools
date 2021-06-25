@@ -27,7 +27,7 @@ def normalized_filter(energy_normalized, energy_normalized_low=0.01,
 
     Parameters
     ----------
-    energy_normalized : pd.Series
+    energy_normalized : pandas.Series
         Normalized energy measurements.
     energy_normalized_low : float, default 0.01
         The lower bound of acceptable values.
@@ -36,7 +36,7 @@ def normalized_filter(energy_normalized, energy_normalized_low=0.01,
 
     Returns
     -------
-    pd.Series
+    pandas.Series
         Boolean Series of whether the given measurement is within acceptable
         bounds.
     '''
@@ -56,7 +56,7 @@ def poa_filter(poa_global, poa_global_low=200, poa_global_high=1200):
 
     Parameters
     ----------
-    poa_global : pd.Series
+    poa_global : pandas.Series
         POA irradiance measurements.
     poa_global_low : float, default 200
         The lower bound of acceptable values.
@@ -65,7 +65,7 @@ def poa_filter(poa_global, poa_global_low=200, poa_global_high=1200):
 
     Returns
     -------
-    pd.Series
+    pandas.Series
         Boolean Series of whether the given measurement is within acceptable
         bounds.
     '''
@@ -79,7 +79,7 @@ def tcell_filter(temperature_cell, temperature_cell_low=-50,
 
     Parameters
     ----------
-    temperature_cell : pd.Series
+    temperature_cell : pandas.Series
         Cell temperature measurements.
     temperature_cell_low : float, default -50
         The lower bound of acceptable values.
@@ -88,7 +88,7 @@ def tcell_filter(temperature_cell, temperature_cell_low=-50,
 
     Returns
     -------
-    pd.Series
+    pandas.Series
         Boolean Series of whether the given measurement is within acceptable
         bounds.
     '''
@@ -177,14 +177,14 @@ def quantile_clip_filter(power_ac, quantile=0.98):
 
     Parameters
     ----------
-    power_ac : pd.Series
+    power_ac : pandas.Series
         AC power in Watts
     quantile : float, default 0.98
         Value for upper threshold quantile
 
     Returns
     -------
-    pd.Series
+    pandas.Series
         Boolean Series of whether the given measurement is below 99% of the
         quantile filter.
     '''

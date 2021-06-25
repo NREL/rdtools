@@ -1,5 +1,6 @@
 ************************
 Pending
+
 ************************
 
 API Changes
@@ -26,25 +27,30 @@ Enhancements
 * A new parameter ``outlier_factor`` was added to soiling functions and methods to
   enable better control of cleaning event detection. (:pull:`199`)
 
+* Add ``sensor_filter_components`` and ``clearsky_filter_components`` to
+  :py:class:`~rdtools.analysis_chains.TrendAnalysis` (:issue:`236`, :pull:`263`)
+
 
 Bug fixes
 ---------
 * Unexpected recoveries when using ``method=random_clean`` in the soiling module
   have been fixed. (:pull:`199`, :issue:`234`)
 
+* Improved NaN pixel handling in
+  :py:func:`~rdtools.clearsky_temperature.get_clearsky_tamb` (:pull:`274`).
 
 Testing
 -------
 
-
-Documentation
--------------
 
 
 Documentation
 -------------
 * Corrected a typo in the :py:class:`~rdtools.analysis_chains.TrendAnalysis`
   docstring (:pull:`264`)
+* Enabled intersphinx so that function parameter types are linked to external
+  documentation (:pull:`258`)
+
 
 Enhancements
 ------------
@@ -52,11 +58,15 @@ Enhancements
 * Add new function :py:func:`~rdtools.filtering.xgboost_clip_filter` (:pull:`200`).
 * Add new function :py:func:`~rdtools.plotting.tune_clip_filter_plot` (:pull:`200`).
 
+
 Requirements
 ------------
-* Update specified versions of bleach in
-  ``docs/notebook_requirements.txt`` and matplotlib
-  in ``requirements.txt`` (:pull:`261`)
+* Update pinned versions of several dependencies (:pull:`261`, :pull:`275`):
+
+    * ``requirements.txt``: cached-property, certifi, chardet, idna, matplotlib, numpy, Pillow,
+      requests, urllib
+    * ``docs/notebook_requirements.txt``: argon2-cffi, bleach, cffi, colorama, Jinja2,
+      numexpr, packaging, pycparser, pygments
 
 
 Example Updates
@@ -65,8 +75,9 @@ Example Updates
 
 Contributors
 ------------
-* Kirsten Perry (:ghuser:`kperrynrel`)
+* Mark Mikofski (:ghuser:`mikofski`)
 * Kevin Anderson (:ghuser:`kanderso-nrel`)
 * Michael Deceglie (:ghuser:`mdeceglie`)
 * Matthew Muller (:ghuser:`matt14muller`)
+* Kirsten Perry (:ghuser:`kperrynrel`)
 
