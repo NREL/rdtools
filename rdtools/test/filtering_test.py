@@ -268,7 +268,7 @@ def test_clip_filter(generate_power_time_series_no_clipping):
                   'xgboost',
                   rolling_range_max_cutoff=0.3)
     assert ((expected_result_quantile == filtered_quantile).all()) &\
-        (filtered_xgboost[2:].all()) & (filtered_logic[3:].all())
+        (filtered_xgboost.all(axis=None)) & (filtered_logic.all(axis=None))
 
 
 def test_normalized_filter_default():
