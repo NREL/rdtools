@@ -146,7 +146,7 @@ def test_logic_clip_filter(generate_power_time_series_no_clipping,
                   power_datetime_index_nc, 'not_fixed')
     # Test that an error is thrown when there are 10 or fewer readings
     # in the time series
-    pytest.raises(Exception,  xgboost_clip_filter,
+    pytest.raises(Exception,  logic_clip_filter,
                   power_datetime_index_nc[:9])
     # Generate 1-minute interval data, run it through the function, and
     # check that the associated data returned is 1-minute
@@ -161,7 +161,9 @@ def test_logic_clip_filter(generate_power_time_series_no_clipping,
     warnings.simplefilter("always")
     with warnings.catch_warnings(record=True) as w:
         logic_clip_filter(power_datetime_index_irregular)
-        assert len(w) == 1
+        # Warning thrown for it being an experimental filter + irregular
+        # sampling frequency.
+        assert len(w) == 2
     # Check that the returned time series index for the logic filter is
     # the same as the passed time series index
     mask_irregular = logic_clip_filter(power_datetime_index_irregular)
@@ -174,7 +176,7 @@ def test_logic_clip_filter(generate_power_time_series_no_clipping,
     # Expect 4 values in middle of sequence to be clipped (when x=50)
     mask_c = logic_clip_filter(power_datetime_index_c)
     filtered_c = power_datetime_index_c[mask_c]
-    assert (mask_nc[3:].all()) & (len(filtered_c) == 90) & \
+    assert (mask_nc.all(axis=None)) & (len(filtered_c) == 96) & \
         (mask_one_min.index.to_series().diff()[1:] ==
          np.timedelta64(60, 's')).all() & \
         (mask_irregular.index == power_datetime_index_irregular.index).all()
@@ -220,7 +222,7 @@ def test_xgboost_clip_filter(generate_power_time_series_no_clipping,
     # Expect 4 values in middle of sequence to be clipped (when x=50)
     mask_c = xgboost_clip_filter(power_datetime_index_c)
     filtered_c = power_datetime_index_c[mask_c]
-    assert (mask_nc[2:].all()) & (len(filtered_c) == 94) & \
+    assert (mask_nc.all()) & (len(filtered_c) == 96) & \
         (mask_one_min.index.to_series().diff()[1:] ==
          np.timedelta64(60, 's')).all() & \
         (mask_irregular.index == power_datetime_index_irregular.index).all()
