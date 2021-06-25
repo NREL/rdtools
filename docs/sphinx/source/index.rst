@@ -222,6 +222,20 @@ The most frequently used functions are:
      Outputs: DataFrame of production loss and availability metrics
      '''
 
+Documentation
+-------------
+
+Some RdTools function parameters can take one of several types.  For example,
+the ``albedo`` parameter of :py:class:`TrendAnalysis` can be a static value like
+``0.2`` or a time-varying ``pandas.Series``.  To indicate that a parameter can
+take one of several types, we document them using the type alises listed below:
+
+.. glossary ::
+
+   ``numeric``
+      scalar or ``pandas.Series``. Typically int or float dtype.
+
+
 Citing RdTools
 --------------
 

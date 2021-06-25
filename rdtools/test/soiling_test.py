@@ -50,8 +50,8 @@ def test_soiling_srr(soiling_normalized_daily, soiling_insolation, soiling_times
     expected_means = expected_means[['soiling_rate', 'soiling_rate_low', 'soiling_rate_high',
                                      'inferred_start_loss', 'inferred_end_loss',
                                      'length', 'valid']]
-    pd.testing.assert_series_equal(expected_means, soiling_info['soiling_interval_summary'].mean(),
-                                   check_exact=False, check_less_precise=6)
+    actual_means = soiling_info['soiling_interval_summary'][expected_means.index].mean()
+    pd.testing.assert_series_equal(expected_means, actual_means, check_exact=False)
 
     # Check soiling_info['soiling_ratio_perfect_clean']
     pd.testing.assert_index_equal(soiling_info['soiling_ratio_perfect_clean'].index, soiling_times,
@@ -63,6 +63,7 @@ def test_soiling_srr(soiling_normalized_daily, soiling_insolation, soiling_times
         'soiling_info["soiling_ratio_perfect_clean"] not a pandas series'
 
 
+@pytest.mark.filterwarnings("ignore:.*20% or more of the daily data.*:UserWarning")
 @pytest.mark.parametrize('method,expected_sr',
                          [('random_clean', 0.936177),
                           ('half_norm_clean', 0.915093),
@@ -115,7 +116,7 @@ def test_soiling_srr_dayscale(soiling_normalized_daily, soiling_insolation):
     with pytest.raises(NoValidIntervalError):
         np.random.seed(1977)
         sr, sr_ci, soiling_info = soiling_srr(soiling_normalized_daily, soiling_insolation,
-                                              confidence_level=68.2, reps=10, day_scale=90)
+                                              confidence_level=68.2, reps=10, day_scale=91)
 
 
 def test_soiling_srr_clean_threshold(soiling_normalized_daily, soiling_insolation):
@@ -184,7 +185,8 @@ def test_soiling_srr_negative_step(soiling_normalized_daily, soiling_insolation)
     stepped_daily.iloc[37:] = stepped_daily.iloc[37:] - 0.1
 
     np.random.seed(1977)
-    sr, sr_ci, soiling_info = soiling_srr(stepped_daily, soiling_insolation, reps=10)
+    with pytest.warns(UserWarning, match='20% or more of the daily data'):
+        sr, sr_ci, soiling_info = soiling_srr(stepped_daily, soiling_insolation, reps=10)
 
     assert list(soiling_info['soiling_interval_summary']['valid'].values) == [True, False, True],\
         'Soiling interval validity differs from expected when a large negative step\
@@ -196,8 +198,9 @@ def test_soiling_srr_negative_step(soiling_normalized_daily, soiling_insolation)
 
 def test_soiling_srr_max_negative_slope_error(soiling_normalized_daily, soiling_insolation):
     np.random.seed(1977)
-    sr, sr_ci, soiling_info = soiling_srr(soiling_normalized_daily, soiling_insolation, reps=10,
-                                          max_relative_slope_error=45.0)
+    with pytest.warns(UserWarning, match='20% or more of the daily data'):
+        sr, sr_ci, soiling_info = soiling_srr(soiling_normalized_daily, soiling_insolation,
+                                              reps=10, max_relative_slope_error=45.0)
 
     assert list(soiling_info['soiling_interval_summary']['valid'].values) == [True, True, False],\
         'Soiling interval validity differs from expected when max_relative_slope_error=45.0'
@@ -215,7 +218,8 @@ def test_soiling_srr_with_nan_interval(soiling_normalized_daily, soiling_insolat
     normalized_corrupt = soiling_normalized_daily.copy()
     normalized_corrupt[26:50] = np.nan
     np.random.seed(1977)
-    sr, sr_ci, soiling_info = soiling_srr(normalized_corrupt, soiling_insolation, reps=reps)
+    with pytest.warns(UserWarning, match='20% or more of the daily data'):
+        sr, sr_ci, soiling_info = soiling_srr(normalized_corrupt, soiling_insolation, reps=reps)
     assert 0.948792 == pytest.approx(sr, abs=1e-6),\
         'Soiling ratio different from expected value when an entire interval was NaN'
 

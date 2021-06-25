@@ -31,7 +31,7 @@ def degradation_summary_plots(yoy_rd, yoy_ci, yoy_info, normalized_yield,
           a probability given by the ``exceedance_prob`` parameter in
           the :py:func:`.degradation.degradation_year_on_year`
 
-    normalized_yield : pd.Series
+    normalized_yield : pandas.Series
          PV yield data that is normalized, filtered and aggregated
     hist_xmin : float, optional
         lower limit of x-axis for the histogram
@@ -58,7 +58,7 @@ def degradation_summary_plots(yoy_rd, yoy_ci, yoy_info, normalized_yield,
 
     Returns
     -------
-    fig : matplotlib Figure
+    fig : matplotlib.figure.Figure
         Figure with two axes
     '''
 
@@ -128,7 +128,7 @@ def soiling_monte_carlo_plot(soiling_info, normalized_yield, point_alpha=0.5,
     soiling_info : dict
         ``soiling_info`` returned by :py:meth:`.soiling.SRRAnalysis.run` or
         :py:func:`.soiling.soiling_srr`.
-    normalized_yield : pd.Series
+    normalized_yield : pandas.Series
         PV yield data that is normalized, filtered and aggregated.
     point_alpha : float, default 0.5
         tranparency of the ``normalized_yield`` points
@@ -148,7 +148,7 @@ def soiling_monte_carlo_plot(soiling_info, normalized_yield, point_alpha=0.5,
 
     Returns
     -------
-    fig : matplotlib Figure
+    fig : matplotlib.figure.Figure
     '''
     warnings.warn(
         'The soiling module is currently experimental. The API, results, '
@@ -191,7 +191,7 @@ def soiling_interval_plot(soiling_info, normalized_yield, point_alpha=0.5,
     soiling_info : dict
         ``soiling_info`` returned by :py:meth:`.soiling.SRRAnalysis.run` or
         :py:func:`.soiling.soiling_srr`.
-    normalized_yield : pd.Series
+    normalized_yield : pandas.Series
         PV yield data that is normalized, filtered and aggregated.
     point_alpha : float, default 0.5
         tranparency of the ``normalized_yield`` points
@@ -208,7 +208,7 @@ def soiling_interval_plot(soiling_info, normalized_yield, point_alpha=0.5,
 
     Returns
     -------
-    fig : matplotlib Figure
+    fig : matplotlib.figure.Figure
     '''
     warnings.warn(
         'The soiling module is currently experimental. The API, results, '
@@ -248,7 +248,7 @@ def soiling_rate_histogram(soiling_info, bins=None):
 
     Returns
     -------
-    fig : matplotlib Figure
+    fig : matplotlib.figure.Figure
     '''
     warnings.warn(
         'The soiling module is currently experimental. The API, results, '
@@ -335,28 +335,28 @@ def availability_summary_plots(power_system, power_subsystem, loss_total,
 
     Parameters
     ----------
-    power_system : pd.Series
+    power_system : pandas.Series
         Timeseries total system power.
 
-    power_subsystem : pd.DataFrame
+    power_subsystem : pandas.DataFrame
         Timeseries power data, one column per subsystem.
 
-    loss_total : pd.Series
+    loss_total : pandas.Series
         Timeseries system lost power.
 
-    energy_cumulative : pd.Series
+    energy_cumulative : pandas.Series
         Timeseries system cumulative energy.
 
-    energy_expected_rescaled : pd.Series
+    energy_expected_rescaled : pandas.Series
         Timeseries expected energy, rescaled to match actual energy. This
         reflects interval energy, not cumulative.
 
-    outage_info : pd.DataFrame
+    outage_info : pandas.DataFrame
         A dataframe with information about system outages.
 
     Returns
     -------
-    fig : matplotlib Figure
+    fig : matplotlib.figure.Figure
 
     See Also
     --------

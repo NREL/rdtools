@@ -60,6 +60,7 @@ def test_degradation_summary_plots(degradation_info):
     # test defaults
     result = degradation_summary_plots(yoy_rd, yoy_ci, yoy_info, power)
     assert_isinstance(result, plt.Figure)
+    plt.close('all')
 
 
 def test_degradation_summary_plots_kwargs(degradation_info):
@@ -79,6 +80,7 @@ def test_degradation_summary_plots_kwargs(degradation_info):
     result = degradation_summary_plots(yoy_rd, yoy_ci, yoy_info, power,
                                        **kwargs)
     assert_isinstance(result, plt.Figure)
+    plt.close('all')
 
 
 @pytest.fixture()
@@ -105,6 +107,7 @@ def test_soiling_monte_carlo_plot(soiling_normalized_daily, soiling_info):
     # test defaults
     result = soiling_monte_carlo_plot(soiling_info, soiling_normalized_daily)
     assert_isinstance(result, plt.Figure)
+    plt.close('all')
 
 
 def test_soiling_monte_carlo_plot_kwargs(soiling_normalized_daily,
@@ -122,12 +125,14 @@ def test_soiling_monte_carlo_plot_kwargs(soiling_normalized_daily,
     result = soiling_monte_carlo_plot(soiling_info, soiling_normalized_daily,
                                       **kwargs)
     assert_isinstance(result, plt.Figure)
+    plt.close('all')
 
 
 def test_soiling_interval_plot(soiling_normalized_daily, soiling_info):
     # test defaults
     result = soiling_interval_plot(soiling_info, soiling_normalized_daily)
     assert_isinstance(result, plt.Figure)
+    plt.close('all')
 
 
 def test_soiling_interval_plot_kwargs(soiling_normalized_daily, soiling_info):
@@ -143,12 +148,14 @@ def test_soiling_interval_plot_kwargs(soiling_normalized_daily, soiling_info):
     result = soiling_interval_plot(soiling_info, soiling_normalized_daily,
                                    **kwargs)
     assert_isinstance(result, plt.Figure)
+    plt.close('all')
 
 
 def test_soiling_rate_histogram(soiling_info):
     # test defaults
     result = soiling_rate_histogram(soiling_info)
     assert_isinstance(result, plt.Figure)
+    plt.close('all')
 
 
 def test_soiling_rate_histogram_kwargs(soiling_info):
@@ -158,6 +165,7 @@ def test_soiling_rate_histogram_kwargs(soiling_info):
     )
     result = soiling_rate_histogram(soiling_info, **kwargs)
     assert_isinstance(result, plt.Figure)
+    plt.close('all')
 
 
 @pytest.fixture()
@@ -217,6 +225,7 @@ def test_availability_summary_plots(availability_analysis_object):
         aa.energy_cumulative, aa.energy_expected_rescaled,
         aa.outage_info)
     assert_isinstance(result, plt.Figure)
+    plt.close('all')
 
 
 def test_availability_summary_plots_empty(availability_analysis_object):
@@ -228,3 +237,4 @@ def test_availability_summary_plots_empty(availability_analysis_object):
         aa.energy_cumulative, aa.energy_expected_rescaled,
         empty)
     assert_isinstance(result, plt.Figure)
+    plt.close('all')

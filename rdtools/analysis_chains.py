@@ -18,28 +18,29 @@ class TrendAnalysis():
 
     Parameters
     ----------
-    pv : pd.Series
+    pv : pandas.Series
         Right-labeled time series PV energy or power. If energy, should *not*
         be cumulative, but only for preceding time step.
-    poa_global : pd.Series
+    poa_global : pandas.Series
         Right-labeled time series measured plane of array irradiance in W/m^2
-    temperature_cell : pd.Series
+    temperature_cell : pandas.Series
         Right-labeled time series of cell temperature in Celsius. In practice,
         back of module temperature works as a good approximation.
-    temperature_ambient : pd.Series
+    temperature_ambient : pandas.Series
         Right-labeled time Series of ambient temperature in Celsius
-    gamma_pdc : numeric
+    gamma_pdc : float
         Fractional PV power temperature coefficient
-    aggregation_freq : str or Pandas DateOffset object
+    aggregation_freq : str or pandas.tseries.offsets.DateOffset
         Pandas frequency specification with which to aggregate normalized PV
-        data for analysis
+        data for analysis. For more information, see
+        https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#dateoffset-objects
     pv_input : str
         'power' or 'energy' to specify type of input used for pv parameter
-    windspeed : pd.Series or numeric
-        Right-labeled Pandas Time Series or single numeric value indicating wind 
+    windspeed : numeric
+        Right-labeled Pandas Time Series or single numeric value indicating wind
         speed in m/s for use in calculating cell temperature from ambient default
         value of 0 neglects the wind in this calculation
-    power_expected : pd.Series
+    power_expected : pandas.Series
         Right-labeled time series of expected PV power. (Note: Expected energy
         is not supported.)
     temperature_model : str or dict
@@ -48,15 +49,17 @@ class TrendAnalysis():
         for sapm model in pvlib.temperature.TEMPERATURE_MODEL_PARAMETERS. If dict, must
         have keys 'a', 'b', 'deltaT'. See pvlib.temperature.sapm_cell() documentation
         for details.
-    power_dc_rated : numeric
+    power_dc_rated : float
         Nameplate DC rating of PV array in Watts. If omitted, pv output will be internally
         normalized in the normalization step based on it's 95th percentile
         (see TrendAnalysis._pvwatts_norm() source).
-    interp_freq : str or Pandas DateOffset object
+    interp_freq : str or pandas.tseries.offsets.DateOffset
         Pandas frequency specification used to interpolate all pandas.Series
         passed at instantiation. We recommend using the natural frequency of the
         data, rather than up or down sampling. Analysis requires regular time series.
-    max_timedelta : datetime.timedelta
+        For more information see
+        https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#dateoffset-objects
+    max_timedelta : pandas.timedelta
         The maximum gap in the data to be interpolated/integrated across when
         interpolating or calculating energy from power
 
@@ -147,20 +150,23 @@ class TrendAnalysis():
         pvlib_location : pvlib.location.Location
             Used for calculating clearsky temperature and irradiance
         pv_azimuth : numeric
-            Azimuth of PV array in degrees from north
+            Azimuth of PV array in degrees from north. Can be right-labeled
+            Pandas Time Series or single numeric value.
         pv_tilt : numeric
-            Tilt of PV array in degrees from horizontal
-        poa_global_clearsky : pd.Series
+            Tilt of PV array in degrees from horizontal. Can be right-labeled
+            Pandas Time Series or single numeric value.
+        poa_global_clearsky : pandas.Series
             Right-labeled time Series of clear-sky plane of array irradiance
-        temperature_cell_clearsky : pd.Series
+        temperature_cell_clearsky : pandas.Series
             Right-labeled time series of cell temperature in clear-sky conditions
             in Celsius. In practice, back of module temperature works as a good
             approximation.
-        temperature_ambient_clearsky : pd.Series
+        temperature_ambient_clearsky : pandas.Series
             Right-label time series of ambient temperature in clear sky conditions
             in Celsius
         albedo : numeric
-            Albedo to be used in irradiance transposition calculations
+            Albedo to be used in irradiance transposition calculations. Can be right-labeled
+            Pandas Time Series or single numeric value.
 
         '''
         interp_freq = self.interp_freq
@@ -373,7 +379,14 @@ class TrendAnalysis():
         -------
         None
         '''
-        bool_filter = True
+        # Combining filters is non-trivial because of the possibility of index
+        # mismatch.  Adding columns to an existing dataframe performs a left index
+        # join, but probably we actually want an outer join.  We can get an outer
+        # join by keeping this as a dictionary and converting it to a dataframe all
+        # at once.  However, we add a default value of True, with the same index as
+        # energy_normalized, so that the output is still correct even when all
+        # filters have been disabled.
+        filter_components = {'default': pd.Series(True, index=energy_normalized.index)}
 
         if case == 'sensor':
             poa = self.poa_global
@@ -385,19 +398,19 @@ class TrendAnalysis():
         if 'normalized_filter' in self.filter_params:
             f = filtering.normalized_filter(
                 energy_normalized, **self.filter_params['normalized_filter'])
-            bool_filter = bool_filter & f
+            filter_components['normalized_filter'] = f
         if 'poa_filter' in self.filter_params:
             if poa is None:
                 raise ValueError('poa must be available to use poa_filter')
             f = filtering.poa_filter(poa, **self.filter_params['poa_filter'])
-            bool_filter = bool_filter & f
+            filter_components['poa_filter'] = f
         if 'tcell_filter' in self.filter_params:
             if cell_temp is None:
                 raise ValueError(
                     'Cell temperature must be available to use tcell_filter')
             f = filtering.tcell_filter(
                 cell_temp, **self.filter_params['tcell_filter'])
-            bool_filter = bool_filter & f
+            filter_components['tcell_filter'] = f
         if 'clip_filter' in self.filter_params:
             if self.pv_power is None:
                 raise ValueError('PV power (not energy) is required for the clipping filter. '
@@ -405,22 +418,43 @@ class TrendAnalysis():
                                  'instantiation, or explicitly assign TrendAnalysis.pv_power.')
             f = filtering.clip_filter(
                 self.pv_power, **self.filter_params['clip_filter'])
-            bool_filter = bool_filter & f
-        if 'ad_hoc_filter' in self.filter_params:
-            if self.filter_params['ad_hoc_filter'] is not None:
-                bool_filter = bool_filter & self.filter_params['ad_hoc_filter']
+            filter_components['clip_filter'] = f
         if case == 'clearsky':
             if self.poa_global is None or self.poa_global_clearsky is None:
-                raise ValueError('Both poa_global and poa_global_clearsky must be available to do clearsky '
-                                 'filtering with csi_filter')
+                raise ValueError('Both poa_global and poa_global_clearsky must be available to '
+                                 'do clearsky filtering with csi_filter')
             f = filtering.csi_filter(
                 self.poa_global, self.poa_global_clearsky, **self.filter_params['csi_filter'])
-            bool_filter = bool_filter & f
+            filter_components['csi_filter'] = f
 
+        # note: the previous implementation using the & operator treated NaN
+        # filter values as False, so we do the same here for consistency:
+        filter_components = pd.DataFrame(filter_components).fillna(False)
+
+        # apply special checks to ad_hoc_filter, as it is likely more prone to user error
+        if self.filter_params.get('ad_hoc_filter', None) is not None:
+            ad_hoc_filter = self.filter_params['ad_hoc_filter']
+
+            if ad_hoc_filter.isnull().any():
+                warnings.warn('ad_hoc_filter contains NaN values; setting to False (excluding)')
+                ad_hoc_filter = ad_hoc_filter.fillna(False)
+
+            if not filter_components.index.equals(ad_hoc_filter.index):
+                warnings.warn('ad_hoc_filter index does not match index of other filters; missing '
+                              'values will be set to True (kept). Align the index with the index '
+                              'of the filter_components attribute to prevent this warning')
+                ad_hoc_filter = ad_hoc_filter.reindex(filter_components.index).fillna(True)
+
+            filter_components['ad_hoc_filter'] = ad_hoc_filter
+
+        bool_filter = filter_components.all(axis=1)
+        filter_components = filter_components.drop(columns=['default'])
         if case == 'sensor':
             self.sensor_filter = bool_filter
+            self.sensor_filter_components = filter_components
         elif case == 'clearsky':
             self.clearsky_filter = bool_filter
+            self.clearsky_filter_components = filter_components
 
     def _filter_check(self, post_filter):
         '''
@@ -607,8 +641,9 @@ class TrendAnalysis():
 
         Parameters
         ---------
-        analyses : list of str
-            Analyses to perform, valid entries are 'yoy_degradation' and 'srr_soiling'
+        analyses : list
+            Analyses to perform as a list of strings. Valid entries are 'yoy_degradation'
+            and 'srr_soiling'
         yoy_kwargs : dict
             kwargs to pass to degradation.degradation_year_on_year()
         srr_kwargs : dict
@@ -642,8 +677,9 @@ class TrendAnalysis():
 
         Parameters
         ---------
-        analyses : list of str
-            Analyses to perform, valid entries are 'yoy_degradation' and 'srr_soiling'
+        analyses : list
+            Analyses to perform as a list of strings. Valid entries are 'yoy_degradation'
+            and 'srr_soiling'
         yoy_kwargs : dict
             kwargs to pass to degradation.degradation_year_on_year()
         srr_kwargs : dict
@@ -803,7 +839,7 @@ class TrendAnalysis():
         case: str
             The plane of array irradiance type to plot, allowed values are
             'sensor' and 'clearsky'
-        alpha : numeric
+        alpha : float
             transparency of the scatter plot
         kwargs :
             Extra parameters passed to matplotlib.pyplot.axis.plot()
