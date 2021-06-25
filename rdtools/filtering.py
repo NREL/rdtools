@@ -344,6 +344,9 @@ def logic_clip_filter(power_ac,
         True values delineate non-clipping periods, and False values delineate
         clipping periods.
     '''
+    # Throw a warning that this is still an experimental filter
+    warnings.warn("The logic-based filter is an experimental clipping filter "
+                  "that is still under development. Use at your own risk!")
     # Format the power time series
     power_ac, index_name = _format_clipping_time_series(power_ac,
                                                         mounting_type)
@@ -470,6 +473,9 @@ def xgboost_clip_filter(power_ac,
         True values delineate non-clipping periods, and False values delineate
         clipping periods.
     """
+    # Throw a warning that this is still an experimental filter
+    warnings.warn("The XGBoost filter is an experimental clipping filter "
+                  "that is still under development. Use at your own risk!")    
     # Load in the XGBoost model
     xgboost_clipping_model = _load_xgboost_clipping_model()
     # Format the power time series
