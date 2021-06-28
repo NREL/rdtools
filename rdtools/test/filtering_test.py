@@ -224,11 +224,12 @@ def test_xgboost_clip_filter(generate_power_time_series_no_clipping,
     # Expect 4 values in middle of sequence to be clipped (when x=50)
     mask_c = xgboost_clip_filter(power_datetime_index_c)
     filtered_c = power_datetime_index_c[mask_c]
-    assert bool(mask_nc.all(axis=None)) & (len(filtered_c) == 96) & \
-        bool((mask_one_min.index.to_series().diff()[1:] ==
-              np.timedelta64(60, 's')).all(axis=None)) & \
-        bool((mask_irregular.index == power_datetime_index_irregular.index)
-             .all(axis=None))
+    assert bool(mask_nc.all(axis=None))
+    assert (len(filtered_c) == 96)
+    assert bool((mask_one_min.index.to_series().diff()[1:] ==
+                 np.timedelta64(60, 's')).all(axis=None))
+    assert bool((mask_irregular.index == power_datetime_index_irregular.index)
+                .all(axis=None))
 
 
 def test_clip_filter(generate_power_time_series_no_clipping):
@@ -273,7 +274,7 @@ def test_clip_filter(generate_power_time_series_no_clipping):
     assert bool((expected_result_quantile == filtered_quantile)
                 .all(axis=None))
     assert bool(filtered_xgboost.all(axis=None))
-    assert bool(filtered_logic.all(axis=None))
+    assert filtered_logic.all().bool()
 
 
 def test_normalized_filter_default():
