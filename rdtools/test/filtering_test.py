@@ -274,7 +274,7 @@ def test_clip_filter(generate_power_time_series_no_clipping):
     assert bool((expected_result_quantile == filtered_quantile)
                 .all(axis=None))
     assert bool(filtered_xgboost.all(axis=None))
-    assert filtered_logic.all().bool()
+    assert bool(filtered_logic.all(axis=None))
 
 
 def test_normalized_filter_default():

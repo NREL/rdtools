@@ -447,6 +447,7 @@ def logic_clip_filter(power_ac,
     if upperbound_pct_diff < 0.01:
         max_clip = power_copy.value >= power_copy.value.quantile(0.99)
         final_clip = final_clip.value | max_clip
+        final_clip = pd.DataFrame(final_clip)
     final_clip = final_clip.fillna(True)
     final_clip = pd.Series(final_clip['value'])
     return ~final_clip
