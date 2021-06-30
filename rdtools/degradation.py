@@ -265,7 +265,7 @@ def degradation_year_on_year(energy_normalized, recenter=True,
     yoy_result = df.yoy.dropna()
     df_right = df.set_index(df.dt_right).drop_duplicates('dt_right')
     df['usage_of_points'] = df.yoy.notnull().astype(int).add(
-                df_right.yoy.notnull().astype(int),fill_value=0)
+                df_right.yoy.notnull().astype(int), fill_value=0)
 
     calc_info = {
         'YoY_values': yoy_result,

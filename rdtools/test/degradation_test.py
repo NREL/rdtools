@@ -152,9 +152,9 @@ class DegradationTestCase(unittest.TestCase):
 
             # actual rd is within confidence interval
             self.assertTrue(100.0 * self.rd > r2[1][0] and 100.0 * self.rd < r2[1][1])
-            
+
     def test_usage_of_points(self):
-        
+
         funcName = sys._getframe().f_code.co_name
         logging.debug('Running {}'.format(funcName))
 
