@@ -362,9 +362,6 @@ def logic_clip_filter(power_ac,
     power_copy = power_ac.copy()
     # Drop duplicate indices
     power_ac = pd.DataFrame(power_ac[~power_ac.index.duplicated(keep='first')])
-    freq_string = str(time_series_sampling_frequency) + 'T'
-    if time_series_sampling_frequency >= 10:
-        power_ac = power_ac.resample(freq_string).asfreq()
     # High frequency data (less than 10 minutes) has demonstrated
     # potential to have more noise than low frequency  data.
     # Therefore, the  data is resampled to a 15-minute median
@@ -437,18 +434,12 @@ def logic_clip_filter(power_ac,
     final_clip = final_clip.reindex(index=power_copy.index, fill_value=False)
     # Check for an overall clipping threshold that should apply to all data
     clip_power = power_copy[final_clip]
-    power_copy = pd.DataFrame(power_copy)
-    clip_power = pd.DataFrame(clip_power)
-    final_clip = pd.DataFrame(final_clip)
-    upperbound_pct_diff = abs((power_copy.value.quantile(.99) -
-                              clip_power.value.quantile(.99)) /
-                              ((power_copy.value.quantile(.99) +
-                                clip_power.value.quantile(.99))/2))
-    if upperbound_pct_diff < 0.01:
-        max_clip = power_copy.value >= power_copy.value.quantile(0.99)
-        final_clip = final_clip.value | max_clip
-        final_clip = pd.DataFrame(final_clip)
-    final_clip = final_clip.fillna(True)
+    upper_bound_pdiff = abs((power_ac.quantile(.99) - clip_power.quantile(.99))
+                            / ((power_ac.quantile(.99) +
+                                clip_power.quantile(.99))/2))
+    if upper_bound_pdiff < 0.01:
+        max_clip = (power_copy >= power_copy.quantile(0.99))
+        final_clip = (final_clip | max_clip)
     final_clip = pd.Series(final_clip['value'])
     return ~final_clip
 
