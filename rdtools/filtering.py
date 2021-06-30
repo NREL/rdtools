@@ -440,7 +440,6 @@ def logic_clip_filter(power_ac,
     if upper_bound_pdiff < 0.01:
         max_clip = (power_copy >= power_copy.quantile(0.99))
         final_clip = (final_clip | max_clip)
-    final_clip = pd.Series(final_clip['value'])
     return ~final_clip
 
 
