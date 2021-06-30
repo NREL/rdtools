@@ -9,7 +9,7 @@ def degradation_summary_plots(yoy_rd, yoy_ci, yoy_info, normalized_yield,
                               hist_xmin=None, hist_xmax=None, bins=None,
                               scatter_ymin=None, scatter_ymax=None,
                               plot_color=None, summary_title=None,
-                              scatter_alpha=0.5):
+                              scatter_alpha=0.5, detailed=False):
     '''
     Create plots (scatter plot and histogram) that summarize degradation
     analysis results.
@@ -48,6 +48,9 @@ def degradation_summary_plots(yoy_rd, yoy_ci, yoy_info, normalized_yield,
         overall title for summary plots
     scatter_alpha : float, default 0.5
         Transparency of the scatter plot
+    detailed : bool, optional
+        Color code points by the number of times they get used in the Rd
+        distribution.  Default color: 2 times. Green: 1 time. Red: 0 times.
 
     Note
     ----
@@ -66,6 +69,9 @@ def degradation_summary_plots(yoy_rd, yoy_ci, yoy_info, normalized_yield,
         bins = len(yoy_values) // 40
 
     bins = int(min(bins, len(yoy_values)))
+
+    if plot_color is None:
+        plot_color = 'C0'
 
     # Calculate the degradation line
     start = normalized_yield.index[0]
@@ -92,8 +98,14 @@ def degradation_summary_plots(yoy_rd, yoy_ci, yoy_info, normalized_yield,
     ax2.set_xlabel('Annual degradation (%)')
 
     renormalized_yield = normalized_yield / yoy_info['renormalizing_factor']
-    ax1.plot(renormalized_yield.index, renormalized_yield, 'o',
-             color=plot_color, alpha=scatter_alpha)
+    if detailed:
+        f = lambda x: {0:'red',1:'green',2:plot_color}[x]
+        colors = yoy_info['usage_of_points'].apply(f)
+    else:
+        colors = plot_color
+    ax1.scatter(renormalized_yield.index, renormalized_yield, 
+             c=colors, alpha=scatter_alpha)
+    
     ax1.plot(x, y, 'k--', linewidth=3)
     ax1.set_xlabel('Date')
     ax1.set_ylabel('Renormalized energy')
