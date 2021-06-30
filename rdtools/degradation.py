@@ -269,7 +269,8 @@ def degradation_year_on_year(energy_normalized, recenter=True,
 
     calc_info = {
         'YoY_values': yoy_result,
-        'renormalizing_factor': renorm
+        'renormalizing_factor': renorm,
+        'usage_of_points': df['usage_of_points']
     }
 
     if not len(yoy_result):
