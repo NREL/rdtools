@@ -99,8 +99,7 @@ def degradation_summary_plots(yoy_rd, yoy_ci, yoy_info, normalized_yield,
 
     renormalized_yield = normalized_yield / yoy_info['renormalizing_factor']
     if detailed:
-        def f(x): return {0: 'red', 1: 'green', 2: plot_color}[x]
-        colors = yoy_info['usage_of_points'].apply(f)
+        colors = yoy_info['usage_of_points'].map({0: 'red', 1: 'green', 2: plot_color})
     else:
         colors = plot_color
     ax1.scatter(renormalized_yield.index, renormalized_yield,
