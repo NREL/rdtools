@@ -238,6 +238,8 @@ def _format_clipping_time_series(power_ac, mounting_type):
     if index_name is None:
         index_name = 'datetime'
         power_ac = power_ac.rename_axis(index_name)
+    # Sort the time series in case it is out of order
+    power_ac = power_ac.sort_index()
     return power_ac, power_ac.index.name
 
 
@@ -361,7 +363,14 @@ def logic_clip_filter(power_ac,
     original_time_series_sampling_frequency = time_series_sampling_frequency
     power_copy = power_ac.copy()
     # Drop duplicate indices
-    power_ac = pd.DataFrame(power_ac[~power_ac.index.duplicated(keep='first')])
+    power_ac = power_ac.reset_index().drop_duplicates(
+        subset=power_ac.index.name,
+        keep='first').set_index(power_ac.index.name)
+    freq_string = str(time_series_sampling_frequency) + 'T'
+    if time_series_sampling_frequency >= 10:
+        power_ac = power_ac.asfreq(freq_string)
+    # if time_series_sampling_frequency >= 10:
+    #     power_ac = power_ac.asfreq(freq_string)
     # High frequency data (less than 10 minutes) has demonstrated
     # potential to have more noise than low frequency  data.
     # Therefore, the  data is resampled to a 15-minute median
@@ -429,18 +438,86 @@ def logic_clip_filter(power_ac,
                                                         method='ffill')
     # Set all values to clipping that are between the maximum and minimum
     # power levels where clipping was found on a daily basis.
+    clipping_difference = (daily_clipping_max -
+                           daily_clipping_min)/daily_clipping_max
     final_clip = ((daily_clipping_min <= power_ac) &
-                  (power_ac <= daily_clipping_max))
+                  (power_ac <= daily_clipping_max) &
+                  (clipping_difference <= 0.02))
     final_clip = final_clip.reindex(index=power_copy.index, fill_value=False)
     # Check for an overall clipping threshold that should apply to all data
     clip_power = power_copy[final_clip]
     upper_bound_pdiff = abs((power_ac.quantile(.99) - clip_power.quantile(.99))
                             / ((power_ac.quantile(.99) +
-                                clip_power.quantile(.99))/2))
+                               clip_power.quantile(.99))/2))
     if upper_bound_pdiff < 0.01:
-        max_clip = (power_copy >= power_copy.quantile(0.99))
+        max_clip = (power_ac >= power_ac.quantile(0.99))
         final_clip = (final_clip | max_clip)
     return ~final_clip
+
+
+def _calculate_xgboost_model_features(df, sampling_frequency):
+    """
+    Calculate the features that will be fed into the XGBoost model.
+
+    Parameters
+    ----------
+    df: pd.DataFrame
+        Pandas dataframe, containing the AC power time series under the
+        'value' column.
+    sampling_frequency: Int
+        Sampling frequency of the AC power time series.
+
+    Returns
+    -------
+    pd.DataFrame
+        Pandas dataframe, containing all of the features in the XGBoost
+        model.
+    """
+    # Min-max normalize
+    max_min_diff = (df['value'].max() - df['value'].min())
+    df['scaled_value'] = (df['value'] - df['value'].min()) / max_min_diff
+    if sampling_frequency < 10:
+        rolling_window = 5
+    elif (sampling_frequency >= 10) and (sampling_frequency < 60):
+        rolling_window = 3
+    else:
+        rolling_window = 2
+    df['rolling_average'] = df['scaled_value']\
+        .rolling(window=rolling_window, center=True).mean()
+    # First-order derivative
+    df['first_order_derivative_backward'] = df.scaled_value.diff()
+    df['first_order_derivative_forward'] = df.scaled_value.shift(-1).diff()
+    # First order derivative for the rolling average
+    df['first_order_derivative_backward_rolling_avg'] = \
+        df.rolling_average.diff()
+    df['first_order_derivative_forward_rolling_avg'] = \
+        df.rolling_average.shift(-1).diff()
+    # Calculate the maximum rolling range for the power time series.
+    df['deriv_max'] = _calculate_max_rolling_range(
+        power_ac=df['scaled_value'], roll_periods=rolling_window)
+    # Get the max value for the day and see how each value compares
+    df['date'] = list(pd.to_datetime(pd.Series(df.index)).dt.date)
+    df['daily_max'] = df.groupby(['date'])['scaled_value'].transform(max)
+    # Get percentage of daily max
+    df['percent_daily_max'] = df['scaled_value'] / (df['daily_max'] + .00001)
+    # Get the standard deviation, median and mean of the first order
+    # derivative over the rolling_window period
+    df['deriv_backward_rolling_stdev'] = \
+        df['first_order_derivative_backward']\
+        .rolling(window=rolling_window, center=True).std()
+    df['deriv_backward_rolling_mean'] = \
+        df['first_order_derivative_backward']\
+        .rolling(window=rolling_window, center=True).mean()
+    df['deriv_backward_rolling_median'] = \
+        df['first_order_derivative_backward']\
+        .rolling(window=rolling_window, center=True).median()
+    df['deriv_backward_rolling_max'] = \
+        df['first_order_derivative_backward']\
+        .rolling(window=rolling_window, center=True).max()
+    df['deriv_backward_rolling_min'] = \
+        df['first_order_derivative_backward']\
+        .rolling(window=rolling_window, center=True).min()
+    return df
 
 
 def xgboost_clip_filter(power_ac,
@@ -483,47 +560,22 @@ def xgboost_clip_filter(power_ac,
     freq_string = str(sampling_frequency) + "T"
     # Min-max normalize
     # Resample the series based on the most common sampling frequency
-    power_ac_interpolated = power_ac.resample(freq_string)\
-        .asfreq().interpolate()
-    # Convert the Pandas series to a dataframe, with mounting_type as an
-    # additional column.
+    power_ac_interpolated = power_ac.asfreq(freq_string)
+    # Convert the Pandas series to a dataframe.
     power_ac_df = power_ac_interpolated.to_frame()
-    power_ac_df['mounting_config'] = mounting_type
     # Get the sampling frequency (as a continuous feature variable)
     power_ac_df['sampling_frequency'] = sampling_frequency
-    # Min-max normalize
-    max_min_diff = (power_ac_df['value'].max() - power_ac_df['value'].min())
-    power_ac_df['scaled_value'] = (power_ac_df['value'] -
-                                   power_ac_df['value'].min()) / max_min_diff
-    if sampling_frequency < 10:
-        rolling_window = 5
-    elif (sampling_frequency >= 10) and (sampling_frequency < 60):
-        rolling_window = 3
-    else:
-        rolling_window = 2
-    power_ac_df['rolling_average'] = power_ac_df['scaled_value']\
-        .rolling(window=rolling_window, center=True).mean()
-    # First-order derivative
-    power_ac_df['first_order_derivative_backward'] = power_ac_df\
-        .scaled_value.diff()
-    power_ac_df['first_order_derivative_forward'] = power_ac_df\
-        .scaled_value.shift(-1).diff()
-    # First order derivative for the rolling average
-    power_ac_df['first_order_derivative_backward_rolling_avg'] = \
-        power_ac_df.rolling_average.diff()
-    power_ac_df['first_order_derivative_forward_rolling_avg'] = \
-        power_ac_df.rolling_average.shift(-1).diff()
-    # Calculate the maximum rolling range for the power time series.
-    power_ac_df['deriv_max'] = _calculate_max_rolling_range(
-        power_ac=power_ac_df['scaled_value'], roll_periods=rolling_window)
-    # Get the max value for the day and see how each value compares
-    power_ac_df['date'] = list(pd.to_datetime(pd.Series(
-        power_ac_df.index)).dt.date)
-    power_ac_df['daily_max'] = power_ac_df.groupby(
-        ['date'])['scaled_value'].transform(max)
-    # Get percentage of daily max
-    power_ac_df['percent_daily_max'] = power_ac_df['scaled_value'] \
-        / power_ac_df['daily_max']
+    # If the data sampling frequency of the series is more frequent than
+    # once every five minute, resample at 5-minute intervals before
+    # plugging into the model
+    if sampling_frequency < 5:
+        power_ac_df = power_ac_df.resample('5T').mean()
+        power_ac_df['sampling_frequency'] = 5
+    # Add mounting type as a column
+    power_ac_df['mounting_config'] = mounting_type
+    # Generate the features for the model.
+    power_ac_df = _calculate_xgboost_model_features(power_ac_df,
+                                                    sampling_frequency)
     # Convert single-axis tracking/fixed tilt to a boolean variable
     power_ac_df.loc[power_ac_df['mounting_config'] == "single_axis_tracking",
                     'mounting_config_bool'] = 1
@@ -537,25 +589,65 @@ def xgboost_clip_filter(power_ac,
                                'sampling_frequency',
                                'mounting_config_bool', 'scaled_value',
                                'rolling_average', 'daily_max',
-                               'percent_daily_max', 'deriv_max']].dropna()
+                               'percent_daily_max', 'deriv_max',
+                               'deriv_backward_rolling_stdev',
+                               'deriv_backward_rolling_mean',
+                               'deriv_backward_rolling_median',
+                               'deriv_backward_rolling_min',
+                               'deriv_backward_rolling_max']].dropna()
     # Run the power_ac_df dataframe through the XGBoost ML model,
     # and return boolean outputs
     xgb_predictions = pd.Series(xgboost_clipping_model.predict(
         power_ac_df).astype(bool))
     # Add datetime as an index
     xgb_predictions.index = power_ac_df.index
-    power_ac_df['xgb_predictions'] = xgb_predictions
-    power_ac_df_clipping = power_ac_df[power_ac_df['xgb_predictions']]
+    # Reindex with the original data index. Re-adjusts to original
+    # data frequency.
+    xgb_predictions = xgb_predictions.reindex(index=power_ac.index,
+                                              method='ffill')
+    # Regenerate the features with the original sampling frequency,
+    # if it is more frequent than once every 5 minutes.
+    if sampling_frequency < 5:
+        power_ac_df = power_ac_interpolated.to_frame()
+        power_ac_df = _calculate_xgboost_model_features(power_ac_df,
+                                                        sampling_frequency)
+    # Add back in XGB predictions for the original dtaframe
+    power_ac_df['xgb_predictions'] = xgb_predictions.astype(bool)
+    power_ac_df_clipping = power_ac_df[power_ac_df['xgb_predictions']
+                                       .fillna(False)]
     # Make everything between the
-    # max and min values found for clipping each day as clipping
+    # max and min values found for clipping each day as clipping.
+    power_ac_df_clipping_max = power_ac_df_clipping['scaled_value']\
+        .resample('D').max()
     power_ac_df_clipping_min = power_ac_df_clipping['scaled_value']\
         .resample('D').min()
-    daily_clipping_min = power_ac_df_clipping_min.reindex(
-                                        index=power_ac_df.index,
-                                        method='ffill')
-    final_clip = (daily_clipping_min <= power_ac_df['scaled_value']) & \
-        (power_ac_df['percent_daily_max'] >= .95) & \
-        (power_ac_df['scaled_value'] >= .25)
-    final_clip = final_clip.reindex(index=power_ac.index, fill_value=False)
-    final_clip = final_clip.fillna(True)
-    return ~final_clip
+    power_ac_df['daily_clipping_min'] = power_ac_df_clipping_min.reindex(
+        index=power_ac_df.index, method='ffill')
+    power_ac_df['daily_clipping_max'] = power_ac_df_clipping_max.reindex(
+        index=power_ac_df.index, method='ffill')
+    if sampling_frequency < 5:
+        power_ac_df['daily_clipping_max_threshold'] = \
+            (power_ac_df['daily_clipping_max'] * .97)
+        power_ac_df['clipping cutoff'] = \
+            power_ac_df[['daily_clipping_min',
+                         'daily_clipping_max_threshold']].max(axis=1)
+        final_clip = ((power_ac_df['clipping cutoff'] <=
+                       power_ac_df['scaled_value'])
+                      & (power_ac_df['percent_daily_max'] >= .9)
+                      & (power_ac_df['scaled_value'] >= .1))
+    else:
+        final_clip = ((power_ac_df['daily_clipping_min'] <=
+                       power_ac_df['scaled_value'])
+                      & (power_ac_df['percent_daily_max'] >= .95)
+                      & (power_ac_df['scaled_value'] >= .1))
+    final_clip = power_ac_df['xgb_predictions'].reindex(index=power_ac.index,
+                                                        fill_value=False)
+    # Check for an overall clipping threshold that should apply to all data
+    clip_power = power_ac[final_clip]
+    upper_bound_pdiff = abs((power_ac.quantile(.99) - clip_power.quantile(.99))
+                            / ((power_ac.quantile(.99) +
+                                clip_power.quantile(.99))/2))
+    if upper_bound_pdiff < 0.01:
+        max_clip = (power_ac >= power_ac.quantile(0.99))
+        final_clip = (final_clip | max_clip)
+    return ~(final_clip.astype(bool))
