@@ -1,5 +1,6 @@
 '''
-This module contains functions and classes for object-oriented end-to-end analysis
+This module contains functions and classes for object-oriented
+end-to-end analysis
 '''
 import pvlib
 import pandas as pd
@@ -830,5 +831,4 @@ class TrendAnalysis():
         ax.set_xlim(0, 1500)
         ax.set_xlabel('Irradiance (W/m$^2$)')
         ax.set_ylabel('PV Energy (Wh/timestep)')
-
         return fig
