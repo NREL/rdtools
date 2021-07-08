@@ -627,7 +627,7 @@ def xgboost_clip_filter(power_ac,
         index=power_ac_df.index, method='ffill')
     if sampling_frequency < 5:
         power_ac_df['daily_clipping_max_threshold'] = \
-            (power_ac_df['daily_clipping_max'] * .97)
+            (power_ac_df['daily_clipping_max'] * .96)
         power_ac_df['clipping cutoff'] = \
             power_ac_df[['daily_clipping_min',
                          'daily_clipping_max_threshold']].max(axis=1)
@@ -640,8 +640,7 @@ def xgboost_clip_filter(power_ac,
                        power_ac_df['scaled_value'])
                       & (power_ac_df['percent_daily_max'] >= .95)
                       & (power_ac_df['scaled_value'] >= .1))
-    final_clip = power_ac_df['xgb_predictions'].reindex(index=power_ac.index,
-                                                        fill_value=False)
+    final_clip = final_clip.reindex(index=power_ac.index, fill_value=False)
     # Check for an overall clipping threshold that should apply to all data
     clip_power = power_ac[final_clip]
     upper_bound_pdiff = abs((power_ac.quantile(.99) - clip_power.quantile(.99))
