@@ -1,10 +1,10 @@
 <img src="./docs/sphinx/source/_images/logo_horizontal_highres.png" width="500" alt="RdTools logo"/>
 
 Master branch: 
-[![Build Status](https://travis-ci.org/NREL/rdtools.svg?branch=master)](https://travis-ci.org/NREL/rdtools)  
+[![Build Status](https://github.com/NREL/rdtools/workflows/pytest/badge.svg?branch=master)](https://github.com/NREL/rdtools/actions?query=branch%3Amaster)  
 
 Development branch: 
-[![Build Status](https://travis-ci.org/NREL/rdtools.svg?branch=development)](https://travis-ci.org/NREL/rdtools)
+[![Build Status](https://github.com/NREL/rdtools/workflows/pytest/badge.svg?branch=development)](https://github.com/NREL/rdtools/actions?query=branch%3Adevelopment)
 
 RdTools is an open-source library to support reproducible technical analysis of
 time series data from photovoltaic energy systems. The library aims to provide

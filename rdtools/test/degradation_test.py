@@ -16,7 +16,7 @@ class DegradationTestCase(unittest.TestCase):
     @classmethod
     def get_corr_energy(cls, rd, input_freq):
 
-        #lock seed to make test deterministic
+        # lock seed to make test deterministic
         np.random.seed(0)
 
         daily_rd = rd / 365.0
@@ -137,10 +137,10 @@ class DegradationTestCase(unittest.TestCase):
             r1 = func(self.test_corr_energy[input_freq], confidence_level=ci1)
             r2 = func(self.test_corr_energy[input_freq], confidence_level=ci2)
 
-            logging.debug("func: {}, ci: {}, ({}) {} ({})"\
-                .format(str(func).split(' ')[1], ci1, r1[1][0], r1[0], r1[1][1]))
-            logging.debug("func: {}, ci: {}, ({}) {} ({})"\
-                .format(str(func).split(' ')[1], ci2, r2[1][0], r2[0], r2[1][1]))
+            logging.debug("func: {}, ci: {}, ({}) {} ({})"
+                          .format(str(func).split(' ')[1], ci1, r1[1][0], r1[0], r1[1][1]))
+            logging.debug("func: {}, ci: {}, ({}) {} ({})"
+                          .format(str(func).split(' ')[1], ci2, r2[1][0], r2[0], r2[1][1]))
 
             # lower limit is lower than median and upper limit is higher than median
             self.assertTrue(r1[0] > r1[1][0] and r1[0] < r1[1][1])

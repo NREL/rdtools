@@ -6,21 +6,13 @@ from rdtools.plotting import (
     degradation_summary_plots,
     soiling_monte_carlo_plot,
     soiling_interval_plot,
-    soiling_rate_histogram
+    soiling_rate_histogram,
+    availability_summary_plots,
 )
 import matplotlib.pyplot as plt
 import pytest
 
-# bring in soiling pytest fixtures
-from soiling_test import (
-    times, # can't rename this or else the others can't find it
-    normalized_daily as soiling_normalized_daily,
-    insolation as soiling_insolation,
-)
-
-
-def assert_isinstance(obj, klass):
-    assert isinstance(obj, klass), f'got {type(obj)}, expected {klass}'
+from conftest import assert_isinstance
 
 
 # can't import degradation fixtures because it's a unittest file.
@@ -161,4 +153,24 @@ def test_soiling_rate_histogram_kwargs(soiling_info):
         bins=10,
     )
     result = soiling_rate_histogram(soiling_info, **kwargs)
+    assert_isinstance(result, plt.Figure)
+
+
+def test_availability_summary_plots(availability_analysis_object):
+    aa = availability_analysis_object
+    result = availability_summary_plots(
+        aa.power_system, aa.power_subsystem, aa.loss_total,
+        aa.energy_cumulative, aa.energy_expected_rescaled,
+        aa.outage_info)
+    assert_isinstance(result, plt.Figure)
+
+
+def test_availability_summary_plots_empty(availability_analysis_object):
+    # empty outage_info
+    aa = availability_analysis_object
+    empty = aa.outage_info.iloc[:0, :]
+    result = availability_summary_plots(
+        aa.power_system, aa.power_subsystem, aa.loss_total,
+        aa.energy_cumulative, aa.energy_expected_rescaled,
+        empty)
     assert_isinstance(result, plt.Figure)

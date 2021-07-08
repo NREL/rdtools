@@ -87,8 +87,10 @@ def test_normalized_filter_default():
                                                      energy_normalized_high=1),
                                    pd.Series([False, False]))
 
-    pd.testing.assert_series_equal(normalized_filter(pd.Series([0.01 - 1e-16, 0.01 + 1e-16, 1e308])),
+    eps = 1e-16
+    pd.testing.assert_series_equal(normalized_filter(pd.Series([0.01 - eps, 0.01 + eps, 1e308])),
                                    pd.Series([False, True, True]))
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -1,6 +1,8 @@
 '''Functions for plotting degradation and soiling analysis results.'''
 
 import matplotlib.pyplot as plt
+import numpy as np
+import warnings
 
 
 def degradation_summary_plots(yoy_rd, yoy_ci, yoy_info, normalized_yield,
@@ -114,6 +116,11 @@ def soiling_monte_carlo_plot(soiling_info, normalized_yield, point_alpha=0.5,
     Create figure to visualize Monte Carlo of soiling profiles used in the SRR
     analysis.
 
+    .. warning::
+        The soiling module is currently experimental. The API, results,
+        and default behaviors may change in future releases (including MINOR
+        and PATCH releases) as the code matures.
+
     Parameters
     ----------
     soiling_info : dict
@@ -141,6 +148,11 @@ def soiling_monte_carlo_plot(soiling_info, normalized_yield, point_alpha=0.5,
     -------
     fig : matplotlib Figure
     '''
+    warnings.warn(
+        'The soiling module is currently experimental. The API, results, '
+        'and default behaviors may change in future releases (including MINOR '
+        'and PATCH releases) as the code matures.'
+    )
 
     fig, ax = plt.subplots()
     renormalized = normalized_yield / soiling_info['renormalizing_factor']
@@ -167,6 +179,11 @@ def soiling_interval_plot(soiling_info, normalized_yield, point_alpha=0.5,
     '''
     Create figure to visualize valid soiling profiles used in the SRR analysis.
 
+    .. warning::
+        The soiling module is currently experimental. The API, results,
+        and default behaviors may change in future releases (including MINOR
+        and PATCH releases) as the code matures.
+
     Parameters
     ----------
     soiling_info : dict
@@ -191,6 +208,11 @@ def soiling_interval_plot(soiling_info, normalized_yield, point_alpha=0.5,
     -------
     fig : matplotlib Figure
     '''
+    warnings.warn(
+        'The soiling module is currently experimental. The API, results, '
+        'and default behaviors may change in future releases (including MINOR '
+        'and PATCH releases) as the code matures.'
+    )
 
     sratio = soiling_info['soiling_ratio_perfect_clean']
     fig, ax = plt.subplots()
@@ -209,6 +231,11 @@ def soiling_rate_histogram(soiling_info, bins=None):
     '''
     Create histogram of soiling rates found in the SRR analysis.
 
+    .. warning::
+        The soiling module is currently experimental. The API, results,
+        and default behaviors may change in future releases (including MINOR
+        and PATCH releases) as the code matures.
+
     Parameters
     ----------
     soiling_info : dict
@@ -221,12 +248,120 @@ def soiling_rate_histogram(soiling_info, bins=None):
     -------
     fig : matplotlib Figure
     '''
+    warnings.warn(
+        'The soiling module is currently experimental. The API, results, '
+        'and default behaviors may change in future releases (including MINOR '
+        'and PATCH releases) as the code matures.'
+    )
 
     soiling_summary = soiling_info['soiling_interval_summary']
     fig, ax = plt.subplots()
-    ax.hist(100.0 * soiling_summary.loc[soiling_summary['valid'], 'slope'],
+    ax.hist(100.0 * soiling_summary.loc[soiling_summary['valid'], 'soiling_rate'],
             bins=bins)
     ax.set_xlabel('Soiling rate (%/day)')
     ax.set_ylabel('Count')
 
+    return fig
+
+
+def availability_summary_plots(power_system, power_subsystem, loss_total,
+                               energy_cumulative, energy_expected_rescaled,
+                               outage_info):
+    """
+    Create a figure summarizing the availability analysis results.
+
+    Because all of the parameters to this function are products of an
+    AvailabilityAnalysis object, it is usually easier to use
+    :py:meth:`.availability.AvailabilityAnalysis.plot` instead of running
+    this function manually.
+
+    .. warning::
+        The availability module is currently experimental. The API, results,
+        and default behaviors may change in future releases (including MINOR
+        and PATCH releases) as the code matures.
+
+    Parameters
+    ----------
+    power_system : pd.Series
+        Timeseries total system power.
+
+    power_subsystem : pd.DataFrame
+        Timeseries power data, one column per subsystem.
+
+    loss_total : pd.Series
+        Timeseries system lost power.
+
+    energy_cumulative : pd.Series
+        Timeseries system cumulative energy.
+
+    energy_expected_rescaled : pd.Series
+        Timeseries expected energy, rescaled to match actual energy. This
+        reflects interval energy, not cumulative.
+
+    outage_info : pd.DataFrame
+        A dataframe with information about system outages.
+
+    Returns
+    -------
+    fig : matplotlib Figure
+
+    See Also
+    --------
+    rdtools.availability.AvailabilityAnalysis.plot
+
+    Examples
+    --------
+    >>> aa = AvailabilityAnalysis(...)
+    >>> aa.run()
+    >>> fig = rdtools.plotting.availability_summary_plots(aa.power_system,
+    ...     aa.power_subsystem, aa.loss_total, aa.energy_cumulative,
+    ...     aa.energy_expected_rescaled, aa.outage_info)
+    """
+    warnings.warn(
+        'The availability module is currently experimental. The API, results, '
+        'and default behaviors may change in future releases (including MINOR '
+        'and PATCH releases) as the code matures.'
+    )
+
+    fig = plt.figure(figsize=(16, 8))
+    gs = fig.add_gridspec(3, 2)
+    ax1 = fig.add_subplot(gs[0, 0])
+    ax2 = fig.add_subplot(gs[1, 0], sharex=ax1)
+    ax3 = fig.add_subplot(gs[2, 0], sharex=ax1)
+    ax4 = fig.add_subplot(gs[:, 1], sharex=ax1)
+
+    # inverter power
+    power_system.plot(ax=ax1)
+    ax1.set_ylabel('Inverter Power [kW]')
+    # meter power
+    power_subsystem.plot(ax=ax2)
+    ax2.set_ylabel('System power [kW]')
+    # lost power
+    loss_total.plot(ax=ax3)
+    ax3.set_ylabel('Estimated lost power [kW]')
+
+    # cumulative energy
+    energy_cumulative.plot(ax=ax4, label='Reported Production')
+
+    # we'll use the index value to only set legend entries for the first
+    # outage we plot.  Just in case the index has some other values, we'll
+    # reset it here:
+    outage_info = outage_info.reset_index(drop=True)
+    for i, row in outage_info.iterrows():
+        # matplotlib ignores legend entries starting with underscore, so we
+        # can use that to hide duplicate entries
+        prefix = "_" if i > 0 else ""
+        start, end = row[['start', 'end']]
+        start_energy = row['energy_start']
+        expected_energy = row['energy_expected']
+        lo, hi = np.abs(expected_energy - row[['ci_lower', 'ci_upper']])
+        expected_curve = energy_expected_rescaled[start:end].cumsum()
+        expected_curve += start_energy
+        expected_curve.plot(c='tab:orange', ax=ax4,
+                            label=prefix + 'Expected Production')
+        energy_end = expected_curve.iloc[-1]
+        ax4.errorbar([end], [energy_end], [[lo], [hi]], c='k',
+                     label=prefix + 'Uncertainty')
+    ax4.legend()
+    ax4.set_ylabel('Cumulative Energy [kWh]')
     return fig

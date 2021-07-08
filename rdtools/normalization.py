@@ -5,59 +5,63 @@ import pvlib
 import numpy as np
 from scipy.optimize import minimize
 import warnings
+from rdtools._deprecation import deprecated
 
 
 class ConvergenceError(Exception):
     '''Rescale optimization did not converge'''
     pass
 
+
 def normalize_with_expected_power(pv, power_expected, poa_global,
                                   pv_input='power'):
     '''
-    Normalize pv output based on expected PV power.
+    Normalize PV power or energy based on expected PV power.
 
     Parameters
     ----------
     pv : pd.Series
         Right-labeled time series PV energy or power. If energy, should *not*
-        be cumulative, but only for preceding time step.
+        be cumulative, but only for preceding time step. Type (energy or power)
+        must be specified in the ``pv_input`` parameter.
     power_expected : pd.Series
-        Right-labeled time series of expected PV power.
+        Right-labeled time series of expected PV power. (Note: Expected energy
+        is not supported.)
     poa_global : pd.Series
         Right-labeled time series of plane-of-array irradiance associated with
-        `expected_power`
-    pv_input : str
-        'power' or 'energy' to specify type of input used for pv parameter
+        ``expected_power``
+    pv_input : {'power' or 'energy'}
+        Specifies the type of input used for ``pv`` parameter. Default: 'power'
 
     Returns
     -------
     energy_normalized : pd.Series
-        Energy normalized based on `expected_power`
+        Energy normalized based on ``power_expected``
     insolation : pd.Series
         Insolation associated with each normalized point
 
     '''
 
-    freq = check_series_frequency(pv, 'pv')
+    freq = _check_series_frequency(pv, 'pv')
 
     if pv_input == 'power':
-        energy = energy_from_power(pv, freq)
+        energy = energy_from_power(pv, freq, power_type='right_labeled')
     elif pv_input == 'energy':
         energy = pv.copy()
         energy.name = 'energy_Wh'
     else:
         raise ValueError("Unexpected value for pv_input. pv_input should be 'power' or 'energy'.")
 
-    model_tds, mean_model_td = delta_index(power_expected)
-    measure_tds, mean_measure_td = delta_index(energy)
+    model_tds, mean_model_td = _delta_index(power_expected)
+    measure_tds, mean_measure_td = _delta_index(energy)
 
     # Case in which the model less frequent than the measurements
     if mean_model_td > mean_measure_td:
         power_expected = interpolate(power_expected, pv.index)
         poa_global = interpolate(poa_global, pv.index)
 
-    energy_expected = energy_from_power(power_expected, freq)
-    insolation = energy_from_power(poa_global, freq)
+    energy_expected = energy_from_power(power_expected, freq, power_type='right_labeled')
+    insolation = energy_from_power(poa_global, freq, power_type='right_labeled')
 
     energy_normalized = energy / energy_expected
 
@@ -84,7 +88,7 @@ def pvwatts_dc_power(poa_global, power_dc_rated, temperature_cell=None,
         Rated DC power of array in watts
     temperature_cell : pd.Series, optional
         Measured or derived cell temperature [degrees Celsius].
-        Time series assumed to be same frequency as `poa_global`.
+        Time series assumed to be same frequency as ``poa_global``.
         If omitted, the temperature term will be ignored.
     poa_global_ref : float, default 1000
         Reference irradiance at standard test condition [W/m**2].
@@ -130,7 +134,7 @@ def normalize_with_pvwatts(energy, pvwatts_kws):
         Must be a right-labeled regular time series.
     pvwatts_kws : dict
         Dictionary of parameters used in the pvwatts_dc_power function.  See
-        `Other Parameters`.
+        Other Parameters.
 
     Other Parameters
     ------------------
@@ -166,11 +170,14 @@ def normalize_with_pvwatts(energy, pvwatts_kws):
     power_dc = pvwatts_dc_power(**pvwatts_kws)
     irrad = pvwatts_kws['poa_global']
 
-    energy_normalized, insolation = normalize_with_expected_power(energy, power_dc, irrad, pv_input='energy')
+    energy_normalized, insolation = normalize_with_expected_power(energy, power_dc, irrad,
+                                                                  pv_input='energy')
 
     return energy_normalized, insolation
 
 
+@deprecated(since='2.0.0', removal='3.0.0',
+            alternative='normalize_with_expected_power')
 def sapm_dc_power(pvlib_pvsystem, met_data):
     '''
     Use Sandia Array Performance Model (SAPM) and PVWatts to compute the
@@ -183,8 +190,8 @@ def sapm_dc_power(pvlib_pvsystem, met_data):
     pvlib_pvsystem : pvlib-python LocalizedPVSystem object
         Object contains orientation, geographic coordinates, equipment
         constants (including DC rated power in watts).  The object must also
-        specify either the `temperature_model_parameters` attribute or both
-        `racking_model` and `module_type` attributes to infer the temperature model parameters.
+        specify either the ``temperature_model_parameters`` attribute or both
+        ``racking_model`` and ``module_type`` attributes to infer the temperature model parameters.
     met_data : pd.DataFrame
         Measured irradiance components, ambient temperature, and wind speed.
         Expected met_data DataFrame column names:
@@ -239,6 +246,8 @@ def sapm_dc_power(pvlib_pvsystem, met_data):
     return power_dc, effective_irradiance
 
 
+@deprecated(since='2.0.0', removal='3.0.0',
+            alternative='normalize_with_expected_power')
 def normalize_with_sapm(energy, sapm_kws):
     '''
     Normalize system AC energy output given measured met_data and
@@ -255,15 +264,15 @@ def normalize_with_sapm(energy, sapm_kws):
         Must be a right-labeled regular time series.
     sapm_kws : dict
         Dictionary of parameters required for sapm_dc_power function. See
-        `Other Parameters`.
+        Other Parameters.
 
     Other Parameters
     ---------------
     pvlib_pvsystem : pvlib-python LocalizedPVSystem object
         Object contains orientation, geographic coordinates, equipment
         constants (including DC rated power in watts).  The object must also
-        specify either the `temperature_model_parameters` attribute or both
-        `racking_model` and `module_type` to infer the model parameters.
+        specify either the ``temperature_model_parameters`` attribute or both
+        ``racking_model`` and ``module_type`` to infer the model parameters.
     met_data : pd.DataFrame
         Measured met_data, ambient temperature, and wind speed.  Expected
         column names are ['DNI', 'GHI', 'DHI', 'Temperature', 'Wind Speed']
@@ -283,12 +292,13 @@ def normalize_with_sapm(energy, sapm_kws):
 
     power_dc, irrad = sapm_dc_power(**sapm_kws)
 
-    energy_normalized, insolation = normalize_with_expected_power(energy, power_dc, irrad, pv_input='energy')
+    energy_normalized, insolation = normalize_with_expected_power(energy, power_dc, irrad,
+                                                                  pv_input='energy')
 
     return energy_normalized, insolation
 
 
-def delta_index(series):
+def _delta_index(series):
     '''
     Takes a pandas series with a DatetimeIndex as input and
     returns (time step sizes, average time step size) in hours
@@ -301,7 +311,7 @@ def delta_index(series):
     Returns
     -------
     deltas : pd.Series
-        A timeseries representing the timestep sizes of `series`
+        A timeseries representing the timestep sizes of ``series``
     mean : float
         The average timestep
     '''
@@ -319,8 +329,11 @@ def delta_index(series):
         # Length of each interval calculated by using 'int64' to convert to
         # nanoseconds.
         deltas = (series.index - series.index.shift(-1)).astype('int64') / \
-                    (10.0**9 * 3600.0)
+                 (10.0**9 * 3600.0)
     return deltas, np.mean(deltas.dropna())
+
+
+delta_index = deprecated('2.0.0', removal='3.0.0')(_delta_index)
 
 
 def irradiance_rescale(irrad, irrad_sim, max_iterations=100,
@@ -337,7 +350,7 @@ def irradiance_rescale(irrad, irrad_sim, max_iterations=100,
         modeled/simulated irradiance time series
     max_iterations : int, default 100
         The maximum number of times to attempt rescale optimization.
-        Ignored if `method` = 'single_opt'
+        Ignored if ``method = 'single_opt'``
     method : str, default 'iterative'
         The calculation method to use. 'single_opt' implements the
         irradiance_rescale of rdtools v1.1.3 and earlier. 'iterative'
@@ -346,9 +359,9 @@ def irradiance_rescale(irrad, irrad_sim, max_iterations=100,
     convergence_threshold : float, default 1e-6
         The acceptable iteration-to-iteration scaling factor difference to
         determine convergence.  If the threshold is not reached after
-        `max_iterations`, raise
+        ``max_iterations``, raise
         :py:exc:`rdtools.normalization.ConvergenceError`.
-        Must be greater than zero.  Only used if `method=='iterative'`.
+        Must be greater than zero.  Only used if ``method=='iterative'``.
 
     Returns
     -------
@@ -405,7 +418,7 @@ def irradiance_rescale(irrad, irrad_sim, max_iterations=100,
             return rmse
 
         guess = np.percentile(irrad.dropna(), 90) / \
-                np.percentile(irrad_sim.dropna(), 90)
+            np.percentile(irrad_sim.dropna(), 90)
         min_result = minimize(_rmse, guess, method='Nelder-Mead')
         factor = min_result['x'][0]
 
@@ -416,10 +429,10 @@ def irradiance_rescale(irrad, irrad_sim, max_iterations=100,
         raise ValueError('Invalid method')
 
 
-def check_series_frequency(series, series_description):
+def _check_series_frequency(series, series_description):
     '''
     Returns the inferred frequency of a pandas series, raises ValueError
-    using `series_description` if it can't.
+    using ``series_description`` if it can't.
 
     Parameters
     ----------
@@ -446,7 +459,10 @@ def check_series_frequency(series, series_description):
     return freq
 
 
-def t_step_nanoseconds(time_series):
+check_series_frequency = deprecated('2.0.0', removal='3.0.0')(_check_series_frequency)
+
+
+def _t_step_nanoseconds(time_series):
     '''
     return a series of right labeled differences in the index of time_series
     in nanoseconds
@@ -457,25 +473,32 @@ def t_step_nanoseconds(time_series):
     return t_steps
 
 
-def energy_from_power(power, target_frequency=None, max_timedelta=None):
+def energy_from_power(power, target_frequency=None, max_timedelta=None,
+                      power_type='right_labeled'):
     '''
     Returns a regular right-labeled energy time series in units of Wh per
-    interval from an instantaneous power time series. NaN is filled where the
-    gap between input data points exceeds `max_timedelta`. Power_series should
+    interval from a power time series. For instantaneous timeseries, a
+    trapezoidal sum is used. For right labeled time series, a rectangular sum
+    is used. NaN is filled where the gap between input data points exceeds
+    ``max_timedelta``. Power_series should
     be given in Watts.
 
     Parameters
     ----------
     power : pd.Series
-        Instantaneous time series of power in Watts
+        Time series of power in Watts
     target_frequency : DatetimeOffset or frequency string, default None
         The frequency of the energy time series to be returned.
-        If omitted, use the median timestep of `power`
+        If omitted, use the median timestep of ``power``, or if ``power`` has
+        fewer than two elements, use ``power.index.freq``.
     max_timedelta : pd.Timedelta, default None
         The maximum allowed gap between power measurements. If the gap between
-        consecutive power measurements exceeds `max_timedelta`, NaN will be
-        returned for that interval. If omitted, `max_timedelta` is set
-        internally to the median time delta in `power`.
+        consecutive power measurements exceeds ``max_timedelta``, NaN will be
+        returned for that interval. If omitted, ``max_timedelta`` is set
+        internally to the median time delta in ``power``. Ignored when ``power``
+        has fewer than two elements.
+    power_type : {'right_labeled', 'instantaneous'}
+        The labeling convention used in power. Default: 'right_labeled'
 
     Returns
     -------
@@ -487,7 +510,26 @@ def energy_from_power(power, target_frequency=None, max_timedelta=None):
         raise ValueError('power must be a pandas series with a '
                          'DatetimeIndex')
 
-    t_steps = t_step_nanoseconds(power)
+    if len(power) <= 1:
+        # just one value, doesn't make sense to interpolate or trapz aggregate.
+        # use the index frequency to determine the appropriate timescale
+        if power_type == 'instantaneous':
+            raise ValueError("power_type='instantaneous' is incompatible with single element "
+                             "power. Use power_type='right-labeled'")
+        if target_frequency is None:
+            if power.index.freq is None:
+                raise ValueError('Could not determine period of input power')
+
+            target_frequency = power.index.freq
+        # just raise if it's a non-fixed frequency
+        interval_length_ns = \
+            pd.tseries.frequencies.to_offset(target_frequency).nanos
+
+        energy = power * interval_length_ns / 1e9 / 3600  # ns to s to h
+        energy.name = 'energy_Wh'
+        return energy
+
+    t_steps = _t_step_nanoseconds(power)
     median_step_ns = t_steps.median()
 
     if target_frequency is None:
@@ -498,7 +540,8 @@ def energy_from_power(power, target_frequency=None, max_timedelta=None):
         max_interval_nanoseconds = median_step_ns
     else:
         max_interval_nanoseconds = max_timedelta.total_seconds() * 10.0**9
-
+    # set max_timedelta for use in interpolate and _aggregate
+    max_timedelta = pd.to_timedelta(f'{max_interval_nanoseconds} nanos')
     try:
         freq_interval_size_ns = \
             pd.tseries.frequencies.to_offset(target_frequency).nanos
@@ -508,32 +551,14 @@ def energy_from_power(power, target_frequency=None, max_timedelta=None):
                                      power.index[-1],
                                      freq=target_frequency)
             temp_series = pd.Series(data=1, index=temp_ind)
-            temp_diffs = t_step_nanoseconds(temp_series)
+            temp_diffs = _t_step_nanoseconds(temp_series)
             freq_interval_size_ns = temp_diffs.median()
         else:
             raise
 
-    # Upsampling case
     if freq_interval_size_ns <= median_step_ns:
-        resampled = interpolate(power, target_frequency, max_timedelta)
-
-        moving_average = (resampled + resampled.shift()) / 2.0
-
-        energy = moving_average * t_step_nanoseconds(moving_average) \
-                    / 10.0**9 / 3600.0
-
-        # Drop first row with work around for pandas issue #18031
-        if energy.index.tz is None:
-            energy = energy.drop(energy.index[0])
-        else:
-            tz = str(energy.index.tz)
-            energy.index = energy.index.tz_convert('UTC')
-            energy = energy.drop(energy.index[0])
-            energy.index = energy.index.tz_convert(tz)
-
-    # Downsampling case
-    elif freq_interval_size_ns > median_step_ns:
-        energy = trapz_aggregate(power, target_frequency, max_timedelta)
+        power = interpolate(power, target_frequency, max_timedelta)
+    energy = _aggregate(power, target_frequency, max_timedelta, power_type)
 
     # Set the frequency if we can
     try:
@@ -550,12 +575,13 @@ def energy_from_power(power, target_frequency=None, max_timedelta=None):
     return energy
 
 
-def trapz_aggregate(time_series, target_frequency, max_timedelta=None):
+def _aggregate(time_series, target_frequency, max_timedelta, series_type):
     '''
     Returns a right-labeled series with frequency target_frequency generated by
-    aggregating `time_series` with the trapezoidal rule (in units of hours).
-    If any interval in `time_series` is greater than `max_timedelta`, it is
-    ommitted from the sum.
+    aggregating ``time_series`` (in units of hours). For instantaneous timeseries,
+    a trapezoidal sum is used. For right labeled time series, a rectangular sum
+    is used. If any interval in ``time_series`` is greater than ``max_timedelta``,
+    it is omitted from the sum.
 
     Parameters
     ----------
@@ -564,45 +590,76 @@ def trapz_aggregate(time_series, target_frequency, max_timedelta=None):
         The frequency of the accumulated series to be returned.
     max_timedelta : pd.Timedelta, default None
         The maximum allowed gap between power measurements. If the gap between
-        consecutive power measurements exceeds `max_timedelta`, no energy value
-        will be returned for that interval. If omitted, `max_timedelta` is set
-        internally to the median time delta in `time_series`.
+        consecutive power measurements exceeds ``max_timedelta``, no energy value
+        will be returned for that interval.
+    series_type : {'right_labeled', 'instantaneous'}
+        The labeling convention of time_series
+
 
     Returns
     -------
     pd.Series
-        right-labeled energy in Wh per interval
+        right-labeled aggregated time_series in _*hours per interval
     '''
 
+    # series that has same index as desired output
+    output_dummy = time_series.resample(target_frequency,
+                                        closed='right',
+                                        label='right').sum()
+
+    union_index = time_series.index.union(output_dummy.index)
+    time_series = time_series.dropna()
+
     values = time_series.values
+
+    # Identify gaps (including from nans) bigger than max_time_delta
     timestamps = time_series.index.astype('int64').values
+    timestamps = pd.Series(timestamps, index=time_series.index)
+    t_diffs = timestamps.diff()
+    # Keep track of the gap size but with refilled NaNs and new
+    # timestamps from target freq
+    t_diffs = t_diffs.reindex(union_index, method='bfill')
 
-    t_diffs = np.diff(timestamps)
+    max_interval_nanoseconds = max_timedelta.total_seconds() * 10.0**9
 
-    if max_timedelta is None:
-        max_interval_nanoseconds = np.median(t_diffs)
+    gap_mask = t_diffs > max_interval_nanoseconds
+    if time_series.index[0] != union_index[0]:
+        # mask leading NaNs
+        gap_mask[:time_series.index[0]] = True
+
+    time_series = time_series.reindex(union_index)
+    t_diffs = np.diff(time_series.index.astype('int64').values)
+    t_diffs_hours = t_diffs / 10**9 / 3600.0
+    if series_type == 'instantaneous':
+        # interpolate with trapz sum
+        time_series = time_series.interpolate(method='time')
+        time_series[gap_mask] = np.nan
+        values = time_series.values
+        series_sum = (values[1:] + values[:-1]) / 2 * t_diffs_hours
+    elif series_type == 'right_labeled':
+        # bfill and rectangular sum
+        time_series = time_series.bfill()
+        time_series[gap_mask] = np.nan
+        values = time_series.values
+        series_sum = values[1:] * t_diffs_hours
     else:
-        max_interval_nanoseconds = max_timedelta.total_seconds() * 10.0**9
+        raise ValueError("series_type must be either 'instantaneous' or 'right_labeled', "
+                         "not '{}'".format(series_type))
 
-    # in x*hours
-    trap_sum = (values[1:] + values[:-1]) / 2 * t_diffs / 10**9 / 3600.0
+    series_sum = pd.Series(data=series_sum, index=time_series.index[1:])
 
-    trap_sum[t_diffs > max_interval_nanoseconds] = np.nan
-
-    trap_sum = pd.Series(data=trap_sum, index=time_series.index[1:])
-
-    aggregated = trap_sum.resample(target_frequency,
-                                   closed='right',
-                                   label='right').sum(min_count=1)
+    aggregated = series_sum.resample(target_frequency,
+                                     closed='right',
+                                     label='right').sum(min_count=1)
 
     return aggregated
 
 
-def interpolate_series(time_series, target_index, max_timedelta=None,
-                       warning_threshold=0.1):
+def _interpolate_series(time_series, target_index, max_timedelta=None,
+                        warning_threshold=0.1):
     '''
     Returns an interpolation of time_series onto target_index, NaN is returned
-    for times associated with gaps in time_series longer `than max_timedelta`.
+    for times associated with gaps in time_series longer than ``max_timedelta``.
 
     Parameters
     ----------
@@ -612,13 +669,13 @@ def interpolate_series(time_series, target_index, max_timedelta=None,
         the index onto which the interpolation is to be made
     max_timedelta : pd.Timedelta, default None
         The maximum allowed gap between values in time_series. Times associated
-        with gaps longer than `max_timedelta` are excluded from the output. If
-        omitted, `max_timedelta` is set internally to two times the median
-        time delta in `time_series.`
+        with gaps longer than ``max_timedelta`` are excluded from the output. If
+        omitted, ``max_timedelta`` is set internally to two times the median
+        time delta in ``time_series``.
     warning_threshold : float, default 0.1
         The fraction of data exclusion above which a warning is raised. With
         the default value of 0.1, a warning will be raised if the fraction
-        of data excluded because of data gaps longer than `max_timedelta` is
+        of data excluded because of data gaps longer than ``max_timedelta`` is
         above than 10%.
 
     Returns
@@ -628,7 +685,7 @@ def interpolate_series(time_series, target_index, max_timedelta=None,
     Note
     ----
     Timezone information in the DatetimeIndexes is handled automatically,
-    however both `time_series` and `target_index` should be time zone aware or
+    however both ``time_series`` and ``target_index`` should be time zone aware or
     they should both be time zone naive.
 
     '''
@@ -706,14 +763,14 @@ def interpolate(time_series, target, max_timedelta=None, warning_threshold=0.1):
         * If DatetimeOffset or frequency string: the frequency at which to
           resample and interpolate
     max_timedelta : pd.Timedelta, default None
-        The maximum allowed gap between values in `time_series`. Times
-        associated with gaps longer than `max_timedelta` are excluded from the
-        output. If omitted, `max_timedelta` is set internally to two times
-        the median time delta in `time_series`.
+        The maximum allowed gap between values in ``time_series``. Times
+        associated with gaps longer than ``max_timedelta`` are excluded from the
+        output. If omitted, ``max_timedelta`` is set internally to two times
+        the median time delta in ``time_series``.
     warning_threshold : float, default 0.1
         The fraction of data exclusion above which a warning is raised. With
         the default value of 0.1, a warning will be raised if the fraction
-        of data excluded because of data gaps longer than `max_timedelta` is
+        of data excluded because of data gaps longer than ``max_timedelta`` is
         above than 10%.
 
     Returns
@@ -723,7 +780,7 @@ def interpolate(time_series, target, max_timedelta=None, warning_threshold=0.1):
     Note
     ----
     Timezone information in the DatetimeIndexes is handled automatically,
-    however both `time_series` and `target` should be time zone aware or they
+    however both ``time_series`` and ``target`` should be time zone aware or they
     should both be time zone naive.
     '''
 
@@ -740,14 +797,14 @@ def interpolate(time_series, target, max_timedelta=None, warning_threshold=0.1):
                          'both must be time-zone naive.')
 
     if isinstance(time_series, pd.Series):
-        out = interpolate_series(time_series, target_index, max_timedelta,
-                                 warning_threshold)
+        out = _interpolate_series(time_series, target_index, max_timedelta,
+                                  warning_threshold)
     elif isinstance(time_series, pd.DataFrame):
         out_list = []
         for col in time_series.columns:
             ts = time_series[col]
-            series = interpolate_series(ts, target_index, max_timedelta,
-                                        warning_threshold)
+            series = _interpolate_series(ts, target_index, max_timedelta,
+                                         warning_threshold)
             out_list.append(series)
         out = pd.concat(out_list, axis=1)
     else:

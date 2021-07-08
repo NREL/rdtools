@@ -36,28 +36,33 @@ TESTS_REQUIRE = [
 ]
 
 INSTALL_REQUIRES = [
-    'matplotlib >= 2.2.2',
-    'numpy >= 1.12',
-    'pandas >= 0.23.0,!=1.0.0,!=1.0.1',  # exclude 1.0.0 & 1.0.1 for GH142
+    'matplotlib >= 3.0.0',
+    'numpy >= 1.15',
+    # exclude pandas==1.0.0 & 1.0.1 for GH142, and 0.24.0 for GH114
+    'pandas >= 0.23.0,!=0.24.0,!=1.0.0,!=1.0.1',
     'statsmodels >= 0.8.0',
     'scipy >= 0.19.1',
     'h5py >= 2.7.1',
-    'pvlib >= 0.7.0, <0.8.0',
+    'pvlib >= 0.7.0, <0.9.0',
 ]
 
 EXTRAS_REQUIRE = {
     'doc': [
         'sphinx==1.8.5',
-        'nbsphinx==0.4.3',
+        'nbsphinx==0.6.0',
         'nbsphinx-link==1.3.0',
         'pandas==0.23.0',
         'pvlib==0.7.1',
         'sphinx_rtd_theme==0.4.3',
         'ipython',
+        # sphinx-gallery used indirectly for nbsphinx thumbnail galleries; see:
+        # https://nbsphinx.readthedocs.io/en/0.6.0/subdir/gallery.html#Creating-Thumbnail-Galleries
+        'sphinx-gallery==0.8.1',
     ],
     'test': [
         'pytest',
         'coverage',
+        'flake8',
     ]
 }
 EXTRAS_REQUIRE['all'] = sorted(set(sum(EXTRAS_REQUIRE.values(), [])))
@@ -73,6 +78,7 @@ CLASSIFIERS = [
     'Programming Language :: Python :: 3.6',
     'Programming Language :: Python :: 3.7',
     'Programming Language :: Python :: 3.8',
+    'Programming Language :: Python :: 3.9',
     'Topic :: Scientific/Engineering',
 ]
 
@@ -85,6 +91,12 @@ KEYWORDS = [
     'degradation',
     'PV'
 ]
+
+PROJECT_URLS = {
+    "Bug Tracker": "https://github.com/NREL/rdtools/issues",
+    "Documentation": "https://rdtools.readthedocs.io/",
+    "Source Code": "https://github.com/NREL/rdtools",
+}
 
 setuptools_kwargs = {
     'zip_safe': False,
@@ -112,5 +124,6 @@ setup(name=DISTNAME,
       maintainer_email=MAINTAINER_EMAIL,
       license=LICENSE,
       url=URL,
+      project_urls=PROJECT_URLS,
       classifiers=CLASSIFIERS,
       **setuptools_kwargs)
