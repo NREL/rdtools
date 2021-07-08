@@ -303,6 +303,46 @@ def _calculate_max_rolling_range(power_ac, roll_periods):
     return rolling_range_max
 
 
+def _apply_overall_clipping_threshold(power_ac,
+                                      clipping_mask,
+                                      clipped_power_ac):
+    """
+    Apply an overall clipping threshold to the data. This
+    additional logic sets an overall threshold in the dataset
+    where all points above this threshold are labeled as clipping
+    periods.
+
+    Parameters
+    ----------
+    power_ac : pd.Series
+        Pandas time series, representing PV system power with
+        a pandas datetime index.
+    clipping_mask : pd.Series
+        Boolean mask of the AC power time series, where clipping
+        periods are labeled as True and non-clipping periods are
+        labeled as False. Has a datetime index.
+    clipped_power_ac: pd.Series
+        Pandas time series, representing PV system power filtered
+        where only clipping periods occur. Has a pandas datetime index.
+
+    Returns
+    -------
+    clipping_mask : pd.Series
+        Boolean mask of clipping/non-clipping periods, after applying
+        the overall clipping threshold to the mask. Clipping
+        periods are labeled as True and non-clipping periods are
+        labeled as False. Has a pandas datetime index.
+    """
+    upper_bound_pdiff = abs((power_ac.quantile(.99) -
+                             clipped_power_ac.quantile(.99))
+                            / ((power_ac.quantile(.99) +
+                                clipped_power_ac.quantile(.99))/2))
+    if upper_bound_pdiff < 0.01:
+        max_clip = (power_ac >= power_ac.quantile(0.99))
+        clipping_mask = (clipping_mask | max_clip)
+    return clipping_mask
+
+
 def logic_clip_filter(power_ac,
                       mounting_type='fixed',
                       rolling_range_max_cutoff=0.2,
@@ -446,12 +486,9 @@ def logic_clip_filter(power_ac,
     final_clip = final_clip.reindex(index=power_copy.index, fill_value=False)
     # Check for an overall clipping threshold that should apply to all data
     clip_power = power_copy[final_clip]
-    upper_bound_pdiff = abs((power_ac.quantile(.99) - clip_power.quantile(.99))
-                            / ((power_ac.quantile(.99) +
-                               clip_power.quantile(.99))/2))
-    if upper_bound_pdiff < 0.01:
-        max_clip = (power_ac >= power_ac.quantile(0.99))
-        final_clip = (final_clip | max_clip)
+    final_clip = _apply_overall_clipping_threshold(power_ac,
+                                                   final_clip,
+                                                   clip_power)
     return ~final_clip
 
 
@@ -643,10 +680,7 @@ def xgboost_clip_filter(power_ac,
     final_clip = final_clip.reindex(index=power_ac.index, fill_value=False)
     # Check for an overall clipping threshold that should apply to all data
     clip_power = power_ac[final_clip]
-    upper_bound_pdiff = abs((power_ac.quantile(.99) - clip_power.quantile(.99))
-                            / ((power_ac.quantile(.99) +
-                                clip_power.quantile(.99))/2))
-    if upper_bound_pdiff < 0.01:
-        max_clip = (power_ac >= power_ac.quantile(0.99))
-        final_clip = (final_clip | max_clip)
+    final_clip = _apply_overall_clipping_threshold(power_ac,
+                                                   final_clip,
+                                                   clip_power)
     return ~(final_clip.astype(bool))
