@@ -37,7 +37,7 @@ TESTS_REQUIRE = [
 
 INSTALL_REQUIRES = [
     'matplotlib >= 3.0.0',
-    'numpy >= 1.15',
+    'numpy >= 1.15 <1.21.0',
     # exclude pandas==1.0.0 & 1.0.1 for GH142, and 0.24.0 for GH114
     'pandas >= 0.23.0,!=0.24.0,!=1.0.0,!=1.0.1',
     'statsmodels >= 0.8.0',
