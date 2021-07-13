@@ -250,6 +250,7 @@ class TrendAnalysis():
             interval_id = interval_id.reindex(times).bfill()
             clearsky_poa = clearsky_poa.groupby(interval_id).mean()
             clearsky_poa.index = self.poa_global.index
+            clearsky_poa.iloc[0] = np.nan
 
         if rescale is True:
             if not clearsky_poa.index.equals(self.poa_global.index):
