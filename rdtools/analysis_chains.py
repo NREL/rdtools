@@ -247,7 +247,7 @@ class TrendAnalysis():
 
         if aggregate:
             interval_id = pd.Series(range(len(self.poa_global)), index=self.poa_global.index)
-            interval_id = interval_id.reindex(times).bfill()
+            interval_id = interval_id.reindex(times, method='backfill')
             clearsky_poa = clearsky_poa.groupby(interval_id).mean()
             clearsky_poa.index = self.poa_global.index
             clearsky_poa.iloc[0] = np.nan
