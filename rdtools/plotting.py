@@ -49,8 +49,9 @@ def degradation_summary_plots(yoy_rd, yoy_ci, yoy_info, normalized_yield,
     scatter_alpha : float, default 0.5
         Transparency of the scatter plot
     detailed : bool, optional
-        Color code points by the number of times they get used in the Rd
-        distribution.  Default color: 2 times. Green: 1 time. Red: 0 times.
+        Color code points by the number of times they get used in calculating
+        Rd slopes.  Default color: 2 times (as a start and endpoint). Green: 
+        1 time. Red: 0 times.
 
     Note
     ----
