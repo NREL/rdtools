@@ -78,6 +78,53 @@ def sensor_analysis_exp_power(sensor_parameters):
     return rd_analysis
 
 
+def test_interpolation(basic_parameters, degradation_trend):
+
+    power = degradation_trend
+    shifted_index = power.index + pd.to_timedelta('8 minutes')
+
+    dummy_series = power * 0 + 25
+    dummy_series.index = shifted_index
+
+    basic_parameters['pv'] = power
+    basic_parameters['poa_global'] = dummy_series
+    basic_parameters['temperature_ambient'] = dummy_series
+    basic_parameters['temperature_cell'] = dummy_series
+    basic_parameters['windspeed'] = dummy_series
+    basic_parameters['power_expected'] = dummy_series
+    basic_parameters['interp_freq'] = 'H'
+
+    rd_analysis = TrendAnalysis(**basic_parameters)
+
+    pd.testing.assert_index_equal(rd_analysis.pv_energy.index,
+                                  rd_analysis.poa_global.index[1:])
+    pd.testing.assert_index_equal(rd_analysis.pv_energy.index,
+                                  rd_analysis.temperature_ambient.index[1:])
+    pd.testing.assert_index_equal(rd_analysis.pv_energy.index,
+                                  rd_analysis.temperature_cell.index[1:])
+    pd.testing.assert_index_equal(rd_analysis.pv_energy.index,
+                                  rd_analysis.windspeed.index[1:])
+    pd.testing.assert_index_equal(rd_analysis.pv_energy.index,
+                                  rd_analysis.power_expected.index[1:])
+
+    rd_analysis.set_clearsky(pv_azimuth=dummy_series,
+                             pv_tilt=dummy_series,
+                             poa_global_clearsky=dummy_series,
+                             temperature_cell_clearsky=dummy_series,
+                             temperature_ambient_clearsky=dummy_series)
+
+    pd.testing.assert_index_equal(rd_analysis.pv_energy.index,
+                                  rd_analysis.pv_azimuth.index)
+    pd.testing.assert_index_equal(rd_analysis.pv_energy.index,
+                                  rd_analysis.pv_tilt.index)
+    pd.testing.assert_index_equal(rd_analysis.pv_energy.index,
+                                  rd_analysis.poa_global_clearsky.index)
+    pd.testing.assert_index_equal(rd_analysis.pv_energy.index,
+                                  rd_analysis.temperature_cell_clearsky.index)
+    pd.testing.assert_index_equal(rd_analysis.pv_energy.index,
+                                  rd_analysis.temperature_ambient_clearsky.index)
+
+
 def test_sensor_analysis(sensor_analysis):
     yoy_results = sensor_analysis.results['sensor']['yoy_degradation']
     rd = yoy_results['p50_rd']
