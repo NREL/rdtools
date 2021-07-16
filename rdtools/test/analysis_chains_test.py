@@ -83,27 +83,15 @@ def test_interpoloation(basic_parameters, degradation_trend):
     power = degradation_trend
     shifted_index = power.index + pd.to_timedelta('8 minutes')
 
-    poa_global = power * 1000
-    poa_global.index = shifted_index
-
-    temperature_ambient = power * 0 + 25
-    temperature_ambient.index = shifted_index
-
-    temperature_cell = power * 0 + 25
-    temperature_cell.index = shifted_index
-
-    windspeed = power * 0 + 25
-    windspeed.index = shifted_index
-
-    power_expected = power.copy()
-    power_expected.index = shifted_index
+    dummy_series = power * 0 + 25
+    dummy_series.index = shifted_index
 
     basic_parameters['pv'] = power
-    basic_parameters['poa_global'] = poa_global
-    basic_parameters['temperature_ambient'] = temperature_ambient
-    basic_parameters['temperature_cell'] = temperature_cell
-    basic_parameters['windspeed'] = windspeed
-    basic_parameters['power_expected'] = power_expected
+    basic_parameters['poa_global'] = dummy_series
+    basic_parameters['temperature_ambient'] = dummy_series
+    basic_parameters['temperature_cell'] = dummy_series
+    basic_parameters['windspeed'] = dummy_series
+    basic_parameters['power_expected'] = dummy_series
     basic_parameters['interp_freq'] = 'H'
 
     rd_analysis = TrendAnalysis(**basic_parameters)
@@ -119,13 +107,11 @@ def test_interpoloation(basic_parameters, degradation_trend):
     pd.testing.assert_index_equal(rd_analysis.pv_energy.index,
                                   rd_analysis.power_expected.index[1:])
 
-    clearsky_series = power * 0 + 25
-    clearsky_series.index = shifted_index
-    rd_analysis.set_clearsky(pv_azimuth=clearsky_series,
-                             pv_tilt=clearsky_series,
-                             poa_global_clearsky=clearsky_series,
-                             temperature_cell_clearsky=clearsky_series,
-                             temperature_ambient_clearsky=clearsky_series)
+    rd_analysis.set_clearsky(pv_azimuth=dummy_series,
+                             pv_tilt=dummy_series,
+                             poa_global_clearsky=dummy_series,
+                             temperature_cell_clearsky=dummy_series,
+                             temperature_ambient_clearsky=dummy_series)
 
     pd.testing.assert_index_equal(rd_analysis.pv_energy.index,
                                   rd_analysis.pv_azimuth.index)
