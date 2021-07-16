@@ -119,6 +119,25 @@ def test_interpoloation(basic_parameters, degradation_trend):
     pd.testing.assert_index_equal(rd_analysis.pv_energy.index,
                                   rd_analysis.power_expected.index[1:])
 
+    clearsky_series = power * 0 + 25
+    clearsky_series.index = shifted_index
+    rd_analysis.set_clearsky(pv_azimuth=clearsky_series,
+                             pv_tilt=clearsky_series,
+                             poa_global_clearsky=clearsky_series,
+                             temperature_cell_clearsky=clearsky_series,
+                             temperature_ambient_clearsky=clearsky_series)
+
+    pd.testing.assert_index_equal(rd_analysis.pv_energy.index,
+                                  rd_analysis.pv_azimuth.index)
+    pd.testing.assert_index_equal(rd_analysis.pv_energy.index,
+                                  rd_analysis.pv_tilt.index)
+    pd.testing.assert_index_equal(rd_analysis.pv_energy.index,
+                                  rd_analysis.poa_global_clearsky.index)
+    pd.testing.assert_index_equal(rd_analysis.pv_energy.index,
+                                  rd_analysis.temperature_cell_clearsky.index)
+    pd.testing.assert_index_equal(rd_analysis.pv_energy.index,
+                                  rd_analysis.temperature_ambient_clearsky.index)
+
 
 def test_sensor_analysis(sensor_analysis):
     yoy_results = sensor_analysis.results['sensor']['yoy_degradation']
