@@ -320,7 +320,7 @@ def _delta_index(series):
         # If there is no frequency information, explicitly calculate interval
         # sizes. Length of each interval calculated by using 'int64' to convert
         # to nanoseconds.
-        hours = pd.Series(series.index.astype('int64') / (10.0**9 * 3600.0))
+        hours = pd.Series(series.index.view('int64') / (10.0**9 * 3600.0))
         hours.index = series.index
         deltas = hours.diff()
     else:
@@ -328,9 +328,9 @@ def _delta_index(series):
         # a meaningful interval for the first element of the timeseries
         # Length of each interval calculated by using 'int64' to convert to
         # nanoseconds.
-        deltas = (series.index - series.index.shift(-1)).astype('int64') / \
+        deltas = (series.index - series.index.shift(-1)).view('int64') / \
                  (10.0**9 * 3600.0)
-    return deltas, np.mean(deltas.dropna())
+    return deltas, np.mean(deltas[~np.isnan(deltas)])
 
 
 delta_index = deprecated('2.0.0', removal='3.0.0')(_delta_index)
@@ -467,7 +467,7 @@ def _t_step_nanoseconds(time_series):
     return a series of right labeled differences in the index of time_series
     in nanoseconds
     '''
-    t_steps = np.diff(time_series.index.astype('int64')).astype('float')
+    t_steps = np.diff(time_series.index.view('int64')).astype('float')
     t_steps = np.insert(t_steps, 0, np.nan)
     t_steps = pd.Series(index=time_series.index, data=t_steps)
     return t_steps
@@ -613,7 +613,7 @@ def _aggregate(time_series, target_frequency, max_timedelta, series_type):
     values = time_series.values
 
     # Identify gaps (including from nans) bigger than max_time_delta
-    timestamps = time_series.index.astype('int64').values
+    timestamps = time_series.index.view('int64')
     timestamps = pd.Series(timestamps, index=time_series.index)
     t_diffs = timestamps.diff()
     # Keep track of the gap size but with refilled NaNs and new
@@ -628,7 +628,7 @@ def _aggregate(time_series, target_frequency, max_timedelta, series_type):
         gap_mask[:time_series.index[0]] = True
 
     time_series = time_series.reindex(union_index)
-    t_diffs = np.diff(time_series.index.astype('int64').values)
+    t_diffs = np.diff(time_series.index.view('int64'))
     t_diffs_hours = t_diffs / 10**9 / 3600.0
     if series_type == 'instantaneous':
         # interpolate with trapz sum
@@ -700,7 +700,7 @@ def _interpolate_series(time_series, target_index, max_timedelta=None,
     df = df.dropna()
 
     # convert to integer index and calculate the size of gaps in input
-    timestamps = df.index.astype('int64')
+    timestamps = df.index.view('int64')
     df['timestamp'] = timestamps
     df['gapsize_ns'] = df['timestamp'].diff()
     df.index = timestamps
@@ -720,7 +720,7 @@ def _interpolate_series(time_series, target_index, max_timedelta=None,
                       UserWarning)
 
     # put data on index that includes both original and target indicies
-    target_timestamps = target_index.astype('int64')
+    target_timestamps = pd.Index(target_index.view('int64'))
     union_index = df.index.append(target_timestamps)
     union_index = union_index.drop_duplicates(keep='first')
     df = df.reindex(union_index)

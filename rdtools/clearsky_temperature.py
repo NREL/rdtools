@@ -139,7 +139,7 @@ def _get_pixel_value(data, i, j, k, radius):
     if len(list) == 0:
         return np.nan
 
-    return pd.Series(list).median()
+    return float(pd.Series(list).median())
 
 
 def _get_temperature(hour_of_day, night_temp, day_temp, solar_noon_offset):

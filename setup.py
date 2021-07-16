@@ -49,7 +49,7 @@ INSTALL_REQUIRES = [
 EXTRAS_REQUIRE = {
     'doc': [
         'sphinx==1.8.5',
-        'nbsphinx==0.6.0',
+        'nbsphinx==0.8.5',
         'nbsphinx-link==1.3.0',
         'pandas==0.23.0',
         'pvlib==0.7.1',
