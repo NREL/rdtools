@@ -1,0 +1,20 @@
+**********************
+v2.0.6 (July 16, 2021)
+**********************
+
+Bug Fixes
+---------
+* Fix a failure of :py:func:`~rdtools.clearsky_temperature.get_clearsky_tamb` with pandas 1.3.0 (:pull:`284`)
+* Change internal casting of timestamps into integers to use ``.view()`` instead of pandas deprecated ``.astype()`` method (:pull:`284`)
+
+Requirements
+------------
+* Update specified versions of bleach in
+  ``docs/notebook_requirements.txt`` and matplotlib
+  in ``requirements.txt`` (:pull:`261`)
+
+
+Contributors
+------------
+* Kevin Anderson (:ghuser:`kanderso-nrel`)
+* Michael Deceglie (:ghuser:`mdeceglie`)
