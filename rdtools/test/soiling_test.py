@@ -259,6 +259,53 @@ def test_soiling_srr_min_interval_length_default(soiling_normalized_daily, soili
     assert expected_sr == pytest.approx(sr, abs=1e-6),\
         'Soiling ratio different from expected value'
 
+
+@pytest.mark.parametrize('test_param', ['energy_normalized_daily',
+                                        'insolation_daily',
+                                        'precipitation_daily'])
+def test_soiling_srr_non_daily_inputs(test_param):
+    '''
+    Validate the frequency check for input time series
+    '''
+    dummy_daily_explicit = pd.Series(0, index=pd.date_range('2019-01-01', periods=10, freq='d'))
+    dummy_daily_implicit = pd.Series(0, index=pd.date_range('2019-01-01', periods=10, freq='d'))
+    dummy_daily_implicit.index.freq = None
+    dummy_nondaily = pd.Series(0, index=dummy_daily_explicit.index[::2])
+
+    kwargs = {
+        'energy_normalized_daily': dummy_daily_explicit,
+        'insolation_daily': dummy_daily_explicit,
+        'precipitation_daily': dummy_daily_explicit,
+    }
+    # no error for implicit daily inputs
+    kwargs[test_param] = dummy_daily_implicit
+    _ = SRRAnalysis(**kwargs)
+
+    # yes error for non-daily inputs
+    kwargs[test_param] = dummy_nondaily
+    with pytest.raises(ValueError, match='must have daily frequency'):
+        _ = SRRAnalysis(**kwargs)
+
+
+def test_soiling_srr_argument_checks(soiling_normalized_daily, soiling_insolation):
+    '''
+    Make sure various argument validation warnings and errors are raised
+    '''
+    kwargs = {
+        'energy_normalized_daily': soiling_normalized_daily,
+        'insolation_daily': soiling_insolation,
+        'reps': 10
+    }
+    with pytest.warns(UserWarning, match='An even value of day_scale was passed'):
+        _ = soiling_srr(day_scale=12, **kwargs)
+
+    with pytest.raises(ValueError, match='clean_criterion must be one of'):
+        _ = soiling_srr(clean_criterion='bad', **kwargs)
+
+    with pytest.raises(ValueError, match='Invalid method specification'):
+        _ = soiling_srr(method='bad', **kwargs)
+
+
 # ###########################
 # annual_soiling_ratios tests
 # ###########################
