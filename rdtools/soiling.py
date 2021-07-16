@@ -53,16 +53,16 @@ class SRRAnalysis():
         # insolation-weighted soiling ratios in _calc_monte:
         self.monte_losses = []
 
-        if self.pm.index.freq != 'D':
+        if pd.infer_freq(self.pm.index) != 'D':
             raise ValueError('Daily performance metric series must have '
                              'daily frequency')
 
-        if self.insolation_daily.index.freq != 'D':
+        if pd.infer_freq(self.insolation_daily.index) != 'D':
             raise ValueError('Daily insolation series must have '
                              'daily frequency')
 
         if self.precipitation_daily is not None:
-            if self.precipitation_daily.index.freq != 'D':
+            if pd.infer_freq(self.precipitation_daily.index) != 'D':
                 raise ValueError('Precipitation series must have '
                                  'daily frequency')
 
