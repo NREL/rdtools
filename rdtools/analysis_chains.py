@@ -233,7 +233,10 @@ class TrendAnalysis():
                 'pv_tilt and pv_azimuth must be provided using set_clearsky()')
 
         loc = self.pvlib_location
-        sun = loc.get_solarposition(times, method=self.solar_position_method)
+        solar_position_kwargs = {}
+        if self.solar_position_method:
+            solar_position_kwargs['method'] = self.solar_position_method
+        sun = loc.get_solarposition(times, **solar_position_kwargs)
         clearsky = loc.get_clearsky(times, solar_position=sun)
 
         clearsky_poa = pvlib.irradiance.get_total_irradiance(
