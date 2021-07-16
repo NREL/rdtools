@@ -78,7 +78,7 @@ def sensor_analysis_exp_power(sensor_parameters):
     return rd_analysis
 
 
-def test_interpoloation(basic_parameters, degradation_trend):
+def test_interpolation(basic_parameters, degradation_trend):
 
     power = degradation_trend
     shifted_index = power.index + pd.to_timedelta('8 minutes')
