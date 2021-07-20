@@ -139,7 +139,7 @@ class TrendAnalysis():
     def set_clearsky(self, pvlib_location=None, pv_azimuth=None, pv_tilt=None,
                      poa_global_clearsky=None, temperature_cell_clearsky=None,
                      temperature_ambient_clearsky=None, albedo=0.25,
-                     solar_position_method=None):
+                     solar_position_method='nrel_numpy'):
         '''
         Initialize values for a clearsky analysis which requires configuration
         of location and orientation details. If optional parameters `poa_global_clearsky`,
@@ -168,8 +168,9 @@ class TrendAnalysis():
         albedo : numeric
             Albedo to be used in irradiance transposition calculations. Can be right-labeled
             Pandas Time Series or single numeric value.
-        solar_position_method : str, optional
-            Optional method name to pass to :py:func:`pvlib.solarposition.get_solarposition`
+        solar_position_method : str, default 'nrel_numpy'
+            Optional method name to pass to :py:func:`pvlib.solarposition.get_solarposition`.
+            Switching methods may improve calculation time.
         '''
         interp_freq = self.interp_freq
         max_timedelta = self.max_timedelta
