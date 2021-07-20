@@ -336,6 +336,27 @@ def test_no_set_clearsky(clearsky_parameters):
         rd_analysis.clearsky_analysis()
 
 
+def test_index_mismatch():
+    # GH #277
+    times = pd.date_range('2019-01-01', '2022-01-01', freq='15min')
+    pv = pd.Series(1.0, index=times)
+    dummy_series = pd.Series(1.0, index=times[::4])  # low-frequency weather inputs
+    keys = ['poa_global', 'temperature_cell', 'temperature_ambient', 'power_expected', 'windspeed']
+    kwargs = {key: dummy_series.copy() for key in keys}
+    rd_analysis = TrendAnalysis(pv, **kwargs)
+    for key in keys:
+        interpolated_series = getattr(rd_analysis, key)
+        assert interpolated_series.index.equals(times)
+
+    cs_keys = ['poa_global_clearsky', 'temperature_cell_clearsky', 'temperature_ambient_clearsky',
+               'pv_azimuth', 'pv_tilt']
+    cs_kwargs = {key: dummy_series.copy() for key in cs_keys}
+    rd_analysis.set_clearsky(**cs_kwargs)
+    for key in cs_keys:
+        interpolated_series = getattr(rd_analysis, key)
+        assert interpolated_series.index.equals(times[1:])
+
+
 @pytest.fixture
 def soiling_parameters(basic_parameters, soiling_normalized_daily, cs_input):
     # parameters for soiling analysis with TrendAnalysis
