@@ -172,22 +172,21 @@ class TrendAnalysis():
         '''
         max_timedelta = self.max_timedelta
 
-        if self.interp_freq is not None:
-            if poa_global_clearsky is not None:
-                poa_global_clearsky = normalization.interpolate(
-                    poa_global_clearsky, self.pv_energy.index, max_timedelta)
-            if temperature_cell_clearsky is not None:
-                temperature_cell_clearsky = normalization.interpolate(
-                    temperature_cell_clearsky, self.pv_energy.index, max_timedelta)
-            if temperature_ambient_clearsky is not None:
-                temperature_ambient_clearsky = normalization.interpolate(
-                    temperature_ambient_clearsky, self.pv_energy.index, max_timedelta)
-            if isinstance(pv_azimuth, (pd.Series, pd.DataFrame)):
-                pv_azimuth = normalization.interpolate(
-                    pv_azimuth, self.pv_energy.index, max_timedelta)
-            if isinstance(pv_tilt, (pd.Series, pd.DataFrame)):
-                pv_tilt = normalization.interpolate(
-                    pv_tilt, self.pv_energy.index, max_timedelta)
+        if poa_global_clearsky is not None:
+            poa_global_clearsky = normalization.interpolate(
+                poa_global_clearsky, self.pv_energy.index, max_timedelta)
+        if temperature_cell_clearsky is not None:
+            temperature_cell_clearsky = normalization.interpolate(
+                temperature_cell_clearsky, self.pv_energy.index, max_timedelta)
+        if temperature_ambient_clearsky is not None:
+            temperature_ambient_clearsky = normalization.interpolate(
+                temperature_ambient_clearsky, self.pv_energy.index, max_timedelta)
+        if isinstance(pv_azimuth, (pd.Series, pd.DataFrame)):
+            pv_azimuth = normalization.interpolate(
+                pv_azimuth, self.pv_energy.index, max_timedelta)
+        if isinstance(pv_tilt, (pd.Series, pd.DataFrame)):
+            pv_tilt = normalization.interpolate(
+                pv_tilt, self.pv_energy.index, max_timedelta)
 
         self.pvlib_location = pvlib_location
         self.pv_azimuth = pv_azimuth
