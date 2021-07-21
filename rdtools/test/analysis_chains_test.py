@@ -27,7 +27,8 @@ def cs_input():
     cs_input = dict(
         pvlib_location=loc,
         pv_tilt=20,
-        pv_azimuth=0
+        pv_azimuth=0,
+        solar_position_method='ephemeris',  # just to improve test execution speed
     )
 
     return cs_input
@@ -237,7 +238,8 @@ def clearsky_optional(cs_input, clearsky_analysis):
         temperature_cell_clearsky=clearsky_analysis.temperature_cell_clearsky,
         temperature_ambient_clearsky=clearsky_analysis.temperature_ambient_clearsky,
         pv_tilt=pd.Series(cs_input['pv_tilt'], index=times),
-        pv_azimuth=pd.Series(cs_input['pv_azimuth'], index=times)
+        pv_azimuth=pd.Series(cs_input['pv_azimuth'], index=times),
+        solar_position_method='ephemeris',  # just to improve test execution speed
     )
     return extras
 
