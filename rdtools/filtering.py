@@ -130,7 +130,7 @@ def clip_filter(power_ac, model="quantile", **kwargs):
     power_ac : pd.Series
         Pandas time series, representing PV system with
         a pandas datetime index.
-    model : string, default 'quantile_clip_filter'
+    model : string, default 'quantile'
         Clipping filter model to run. Can be 'quantile',
         'xgboost', or 'logic'.
     kwargs :
