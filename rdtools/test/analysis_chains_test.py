@@ -27,7 +27,8 @@ def cs_input():
     cs_input = dict(
         pvlib_location=loc,
         pv_tilt=20,
-        pv_azimuth=0
+        pv_azimuth=0,
+        solar_position_method='ephemeris',  # just to improve test execution speed
     )
 
     return cs_input
@@ -284,7 +285,8 @@ def clearsky_optional(cs_input, clearsky_analysis):
         temperature_cell_clearsky=clearsky_analysis.temperature_cell_clearsky,
         temperature_ambient_clearsky=clearsky_analysis.temperature_ambient_clearsky,
         pv_tilt=pd.Series(cs_input['pv_tilt'], index=times),
-        pv_azimuth=pd.Series(cs_input['pv_azimuth'], index=times)
+        pv_azimuth=pd.Series(cs_input['pv_azimuth'], index=times),
+        solar_position_method='ephemeris',  # just to improve test execution speed
     )
     return extras
 
@@ -294,8 +296,8 @@ def test_clearsky_analysis(clearsky_analysis):
     ci = yoy_results['rd_confidence_interval']
     rd = yoy_results['p50_rd']
     print(ci)
-    assert -4.73 == pytest.approx(rd, abs=1e-2)
-    assert [-4.74, -4.72] == pytest.approx(ci, abs=1e-2)
+    assert -4.70 == pytest.approx(rd, abs=1e-2)
+    assert [-4.71, -4.69] == pytest.approx(ci, abs=1e-2)
 
 
 def test_clearsky_analysis_optional(clearsky_analysis, clearsky_parameters, clearsky_optional):
@@ -306,8 +308,8 @@ def test_clearsky_analysis_optional(clearsky_analysis, clearsky_parameters, clea
     ci = yoy_results['rd_confidence_interval']
     rd = yoy_results['p50_rd']
     print(f'ci:{ci}')
-    assert -4.73 == pytest.approx(rd, abs=1e-2)
-    assert [-4.74, -4.72] == pytest.approx(ci, abs=1e-2)
+    assert -4.70 == pytest.approx(rd, abs=1e-2)
+    assert [-4.71, -4.69] == pytest.approx(ci, abs=1e-2)
 
 
 @pytest.fixture
@@ -334,6 +336,16 @@ def test_no_set_clearsky(clearsky_parameters):
     rd_analysis = TrendAnalysis(**clearsky_parameters)
     with pytest.raises(AttributeError, match="No poa_global_clearsky. 'set_clearsky' must be run"):
         rd_analysis.clearsky_analysis()
+
+
+def test_solar_position_method_passthrough(sensor_analysis, mocker):
+    # verify that the solar_position_method kwarg is passed through to pvlib correctly
+    spy = mocker.spy(pvlib.solarposition, 'get_solarposition')
+    for method in ['nrel_numpy', 'ephemeris']:
+        sensor_analysis.set_clearsky(pvlib.location.Location(40, -80), pv_tilt=20, pv_azimuth=180,
+                                     solar_position_method=method)
+        sensor_analysis._calc_clearsky_poa()
+        assert spy.call_args[1]['method'] == method
 
 
 def test_index_mismatch():
