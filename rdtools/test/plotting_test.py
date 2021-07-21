@@ -76,6 +76,7 @@ def test_degradation_summary_plots_kwargs(degradation_info):
         plot_color='g',
         summary_title='test',
         scatter_alpha=1.0,
+        detailed=True,
     )
     result = degradation_summary_plots(yoy_rd, yoy_ci, yoy_info, power,
                                        **kwargs)

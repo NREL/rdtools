@@ -54,8 +54,8 @@ class TrendAnalysis():
         normalized in the normalization step based on it's 95th percentile
         (see TrendAnalysis._pvwatts_norm() source).
     interp_freq : str or pandas.tseries.offsets.DateOffset
-        Pandas frequency specification used to interpolate all pandas.Series
-        passed at instantiation. We recommend using the natural frequency of the
+        Pandas frequency specification used to interpolate the input PV power
+        or energy. We recommend using the natural frequency of the
         data, rather than up or down sampling. Analysis requires regular time series.
         For more information see
         https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#dateoffset-objects
@@ -84,21 +84,22 @@ class TrendAnalysis():
 
         if interp_freq is not None:
             pv = normalization.interpolate(pv, interp_freq, max_timedelta)
-            if poa_global is not None:
-                poa_global = normalization.interpolate(
-                    poa_global, interp_freq, max_timedelta)
-            if temperature_cell is not None:
-                temperature_cell = normalization.interpolate(
-                    temperature_cell, interp_freq, max_timedelta)
-            if temperature_ambient is not None:
-                temperature_ambient = normalization.interpolate(
-                    temperature_ambient, interp_freq, max_timedelta)
-            if power_expected is not None:
-                power_expected = normalization.interpolate(
-                    power_expected, interp_freq, max_timedelta)
-            if isinstance(windspeed, pd.Series):
-                windspeed = normalization.interpolate(
-                    windspeed, interp_freq, max_timedelta)
+
+        if poa_global is not None:
+            poa_global = normalization.interpolate(
+                poa_global, pv.index, max_timedelta)
+        if temperature_cell is not None:
+            temperature_cell = normalization.interpolate(
+                temperature_cell, pv.index, max_timedelta)
+        if temperature_ambient is not None:
+            temperature_ambient = normalization.interpolate(
+                temperature_ambient, pv.index, max_timedelta)
+        if power_expected is not None:
+            power_expected = normalization.interpolate(
+                power_expected, pv.index, max_timedelta)
+        if isinstance(windspeed, pd.Series):
+            windspeed = normalization.interpolate(
+                windspeed, pv.index, max_timedelta)
 
         if pv_input == 'power':
             self.pv_power = pv
@@ -136,7 +137,8 @@ class TrendAnalysis():
 
     def set_clearsky(self, pvlib_location=None, pv_azimuth=None, pv_tilt=None,
                      poa_global_clearsky=None, temperature_cell_clearsky=None,
-                     temperature_ambient_clearsky=None, albedo=0.25):
+                     temperature_ambient_clearsky=None, albedo=0.25,
+                     solar_position_method='nrel_numpy'):
         '''
         Initialize values for a clearsky analysis which requires configuration
         of location and orientation details. If optional parameters `poa_global_clearsky`,
@@ -164,26 +166,27 @@ class TrendAnalysis():
         albedo : numeric
             Albedo to be used in irradiance transposition calculations. Can be right-labeled
             Pandas Time Series or single numeric value.
+        solar_position_method : str, default 'nrel_numpy'
+            Optional method name to pass to :py:func:`pvlib.solarposition.get_solarposition`.
+            Switching methods may improve calculation time.
         '''
-        interp_freq = self.interp_freq
         max_timedelta = self.max_timedelta
 
-        if interp_freq is not None:
-            if poa_global_clearsky is not None:
-                poa_global_clearsky = normalization.interpolate(
-                    poa_global_clearsky, interp_freq, max_timedelta)
-            if temperature_cell_clearsky is not None:
-                temperature_cell_clearsky = normalization.interpolate(
-                    temperature_cell_clearsky, interp_freq, max_timedelta)
-            if temperature_ambient_clearsky is not None:
-                temperature_ambient_clearsky = normalization.interpolate(
-                    temperature_ambient_clearsky, interp_freq, max_timedelta)
-            if isinstance(pv_azimuth, (pd.Series, pd.DataFrame)):
-                pv_azimuth = normalization.interpolate(
-                    pv_azimuth, interp_freq, max_timedelta)
-            if isinstance(pv_tilt, (pd.Series, pd.DataFrame)):
-                pv_tilt = normalization.interpolate(
-                    pv_tilt, interp_freq, max_timedelta)
+        if poa_global_clearsky is not None:
+            poa_global_clearsky = normalization.interpolate(
+                poa_global_clearsky, self.pv_energy.index, max_timedelta)
+        if temperature_cell_clearsky is not None:
+            temperature_cell_clearsky = normalization.interpolate(
+                temperature_cell_clearsky, self.pv_energy.index, max_timedelta)
+        if temperature_ambient_clearsky is not None:
+            temperature_ambient_clearsky = normalization.interpolate(
+                temperature_ambient_clearsky, self.pv_energy.index, max_timedelta)
+        if isinstance(pv_azimuth, (pd.Series, pd.DataFrame)):
+            pv_azimuth = normalization.interpolate(
+                pv_azimuth, self.pv_energy.index, max_timedelta)
+        if isinstance(pv_tilt, (pd.Series, pd.DataFrame)):
+            pv_tilt = normalization.interpolate(
+                pv_tilt, self.pv_energy.index, max_timedelta)
 
         self.pvlib_location = pvlib_location
         self.pv_azimuth = pv_azimuth
@@ -192,6 +195,7 @@ class TrendAnalysis():
         self.temperature_cell_clearsky = temperature_cell_clearsky
         self.temperature_ambient_clearsky = temperature_ambient_clearsky
         self.albedo = albedo
+        self.solar_position_method = solar_position_method
 
     def _calc_clearsky_poa(self, times=None, rescale=True, **kwargs):
         '''
@@ -199,7 +203,9 @@ class TrendAnalysis():
         Parameters
         ----------
         times : pandas.DateTimeIndex
-            times on for which to calculate clearsky poa
+            times on for which to calculate clearsky poa.  If not provided then
+            it will be simulated at 1-minute frequency and averaged to match the
+            index of self.poa_global
         rescale : bool
             Whether to attempt to rescale clearsky irradiance to measured
         kwargs :
@@ -208,20 +214,24 @@ class TrendAnalysis():
         -------
         None
         '''
+        aggregate = False
         if times is None:
-            times = self.poa_global.index
+            times = pd.date_range(self.poa_global.index.min(), self.poa_global.index.max(),
+                                  freq='1min')
+            aggregate = True
+
         if self.pvlib_location is None:
             raise ValueError(
                 'pvlib location must be provided using set_clearsky()')
         if self.pv_tilt is None or self.pv_azimuth is None:
             raise ValueError(
                 'pv_tilt and pv_azimuth must be provided using set_clearsky()')
-        if rescale is True and not times.equals(self.poa_global.index):
-            raise ValueError(
-                'rescale=True can only be used when clearsky poa is on same index as poa')
 
         loc = self.pvlib_location
-        sun = loc.get_solarposition(times)
+        solar_position_kwargs = {}
+        if self.solar_position_method:
+            solar_position_kwargs['method'] = self.solar_position_method
+        sun = loc.get_solarposition(times, **solar_position_kwargs)
         clearsky = loc.get_clearsky(times, solar_position=sun)
 
         clearsky_poa = pvlib.irradiance.get_total_irradiance(
@@ -236,7 +246,18 @@ class TrendAnalysis():
             **kwargs)
         clearsky_poa = clearsky_poa['poa_global']
 
+        if aggregate:
+            interval_id = pd.Series(range(len(self.poa_global)), index=self.poa_global.index)
+            interval_id = interval_id.reindex(times, method='backfill')
+            clearsky_poa = clearsky_poa.groupby(interval_id).mean()
+            clearsky_poa.index = self.poa_global.index
+            clearsky_poa.iloc[0] = np.nan
+
         if rescale is True:
+            if not clearsky_poa.index.equals(self.poa_global.index):
+                raise ValueError(
+                    'rescale=True can only be used when clearsky poa is on same index as poa')
+
             clearsky_poa = normalization.irradiance_rescale(
                 self.poa_global, clearsky_poa, method='iterative')
 

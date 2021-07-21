@@ -68,6 +68,7 @@ EXTRAS_REQUIRE = {
         'pytest',
         'coverage',
         'flake8',
+        'pytest-mock',
     ]
 }
 EXTRAS_REQUIRE['all'] = sorted(set(sum(EXTRAS_REQUIRE.values(), [])))
