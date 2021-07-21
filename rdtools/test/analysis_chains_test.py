@@ -289,6 +289,16 @@ def test_no_set_clearsky(clearsky_parameters):
         rd_analysis.clearsky_analysis()
 
 
+def test_solar_position_method_passthrough(sensor_analysis, mocker):
+    # verify that the solar_position_method kwarg is passed through to pvlib correctly
+    spy = mocker.spy(pvlib.solarposition, 'get_solarposition')
+    for method in ['nrel_numpy', 'ephemeris']:
+        sensor_analysis.set_clearsky(pvlib.location.Location(40, -80), pv_tilt=20, pv_azimuth=180,
+                                     solar_position_method=method)
+        sensor_analysis._calc_clearsky_poa()
+        assert spy.call_args[1]['method'] == method
+
+
 @pytest.fixture
 def soiling_parameters(basic_parameters, soiling_normalized_daily, cs_input):
     # parameters for soiling analysis with TrendAnalysis
