@@ -6,6 +6,7 @@ import joblib
 import os
 import warnings
 from numbers import Number
+import rdtools
 
 # Load in the XGBoost clipping model using joblib.
 xgboost_clipping_model = None
@@ -591,9 +592,7 @@ def xgboost_clip_filter(power_ac,
     """
     # Throw a warning that this is still an experimental filter
     warnings.warn("The XGBoost filter is an experimental clipping filter "
-                  "that is still under development. The API, results, and "
-                  "default behaviors may change in future releases (including"
-                  "MINOR and PATCH). Use at your own risk!")
+                  "that is still under development. Use at your own risk!")
     # Load in the XGBoost model
     xgboost_clipping_model = _load_xgboost_clipping_model()
     # Format the power time series
@@ -608,7 +607,8 @@ def xgboost_clip_filter(power_ac,
     freq_string = str(sampling_frequency) + "T"
     # Min-max normalize
     # Resample the series based on the most common sampling frequency
-    power_ac_interpolated = power_ac.resample(freq_string).nearest()
+    power_ac_interpolated = rdtools.normalization.interpolate(power_ac,
+                                                              freq_string)
     # Convert the Pandas series to a dataframe.
     power_ac_df = power_ac_interpolated.to_frame()
     # Get the sampling frequency (as a continuous feature variable)
@@ -653,13 +653,6 @@ def xgboost_clip_filter(power_ac,
     # data frequency.
     xgb_predictions = xgb_predictions.reindex(index=power_ac.index,
                                               method='ffill')
-    # Regenerate the features with the original sampling frequency,
-    # if it is more frequent than once every 5 minutes.
-    if sampling_frequency < 5:
-        power_ac_df = power_ac_interpolated.to_frame()
-        power_ac_df = _calculate_xgboost_model_features(power_ac_df,
-                                                        sampling_frequency)
-    # Add back in XGB predictions for the original dtaframe
     power_ac_df['xgb_predictions'] = xgb_predictions.astype(bool)
     power_ac_df_clipping = power_ac_df[power_ac_df['xgb_predictions']
                                        .fillna(False)]
