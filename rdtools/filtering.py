@@ -423,7 +423,7 @@ def logic_clip_filter(power_ac,
     # Therefore, the  data is resampled to a 15-minute median
     # before running the filter.
     if time_series_sampling_frequency >= 10:
-        power_ac = power_ac.asfreq(freq_string)
+        power_ac = power_ac.resample(freq_string).nearest()
     else:
         power_ac = power_ac.resample('15T').mean()
         time_series_sampling_frequency = 15
@@ -477,7 +477,7 @@ def logic_clip_filter(power_ac,
         # Find the maximum and minimum power level where clipping is
         # detected each day.
         clip_pwr = power_ac[clipping]
-        clip_pwr = clip_pwr.reindex(index=power_copy.index,
+        clip_pwr = clip_pwr.reindex(index=power_ac.index,
                                     fill_value=np.nan)
         daily_clipping_max = clip_pwr.resample('D').max()
         daily_clipping_min = clip_pwr.resample('D').min()
@@ -492,7 +492,7 @@ def logic_clip_filter(power_ac,
     final_clip = ((daily_clipping_min <= power_ac) &
                   (power_ac <= daily_clipping_max) &
                   (clipping_difference <= 0.02))
-    final_clip = final_clip.reindex(index=power_copy.index, fill_value=False)
+    final_clip = final_clip.reindex(index=power_copy.index, method='nearest')
     # Check for an overall clipping threshold that should apply to all data
     clip_power = power_copy[final_clip]
     final_clip = _apply_overall_clipping_threshold(power_ac,
@@ -608,7 +608,7 @@ def xgboost_clip_filter(power_ac,
     freq_string = str(sampling_frequency) + "T"
     # Min-max normalize
     # Resample the series based on the most common sampling frequency
-    power_ac_interpolated = power_ac.asfreq(freq_string)
+    power_ac_interpolated = power_ac.resample(freq_string).nearest()
     # Convert the Pandas series to a dataframe.
     power_ac_df = power_ac_interpolated.to_frame()
     # Get the sampling frequency (as a continuous feature variable)
@@ -688,7 +688,7 @@ def xgboost_clip_filter(power_ac,
                        power_ac_df['scaled_value'])
                       & (power_ac_df['percent_daily_max'] >= .95)
                       & (power_ac_df['scaled_value'] >= .1))
-    final_clip = final_clip.reindex(index=power_ac.index, fill_value=False)
+    final_clip = final_clip.reindex(index=power_ac.index, method='nearest')
     # Check for an overall clipping threshold that should apply to all data
     clip_power = power_ac[final_clip]
     final_clip = _apply_overall_clipping_threshold(power_ac,
