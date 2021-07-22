@@ -29,6 +29,15 @@ Enhancements
 * Add ``sensor_filter_components`` and ``clearsky_filter_components`` to
   :py:class:`~rdtools.analysis_chains.TrendAnalysis` (:issue:`236`, :pull:`263`)
 
+* Boolean input kwarg ``detailed`` has been added to
+  :py:class:`~rdtools.plotting.degradation_summary_plots` to color-code 
+  degradation plots by the number of times data points are used in the
+  degradation distribution. (:issue:`269`, :pull:`282`)
+  
+* :py:class:`~rdtools.degradation.degradation_year_on_year` adds a new 
+  ``usage_of_points`` entry in the ``calc_info`` return dictionary.
+  (:issue:`269`, :pull:`282`)
+
 
 Bug fixes
 ---------
@@ -79,4 +88,4 @@ Contributors
 * Michael Deceglie (:ghuser:`mdeceglie`)
 * Matthew Muller (:ghuser:`matt14muller`)
 * Kirsten Perry (:ghuser:`kperrynrel`)
-
+* Chris Deline (:ghuser:`cdeline`)
