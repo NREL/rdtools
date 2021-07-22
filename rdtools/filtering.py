@@ -407,15 +407,13 @@ def logic_clip_filter(power_ac,
         subset=power_ac.index.name,
         keep='first').set_index(power_ac.index.name)
     freq_string = str(time_series_sampling_frequency) + 'T'
-    if time_series_sampling_frequency >= 10:
-        power_ac = power_ac.asfreq(freq_string)
-    # if time_series_sampling_frequency >= 10:
-    #     power_ac = power_ac.asfreq(freq_string)
     # High frequency data (less than 10 minutes) has demonstrated
     # potential to have more noise than low frequency  data.
     # Therefore, the  data is resampled to a 15-minute median
     # before running the filter.
-    if time_series_sampling_frequency < 10:
+    if time_series_sampling_frequency >= 10:
+        power_ac = power_ac.asfreq(freq_string)
+    else:
         power_ac = power_ac.resample('15T').mean()
         time_series_sampling_frequency = 15
     # If a value for roll_periods is not designated, the function uses
