@@ -653,6 +653,13 @@ def xgboost_clip_filter(power_ac,
     # data frequency.
     xgb_predictions = xgb_predictions.reindex(index=power_ac.index,
                                               method='ffill')
+    xgb_predictions = xgb_predictions.fillna(False)
+    # Regenerate the features with the original sampling frequency
+    # (pre-resampling or interpolation).
+    power_ac_df = power_ac.to_frame()
+    power_ac_df = _calculate_xgboost_model_features(power_ac_df,
+                                                    sampling_frequency)
+    # Add back in XGB predictions for the original dataframe
     power_ac_df['xgb_predictions'] = xgb_predictions.astype(bool)
     power_ac_df_clipping = power_ac_df[power_ac_df['xgb_predictions']
                                        .fillna(False)]
@@ -681,7 +688,7 @@ def xgboost_clip_filter(power_ac,
                        power_ac_df['scaled_value'])
                       & (power_ac_df['percent_daily_max'] >= .95)
                       & (power_ac_df['scaled_value'] >= .1))
-    final_clip = final_clip.reindex(index=power_ac.index, method='nearest')
+    final_clip = final_clip.reindex(index=power_ac.index, fill_value=False)
     # Check for an overall clipping threshold that should apply to all data
     clip_power = power_ac[final_clip]
     final_clip = _apply_overall_clipping_threshold(power_ac,
