@@ -278,7 +278,7 @@ def soiling_rate_histogram(soiling_info, bins=None):
     return fig
 
 
-def tune_filter_plot(power_ac, mask, display_web_browser=False):
+def tune_filter_plot(signal, mask, display_web_browser=False):
     """
     This function allows the user to visualize filtered data in
     a Plotly plot, after tweaking the function's different
@@ -287,9 +287,8 @@ def tune_filter_plot(power_ac, mask, display_web_browser=False):
 
     Parameters
     ----------
-    power_ac : pd.Series
-        AC power in Watts. Index of the Pandas series is a Pandas
-        datetime index.
+    signal : pd.Series
+        Index of the Pandas series is a Pandas datetime index.
     mask : pd.Series
         Pandas series of booleans, where included data periods
         are marked as True, and omitted-data periods occurs are
@@ -303,17 +302,17 @@ def tune_filter_plot(power_ac, mask, display_web_browser=False):
     Interactive Plotly graph, with the masked time series for the filter.
     """
     # Get the names of the series and the datetime index
-    column_name = power_ac.name
+    column_name = signal.name
     if column_name is None:
-        column_name = 'power_ac'
-        power_ac = power_ac.rename(column_name)
-    index_name = power_ac.index.name
+        column_name = 'signal'
+        signal = signal.rename(column_name)
+    index_name = signal.index.name
     if index_name is None:
         index_name = 'datetime'
-        power_ac = power_ac.rename_axis(index_name)
+        signal = signal.rename_axis(index_name)
     # Visualize the power_ac time series, delineating clipping periods
     # using the clipping_mask series. Use plotly to visualize.
-    df = pd.DataFrame(power_ac)
+    df = pd.DataFrame(signal)
     # Add the mask as a column
     df['mask'] = mask
     df = df.reset_index()
