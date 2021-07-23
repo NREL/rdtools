@@ -356,7 +356,6 @@ def logic_clip_filter(power_ac,
     rolling_range_max_cutoff (default set to 0.2). Periods where the relative
     maximum difference between any two points is less than rolling_range_max_cutoff
     are flagged as clipping and used to set daily clipping levels for the final mask.
-
     Parameters
     ----------
     power_ac : pd.Series
@@ -380,7 +379,6 @@ def logic_clip_filter(power_ac,
         near-zero derivative over 3 periods for a fixed tilt system, and over
         5 periods for a tracked system with a sampling frequency more frequent
         than once every 30 minutes.
-
     Returns
     -------
     pd.Series
@@ -388,7 +386,6 @@ def logic_clip_filter(power_ac,
         clipping.
         True values delineate non-clipping periods, and False values delineate
         clipping periods.
-
     References
     ----------
     .. [1] Perry K., Muller, M., and Anderson K. "Performance comparison of clipping
@@ -397,7 +394,9 @@ def logic_clip_filter(power_ac,
     '''
     # Throw a warning that this is still an experimental filter
     warnings.warn("The logic-based filter is an experimental clipping filter "
-                  "that is still under development. Use at your own risk!")
+                  "that is still under development. The API, results, and "
+                  "default behaviors may change in future releases (including"
+                  "MINOR and PATCH). Use at your own risk!")
     # Format the power time series
     power_ac, index_name = _format_clipping_time_series(power_ac,
                                                         mounting_type)
@@ -459,6 +458,8 @@ def logic_clip_filter(power_ac,
                                     method='ffill')
         # Subset the series where clipping filter == True
         clip_pwr = power_ac[clipping]
+        clip_pwr = clip_pwr.reindex(index=power_ac.index,
+                                    fill_value=np.nan)
         # Set any values within the clipping max + clipping min threshold
         # as clipping. This is done specifically for capturing the noise
         # for high frequency data sets.
@@ -490,6 +491,7 @@ def logic_clip_filter(power_ac,
     final_clip = ((daily_clipping_min <= power_ac) &
                   (power_ac <= daily_clipping_max) &
                   (clipping_difference <= 0.02))
+    final_clip = final_clip.reindex(index=power_ac.index, fill_value=False)
     # Check for an overall clipping threshold that should apply to all data
     clip_power = power_copy[final_clip]
     final_clip = _apply_overall_clipping_threshold(power_ac,
@@ -568,7 +570,6 @@ def xgboost_clip_filter(power_ac,
     """
     This function generates the features to run through the XGBoost
     clipping model, and generates model outputs.
-
     Parameters
     ----------
     power_ac : pd.Series
@@ -577,7 +578,6 @@ def xgboost_clip_filter(power_ac,
     mounting_type: string, default 'fixed'
         String representing the mounting configuration associated with the
         AC power time series. Can either be "fixed" or "single_axis_tracking".
-
     Returns
     -------
     pd.Series
@@ -588,7 +588,9 @@ def xgboost_clip_filter(power_ac,
     """
     # Throw a warning that this is still an experimental filter
     warnings.warn("The XGBoost filter is an experimental clipping filter "
-                  "that is still under development. Use at your own risk!")
+                  "that is still under development. The API, results, and "
+                  "default behaviors may change in future releases (including"
+                  "MINOR and PATCH). Use at your own risk!")
     # Load in the XGBoost model
     xgboost_clipping_model = _load_xgboost_clipping_model()
     # Format the power time series
