@@ -476,7 +476,7 @@ def logic_clip_filter(power_ac,
         # detected each day.
         clip_pwr = power_ac[clipping]
         clip_pwr = clip_pwr.reindex(index=power_copy.index,
-                                    method="nearest")
+                                    method="ffill")
         power_ac = power_copy.copy()
         daily_clipping_max = clip_pwr.resample('D').max()
         daily_clipping_min = clip_pwr.resample('D').min()

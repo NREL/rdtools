@@ -3,7 +3,7 @@
 import pytest
 import pandas as pd
 import numpy as np
-from rdtools import (csi_filter,
+from filtering import (csi_filter,
                      poa_filter,
                      tcell_filter,
                      clip_filter,
@@ -135,7 +135,7 @@ def test_logic_clip_filter(generate_power_time_series_no_clipping,
                            generate_power_time_series_irregular_intervals):
     ''' Unit tests for logic clipping filter.'''
     power_no_datetime_index_nc, power_datetime_index_nc = \
-        generate_power_time_series_no_clipping
+        generate_power_time_series_no_clipping()
     # Test that a Type Error is raised when a pandas series
     # without a datetime index is used.
     pytest.raises(TypeError,  logic_clip_filter,
@@ -151,11 +151,11 @@ def test_logic_clip_filter(generate_power_time_series_no_clipping,
     # Generate 1-minute interval data, run it through the function, and
     # check that the associated data returned is 1-minute
     power_datetime_index_one_min_intervals = \
-        generate_power_time_series_one_min_intervals
+        generate_power_time_series_one_min_intervals()
     mask_one_min = logic_clip_filter(power_datetime_index_one_min_intervals)
     # Generate irregular interval data, and run it through the XGBoost model
     power_datetime_index_irregular = \
-        generate_power_time_series_irregular_intervals
+        generate_power_time_series_irregular_intervals()
     # Make sure that the routine throws a warning when the data sampling
     # frequency is less than 95% consistent
     warnings.simplefilter("always")
@@ -172,7 +172,7 @@ def test_logic_clip_filter(generate_power_time_series_no_clipping,
     mask_nc = logic_clip_filter(power_datetime_index_nc)
     # Test the time series where the data is clipped
     power_no_datetime_index_c, power_datetime_index_c = \
-        generate_power_time_series_clipping
+        generate_power_time_series_clipping()
     # Expect 4 values in middle of sequence to be clipped (when x=50)
     mask_c = logic_clip_filter(power_datetime_index_c)
     filtered_c = power_datetime_index_c[mask_c]
