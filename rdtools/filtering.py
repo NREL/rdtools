@@ -371,7 +371,7 @@ def logic_clip_filter(power_ac,
         is determined to be clipping. Defaults to 0.2; however, values as high as
         0.4 have been tested and shown to be effective. The higher the cutoff, the
         more values in the dataset that will be determined as clipping.
-    roll_periods: Integer.0
+    roll_periods: Integer
         Number of periods to examine when looking for a near-zero derivative
         in the time series derivative. If roll_periods = 3, the system looks
         for a near-zero derivative over 3 consecutive readings. Default value
