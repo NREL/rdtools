@@ -282,17 +282,18 @@ def tune_filter_plot(signal, mask, display_web_browser=False):
     """
     This function allows the user to visualize filtered data in
     a Plotly plot, after tweaking the function's different
-    hyperparameters. The plot can be zoomed in on, for an in-depth look at
-    the mask in the AC power time series.
+    parameters. The plot of signal colored according to mask
+    can be zoomed in on, for an in-depth look.
 
     Parameters
     ----------
     signal : pd.Series
-        Index of the Pandas series is a Pandas datetime index.
+        Index of the Pandas series is a Pandas datetime index. Usually
+        this is PV power or energy, but other signals will work.
     mask : pd.Series
         Pandas series of booleans, where included data periods
         are marked as True, and omitted-data periods occurs are
-        marked as False.
+        marked as False. Should have the same detetime index as signal.
     display_web_browser : boolean, default False
         When set to True, the Plotly graph is displayed in the
         user's web browser.
