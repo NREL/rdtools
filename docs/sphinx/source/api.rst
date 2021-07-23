@@ -97,6 +97,7 @@ Filtering
    :toctree: generated/
     
    clip_filter
+   quantile_clip_filter
    logic_clip_filter
    xgboost_clip_filter
    csi_filter

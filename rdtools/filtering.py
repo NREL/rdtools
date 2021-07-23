@@ -153,7 +153,7 @@ def clip_filter(signal, model="quantile", **kwargs):
                       "parameters have been interpreted as model= "
                       "'quantile_clip_filter', quantile={quantile}. "
                       "This syntax will be removed in a future version.",
-                      DeprecationWarning)
+                      rdtools._deprecation.rdtoolsDeprecationWarning)
         kwargs['quantile'] = quantile
         model = 'quantile'
 
@@ -215,8 +215,6 @@ def _format_clipping_time_series(signal, mounting_type):
         AC power or AC energy time series
     String
         AC Power or AC energy time series name
-    String
-        Datetime Index name
     """
     # Check that it's a Pandas series with a datetime index.
     # If not, raise an error.

@@ -62,9 +62,10 @@ Documentation
 
 Enhancements
 ------------
+* Add new function :py:func:`~rdtools.filtering.quantile_clip_filter` (:pull:`200`).
 * Add new function :py:func:`~rdtools.filtering.logic_clip_filter` (:pull:`200`).
 * Add new function :py:func:`~rdtools.filtering.xgboost_clip_filter` (:pull:`200`).
-* Add new function :py:func:`~rdtools.plotting.tune_clip_filter_plot` (:pull:`200`).
+* Add new function :py:func:`~rdtools.plotting.tune_filter_plot` (:pull:`200`).
 
 
 Requirements
