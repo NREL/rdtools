@@ -121,16 +121,16 @@ def csi_filter(poa_global_measured, poa_global_clearsky, threshold=0.15):
     return (csi >= 1.0 - threshold) & (csi <= 1.0 + threshold)
 
 
-def clip_filter(power_ac, model="quantile", **kwargs):
+def clip_filter(signal, model="quantile", **kwargs):
     """
     Master wrapper for running one of the desired clipping filters.
     The default filter run is the quantile clipping filter.
 
     Parameters
     ----------
-    power_ac : pd.Series
-        Pandas time series, representing PV system with
-        a pandas datetime index.
+    signal : pd.Series
+        Pandas AC power or AC energy time series, representing
+        a PV data stream witn a pandas datetime index.
     model : string, default 'quantile'
         Clipping filter model to run. Can be 'quantile',
         'xgboost', or 'logic'.
@@ -158,11 +158,11 @@ def clip_filter(power_ac, model="quantile", **kwargs):
         model = 'quantile'
 
     if (model == 'quantile'):
-        clip_mask = quantile_clip_filter(power_ac, **kwargs)
+        clip_mask = quantile_clip_filter(signal, **kwargs)
     elif model == 'xgboost':
-        clip_mask = xgboost_clip_filter(power_ac, **kwargs)
+        clip_mask = xgboost_clip_filter(signal, **kwargs)
     elif model == 'logic':
-        clip_mask = logic_clip_filter(power_ac, **kwargs)
+        clip_mask = logic_clip_filter(signal, **kwargs)
     else:
         raise ValueError(
             "Variable model must be 'quantile', "
@@ -170,16 +170,16 @@ def clip_filter(power_ac, model="quantile", **kwargs):
     return clip_mask
 
 
-def quantile_clip_filter(power_ac, quantile=0.98):
+def quantile_clip_filter(signal, quantile=0.98):
     '''
     Filter data points likely to be affected by clipping
-    with power greater than or equal to 99% of the `quant`
+    with power or energy greater than or equal to 99% of the `quant`
     quantile.
 
     Parameters
     ----------
-    power_ac : pandas.Series
-        AC power in Watts
+    signal : pandas.Series
+        AC power or AC energy time series
     quantile : float, default 0.98
         Value for upper threshold quantile
 
@@ -189,38 +189,38 @@ def quantile_clip_filter(power_ac, quantile=0.98):
         Boolean Series of whether the given measurement is below 99% of the
         quantile filter.
     '''
-    v = power_ac.quantile(quantile)
-    return (power_ac < v * 0.99)
+    v = signal.quantile(quantile)
+    return (signal < v * 0.99)
 
 
-def _format_clipping_time_series(power_ac, mounting_type):
+def _format_clipping_time_series(signal, mounting_type):
     """
-    Format an AC power time series appropriately for
+    Format an AC power or AC energy time series appropriately for
     either the logic_clip_filter function or the xgboost_clip_filter
     function.
 
     Parameters
     ----------
-    power_ac : pd.Series
-        Pandas time series, representing PV system power with
+    signal : pd.Series
+        Pandas time series, representing PV system power or energy with
         a pandas datetime index.
     mounting_type : String
         String representing the mounting configuration associated with the
-        AC power time series. Can either be "fixed" or "single_axis_tracking".
-        Default set to 'fixed'.
+        AC power or energy time series. Can either be "fixed" or
+        "single_axis_tracking". Default set to 'fixed'.
 
     Returns
     -------
     pd.Series
-        AC power time series
+        AC power or AC energy time series
     String
-        AC Power time series name
+        AC Power or AC energy time series name
     String
         Datetime Index name
     """
     # Check that it's a Pandas series with a datetime index.
     # If not, raise an error.
-    if not isinstance(power_ac.index, pd.DatetimeIndex):
+    if not isinstance(signal.index, pd.DatetimeIndex):
         raise TypeError('Must be a Pandas series with a datetime index.')
     # Check the other input variables to ensure that they are the
     # correct format
@@ -230,21 +230,21 @@ def _format_clipping_time_series(power_ac, mounting_type):
             "'fixed'.")
     # Check that there is enough data in the dataframe. Must be greater than
     # 10 readings.
-    if len(power_ac) <= 10:
+    if len(signal) <= 10:
         raise Exception('<=10 readings in the time series, cannot run filter.')
     # Get the names of the series and the datetime index
     column_name = 'value'
-    power_ac = power_ac.rename(column_name)
-    index_name = power_ac.index.name
+    signal = signal.rename(column_name)
+    index_name = signal.index.name
     if index_name is None:
         index_name = 'datetime'
-        power_ac = power_ac.rename_axis(index_name)
+        signal = signal.rename_axis(index_name)
     # Sort the time series in case it is out of order
-    power_ac = power_ac.sort_index()
-    return power_ac, power_ac.index.name
+    signal = signal.sort_index()
+    return signal, signal.index.name
 
 
-def _check_data_sampling_frequency(power_ac):
+def _check_data_sampling_frequency(signal):
     """
     Check the data sampling frequency of the time series. If the sampling
     frequency is not >=95% consistent, the time series is flagged with a
@@ -252,8 +252,8 @@ def _check_data_sampling_frequency(power_ac):
 
     Parameters
     ----------
-    power_ac : pd.Series
-        Pandas time series, representing PV system power with
+    signal : pd.Series
+        Pandas time series, representing PV system power or energy with
         a pandas datetime index.
 
     Returns
@@ -262,9 +262,9 @@ def _check_data_sampling_frequency(power_ac):
     """
     # Get the sampling frequency counts--if the sampling frequency is not
     # consistently >=95% the same, then throw a warning.
-    sampling_frequency_df = pd.DataFrame(power_ac.index.to_series()
+    sampling_frequency_df = pd.DataFrame(signal.index.to_series()
                                          .diff().astype('timedelta64[s]')
-                                         .value_counts())/len(power_ac)
+                                         .value_counts())/len(signal)
     sampling_frequency_df.columns = ["count"]
     if (sampling_frequency_df["count"] < .95).all():
         warnings.warn("Variable sampling frequency across time series. "
@@ -274,16 +274,16 @@ def _check_data_sampling_frequency(power_ac):
     return
 
 
-def _calculate_max_rolling_range(power_ac, roll_periods):
+def _calculate_max_rolling_range(signal, roll_periods):
     """
     This function calculates the maximum range over a rolling
-    time period for an AC power time series. A pandas series of
+    time period for an AC power or energy time series. A pandas series of
     the rolling range is returned.
 
     Parameters
     ----------
-    power_ac : pd.Series
-        Pandas time series, representing PV system power with
+    signal : pd.Series
+        Pandas time series, representing PV system power or energy with
         a pandas datetime index.
     roll_periods: Int
         Number of readings to calculate the rolling maximum range on.
@@ -294,19 +294,19 @@ def _calculate_max_rolling_range(power_ac, roll_periods):
         Time series of the rolling maximum range.
     """
     # Calculate the maximum value over a forward-rolling window
-    max_roll = power_ac.iloc[::-1].rolling(roll_periods).max()
-    max_roll = max_roll.reindex(power_ac.index)
+    max_roll = signal.iloc[::-1].rolling(roll_periods).max()
+    max_roll = max_roll.reindex(signal.index)
     # Calculate the minimum value over a forward-rolling window
-    min_roll = power_ac.iloc[::-1].rolling(roll_periods).min()
-    min_roll = min_roll.reindex(power_ac.index)
+    min_roll = signal.iloc[::-1].rolling(roll_periods).min()
+    min_roll = min_roll.reindex(signal.index)
     # Calculate the maximum rolling range within the foward-rolling window
     rolling_range_max = (max_roll - min_roll)/((max_roll + min_roll)/2)*100
     return rolling_range_max
 
 
-def _apply_overall_clipping_threshold(power_ac,
+def _apply_overall_clipping_threshold(signal,
                                       clipping_mask,
-                                      clipped_power_ac):
+                                      clipped_signal):
     """
     Apply an overall clipping threshold to the data. This
     additional logic sets an overall threshold in the dataset
@@ -315,15 +315,15 @@ def _apply_overall_clipping_threshold(power_ac,
 
     Parameters
     ----------
-    power_ac : pd.Series
-        Pandas time series, representing PV system power with
+    signal : pd.Series
+        Pandas time series, representing PV system power or energy with
         a pandas datetime index.
     clipping_mask : pd.Series
-        Boolean mask of the AC power time series, where clipping
+        Boolean mask of the AC power or energy time series, where clipping
         periods are labeled as True and non-clipping periods are
         labeled as False. Has a datetime index.
-    clipped_power_ac: pd.Series
-        Pandas time series, representing PV system power filtered
+    clipped_signal: pd.Series
+        Pandas time series, representing PV system power or energy filtered
         where only clipping periods occur. Has a pandas datetime index.
 
     Returns
@@ -334,37 +334,38 @@ def _apply_overall_clipping_threshold(power_ac,
         periods are labeled as True and non-clipping periods are
         labeled as False. Has a pandas datetime index.
     """
-    upper_bound_pdiff = abs((power_ac.quantile(.99) -
-                             clipped_power_ac.quantile(.99))
-                            / ((power_ac.quantile(.99) +
-                                clipped_power_ac.quantile(.99))/2))
+    upper_bound_pdiff = abs((signal.quantile(.99) -
+                             clipped_signal.quantile(.99))
+                            / ((signal.quantile(.99) +
+                                clipped_signal.quantile(.99))/2))
     if upper_bound_pdiff < 0.01:
-        max_clip = (power_ac >= power_ac.quantile(0.99))
+        max_clip = (signal >= signal.quantile(0.99))
         clipping_mask = (clipping_mask | max_clip)
     return clipping_mask
 
 
-def logic_clip_filter(power_ac,
+def logic_clip_filter(signal,
                       mounting_type='fixed',
                       rolling_range_max_cutoff=0.2,
                       roll_periods=None):
     '''
     This filter is a logic-based filter that is used to filter out
-    clipping periods in AC power time series, it is based on the method
-    presented in [1]_. A boolean filter is returned based on the
-    maximum range over a rolling window, as compared to a user-set
-    rolling_range_max_cutoff (default set to 0.2). Periods where the relative
-    maximum difference between any two points is less than rolling_range_max_cutoff
-    are flagged as clipping and used to set daily clipping levels for the final mask.
+    clipping periods in AC power or energy time series, it is based
+    on the method presented in [1]_. A boolean filter is returned
+    based on the maximum range over a rolling window, as compared to
+    a user-set rolling_range_max_cutoff (default set to 0.2). Periods
+    where the relative maximum difference between any two points is
+    less than rolling_range_max_cutoff are flagged as clipping and used
+    to set daily clipping levels for the final mask.
     Parameters
     ----------
-    power_ac : pd.Series
-        Pandas time series, representing PV system power with
+    signal : pd.Series
+        Pandas time series, representing PV system power or energy with
         a pandas datetime index.
     mounting_type: string, default 'fixed'
         String representing the mounting configuration associated with the
-        AC power time series. Can either be "fixed" or "single_axis_tracking".
-        Default set to 'fixed'.
+        AC power or energy time series. Can either be "fixed" or 
+        "single_axis_tracking". Default set to 'fixed'.
     rolling_range_max_cutoff : float, default 0.2
         Relative fractional cutoff for max rolling range threshold. When the
         relative maximum range in any interval is below this cutoff, the interval
@@ -397,33 +398,33 @@ def logic_clip_filter(power_ac,
                   "that is still under development. The API, results, and "
                   "default behaviors may change in future releases (including"
                   "MINOR and PATCH). Use at your own risk!")
-    # Format the power time series
-    power_ac, index_name = _format_clipping_time_series(power_ac,
-                                                        mounting_type)
+    # Format the time series
+    signal, index_name = _format_clipping_time_series(signal,
+                                                      mounting_type)
     # Test if the data sampling frequency is variable, and flag it if the time
     # series sampling frequency is less than 95% consistent.
-    _check_data_sampling_frequency(power_ac)
+    _check_data_sampling_frequency(signal)
     # Get the sampling frequency of the time series
-    time_series_sampling_frequency = power_ac.index.to_series().diff()\
+    time_series_sampling_frequency = signal.index.to_series().diff()\
         .astype('timedelta64[m]').mode()[0]
     # Make copies of the original inputs for the cases that the data is
     # changes for clipping evaluation
     original_time_series_sampling_frequency = time_series_sampling_frequency
-    power_copy = power_ac.copy()
+    signal_copy = signal.copy()
     # Drop duplicate indices
-    power_ac = power_ac.reset_index().drop_duplicates(
-        subset=power_ac.index.name,
-        keep='first').set_index(power_ac.index.name)
+    signal = signal.reset_index().drop_duplicates(
+        subset=signal.index.name,
+        keep='first').set_index(signal.index.name)
     freq_string = str(time_series_sampling_frequency) + 'T'
     # High frequency data (less than 10 minutes) has demonstrated
     # potential to have more noise than low frequency  data.
     # Therefore, the  data is resampled to a 15-minute median
     # before running the filter.
     if time_series_sampling_frequency >= 10:
-        power_ac = rdtools.normalization.interpolate(power_ac,
-                                                     freq_string)
+        signal = rdtools.normalization.interpolate(signal,
+                                                   freq_string)
     else:
-        power_ac = power_ac.resample('15T').mean()
+        signal = signal.resample('15T').mean()
         time_series_sampling_frequency = 15
     # If a value for roll_periods is not designated, the function uses
     # the current default logic to set the roll_periods value.
@@ -434,14 +435,13 @@ def logic_clip_filter(power_ac,
         else:
             roll_periods = 3
     # Replace the lower 25% of daily data with NaN's
-    daily = 0.1 * power_ac.resample('D').max()
-    power_ac['ten_percent_daily'] = daily.reindex(index=power_ac.index,
-                                                  method='ffill')
-    power_ac.loc[power_ac['value'] < power_ac['ten_percent_daily'],
-                 'value'] = np.nan
-    power_ac = power_ac['value']
-    # Calculate the maximum rolling range for the power time series.
-    rolling_range_max = _calculate_max_rolling_range(power_ac, roll_periods)
+    daily = 0.1 * signal.resample('D').max()
+    signal['ten_percent_daily'] = daily.reindex(index=signal.index,
+                                                method='ffill')
+    signal.loc[signal['value'] < signal['ten_percent_daily'], 'value'] = np.nan
+    signal = signal['value']
+    # Calculate the maximum rolling range for the time series.
+    rolling_range_max = _calculate_max_rolling_range(signal, roll_periods)
     # Determine clipping values based on the maximum rolling range in
     # the rolling window, and the user-specified rolling range threshold
     roll_clip_mask = (rolling_range_max < rolling_range_max_cutoff)
@@ -453,12 +453,12 @@ def logic_clip_filter(power_ac,
     # original 15-minute data resulting in a clipping filter on the original
     # data.
     if (original_time_series_sampling_frequency < 10):
-        power_ac = power_copy.copy()
-        clipping = clipping.reindex(index=power_ac.index,
+        signal = signal_copy.copy()
+        clipping = clipping.reindex(index=signal.index,
                                     method='ffill')
         # Subset the series where clipping filter == True
-        clip_pwr = power_ac[clipping]
-        clip_pwr = clip_pwr.reindex(index=power_ac.index,
+        clip_pwr = signal[clipping]
+        clip_pwr = clip_pwr.reindex(index=signal.index,
                                     fill_value=np.nan)
         # Set any values within the clipping max + clipping min threshold
         # as clipping. This is done specifically for capturing the noise
@@ -466,37 +466,37 @@ def logic_clip_filter(power_ac,
         daily_mean = clip_pwr.resample('D').mean()
         daily_std = clip_pwr.resample('D').std()
         daily_clipping_max = daily_mean + 2 * daily_std
-        daily_clipping_max = daily_clipping_max.reindex(index=power_ac.index,
+        daily_clipping_max = daily_clipping_max.reindex(index=signal.index,
                                                         method='ffill')
         daily_clipping_min = daily_mean - 2 * daily_std
-        daily_clipping_min = daily_clipping_min.reindex(index=power_ac.index,
+        daily_clipping_min = daily_clipping_min.reindex(index=signal.index,
                                                         method='ffill')
     else:
-        # Find the maximum and minimum power level where clipping is
+        # Find the maximum and minimum signal level where clipping is
         # detected each day.
-        clip_pwr = power_ac[clipping]
-        clip_pwr = clip_pwr.reindex(index=power_copy.index,
+        clip_pwr = signal[clipping]
+        clip_pwr = clip_pwr.reindex(index=signal_copy.index,
                                     method="ffill")
-        power_ac = power_copy.copy()
+        signal = signal_copy.copy()
         daily_clipping_max = clip_pwr.resample('D').max()
         daily_clipping_min = clip_pwr.resample('D').min()
-        daily_clipping_min = daily_clipping_min.reindex(index=power_ac.index,
+        daily_clipping_min = daily_clipping_min.reindex(index=signal.index,
                                                         method='ffill')
-        daily_clipping_max = daily_clipping_max.reindex(index=power_ac.index,
+        daily_clipping_max = daily_clipping_max.reindex(index=signal.index,
                                                         method='ffill')
     # Set all values to clipping that are between the maximum and minimum
-    # power levels where clipping was found on a daily basis.
+    # signal levels where clipping was found on a daily basis.
     clipping_difference = (daily_clipping_max -
                            daily_clipping_min)/daily_clipping_max
-    final_clip = ((daily_clipping_min <= power_ac) &
-                  (power_ac <= daily_clipping_max) &
+    final_clip = ((daily_clipping_min <= signal) &
+                  (signal <= daily_clipping_max) &
                   (clipping_difference <= 0.02))
-    final_clip = final_clip.reindex(index=power_ac.index, fill_value=False)
+    final_clip = final_clip.reindex(index=signal.index, fill_value=False)
     # Check for an overall clipping threshold that should apply to all data
-    clip_power = power_copy[final_clip]
-    final_clip = _apply_overall_clipping_threshold(power_ac,
+    clip_signal = signal_copy[final_clip]
+    final_clip = _apply_overall_clipping_threshold(signal,
                                                    final_clip,
-                                                   clip_power)
+                                                   clip_signal)
     return ~final_clip
 
 
@@ -507,10 +507,10 @@ def _calculate_xgboost_model_features(df, sampling_frequency):
     Parameters
     ----------
     df: pd.DataFrame
-        Pandas dataframe, containing the AC power time series under the
+        Pandas dataframe, containing the AC power or energy time series under the
         'value' column.
     sampling_frequency: Int
-        Sampling frequency of the AC power time series.
+        Sampling frequency of the AC power or energy time series.
 
     Returns
     -------
@@ -537,9 +537,9 @@ def _calculate_xgboost_model_features(df, sampling_frequency):
         df.rolling_average.diff()
     df['first_order_derivative_forward_rolling_avg'] = \
         df.rolling_average.shift(-1).diff()
-    # Calculate the maximum rolling range for the power time series.
+    # Calculate the maximum rolling range for the power or energy time series.
     df['deriv_max'] = _calculate_max_rolling_range(
-        power_ac=df['scaled_value'], roll_periods=rolling_window)
+        signal=df['scaled_value'], roll_periods=rolling_window)
     # Get the max value for the day and see how each value compares
     df['date'] = list(pd.to_datetime(pd.Series(df.index)).dt.date)
     df['daily_max'] = df.groupby(['date'])['scaled_value'].transform(max)
@@ -565,19 +565,20 @@ def _calculate_xgboost_model_features(df, sampling_frequency):
     return df
 
 
-def xgboost_clip_filter(power_ac,
+def xgboost_clip_filter(signal,
                         mounting_type='fixed'):
     """
     This function generates the features to run through the XGBoost
     clipping model, and generates model outputs.
     Parameters
     ----------
-    power_ac : pd.Series
-        Pandas time series, representing PV system power with
+    signal : pd.Series
+        Pandas time series, representing PV system power or energy with
         a pandas datetime index.
     mounting_type: string, default 'fixed'
         String representing the mounting configuration associated with the
-        AC power time series. Can either be "fixed" or "single_axis_tracking".
+        AC power or energy time series. Can either be "fixed" or 
+        "single_axis_tracking".
     Returns
     -------
     pd.Series
@@ -593,103 +594,103 @@ def xgboost_clip_filter(power_ac,
                   "MINOR and PATCH). Use at your own risk!")
     # Load in the XGBoost model
     xgboost_clipping_model = _load_xgboost_clipping_model()
-    # Format the power time series
-    power_ac, index_name = _format_clipping_time_series(power_ac,
-                                                        mounting_type)
+    # Format the power or energy time series
+    signal, index_name = _format_clipping_time_series(signal,
+                                                      mounting_type)
     # Test if the data sampling frequency is variable, and flag it if the time
     # series sampling frequency is less than 95% consistent.
-    _check_data_sampling_frequency(power_ac)
+    _check_data_sampling_frequency(signal)
     # Get the most common sampling frequency
-    sampling_frequency = int(power_ac.index.to_series().diff()
+    sampling_frequency = int(signal.index.to_series().diff()
                              .astype('timedelta64[m]').mode()[0])
     freq_string = str(sampling_frequency) + "T"
     # Min-max normalize
     # Resample the series based on the most common sampling frequency
-    power_ac_interpolated = rdtools.normalization.interpolate(power_ac,
-                                                              freq_string)
+    signal_interpolated = rdtools.normalization.interpolate(signal,
+                                                            freq_string)
     # Convert the Pandas series to a dataframe.
-    power_ac_df = power_ac_interpolated.to_frame()
+    signal_df = signal_interpolated.to_frame()
     # Get the sampling frequency (as a continuous feature variable)
-    power_ac_df['sampling_frequency'] = sampling_frequency
+    signal_df['sampling_frequency'] = sampling_frequency
     # If the data sampling frequency of the series is more frequent than
     # once every five minute, resample at 5-minute intervals before
     # plugging into the model
     if sampling_frequency < 5:
-        power_ac_df = power_ac_df.resample('5T').mean()
-        power_ac_df['sampling_frequency'] = 5
+        signal_df = signal_df.resample('5T').mean()
+        signal_df['sampling_frequency'] = 5
     # Add mounting type as a column
-    power_ac_df['mounting_config'] = mounting_type
+    signal_df['mounting_config'] = mounting_type
     # Generate the features for the model.
-    power_ac_df = _calculate_xgboost_model_features(power_ac_df,
-                                                    sampling_frequency)
+    signal_df = _calculate_xgboost_model_features(signal_df,
+                                                  sampling_frequency)
     # Convert single-axis tracking/fixed tilt to a boolean variable
-    power_ac_df.loc[power_ac_df['mounting_config'] == "single_axis_tracking",
-                    'mounting_config_bool'] = 1
-    power_ac_df.loc[power_ac_df['mounting_config'] == 'fixed',
-                    'mounting_config_bool'] = 0
+    signal_df.loc[signal_df['mounting_config'] == "single_axis_tracking",
+                  'mounting_config_bool'] = 1
+    signal_df.loc[signal_df['mounting_config'] == 'fixed',
+                  'mounting_config_bool'] = 0
     # Subset the dataframe to only include model inputs
-    power_ac_df = power_ac_df[['first_order_derivative_backward',
-                               'first_order_derivative_forward',
-                               'first_order_derivative_backward_rolling_avg',
-                               'first_order_derivative_forward_rolling_avg',
-                               'sampling_frequency',
-                               'mounting_config_bool', 'scaled_value',
-                               'rolling_average', 'daily_max',
-                               'percent_daily_max', 'deriv_max',
-                               'deriv_backward_rolling_stdev',
-                               'deriv_backward_rolling_mean',
-                               'deriv_backward_rolling_median',
-                               'deriv_backward_rolling_min',
-                               'deriv_backward_rolling_max']].dropna()
-    # Run the power_ac_df dataframe through the XGBoost ML model,
+    signal_df = signal_df[['first_order_derivative_backward',
+                           'first_order_derivative_forward',
+                           'first_order_derivative_backward_rolling_avg',
+                           'first_order_derivative_forward_rolling_avg',
+                           'sampling_frequency',
+                           'mounting_config_bool', 'scaled_value',
+                           'rolling_average', 'daily_max',
+                           'percent_daily_max', 'deriv_max',
+                           'deriv_backward_rolling_stdev',
+                           'deriv_backward_rolling_mean',
+                           'deriv_backward_rolling_median',
+                           'deriv_backward_rolling_min',
+                           'deriv_backward_rolling_max']].dropna()
+    # Run the signal_df dataframe through the XGBoost ML model,
     # and return boolean outputs
     xgb_predictions = pd.Series(xgboost_clipping_model.predict(
-        power_ac_df).astype(bool))
+        signal_df).astype(bool))
     # Add datetime as an index
-    xgb_predictions.index = power_ac_df.index
+    xgb_predictions.index = signal_df.index
     # Reindex with the original data index. Re-adjusts to original
     # data frequency.
-    xgb_predictions = xgb_predictions.reindex(index=power_ac.index,
+    xgb_predictions = xgb_predictions.reindex(index=signal.index,
                                               method='ffill')
     xgb_predictions = xgb_predictions.fillna(False)
     # Regenerate the features with the original sampling frequency
     # (pre-resampling or interpolation).
-    power_ac_df = power_ac.to_frame()
-    power_ac_df = _calculate_xgboost_model_features(power_ac_df,
-                                                    sampling_frequency)
+    signal_df = signal.to_frame()
+    signal_df = _calculate_xgboost_model_features(signal_df,
+                                                  sampling_frequency)
     # Add back in XGB predictions for the original dataframe
-    power_ac_df['xgb_predictions'] = xgb_predictions.astype(bool)
-    power_ac_df_clipping = power_ac_df[power_ac_df['xgb_predictions']
-                                       .fillna(False)]
+    signal_df['xgb_predictions'] = xgb_predictions.astype(bool)
+    signal_df_clipping = signal_df[signal_df['xgb_predictions']
+                                   .fillna(False)]
     # Make everything between the
     # max and min values found for clipping each day as clipping.
-    power_ac_df_clipping_max = power_ac_df_clipping['scaled_value']\
+    signal_df_clipping_max = signal_df_clipping['scaled_value']\
         .resample('D').max()
-    power_ac_df_clipping_min = power_ac_df_clipping['scaled_value']\
+    signal_df_clipping_min = signal_df_clipping['scaled_value']\
         .resample('D').min()
-    power_ac_df['daily_clipping_min'] = power_ac_df_clipping_min.reindex(
-        index=power_ac_df.index, method='ffill')
-    power_ac_df['daily_clipping_max'] = power_ac_df_clipping_max.reindex(
-        index=power_ac_df.index, method='ffill')
+    signal_df['daily_clipping_min'] = signal_df_clipping_min.reindex(
+        index=signal_df.index, method='ffill')
+    signal_df['daily_clipping_max'] = signal_df_clipping_max.reindex(
+        index=signal_df.index, method='ffill')
     if sampling_frequency < 5:
-        power_ac_df['daily_clipping_max_threshold'] = \
-            (power_ac_df['daily_clipping_max'] * .96)
-        power_ac_df['clipping cutoff'] = \
-            power_ac_df[['daily_clipping_min',
-                         'daily_clipping_max_threshold']].max(axis=1)
-        final_clip = ((power_ac_df['clipping cutoff'] <=
-                       power_ac_df['scaled_value'])
-                      & (power_ac_df['percent_daily_max'] >= .9)
-                      & (power_ac_df['scaled_value'] >= .1))
+        signal_df['daily_clipping_max_threshold'] = \
+            (signal_df['daily_clipping_max'] * .96)
+        signal_df['clipping cutoff'] = \
+            signal_df[['daily_clipping_min',
+                       'daily_clipping_max_threshold']].max(axis=1)
+        final_clip = ((signal_df['clipping cutoff'] <=
+                       signal_df['scaled_value'])
+                      & (signal_df['percent_daily_max'] >= .9)
+                      & (signal_df['scaled_value'] >= .1))
     else:
-        final_clip = ((power_ac_df['daily_clipping_min'] <=
-                       power_ac_df['scaled_value'])
-                      & (power_ac_df['percent_daily_max'] >= .95)
-                      & (power_ac_df['scaled_value'] >= .1))
-    final_clip = final_clip.reindex(index=power_ac.index, fill_value=False)
+        final_clip = ((signal_df['daily_clipping_min'] <=
+                       signal_df['scaled_value'])
+                      & (signal_df['percent_daily_max'] >= .95)
+                      & (signal_df['scaled_value'] >= .1))
+    final_clip = final_clip.reindex(index=signal.index, fill_value=False)
     # Check for an overall clipping threshold that should apply to all data
-    clip_power = power_ac[final_clip]
-    final_clip = _apply_overall_clipping_threshold(power_ac,
+    clip_signal = signal[final_clip]
+    final_clip = _apply_overall_clipping_threshold(signal,
                                                    final_clip,
-                                                   clip_power)
+                                                   clip_signal)
     return ~(final_clip.astype(bool))
