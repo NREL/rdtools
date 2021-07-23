@@ -350,12 +350,11 @@ def logic_clip_filter(power_ac,
                       roll_periods=None):
     '''
     This filter is a logic-based filter that is used to filter out
-    clipping periods in AC power time series, it is based on the method
-    presented in [1]_. A boolean filter is returned based on the
+    clipping periods in AC power time series.
+    The AC power time series is filtered based on the
     maximum range over a rolling window, as compared to a user-set
-    rolling_range_max_cutoff (default set to 0.2). Periods where the relative
-    maximum difference between any two points is less than rolling_range_max_cutoff
-    are flagged as clipping and used to set daily clipping levels for the final mask.
+    rolling_range_max_cutoff (default set to 0.2).  The size of the
+    rolling window is increased when the system is a tracked system.
 
     Parameters
     ----------
@@ -367,12 +366,11 @@ def logic_clip_filter(power_ac,
         AC power time series. Can either be "fixed" or "single_axis_tracking".
         Default set to 'fixed'.
     rolling_range_max_cutoff : float, default 0.2
-        Relative fractional cutoff for max rolling range threshold. When the
-        relative maximum range in any interval is below this cutoff, the interval
-        is determined to be clipping. Defaults to 0.2; however, values as high as
-        0.4 have been tested and shown to be effective. The higher the cutoff, the
-        more values in the dataset that will be determined as clipping.
-    roll_periods: Integer.0
+        Cutoff for max rolling range threshold. Defaults to 0.2; however,
+        values as high as 0.4 have been tested and shown to be effective.
+        The higher the cutoff, the more values in the dataset that will be
+        determined as clipping.
+    roll_periods: Integer.
         Number of periods to examine when looking for a near-zero derivative
         in the time series derivative. If roll_periods = 3, the system looks
         for a near-zero derivative over 3 consecutive readings. Default value
@@ -388,19 +386,10 @@ def logic_clip_filter(power_ac,
         clipping.
         True values delineate non-clipping periods, and False values delineate
         clipping periods.
-
-    References
-    ----------
-    .. [1] Perry K., Muller, M., and Anderson K. "Performance comparison of clipping
-    detection techniques in AC power time series", 2021 IEEE 48th Photovoltaic
-    Specialists Conference (PVSC).
     '''
-
     # Throw a warning that this is still an experimental filter
     warnings.warn("The logic-based filter is an experimental clipping filter "
-                  "that is still under development. The API, results, and "
-                  "default behaviors may change in future releases (including"
-                  "MINOR and PATCH). Use at your own risk!")
+                  "that is still under development. Use at your own risk!")
     # Format the power time series
     power_ac, index_name = _format_clipping_time_series(power_ac,
                                                         mounting_type)
@@ -424,7 +413,8 @@ def logic_clip_filter(power_ac,
     # Therefore, the  data is resampled to a 15-minute median
     # before running the filter.
     if time_series_sampling_frequency >= 10:
-        power_ac = power_ac.asfreq(freq_string)
+        power_ac = rdtools.normalization.interpolate(power_ac,
+                                                     freq_string)
     else:
         power_ac = power_ac.resample('15T').mean()
         time_series_sampling_frequency = 15
@@ -461,8 +451,6 @@ def logic_clip_filter(power_ac,
                                     method='ffill')
         # Subset the series where clipping filter == True
         clip_pwr = power_ac[clipping]
-        clip_pwr = clip_pwr.reindex(index=power_ac.index,
-                                    fill_value=np.nan)
         # Set any values within the clipping max + clipping min threshold
         # as clipping. This is done specifically for capturing the noise
         # for high frequency data sets.
@@ -479,7 +467,8 @@ def logic_clip_filter(power_ac,
         # detected each day.
         clip_pwr = power_ac[clipping]
         clip_pwr = clip_pwr.reindex(index=power_copy.index,
-                                    fill_value=np.nan)
+                                    method="nearest")
+        power_ac = power_copy.copy()
         daily_clipping_max = clip_pwr.resample('D').max()
         daily_clipping_min = clip_pwr.resample('D').min()
         daily_clipping_min = daily_clipping_min.reindex(index=power_ac.index,
@@ -493,7 +482,6 @@ def logic_clip_filter(power_ac,
     final_clip = ((daily_clipping_min <= power_ac) &
                   (power_ac <= daily_clipping_max) &
                   (clipping_difference <= 0.02))
-    final_clip = final_clip.reindex(index=power_copy.index, fill_value=False)
     # Check for an overall clipping threshold that should apply to all data
     clip_power = power_copy[final_clip]
     final_clip = _apply_overall_clipping_threshold(power_ac,
