@@ -498,7 +498,6 @@ def logic_clip_filter(power_ac,
     return ~final_clip
 
 
-
 def _calculate_xgboost_model_features(df, sampling_frequency):
     """
     Calculate the features that will be fed into the XGBoost model.
