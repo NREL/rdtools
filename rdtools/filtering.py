@@ -364,7 +364,7 @@ def logic_clip_filter(signal,
         a pandas datetime index.
     mounting_type: string, default 'fixed'
         String representing the mounting configuration associated with the
-        AC power or energy time series. Can either be "fixed" or 
+        AC power or energy time series. Can either be "fixed" or
         "single_axis_tracking". Default set to 'fixed'.
     rolling_range_max_cutoff : float, default 0.2
         Relative fractional cutoff for max rolling range threshold. When the
@@ -507,8 +507,8 @@ def _calculate_xgboost_model_features(df, sampling_frequency):
     Parameters
     ----------
     df: pd.DataFrame
-        Pandas dataframe, containing the AC power or energy time series under the
-        'value' column.
+        Pandas dataframe, containing the AC power or energy time series
+        under the 'value' column.
     sampling_frequency: Int
         Sampling frequency of the AC power or energy time series.
 
@@ -577,7 +577,7 @@ def xgboost_clip_filter(signal,
         a pandas datetime index.
     mounting_type: string, default 'fixed'
         String representing the mounting configuration associated with the
-        AC power or energy time series. Can either be "fixed" or 
+        AC power or energy time series. Can either be "fixed" or
         "single_axis_tracking".
     Returns
     -------
