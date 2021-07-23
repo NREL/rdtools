@@ -350,11 +350,12 @@ def logic_clip_filter(power_ac,
                       roll_periods=None):
     '''
     This filter is a logic-based filter that is used to filter out
-    clipping periods in AC power time series.
-    The AC power time series is filtered based on the
+    clipping periods in AC power time series, it is based on the method
+    presented in [1]_. A boolean filter is returned based on the
     maximum range over a rolling window, as compared to a user-set
-    rolling_range_max_cutoff (default set to 0.2).  The size of the
-    rolling window is increased when the system is a tracked system.
+    rolling_range_max_cutoff (default set to 0.2). Periods where the relative
+    maximum difference between any two points is less than rolling_range_max_cutoff
+    are flagged as clipping and used to set daily clipping levels for the final mask.
 
     Parameters
     ----------
@@ -366,11 +367,12 @@ def logic_clip_filter(power_ac,
         AC power time series. Can either be "fixed" or "single_axis_tracking".
         Default set to 'fixed'.
     rolling_range_max_cutoff : float, default 0.2
-        Cutoff for max rolling range threshold. Defaults to 0.2; however,
-        values as high as 0.4 have been tested and shown to be effective.
-        The higher the cutoff, the more values in the dataset that will be
-        determined as clipping.
-    roll_periods: Integer.
+        Relative fractional cutoff for max rolling range threshold. When the
+        relative maximum range in any interval is below this cutoff, the interval
+        is determined to be clipping. Defaults to 0.2; however, values as high as
+        0.4 have been tested and shown to be effective. The higher the cutoff, the
+        more values in the dataset that will be determined as clipping.
+    roll_periods: Integer.0
         Number of periods to examine when looking for a near-zero derivative
         in the time series derivative. If roll_periods = 3, the system looks
         for a near-zero derivative over 3 consecutive readings. Default value
@@ -386,6 +388,12 @@ def logic_clip_filter(power_ac,
         clipping.
         True values delineate non-clipping periods, and False values delineate
         clipping periods.
+
+    References
+    ----------
+    .. [1] Perry K., Muller, M., and Anderson K. "Performance comparison of clipping
+    detection techniques in AC power time series", 2021 IEEE 48th Photovoltaic
+    Specialists Conference (PVSC).
     '''
     # Throw a warning that this is still an experimental filter
     warnings.warn("The logic-based filter is an experimental clipping filter "
@@ -488,6 +496,7 @@ def logic_clip_filter(power_ac,
                                                    final_clip,
                                                    clip_power)
     return ~final_clip
+
 
 
 def _calculate_xgboost_model_features(df, sampling_frequency):
