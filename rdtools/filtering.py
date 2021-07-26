@@ -130,7 +130,7 @@ def clip_filter(power_ac, model="quantile", **kwargs):
     ----------
     power_ac : pandas.Series
         Pandas AC power or AC energy time series, representing
-        a PV data stream witn a pandas datetime index.
+        a PV data stream with a pandas datetime index.
     model : str, default 'quantile'
         Clipping filter model to run. Can be 'quantile',
         'xgboost', or 'logic'.
@@ -151,7 +151,7 @@ def clip_filter(power_ac, model="quantile", **kwargs):
         warnings.warn("Function clip_filter is now a wrapper for different "
                       "clipping filters. To reproduce prior behavior, "
                       "parameters have been interpreted as model= "
-                      "'quantile_clip_filter', quantile={quantile}. "
+                      f"'quantile_clip_filter', quantile={quantile}. "
                       "This syntax will be removed in a future version.",
                       rdtools._deprecation.rdtoolsDeprecationWarning)
         kwargs['quantile'] = quantile
@@ -207,7 +207,7 @@ def _format_clipping_time_series(power_ac, mounting_type):
     mounting_type : str
         String representing the mounting configuration associated with the
         AC power or energy time series. Can either be "fixed" or
-        "single_axis_tracking". Default set to 'fixed'.
+        "single_axis_tracking".
 
     Returns
     -------
@@ -397,7 +397,7 @@ def logic_clip_filter(power_ac,
     # Throw a warning that this is still an experimental filter
     warnings.warn("The logic-based filter is an experimental clipping filter "
                   "that is still under development. The API, results, and "
-                  "default behaviors may change in future releases (including"
+                  "default behaviors may change in future releases (including "
                   "MINOR and PATCH). Use at your own risk!")
     # Format the time series
     power_ac, index_name = _format_clipping_time_series(power_ac,
@@ -594,7 +594,7 @@ def xgboost_clip_filter(power_ac,
     # Throw a warning that this is still an experimental filter
     warnings.warn("The XGBoost filter is an experimental clipping filter "
                   "that is still under development. The API, results, and "
-                  "default behaviors may change in future releases (including"
+                  "default behaviors may change in future releases (including "
                   "MINOR and PATCH). Use at your own risk!")
     # Load in the XGBoost model
     xgboost_clipping_model = _load_xgboost_clipping_model()

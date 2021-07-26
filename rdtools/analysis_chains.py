@@ -16,6 +16,7 @@ class TrendAnalysis():
     Class for end-to-end degradation and soiling analysis using
     :py:meth:`~rdtools.TrendAnalysis.sensor_analysis` or
     :py:meth:`~rdtools.TrendAnalysis.clearsky_analysis`
+
     Parameters
     ----------
     pv : pandas.Series
@@ -62,6 +63,7 @@ class TrendAnalysis():
     max_timedelta : pandas.timedelta
         The maximum gap in the data to be interpolated/integrated across when
         interpolating or calculating energy from power
+
     Attributes
     ----------
     (not all attributes documented here)
@@ -144,6 +146,7 @@ class TrendAnalysis():
         of location and orientation details. If optional parameters `poa_global_clearsky`,
         `temperature_ambient_clearsky` are not passed, they will be modeled
         based on location and orientation.
+
         Parameters
         ----------
         pvlib_location : pvlib.location.Location
@@ -200,6 +203,7 @@ class TrendAnalysis():
     def _calc_clearsky_poa(self, times=None, rescale=True, **kwargs):
         '''
         Calculate clearsky plane-of-array irradiance and stores in self.poa_global_clearsky
+
         Parameters
         ----------
         times : pandas.DateTimeIndex
@@ -210,6 +214,7 @@ class TrendAnalysis():
             Whether to attempt to rescale clearsky irradiance to measured
         kwargs :
             Extra parameters passed to pvlib.irradiance.get_total_irradiance()
+
         Returns
         -------
         None
@@ -266,6 +271,7 @@ class TrendAnalysis():
     def _calc_cell_temperature(self, poa_global, temperature_ambient, windspeed):
         '''
         Return cell temperature calculated from ambient conditions.
+
         Parameters
         ----------
         poa_global : numeric
@@ -274,6 +280,7 @@ class TrendAnalysis():
             Ambient temperature in Celsius
         windspeed = numeric
             Wind speed in m/s
+
         Returns
         -------
         numeric
@@ -326,12 +333,14 @@ class TrendAnalysis():
     def _pvwatts_norm(self, poa_global, temperature_cell):
         '''
         Normalize PV energy to that expected from a PVWatts model.
+
         Parameters
         ---------
         poa_global : numeric
             plane of array irradiance in W/m^2
         temperature_cell : numeric
             cell temperature in Celsius
+
         Returns
         -------
         pandas.Series
@@ -376,6 +385,7 @@ class TrendAnalysis():
         functions in rdtools.filtering, and the values of which are dicts
         containing the associated parameters with which to run the filtering
         functions. See examples for details on how to modify filter parameters.
+
         Parameters
         ----------
         energy_normalized : pandas.Series
@@ -384,6 +394,7 @@ class TrendAnalysis():
             'sensor' or 'clearsky' which filtering protocol to apply. Affects
             whether filtering.csi_filter() is used and whether result is stored
             in self.sensor_filter or self.clearsky_filter)
+
         Returns
         -------
         None
@@ -468,6 +479,7 @@ class TrendAnalysis():
     def _filter_check(self, post_filter):
         '''
         post-filter check for requisite 730 days of data
+
         Parameters
         ----------
         post_filter : pandas.Series
@@ -485,12 +497,14 @@ class TrendAnalysis():
     def _aggregate(self, energy_normalized, insolation):
         '''
         Return insolation-weighted normalized PV energy and the associated aggregated insolation
+
         Parameters
         ----------
         energy_normalized : pandas.Series
             Time series of normalized PV energy
         insolation : pandas.Series
             Time Series of insolation associated with each `normalized` point
+
         Returns
         -------
         pandas.Series
@@ -509,12 +523,14 @@ class TrendAnalysis():
         '''
         Perform year-on-year degradation analysis on insolation-weighted
         aggregated energy yield.
+
         Parameters
         ----------
         energy_normalized : pandas.Series
             Time Series of insolation-weighted aggregated normalized PV energy
         kwargs :
             Extra parameters passed to degradation.degradation_year_on_year()
+
         Returns
         -------
         dict
@@ -540,6 +556,7 @@ class TrendAnalysis():
     def _srr_soiling(self, energy_normalized_daily, insolation_daily, **kwargs):
         '''
         Perform stochastic rate and recovery soiling analysis.
+
         Parameters
         ---------
         energy_normalized_daily : pandas.Series
@@ -548,6 +565,7 @@ class TrendAnalysis():
             Time Series of insolation, aggregated at same level as energy_normalized_daily
         kwargs :
             Extra parameters passed to soiling.soiling_srr()
+
         Returns
         -------
         dict
@@ -640,6 +658,7 @@ class TrendAnalysis():
         '''
         Perform entire sensor-based analysis workflow.
         Results are stored in self.results['sensor']
+
         Parameters
         ---------
         analyses : list
@@ -649,6 +668,7 @@ class TrendAnalysis():
             kwargs to pass to degradation.degradation_year_on_year()
         srr_kwargs : dict
             kwargs to pass to soiling.soiling_srr()
+
         Returns
         -------
         None
@@ -674,6 +694,7 @@ class TrendAnalysis():
         '''
         Perform entire clear-sky-based analysis workflow. Results are stored
         in self.results['clearsky']
+
         Parameters
         ---------
         analyses : list
@@ -683,6 +704,7 @@ class TrendAnalysis():
             kwargs to pass to degradation.degradation_year_on_year()
         srr_kwargs : dict
             kwargs to pass to soiling.soiling_srr()
+
         Returns
         -------
         None
@@ -707,12 +729,14 @@ class TrendAnalysis():
     def plot_degradation_summary(self, case, **kwargs):
         '''
         Return a figure of a scatter plot and a histogram summarizing degradation rate analysis.
+
         Parameters
         ----------
         case : str
             The workflow result to plot, allowed values are 'sensor' and 'clearsky'
         kwargs :
             Extra parameters passed to plotting.degradation_summary_plots()
+
         Returns
         -------
         matplotlib.figure.Figure
@@ -737,12 +761,14 @@ class TrendAnalysis():
         '''
         Return a figure visualizing the Monte Carlo of soiling profiles used in
         stochastic rate and recovery soiling analysis.
+
         Parameters
         ----------
         case : str
             The workflow result to plot, allowed values are 'sensor' and 'clearsky'
         kwargs :
             Extra parameters passed to plotting.soiling_monte_carlo_plot()
+
         Returns
         -------
         matplotlib.figure.Figure
@@ -766,12 +792,14 @@ class TrendAnalysis():
         '''
         Return a figure visualizing the valid soiling intervals used in
         stochastic rate and recovery soiling analysis.
+
         Parameters
         ----------
         case : str
             The workflow result to plot, allowed values are 'sensor' and 'clearsky'
         kwargs :
             Extra parameters passed to plotting.soiling_interval_plot()
+
         Returns
         -------
         matplotlib.figure.Figure
@@ -795,12 +823,14 @@ class TrendAnalysis():
         '''
         Return a histogram of soiling rates found in the stochastic rate and recovery
         soiling analysis
+
         Parameters
         ----------
         case : str
             The workflow result to plot, allowed values are 'sensor' and 'clearsky'
         kwargs :
             Extra parameters passed to plotting.soiling_rate_histogram()
+
         Returns
         -------
         matplotlib.figure.Figure
@@ -822,6 +852,7 @@ class TrendAnalysis():
         '''
         Plot PV energy vs irradiance, useful in diagnosing things like timezone problems or
         transposition errors.
+
         Parameters
         ----------
         case: str
@@ -831,6 +862,7 @@ class TrendAnalysis():
             transparency of the scatter plot
         kwargs :
             Extra parameters passed to matplotlib.pyplot.axis.plot()
+
         Returns
         -------
         matplotlib.figure.Figure
