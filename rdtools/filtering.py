@@ -103,16 +103,16 @@ def csi_filter(poa_global_measured, poa_global_clearsky, threshold=0.15):
 
     Parameters
     ----------
-    poa_global_measured : pd.Series
+    poa_global_measured : pandas.Series
         Plane of array irradiance based on measurments
-    poa_global_clearsky : pd.Series
+    poa_global_clearsky : pandas.Series
         Plane of array irradiance based on a clear sky model
     threshold : float, default 0.15
         threshold for filter
 
     Returns
     -------
-    pd.Series
+    pandas.Series
         Boolean Series of whether the clear-sky index is within the threshold
         around 1.
     '''
@@ -128,10 +128,10 @@ def clip_filter(power_ac, model="quantile", **kwargs):
 
     Parameters
     ----------
-    power_ac : pd.Series
+    power_ac : pandas.Series
         Pandas AC power or AC energy time series, representing
         a PV data stream witn a pandas datetime index.
-    model : string, default 'quantile'
+    model : str, default 'quantile'
         Clipping filter model to run. Can be 'quantile',
         'xgboost', or 'logic'.
     kwargs :
@@ -140,7 +140,7 @@ def clip_filter(power_ac, model="quantile", **kwargs):
 
     Returns
     -------
-    pd.Series
+    pandas.Series
         Boolean Series of whether to include the point because it is not
         clipping.
         True values delineate non-clipping periods, and False values delineate
@@ -201,19 +201,19 @@ def _format_clipping_time_series(power_ac, mounting_type):
 
     Parameters
     ----------
-    power_ac : pd.Series
+    power_ac : pandas.Series
         Pandas time series, representing PV system power or energy with
         a pandas datetime index.
-    mounting_type : String
+    mounting_type : str
         String representing the mounting configuration associated with the
         AC power or energy time series. Can either be "fixed" or
         "single_axis_tracking". Default set to 'fixed'.
 
     Returns
     -------
-    pd.Series
+    pandas.Series
         AC power or AC energy time series
-    String
+    str
         AC Power or AC energy time series name
     """
     # Check that it's a Pandas series with a datetime index.
@@ -250,12 +250,12 @@ def _check_data_sampling_frequency(power_ac):
 
     Parameters
     ----------
-    power_ac : pd.Series
+    power_ac : pandas.Series
         Pandas time series, representing PV system power or energy with
         a pandas datetime index.
 
     Returns
-    ----------
+    -------
     None
     """
     # Get the sampling frequency counts--if the sampling frequency is not
@@ -280,15 +280,15 @@ def _calculate_max_rolling_range(power_ac, roll_periods):
 
     Parameters
     ----------
-    power_ac : pd.Series
+    power_ac : pandas.Series
         Pandas time series, representing PV system power or energy with
         a pandas datetime index.
-    roll_periods: Int
+    roll_periods: int
         Number of readings to calculate the rolling maximum range on.
 
     Returns
     -------
-    pd.Series
+    pandas.Series
         Time series of the rolling maximum range.
     """
     # Calculate the maximum value over a forward-rolling window
@@ -313,20 +313,20 @@ def _apply_overall_clipping_threshold(power_ac,
 
     Parameters
     ----------
-    power_ac : pd.Series
+    power_ac : pandas.Series
         Pandas time series, representing PV system power or energy with
         a pandas datetime index.
-    clipping_mask : pd.Series
+    clipping_mask : pandas.Series
         Boolean mask of the AC power or energy time series, where clipping
         periods are labeled as True and non-clipping periods are
         labeled as False. Has a datetime index.
-    clipped_power_ac: pd.Series
+    clipped_power_ac: pandas.Series
         Pandas time series, representing PV system power or energy filtered
         where only clipping periods occur. Has a pandas datetime index.
 
     Returns
     -------
-    clipping_mask : pd.Series
+    clipping_mask : pandas.Series
         Boolean mask of clipping/non-clipping periods, after applying
         the overall clipping threshold to the mask. Clipping
         periods are labeled as True and non-clipping periods are
@@ -355,12 +355,13 @@ def logic_clip_filter(power_ac,
     where the relative maximum difference between any two points is
     less than rolling_range_max_cutoff are flagged as clipping and used
     to set daily clipping levels for the final mask.
+
     Parameters
     ----------
-    power_ac : pd.Series
+    power_ac : pandas.Series
         Pandas time series, representing PV system power or energy with
         a pandas datetime index.
-    mounting_type: string, default 'fixed'
+    mounting_type: str, default 'fixed'
         String representing the mounting configuration associated with the
         AC power or energy time series. Can either be "fixed" or
         "single_axis_tracking". Default set to 'fixed'.
@@ -370,7 +371,7 @@ def logic_clip_filter(power_ac,
         is determined to be clipping. Defaults to 0.2; however, values as high as
         0.4 have been tested and shown to be effective. The higher the cutoff, the
         more values in the dataset that will be determined as clipping.
-    roll_periods: Integer
+    roll_periods: int, optional
         Number of periods to examine when looking for a near-zero derivative
         in the time series derivative. If roll_periods = 3, the system looks
         for a near-zero derivative over 3 consecutive readings. Default value
@@ -378,18 +379,20 @@ def logic_clip_filter(power_ac,
         near-zero derivative over 3 periods for a fixed tilt system, and over
         5 periods for a tracked system with a sampling frequency more frequent
         than once every 30 minutes.
+
     Returns
     -------
-    pd.Series
+    pandas.Series
         Boolean Series of whether to include the point because it is not
         clipping.
         True values delineate non-clipping periods, and False values delineate
         clipping periods.
+
     References
     ----------
     .. [1] Perry K., Muller, M., and Anderson K. "Performance comparison of clipping
-    detection techniques in AC power time series", 2021 IEEE 48th Photovoltaic
-    Specialists Conference (PVSC).
+       detection techniques in AC power time series", 2021 IEEE 48th Photovoltaic
+       Specialists Conference (PVSC).
     '''
     # Throw a warning that this is still an experimental filter
     warnings.warn("The logic-based filter is an experimental clipping filter "
@@ -505,15 +508,15 @@ def _calculate_xgboost_model_features(df, sampling_frequency):
 
     Parameters
     ----------
-    df: pd.DataFrame
+    df: pandas.DataFrame
         Pandas dataframe, containing the AC power or energy time series
         under the 'value' column.
-    sampling_frequency: Int
+    sampling_frequency: int
         Sampling frequency of the AC power or energy time series.
 
     Returns
     -------
-    pd.DataFrame
+    pandas.DataFrame
         Pandas dataframe, containing all of the features in the XGBoost
         model.
     """
@@ -569,18 +572,20 @@ def xgboost_clip_filter(power_ac,
     """
     This function generates the features to run through the XGBoost
     clipping model, and generates model outputs.
+
     Parameters
     ----------
-    power_ac : pd.Series
+    power_ac : pandas.Series
         Pandas time series, representing PV system power or energy with
         a pandas datetime index.
-    mounting_type: string, default 'fixed'
+    mounting_type: str, default 'fixed'
         String representing the mounting configuration associated with the
         AC power or energy time series. Can either be "fixed" or
         "single_axis_tracking".
+
     Returns
     -------
-    pd.Series
+    pandas.Series
         Boolean Series of whether to include the point because it is not
         clipping.
         True values delineate non-clipping periods, and False values delineate

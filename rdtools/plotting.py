@@ -287,10 +287,10 @@ def tune_filter_plot(signal, mask, display_web_browser=False):
 
     Parameters
     ----------
-    signal : pd.Series
+    signal : pandas.Series
         Index of the Pandas series is a Pandas datetime index. Usually
         this is PV power or energy, but other signals will work.
-    mask : pd.Series
+    mask : pandas.Series
         Pandas series of booleans, where included data periods
         are marked as True, and omitted-data periods occurs are
         marked as False. Should have the same detetime index as signal.
