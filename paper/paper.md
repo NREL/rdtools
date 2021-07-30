@@ -9,24 +9,21 @@ tags:
   - system performance
   - renewable energy
 authors:
-  - name: Kevin Anderson
-    orcid: 0000-0002-1166-7957
+  - name: Author 1
+    orcid: 0000-0000-0000-0000
     affiliation: 1
-  - name: Michael Deceglie
-    orcid: 0000-0001-7063-9676
+  - name: Author 2
+    orcid: 0000-0000-0000-0000
     affiliation: 1
-  - name: Chris Deline
-    orcid: 0000-0002-9867-8930
-    affiliation: 1
-  - name: Adam Shinn
-    orcid: 0000-0002-5473-3299
+  - name: Author 3
+    orcid: 0000-0000-0000-0000
     affiliation: 2
 affiliations:
  - name: National Renewable Energy Laboratory, Golden, CO
    index: 1
- - name: kWh Analytics
+ - name: Affiliation 2
    index: 2
-date: 5 March 2020
+date: Day Month Year
 bibliography: paper.bib
 ---
 
@@ -37,18 +34,24 @@ Financial analysts assess the financial viability of commercial photovoltaic
 production for a given PV system configuration and location is modeled using
 a weather dataset for the location and various assumptions about performance
 losses over time.  Among these loss sources are longterm PV system degradation
-(gradual PV efficiency loss as the system ages) and array soiling
-(sunlight blocking by particulate accumulation on the array).  Reducing the
-uncertainty in the degradation and soiling rates included in PV system modeling
-carries significant financial value, but these losses depend on system design
-and location and it is therefore difficult to characterize these losses
-accurately across all systems.  Long-term field datasets offer one route to
-more general characterization of both degradation and soiling.  Modern
+(gradual system efficiency loss as the system ages), array soiling
+(sunlight blocking by particulate accumulation on the array), and availability
+losses (system component downtime due to electrical faults or other reasons).
+Reducing the uncertainty in the loss assumptions included in PV
+system modeling carries significant financial value, but these losses can vary
+from system to system because of differences in system design, component technology
+and manufacturer, climate conditions, and other influences, making it difficult
+to make generalizations about these loss factors.
+
+Analysis of long-term datasets from fielded systems is one route to
+understanding how these loss factors vary across system and climate parameters. 
 PV modules often experience slow degradation rates below one percent per year
 [@Jordan2016] and the multi-year datasets from operational PV systems enable
 analysis of how degradation is influenced by climactic conditions and PV cell
 technology.  Soiling rates depend strongly on local conditions, so extracting
-soiling signals from historical field data gives insight to regional trends.  
+soiling signals from historical field data gives insight to regional trends.
+Estimated production loss from poor system availability can be paired with
+component metadata to reveal trends across manufacturers and component types.
 
 However, extracting these loss signals from operational time series data can
 be difficult due to the complications seen in real-world datasets -- if not
@@ -59,26 +62,26 @@ to inconsistent conclusions [@Jordan2020].  RdTools is an open-source library
 to support reproducible technical analysis of PV time series data. The library
 aims to provide best practice analysis routines along with the building blocks
 for users to tailor their own analyses. In particular, PV production data 
-across several years is evaluated to obtain rates of performance degradation
-and soiling loss.  The algorithms employed by RdTools have been separately
-validated and shown to be accurate and robust when applied to field data.
+across several years is evaluated to obtain rates of performance degradation,
+soiling loss, and system availability.  Documentation of the analysis algorithms
+implemented in RdTools have been separately published.
 
 # RdTools
 
-A typical RdTools analysis follows this process:
+A typical RdTools degradation and soiling analysis follows this process:
 
 1) Read in timeseries production and weather data
 2) Normalize the measured production using a naive expected energy model
 3) Filter out data that might bias the analysis results
 4) Aggregate data to reduce noise and scatter
-5) Analyze aggregated production to extract degradation and soiling rates
+5) Analyze aggregated performance to extract degradation and soiling rates
 
-RdTools offers a high-level `SystemAnalysis` class to simplify and
+RdTools offers a high-level `TrendAnalysis` class to simplify and
 standardize the process of running an end-to-end data analysis. The high-level
 interface does allow some customization of the analysis but defaults to best
 practice methods to encourage standardized and reproducible analysis. However,
 RdTools also provides access to the low-level analysis functions used by
-`SystemAnalysis` so users can construct fully customized analyses as needed.
+`TrendAnalysis` so users can construct fully customized analyses as needed.
 Although some of its functions are widely applicable to PV data analysis,
 RdTools currently focuses on PV system degradation analysis [@Jordan2018] and
 PV array soiling analysis [@Deceglie2018].  Future releases will include
@@ -90,31 +93,35 @@ RdTools is available under an MIT license and is developed on GitHub by
 contributors from national laboratories and
 industry.  It relies on the pvlib Python package [@pvlib] and packages from the
 broader scientific Python ecosystem: pandas [@pandas], numpy [@numpy],
-and matplotlib [@matplotlib].
+and matplotlib [@matplotlib].  The first major release (1.0.0, November 2016)
+focused on system degradation rate analysis.  Subsequent releases have brought
+improvements to the degradation analysis as well as new methods for soiling and
+availability analysis.
 
 API documentation, usage examples, and other package documentation
 is available at its online documentation hosted by readthedocs. 
 
 # Applications
 
-RdTools has been used in several PV degradation studies.  Meyers et al. used
+RdTools is intended for use by academic researchers, industry engineers, and
+PV system owners and operators.  It is part of a growing ecosystem of 
+open-source Python packages for PV modeling and analysis [@Holmgren2018].
+
+To date, RdTools has been used in over 40 journal articles conference
+papers.  For example, Meyers et al. used
 RdTools to benchmark a novel degradation rate assessment method [@Meyers2020]
 and Deceglie et al. applied RdTools to timeseries data from over 500 PV systems
 to analyze how PV system configuration affects degradation rate [@Deceglie2019].
 RdTools is in active use as the core analysis package for the National
 Renewable Energy Laboratory's PV Fleet Performance Data Initiative
-[@PVFleets2019].  It is also used for internal analyses by several PV industry
-groups. 
-
-RdTools is intended for use by academic researchers, industry engineers, and
-PV system owners and operators.  It is part of a growing ecosystem of 
-open-source Python packages for PV modeling and analysis [@Holmgren2018].
+[@PVFleets2019].  It is also used for analyses by other national laboratories
+and several PV industry groups.  
 
 # Acknowledgements
 
 The authors acknowledge support from the U.S. Department of Energy’s Solar
 Energy Technologies Office. This work was authored, in part, by Alliance for
-SustainableEnergy, LLC, the manager and operator of the National Renewable 
+Sustainable Energy, LLC, the manager and operator of the National Renewable 
 Energy Laboratory for the U.S. Department of Energy (DOE) under Contract
 No. DE-AC36-08GO28308. Funding provided by U.S. Department of Energy Office
 of Energy Efficiency and Renewable Energy Solar Energy Technologies Office.
