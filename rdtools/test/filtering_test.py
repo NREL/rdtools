@@ -105,10 +105,10 @@ def generate_power_time_series_one_min_intervals():
 
 @pytest.fixture
 def generate_power_time_series_clipping():
-    power_no_datetime_index = pd.Series(np.arange(1, 51))
+    power_no_datetime_index = pd.Series(np.arange(2, 101, 2))
     power_no_datetime_index = pd.concat([power_no_datetime_index,
                                          power_no_datetime_index[::-1]])
-    power_no_datetime_index[48:52] = 50
+    power_no_datetime_index[48:52] = 110
     power_no_datetime_index = power_no_datetime_index.reset_index(drop=True)
     power_datetime_index = power_no_datetime_index.copy()
     # Add datetime index to second series
