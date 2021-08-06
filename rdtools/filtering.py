@@ -486,8 +486,10 @@ def logic_clip_filter(power_ac,
         # for high frequency data sets.
         daily_mean = clip_pwr.resample('D').mean()
         df_daily = daily_mean.to_frame(name='mean')
-        df_daily['clipping_max'] = clip_pwr.resample('D').quantile(0.99)
-        df_daily['clipping_min'] = clip_pwr.resample('D').quantile(0.075)
+        df_daily['clipping_max'] = clip_pwr.groupby(pd.Grouper(freq='D')
+                                                    ).quantile(0.99)
+        df_daily['clipping_min'] = clip_pwr.groupby(pd.Grouper(freq='D')
+                                                    ).quantile(0.075)
         daily_clipping_max = df_daily['clipping_max'].reindex(
             index=power_ac_copy.index, method='ffill')
         daily_clipping_min = df_daily['clipping_min'].reindex(
