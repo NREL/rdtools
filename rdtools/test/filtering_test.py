@@ -161,7 +161,7 @@ def test_logic_clip_filter(generate_power_time_series_no_clipping,
     mask_one_min = logic_clip_filter(power_datetime_index_one_min_intervals)
     # Generate irregular interval data, and run it through the XGBoost model
     power_datetime_index_irregular = \
-        generate_power_time_series_irregular_intervals()
+        generate_power_time_series_irregular_intervals
     # Make sure that the routine throws a warning when the data sampling
     # frequency is less than 95% consistent
     warnings.simplefilter("always")
