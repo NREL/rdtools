@@ -216,6 +216,9 @@ def _format_clipping_time_series(power_ac, mounting_type):
     str
         AC Power or AC energy time series name
     """
+    # Throw a warning that we're expecting time zone-localized data
+    warnings.warn("Function expects a time zone-localized time series. "
+                  "For best results, pass a time zone-localized time series.")
     # Check that it's a Pandas series with a datetime index.
     # If not, raise an error.
     if not isinstance(power_ac.index, pd.DatetimeIndex):
@@ -226,6 +229,12 @@ def _format_clipping_time_series(power_ac, mounting_type):
         raise ValueError(
             "Variable mounting_type must be string 'single_axis_tracking' or "
             "'fixed'.")
+    # Check if the datetime index is out of order. If it is, throw an
+    # error.
+    if not all(power_ac.sort_index().index == power_ac.index):
+        raise IndexError(
+            "Time series index has not been sorted. Implement the "
+            "sort_index() method to the time series to rerun this function.")
     # Check that there is enough data in the dataframe. Must be greater than
     # 10 readings.
     if len(power_ac) <= 10:
@@ -237,8 +246,6 @@ def _format_clipping_time_series(power_ac, mounting_type):
     if index_name is None:
         index_name = 'datetime'
         power_ac = power_ac.rename_axis(index_name)
-    # Sort the time series in case it is out of order
-    power_ac = power_ac.sort_index()
     return power_ac, power_ac.index.name
 
 
@@ -252,7 +259,7 @@ def _check_data_sampling_frequency(power_ac):
     ----------
     power_ac : pandas.Series
         Pandas time series, representing PV system power or energy with
-        a pandas datetime index.
+        a timezone-localized pandas datetime index.
 
     Returns
     -------
@@ -282,7 +289,7 @@ def _calculate_max_rolling_range(power_ac, roll_periods):
     ----------
     power_ac : pandas.Series
         Pandas time series, representing PV system power or energy with
-        a pandas datetime index.
+        a timezone-localized pandas datetime index.
     roll_periods: int
         Number of readings to calculate the rolling maximum range on.
 
@@ -315,7 +322,7 @@ def _apply_overall_clipping_threshold(power_ac,
     ----------
     power_ac : pandas.Series
         Pandas time series, representing PV system power or energy with
-        a pandas datetime index.
+        a timezone-localized pandas datetime index.
     clipping_mask : pandas.Series
         Boolean mask of the AC power or energy time series, where clipping
         periods are labeled as True and non-clipping periods are
@@ -336,7 +343,8 @@ def _apply_overall_clipping_threshold(power_ac,
                              clipped_power_ac.quantile(.99))
                             / ((power_ac.quantile(.99) +
                                 clipped_power_ac.quantile(.99))/2))
-    if upper_bound_pdiff < 0.01:
+    percent_clipped = len(clipped_power_ac)/len(power_ac)*100
+    if (upper_bound_pdiff < 0.005) & (percent_clipped > 4):
         max_clip = (power_ac >= power_ac.quantile(0.99))
         clipping_mask = (clipping_mask | max_clip)
     return clipping_mask
@@ -360,7 +368,7 @@ def logic_clip_filter(power_ac,
     ----------
     power_ac : pandas.Series
         Pandas time series, representing PV system power or energy with
-        a pandas datetime index.
+        a timezone-localized pandas datetime index.
     mounting_type: str, default 'fixed'
         String representing the mounting configuration associated with the
         AC power or energy time series. Can either be "fixed" or
@@ -417,6 +425,18 @@ def logic_clip_filter(power_ac,
         subset=power_ac.index.name,
         keep='first').set_index(power_ac.index.name)
     freq_string = str(time_series_sampling_frequency) + 'T'
+    # Set days with the majority of frozen data to null.
+    daily_std = power_ac.resample('D').std() / power_ac.resample('D').mean()
+    power_ac['daily_std'] = daily_std.reindex(index=power_ac.index,
+                                              method='ffill')
+    power_ac.loc[power_ac['daily_std'] < 0.1,
+                 'value'] = np.nan
+    power_ac.drop('daily_std',
+                  axis=1,
+                  inplace=True)
+    power_cleaned = power_ac['value'].copy()
+    power_cleaned = power_cleaned.reindex(power_ac_copy.index,
+                                          fill_value=np.nan)
     # High frequency data (less than 10 minutes) has demonstrated
     # potential to have more noise than low frequency  data.
     # Therefore, the  data is resampled to a 15-minute median
@@ -425,7 +445,7 @@ def logic_clip_filter(power_ac,
         power_ac = rdtools.normalization.interpolate(power_ac,
                                                      freq_string)
     else:
-        power_ac = power_ac.resample('15T').mean()
+        power_ac = power_ac.resample('15T').median()
         time_series_sampling_frequency = 15
     # If a value for roll_periods is not designated, the function uses
     # the current default logic to set the roll_periods value.
@@ -435,7 +455,7 @@ def logic_clip_filter(power_ac,
             roll_periods = 5
         else:
             roll_periods = 3
-    # Replace the lower 25% of daily data with NaN's
+    # Replace the lower 10% of daily data with NaN's
     daily = 0.1 * power_ac.resample('D').max()
     power_ac['ten_percent_daily'] = daily.reindex(index=power_ac.index,
                                                   method='ffill')
@@ -455,48 +475,55 @@ def logic_clip_filter(power_ac,
     # original 15-minute data resulting in a clipping filter on the original
     # data.
     if (original_time_series_sampling_frequency < 10):
-        power_ac = power_ac_copy.copy()
-        clipping = clipping.reindex(index=power_ac.index,
+        clipping = clipping.reindex(index=power_ac_copy.index,
                                     method='ffill')
         # Subset the series where clipping filter == True
-        clip_pwr = power_ac[clipping]
-        clip_pwr = clip_pwr.reindex(index=power_ac.index,
+        clip_pwr = power_ac_copy[clipping]
+        clip_pwr = clip_pwr.reindex(index=power_ac_copy.index,
                                     fill_value=np.nan)
         # Set any values within the clipping max + clipping min threshold
         # as clipping. This is done specifically for capturing the noise
         # for high frequency data sets.
         daily_mean = clip_pwr.resample('D').mean()
-        daily_std = clip_pwr.resample('D').std()
-        daily_clipping_max = daily_mean + 2 * daily_std
-        daily_clipping_max = daily_clipping_max.reindex(index=power_ac.index,
-                                                        method='ffill')
-        daily_clipping_min = daily_mean - 2 * daily_std
-        daily_clipping_min = daily_clipping_min.reindex(index=power_ac.index,
-                                                        method='ffill')
+        df_daily = daily_mean.to_frame(name='mean')
+        df_daily['clipping_max'] = clip_pwr.resample('D').quantile(0.99)
+        df_daily['clipping_min'] = clip_pwr.resample('D').quantile(0.075)
+        daily_clipping_max = df_daily['clipping_max'].reindex(
+            index=power_ac_copy.index, method='ffill')
+        daily_clipping_min = df_daily['clipping_min'].reindex(
+            index=power_ac_copy.index, method='ffill')
     else:
         # Find the maximum and minimum power_ac level where clipping is
         # detected each day.
-        clip_pwr = power_ac[clipping]
+        clipping = clipping.reindex(index=power_ac_copy.index,
+                                    method='ffill')
+        clip_pwr = power_ac_copy[clipping]
         clip_pwr = clip_pwr.reindex(index=power_ac_copy.index,
-                                    method="ffill")
-        power_ac = power_ac_copy.copy()
+                                    fill_value=np.nan)
         daily_clipping_max = clip_pwr.resample('D').max()
         daily_clipping_min = clip_pwr.resample('D').min()
-        daily_clipping_min = daily_clipping_min.reindex(index=power_ac.index,
-                                                        method='ffill')
-        daily_clipping_max = daily_clipping_max.reindex(index=power_ac.index,
-                                                        method='ffill')
+        daily_clipping_min = daily_clipping_min.reindex(
+            index=power_ac_copy.index, method='ffill')
+        daily_clipping_max = daily_clipping_max.reindex(
+            index=power_ac_copy.index, method='ffill')
     # Set all values to clipping that are between the maximum and minimum
     # power_ac levels where clipping was found on a daily basis.
     clipping_difference = (daily_clipping_max -
                            daily_clipping_min)/daily_clipping_max
-    final_clip = ((daily_clipping_min <= power_ac) &
-                  (power_ac <= daily_clipping_max) &
-                  (clipping_difference <= 0.02))
-    final_clip = final_clip.reindex(index=power_ac.index, fill_value=False)
+    final_clip = ((daily_clipping_min <= power_ac_copy) &
+                  (power_ac_copy <= daily_clipping_max) &
+                  (clipping_difference <= 0.025)) \
+        | ((power_ac_copy <= daily_clipping_max*1.0025) &
+           (power_ac_copy >= daily_clipping_max*0.9975) &
+           (clipping_difference > 0.025))\
+        | ((power_ac_copy <= daily_clipping_min*1.0025) &
+           (power_ac_copy >= daily_clipping_min*0.9975) &
+           (clipping_difference > 0.025))
+    final_clip = final_clip.reindex(index=power_ac_copy.index,
+                                    fill_value=False)
     # Check for an overall clipping threshold that should apply to all data
     clip_power_ac = power_ac_copy[final_clip]
-    final_clip = _apply_overall_clipping_threshold(power_ac,
+    final_clip = _apply_overall_clipping_threshold(power_cleaned,
                                                    final_clip,
                                                    clip_power_ac)
     return ~final_clip
@@ -577,7 +604,7 @@ def xgboost_clip_filter(power_ac,
     ----------
     power_ac : pandas.Series
         Pandas time series, representing PV system power or energy with
-        a pandas datetime index.
+        a timezone-localized pandas datetime index.
     mounting_type: str, default 'fixed'
         String representing the mounting configuration associated with the
         AC power or energy time series. Can either be "fixed" or
@@ -590,6 +617,12 @@ def xgboost_clip_filter(power_ac,
         clipping.
         True values delineate non-clipping periods, and False values delineate
         clipping periods.
+
+    References
+    ----------
+    .. [1] Perry K., Muller, M., and Anderson K. "Performance comparison of clipping
+       detection techniques in AC power time series", 2021 IEEE 48th Photovoltaic
+       Specialists Conference (PVSC).
     """
     # Throw a warning that this is still an experimental filter
     warnings.warn("The XGBoost filter is an experimental clipping filter "
@@ -685,16 +718,15 @@ def xgboost_clip_filter(power_ac,
         final_clip = ((power_ac_df['clipping cutoff'] <=
                        power_ac_df['scaled_value'])
                       & (power_ac_df['percent_daily_max'] >= .9)
+                      & (power_ac_df['scaled_value'] <=
+                         power_ac_df['daily_clipping_max'] * 1.0025)
                       & (power_ac_df['scaled_value'] >= .1))
     else:
         final_clip = ((power_ac_df['daily_clipping_min'] <=
                        power_ac_df['scaled_value'])
                       & (power_ac_df['percent_daily_max'] >= .95)
+                      & (power_ac_df['scaled_value'] <=
+                         power_ac_df['daily_clipping_max'] * 1.0025)
                       & (power_ac_df['scaled_value'] >= .1))
     final_clip = final_clip.reindex(index=power_ac.index, fill_value=False)
-    # Check for an overall clipping threshold that should apply to all data
-    clip_power_ac = power_ac[final_clip]
-    final_clip = _apply_overall_clipping_threshold(power_ac,
-                                                   final_clip,
-                                                   clip_power_ac)
     return ~(final_clip.astype(bool))

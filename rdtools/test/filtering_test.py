@@ -148,6 +148,11 @@ def test_logic_clip_filter(generate_power_time_series_no_clipping,
     # in the time series
     pytest.raises(Exception,  logic_clip_filter,
                   power_datetime_index_nc[:9])
+    # Scramble the index and run through the filter. This should throw
+    # an IndexError.
+    power_datetime_index_nc_shuffled = power_datetime_index_nc.sample(frac=1)
+    pytest.raises(ValueError,  logic_clip_filter,
+                  power_datetime_index_nc_shuffled, 'fixed')
     # Generate 1-minute interval data, run it through the function, and
     # check that the associated data returned is 1-minute
     power_datetime_index_one_min_intervals = \
@@ -204,6 +209,11 @@ def test_xgboost_clip_filter(generate_power_time_series_no_clipping,
     # in the time series
     pytest.raises(Exception,  xgboost_clip_filter,
                   power_datetime_index_nc[:9])
+    # Scramble the index and run through the filter. This should throw
+    # an IndexError.
+    power_datetime_index_nc_shuffled = power_datetime_index_nc.sample(frac=1)
+    pytest.raises(IndexError,  xgboost_clip_filter,
+                  power_datetime_index_nc_shuffled, 'fixed')
     # Generate 1-minute interval data, run it through the function, and
     # check that the associated data returned is 1-minute
     power_datetime_index_one_min_intervals = \
