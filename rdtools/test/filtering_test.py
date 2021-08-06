@@ -151,7 +151,7 @@ def test_logic_clip_filter(generate_power_time_series_no_clipping,
     # Scramble the index and run through the filter. This should throw
     # an IndexError.
     power_datetime_index_nc_shuffled = power_datetime_index_nc.sample(frac=1)
-    pytest.raises(ValueError,  logic_clip_filter,
+    pytest.raises(IndexError,  logic_clip_filter,
                   power_datetime_index_nc_shuffled, 'fixed')
     # Generate 1-minute interval data, run it through the function, and
     # check that the associated data returned is 1-minute
