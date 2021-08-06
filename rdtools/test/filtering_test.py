@@ -85,6 +85,7 @@ def generate_power_time_series_irregular_intervals():
     power_datetime_index_3 = power_datetime_index_3.iloc[1:]
     power_datetime_index = pd.concat([power_datetime_index,
                                       power_datetime_index_3])
+    power_datetime_index.sort_index()
     # Note: Power is expected to be Series object with a datetime index.
     return power_datetime_index
 
@@ -160,7 +161,7 @@ def test_logic_clip_filter(generate_power_time_series_no_clipping,
     mask_one_min = logic_clip_filter(power_datetime_index_one_min_intervals)
     # Generate irregular interval data, and run it through the XGBoost model
     power_datetime_index_irregular = \
-        generate_power_time_series_irregular_intervals
+        generate_power_time_series_irregular_intervals()
     # Make sure that the routine throws a warning when the data sampling
     # frequency is less than 95% consistent
     warnings.simplefilter("always")
@@ -168,7 +169,7 @@ def test_logic_clip_filter(generate_power_time_series_no_clipping,
         logic_clip_filter(power_datetime_index_irregular)
         # Warning thrown for it being an experimental filter + irregular
         # sampling frequency.
-        assert len(w) == 2
+        assert len(w) == 3
     # Check that the returned time series index for the logic filter is
     # the same as the passed time series index
     mask_irregular = logic_clip_filter(power_datetime_index_irregular)
