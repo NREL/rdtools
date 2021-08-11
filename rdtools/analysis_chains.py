@@ -44,10 +44,10 @@ class TrendAnalysis():
         Right-labeled time series of expected PV power. (Note: Expected energy
         is not supported.)
     temperature_model : str or dict
-        Model parameters for pvlib.temperature.sapm_cell(). Used in calculating cell
+        Model parameters for :py:func:`pvlib.temperature.sapm_cell`. Used in calculating cell
         temperature from ambient. If string, must be a valid entry
-        for sapm model in pvlib.temperature.TEMPERATURE_MODEL_PARAMETERS. If dict, must
-        have keys 'a', 'b', 'deltaT'. See pvlib.temperature.sapm_cell() documentation
+        for sapm model in :py:data:`pvlib.temperature.TEMPERATURE_MODEL_PARAMETERS`. If dict, must
+        have keys 'a', 'b', 'deltaT'. See :py:func:`pvlib.temperature.sapm_cell` documentation
         for details.
     power_dc_rated : float
         Nameplate DC rating of PV array in Watts. If omitted, pv output will be internally
@@ -59,7 +59,7 @@ class TrendAnalysis():
         data, rather than up or down sampling. Analysis requires regular time series.
         For more information see
         https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#dateoffset-objects
-    max_timedelta : pandas.timedelta
+    max_timedelta : pandas.Timedelta
         The maximum gap in the data to be interpolated/integrated across when
         interpolating or calculating energy from power
 

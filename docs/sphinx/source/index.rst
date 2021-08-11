@@ -101,8 +101,8 @@ TrendAnalysis
 ^^^^^^^^^^^^^
 An object-oriented API for complete soiling and degradation analysis including 
 the normalize, filter, aggregate, analyze steps is available in
-:py:class:`.analysis_chains.TrendAnalysis`. See the `TrendAnalysis example`_ 
-for details. 
+:py:class:`.analysis_chains.TrendAnalysis`. See the
+`TrendAnalysis example <examples/TrendAnalysis_example_pvdaq4.html>`_ for details. 
 
 Availability
 ------------
