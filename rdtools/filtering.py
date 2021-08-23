@@ -129,8 +129,8 @@ def clip_filter(power_ac, model="quantile", **kwargs):
     Parameters
     ----------
     power_ac : pandas.Series
-        Pandas AC power or AC energy time series, representing
-        a PV data stream with a pandas datetime index.
+        Pandas time series, representing PV system power or energy.
+        For best performance, timestamps should be in local time.
     model : str, default 'quantile'
         Clipping filter model to run. Can be 'quantile',
         'xgboost', or 'logic'.
@@ -202,8 +202,8 @@ def _format_clipping_time_series(power_ac, mounting_type):
     Parameters
     ----------
     power_ac : pandas.Series
-        Pandas time series, representing PV system power or energy with
-        a pandas datetime index.
+        Pandas time series, representing PV system power or energy.
+        For best performance, timestamps should be in local time.
     mounting_type : str
         String representing the mounting configuration associated with the
         AC power or energy time series. Can either be "fixed" or
@@ -216,13 +216,19 @@ def _format_clipping_time_series(power_ac, mounting_type):
     str
         AC Power or AC energy time series name
     """
-    # Throw a warning that we're expecting time zone-localized data
-    warnings.warn("Function expects a time zone-localized time series. "
-                  "For best results, pass a time zone-localized time series.")
     # Check that it's a Pandas series with a datetime index.
     # If not, raise an error.
     if not isinstance(power_ac.index, pd.DatetimeIndex):
         raise TypeError('Must be a Pandas series with a datetime index.')
+    # Check if the time series is tz-aware. If not, throw a
+    # warning.
+    has_timezone = pd.Series(power_ac.index).apply(lambda t: t.tzinfo is not None)
+    # Throw a warning that we're expecting time zone-localized data,
+    # if no time zone is specified.
+    if not has_timezone.all():
+        warnings.warn("Function expects timestamps in local time. "
+                      "For best results pass a time-zone-localized "
+                      "time series localized to the correct local time zone.")
     # Check the other input variables to ensure that they are the
     # correct format
     if (mounting_type != "single_axis_tracking") & (mounting_type != "fixed"):
@@ -258,8 +264,8 @@ def _check_data_sampling_frequency(power_ac):
     Parameters
     ----------
     power_ac : pandas.Series
-        Pandas time series, representing PV system power or energy with
-        a timezone-localized pandas datetime index.
+        Pandas time series, representing PV system power or energy.
+        For best performance, timestamps should be in local time.
 
     Returns
     -------
@@ -288,8 +294,8 @@ def _calculate_max_rolling_range(power_ac, roll_periods):
     Parameters
     ----------
     power_ac : pandas.Series
-        Pandas time series, representing PV system power or energy with
-        a timezone-localized pandas datetime index.
+        Pandas time series, representing PV system power or energy.
+        For best performance, timestamps should be in local time.
     roll_periods: int
         Number of readings to calculate the rolling maximum range on.
 
@@ -321,8 +327,8 @@ def _apply_overall_clipping_threshold(power_ac,
     Parameters
     ----------
     power_ac : pandas.Series
-        Pandas time series, representing PV system power or energy with
-        a timezone-localized pandas datetime index.
+        Pandas time series, representing PV system power or energy.
+        For best performance, timestamps should be in local time.
     clipping_mask : pandas.Series
         Boolean mask of the AC power or energy time series, where clipping
         periods are labeled as True and non-clipping periods are
@@ -367,8 +373,8 @@ def logic_clip_filter(power_ac,
     Parameters
     ----------
     power_ac : pandas.Series
-        Pandas time series, representing PV system power or energy with
-        a timezone-localized pandas datetime index.
+        Pandas time series, representing PV system power or energy.
+        For best performance, timestamps should be in local time.
     mounting_type: str, default 'fixed'
         String representing the mounting configuration associated with the
         AC power or energy time series. Can either be "fixed" or
@@ -605,8 +611,8 @@ def xgboost_clip_filter(power_ac,
     Parameters
     ----------
     power_ac : pandas.Series
-        Pandas time series, representing PV system power or energy with
-        a timezone-localized pandas datetime index.
+        Pandas time series, representing PV system power or energy.
+        For best performance, timestamps should be in local time.
     mounting_type: str, default 'fixed'
         String representing the mounting configuration associated with the
         AC power or energy time series. Can either be "fixed" or

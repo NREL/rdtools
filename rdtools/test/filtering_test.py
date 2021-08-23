@@ -60,8 +60,13 @@ def generate_power_time_series_no_clipping():
     time_range = pd.date_range('2016-12-02T11:00:00.000Z',
                                '2017-06-06T07:00:00.000Z', freq='H')
     power_datetime_index.index = pd.to_datetime(time_range[:100])
+    # Create a series that is tz-naive to test on
+    power_datetime_index_tz_naive = power_datetime_index.copy()
+    power_datetime_index_tz_naive.index =  \
+        power_datetime_index_tz_naive.index.tz_localize(None)
     # Note: Power is expected to be Series object with a datetime index.
-    return power_no_datetime_index, power_datetime_index
+    return power_no_datetime_index, power_datetime_index, \
+        power_datetime_index_tz_naive
 
 
 @pytest.fixture
@@ -135,7 +140,7 @@ def test_logic_clip_filter(generate_power_time_series_no_clipping,
                            generate_power_time_series_one_min_intervals,
                            generate_power_time_series_irregular_intervals):
     ''' Unit tests for logic clipping filter.'''
-    power_no_datetime_index_nc, power_datetime_index_nc = \
+    power_no_datetime_index_nc, power_datetime_index_nc, power_nc_tz_naive = \
         generate_power_time_series_no_clipping
     # Test that a Type Error is raised when a pandas series
     # without a datetime index is used.
@@ -149,6 +154,12 @@ def test_logic_clip_filter(generate_power_time_series_no_clipping,
     # in the time series
     pytest.raises(Exception,  logic_clip_filter,
                   power_datetime_index_nc[:9])
+    # Test that a warning is thrown when the time series is tz-naive
+    warnings.simplefilter("always")
+    with warnings.catch_warnings(record=True) as w:
+        logic_clip_filter(power_nc_tz_naive)
+        # Warning thrown for it being an experimental filter + tz-naive
+        assert len(w) == 2
     # Scramble the index and run through the filter. This should throw
     # an IndexError.
     power_datetime_index_nc_shuffled = power_datetime_index_nc.sample(frac=1)
@@ -169,7 +180,7 @@ def test_logic_clip_filter(generate_power_time_series_no_clipping,
         logic_clip_filter(power_datetime_index_irregular)
         # Warning thrown for it being an experimental filter + irregular
         # sampling frequency.
-        assert len(w) == 3
+        assert len(w) == 2
     # Check that the returned time series index for the logic filter is
     # the same as the passed time series index
     mask_irregular = logic_clip_filter(power_datetime_index_irregular)
@@ -196,7 +207,7 @@ def test_xgboost_clip_filter(generate_power_time_series_no_clipping,
                              generate_power_time_series_irregular_intervals):
     ''' Unit tests for XGBoost clipping filter.'''
     # Test the time series where the data isn't clipped
-    power_no_datetime_index_nc, power_datetime_index_nc = \
+    power_no_datetime_index_nc, power_datetime_index_nc, power_nc_tz_naive = \
         generate_power_time_series_no_clipping
     # Test that a Type Error is raised when a pandas series
     # without a datetime index is used.
@@ -210,6 +221,12 @@ def test_xgboost_clip_filter(generate_power_time_series_no_clipping,
     # in the time series
     pytest.raises(Exception,  xgboost_clip_filter,
                   power_datetime_index_nc[:9])
+    # Test that a warning is thrown when the time series is tz-naive
+    warnings.simplefilter("always")
+    with warnings.catch_warnings(record=True) as w:
+        xgboost_clip_filter(power_nc_tz_naive)
+        # Warning thrown for it being an experimental filter + tz-naive
+        assert len(w) == 2
     # Scramble the index and run through the filter. This should throw
     # an IndexError.
     power_datetime_index_nc_shuffled = power_datetime_index_nc.sample(frac=1)
@@ -246,7 +263,7 @@ def test_xgboost_clip_filter(generate_power_time_series_no_clipping,
 def test_clip_filter(generate_power_time_series_no_clipping):
     ''' Unit tests for inverter clipping filter.'''
     # Create a time series to test
-    power_no_datetime_index_nc, power_datetime_index_nc = \
+    power_no_datetime_index_nc, power_datetime_index_nc, power_nc_tz_naive = \
         generate_power_time_series_no_clipping
     # Check that the master wrapper defaults to the
     # quantile_clip_filter_function.
