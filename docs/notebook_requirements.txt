@@ -1,8 +1,11 @@
 # This is an incomplete specification of the intended environment
 # it is meant to be used tandem with ../requirements.txt
 appnope==0.1.0
+argon2-cffi==20.1.0
 backcall==0.1.0
 bleach==3.3.0
+cffi==1.14.5
+colorama==0.4.4
 decorator==4.3.0
 entrypoints==0.2.3
 html5lib==1.0.1
@@ -22,6 +25,8 @@ mistune==0.8.3
 nbconvert==5.3.1
 nbformat==5.0.7
 notebook==6.4.1
+numexpr==2.7.3
+packaging==20.9
 pandocfilters==1.4.2
 parso==0.3.1
 pexpect==4.6.0
@@ -29,7 +34,8 @@ pickleshare==0.7.4
 prometheus-client==0.3.0
 prompt-toolkit==1.0.15
 ptyprocess==0.6.0
-Pygments==2.7.1
+pycparser==2.20
+Pygments==2.7.4
 pyzmq==17.1.0
 qtconsole==4.3.1
 Send2Trash==1.5.0
