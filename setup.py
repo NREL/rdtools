@@ -43,8 +43,12 @@ INSTALL_REQUIRES = [
     'statsmodels >= 0.8.0',
     'scipy >= 0.19.1',
     'h5py >= 2.7.1',
+    'plotly>=4.0.0',
+    'joblib >= 0.16.0',
+    'xgboost >= 1.3.3',
     'pvlib >= 0.7.0, <0.9.0',
-    'tables >= 3.4.2'
+    'tables >= 3.4.2',
+    'scikit-learn >= 0.22.0',
 ]
 
 EXTRAS_REQUIRE = {

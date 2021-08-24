@@ -1,5 +1,6 @@
 '''
-This module contains functions and classes for object-oriented end-to-end analysis
+This module contains functions and classes for object-oriented
+end-to-end analysis
 '''
 import pvlib
 import pandas as pd
@@ -76,7 +77,6 @@ class TrendAnalysis():
         defaults to None. See examples for more information.
     results : dict
         Nested dict used to store the results of methods ending with `_analysis`
-
     '''
 
     def __init__(self, pv, poa_global=None, temperature_cell=None, temperature_ambient=None,
@@ -740,7 +740,6 @@ class TrendAnalysis():
         Returns
         -------
         matplotlib.figure.Figure
-
         '''
 
         if case == 'sensor':
@@ -885,5 +884,4 @@ class TrendAnalysis():
         ax.set_xlim(0, 1500)
         ax.set_xlabel('Irradiance (W/m$^2$)')
         ax.set_ylabel('PV Energy (Wh/timestep)')
-
         return fig

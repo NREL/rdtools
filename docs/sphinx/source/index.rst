@@ -179,7 +179,8 @@ The most frequently used functions are:
 .. code:: python
 
    filtering.poa_filter(poa_global); filtering.tcell_filter(temperature_cell); 
-   filtering.clip_filter(power_ac); filtering.normalized_filter(energy_normalized);
+   filtering.clip_filter(power_ac); filtering.logic_clip_filter(power_ac);
+   filtering.xgboost_clip_filter(power_ac); filtering.normalized_filter(energy_normalized);
    filtering.csi_filter(poa_global_measured, poa_global_clearsky); 
      '''
      Inputs: Pandas time series of raw data to be filtered.
