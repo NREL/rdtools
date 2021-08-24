@@ -38,6 +38,11 @@ def assert_isinstance(obj, klass):
     assert isinstance(obj, klass), f'got {type(obj)}, expected {klass}'
 
 
+requires_pvlib_below_090 = \
+    pytest.mark.skipif(parse_version(pvlib.__version__) > parse_version('0.8.1'),
+                       reason='requires pvlib <= 0.8.1')
+
+
 # %% Soiling fixtures
 
 @pytest.fixture()
