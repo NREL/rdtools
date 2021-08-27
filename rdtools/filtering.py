@@ -133,7 +133,10 @@ def clip_filter(power_ac, model="quantile", **kwargs):
         For best performance, timestamps should be in local time.
     model : str, default 'quantile'
         Clipping filter model to run. Can be 'quantile',
-        'xgboost', or 'logic'.
+        'xgboost', or 'logic'. Note: using the xgboost model can
+        result in errors on some systems. These can often be alleviated
+        by using conda to install xgboost, see
+        https://anaconda.org/conda-forge/xgboost.
     kwargs :
         Additional clipping filter args, specific to the model being
         used. Keyword must be passed with value.
