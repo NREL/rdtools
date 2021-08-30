@@ -22,7 +22,7 @@ jupyter-console==5.2.0
 jupyter-core==4.6.3
 MarkupSafe==1.1.1
 mistune==0.8.3
-nbconvert==5.3.1
+nbconvert==6.1.0
 nbformat==5.0.7
 notebook==6.4.1
 numexpr==2.7.3
@@ -44,7 +44,7 @@ tables==3.6.1
 terminado==0.8.3
 testpath==0.3.1
 tornado==6.1
-traitlets==4.3.2
+traitlets==5.0
 wcwidth==0.1.7
 webencodings==0.5.1
 widgetsnbextension==3.3.0
