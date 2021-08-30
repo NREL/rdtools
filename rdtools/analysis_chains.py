@@ -357,7 +357,6 @@ class TrendAnalysis():
             power_dc_rated = self.power_dc_rated
 
         if self.gamma_pdc is None:
-            # raise ValueError('Temperature coefficient must be available to perform _pvwatts_norm')
             warnings.warn('Temperature coefficient not passed in to TrendAnalysis'
                           '. No temperature correction will be conducted.')
         pvwatts_kws = {"poa_global": poa_global,
@@ -580,7 +579,8 @@ class TrendAnalysis():
         from rdtools import soiling
 
         daily_freq = pd.tseries.offsets.Day()
-        if energy_normalized_daily.index.freq != daily_freq or insolation_daily.index.freq != daily_freq:
+        if (energy_normalized_daily.index.freq != daily_freq or
+                insolation_daily.index.freq != daily_freq):
             raise ValueError(
                 'Soiling SRR analysis requires daily aggregation.')
 
