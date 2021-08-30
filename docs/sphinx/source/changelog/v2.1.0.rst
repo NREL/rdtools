@@ -34,8 +34,8 @@ Enhancements
 * :py:class:`~rdtools.degradation.degradation_year_on_year` adds a new 
   ``usage_of_points`` entry in the ``calc_info`` return dictionary.
   (:issue:`269`, :pull:`282`)
-* :py:~rdtools.filtering.clip_filter` updated to allow for different methods of
-  clipping detection with the ``model`` parameter (:pull:`200`)
+* :py:func:`~rdtools.filtering.clip_filter` updated to allow for different methods of
+   clipping detection with the ``model`` parameter (:pull:`200`)
 * Add new function :py:func:`~rdtools.filtering.quantile_clip_filter` (:pull:`200`).
 * Add new function :py:func:`~rdtools.filtering.logic_clip_filter` (:pull:`200`).
 * Add new function :py:func:`~rdtools.filtering.xgboost_clip_filter` (:pull:`200`).
