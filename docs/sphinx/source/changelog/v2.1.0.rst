@@ -61,12 +61,9 @@ Documentation
 
 Requirements
 ------------
-* Update pinned versions of several dependencies (:pull:`261`, :pull:`275`):
-
-    * ``requirements.txt``: cached-property, certifi, chardet, idna, matplotlib, numpy, Pillow,
-      requests, urllib
-    * ``docs/notebook_requirements.txt``: argon2-cffi, bleach, cffi, colorama, Jinja2,
-      numexpr, packaging, pycparser, pygments
+* Installation (``setup.py``) now requires plotly, joblib, xgboost, tables, and scikit-learn
+* Update pinned versions of several dependencies in ``requirements.txt`` and
+  ``docs/notebook_requirements.txt`` (:pull:`289`)
 
 
 Example Updates
