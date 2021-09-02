@@ -46,8 +46,7 @@ INSTALL_REQUIRES = [
     'plotly>=4.0.0',
     'joblib >= 0.16.0',
     'xgboost >= 1.3.3',
-    'pvlib >= 0.7.0, <0.10.0',
-    'tables >= 3.4.2',
+    'pvlib >= 0.9.0, <0.10.0',
     'scikit-learn >= 0.22.0',
 ]
 
