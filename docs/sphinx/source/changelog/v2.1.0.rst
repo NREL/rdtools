@@ -64,6 +64,8 @@ Requirements
 * Installation (``setup.py``) now requires plotly, joblib, xgboost, tables, and scikit-learn
 * Update pinned versions of several dependencies in ``requirements.txt`` and
   ``docs/notebook_requirements.txt`` (:pull:`289`)
+* Add support for pvlib 0.9 and remove the ``tables`` dependency added in
+  ``v2.1.0b0`` (:pull:`290`)
 
 
 Example Updates

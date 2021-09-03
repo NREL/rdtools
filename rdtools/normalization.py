@@ -185,6 +185,11 @@ def sapm_dc_power(pvlib_pvsystem, met_data):
     speed. Effective irradiance and cell temperature are calculated with SAPM,
     and DC power with PVWatts.
 
+    .. warning::
+        The ``pvlib_pvsystem`` argument must be a ``pvlib.pvsystem.LocalizedPVSystem``
+        object, which is no longer available as of pvlib 0.9.0.  To use this function
+        you'll need to use an older version of pvlib.
+
     Parameters
     ----------
     pvlib_pvsystem : pvlib.pvsystem.LocalizedPVSystem
@@ -256,6 +261,11 @@ def normalize_with_sapm(energy, sapm_kws):
     ambient temperature, and wind speed.
 
     Energy timeseries and met_data timeseries can be different granularities.
+
+    .. warning::
+        The ``pvlib_pvsystem`` argument must be a ``pvlib.pvsystem.LocalizedPVSystem``
+        object, which is no longer available as of pvlib 0.9.0.  To use this function
+        you'll need to use an older version of pvlib.
 
     Parameters
     ----------
