@@ -65,6 +65,8 @@ Requirements
 * Update pinned versions of several dependencies in ``requirements.txt`` and
   ``docs/notebook_requirements.txt`` (:pull:`289`)
 
+* Add support for pvlib 0.9 (:pull:`290`)
+
 
 Example Updates
 ---------------
