@@ -365,8 +365,8 @@ def logic_clip_filter(power_ac,
                       roll_periods=None):
     '''
     This filter is a logic-based filter that is used to filter out
-    clipping periods in AC power or energy time series, it is based
-    on the method presented in [1]_. A boolean filter is returned
+    clipping periods in AC power or energy time series. It is based
+    on the method presented in [1]. A boolean filter is returned
     based on the maximum range over a rolling window, as compared to
     a user-set rolling_range_max_cutoff (default set to 0.2). Periods
     where the relative maximum difference between any two points is
@@ -609,7 +609,8 @@ def xgboost_clip_filter(power_ac,
                         mounting_type='fixed'):
     """
     This function generates the features to run through the XGBoost
-    clipping model, and generates model outputs.
+    clipping model, runs the data through the model, and generates
+    model outputs.
 
     Parameters
     ----------
