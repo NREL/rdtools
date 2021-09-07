@@ -409,7 +409,7 @@ def logic_clip_filter(power_ac,
     ----------
     .. [1] Perry K., Muller, M., and Anderson K. "Performance comparison of clipping
        detection techniques in AC power time series", 2021 IEEE 48th Photovoltaic
-       Specialists Conference (PVSC).
+       Specialists Conference (PVSC). DOI: 10.1109/PVSC43889.2021.9518733.
     '''
     # Throw a warning that this is still an experimental filter
     warnings.warn("The logic-based filter is an experimental clipping filter "
@@ -633,7 +633,7 @@ def xgboost_clip_filter(power_ac,
     ----------
     .. [1] Perry K., Muller, M., and Anderson K. "Performance comparison of clipping
        detection techniques in AC power time series", 2021 IEEE 48th Photovoltaic
-       Specialists Conference (PVSC).
+       Specialists Conference (PVSC). DOI: 10.1109/PVSC43889.2021.9518733.
     """
     # Throw a warning that this is still an experimental filter
     warnings.warn("The XGBoost filter is an experimental clipping filter "
