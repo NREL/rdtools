@@ -195,8 +195,12 @@ def test_logic_clip_filter(generate_power_time_series_no_clipping,
     filtered_c = power_datetime_index_c[mask_c]
     assert bool(mask_nc.all(axis=None))
     assert (len(filtered_c) == 96)
-    assert bool((mask_one_min.index.to_series().diff()[1:] ==
-                 np.timedelta64(60, 's')).all(axis=None))
+    with warnings.catch_warnings():
+        # suppress deprecation warning about keep_tz in Index.to_series()
+        warnings.filterwarnings('ignore',
+                                message="The default of the 'keep_tz' keyword will change")
+        assert bool((mask_one_min.index.to_series().diff()[1:] ==
+                     np.timedelta64(60, 's')).all(axis=None))
     assert bool((mask_irregular.index == power_datetime_index_irregular.index)
                 .all(axis=None))
 
@@ -254,8 +258,12 @@ def test_xgboost_clip_filter(generate_power_time_series_no_clipping,
     filtered_c = power_datetime_index_c[mask_c]
     assert bool(mask_nc.all(axis=None))
     assert (len(filtered_c) == 96)
-    assert bool((mask_one_min.index.to_series().diff()[1:] ==
-                 np.timedelta64(60, 's')).all(axis=None))
+    with warnings.catch_warnings():
+        # suppress deprecation warning about keep_tz in Index.to_series()
+        warnings.filterwarnings('ignore',
+                                message="The default of the 'keep_tz' keyword will change")
+        assert bool((mask_one_min.index.to_series().diff()[1:] ==
+                     np.timedelta64(60, 's')).all(axis=None))
     assert bool((mask_irregular.index == power_datetime_index_irregular.index)
                 .all(axis=None))
 

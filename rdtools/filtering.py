@@ -276,9 +276,13 @@ def _check_data_sampling_frequency(power_ac):
     """
     # Get the sampling frequency counts--if the sampling frequency is not
     # consistently >=95% the same, then throw a warning.
-    sampling_frequency_df = pd.DataFrame(power_ac.index.to_series()
-                                         .diff().astype('timedelta64[s]')
-                                         .value_counts())/len(power_ac)
+    with warnings.catch_warnings():
+        # suppress deprecation warning about keep_tz in Index.to_series()
+        warnings.filterwarnings('ignore',
+                                message="The default of the 'keep_tz' keyword will change")
+        sampling_frequency_df = pd.DataFrame(power_ac.index.to_series()
+                                             .diff().astype('timedelta64[s]')
+                                             .value_counts())/len(power_ac)
     sampling_frequency_df.columns = ["count"]
     if (sampling_frequency_df["count"] < .95).all():
         warnings.warn("Variable sampling frequency across time series. "
@@ -423,8 +427,12 @@ def logic_clip_filter(power_ac,
     # series sampling frequency is less than 95% consistent.
     _check_data_sampling_frequency(power_ac)
     # Get the sampling frequency of the time series
-    time_series_sampling_frequency = power_ac.index.to_series().diff()\
-        .astype('timedelta64[m]').mode()[0]
+    with warnings.catch_warnings():
+        # suppress deprecation warning about keep_tz in Index.to_series()
+        warnings.filterwarnings('ignore',
+                                message="The default of the 'keep_tz' keyword will change")
+        time_series_sampling_frequency = power_ac.index.to_series().diff()\
+            .astype('timedelta64[m]').mode()[0]
     # Make copies of the original inputs for the cases that the data is
     # changes for clipping evaluation
     original_time_series_sampling_frequency = time_series_sampling_frequency
@@ -650,8 +658,12 @@ def xgboost_clip_filter(power_ac,
     # series sampling frequency is less than 95% consistent.
     _check_data_sampling_frequency(power_ac)
     # Get the most common sampling frequency
-    sampling_frequency = int(power_ac.index.to_series().diff()
-                             .astype('timedelta64[m]').mode()[0])
+    with warnings.catch_warnings():
+        # suppress deprecation warning about keep_tz in Index.to_series()
+        warnings.filterwarnings('ignore',
+                                message="The default of the 'keep_tz' keyword will change")
+        sampling_frequency = int(power_ac.index.to_series().diff()
+                                 .astype('timedelta64[m]').mode()[0])
     freq_string = str(sampling_frequency) + "T"
     # Min-max normalize
     # Resample the series based on the most common sampling frequency
