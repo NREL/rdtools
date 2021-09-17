@@ -43,17 +43,19 @@ INSTALL_REQUIRES = [
     'statsmodels >= 0.8.0',
     'scipy >= 0.19.1',
     'h5py >= 2.7.1',
-    'pvlib >= 0.7.0, <0.9.0',
+    'plotly>=4.0.0',
+    'joblib >= 0.16.0',
+    'xgboost >= 1.3.3',
+    'pvlib >= 0.7.0, <0.10.0',
+    'scikit-learn >= 0.22.0',
 ]
 
 EXTRAS_REQUIRE = {
     'doc': [
-        'sphinx==1.8.5',
+        'sphinx==3.2',
         'nbsphinx==0.8.5',
         'nbsphinx-link==1.3.0',
-        'pandas==0.23.0',
-        'pvlib==0.7.1',
-        'sphinx_rtd_theme==0.4.3',
+        'sphinx_rtd_theme==0.5.2',
         'ipython',
         # sphinx-gallery used indirectly for nbsphinx thumbnail galleries; see:
         # https://nbsphinx.readthedocs.io/en/0.6.0/subdir/gallery.html#Creating-Thumbnail-Galleries
@@ -63,6 +65,7 @@ EXTRAS_REQUIRE = {
         'pytest',
         'coverage',
         'flake8',
+        'pytest-mock',
     ]
 }
 EXTRAS_REQUIRE['all'] = sorted(set(sum(EXTRAS_REQUIRE.values(), [])))

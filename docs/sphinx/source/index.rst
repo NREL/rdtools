@@ -27,7 +27,7 @@ Full examples are worked out in the notebooks shown in :ref:`examples`.
 To report issues, contribute code, or suggest improvements to this
 documentation, visit the RdTools development repository on `github`_.
 
-Degradation and Soiling
+Trends
 -----------------------
 
 Both degradation and soiling analyses are based on normalized yield, similar to performance
@@ -96,6 +96,13 @@ identified soiling rates for the dataset.
    :alt: RdTools soiling results plot
    :width: 320
    :height: 216
+
+TrendAnalysis
+^^^^^^^^^^^^^
+An object-oriented API for complete soiling and degradation analysis including 
+the normalize, filter, aggregate, analyze steps is available in
+:py:class:`.analysis_chains.TrendAnalysis`. See the
+`TrendAnalysis example <examples/TrendAnalysis_example_pvdaq4.html>`_ for details. 
 
 Availability
 ------------
@@ -172,7 +179,8 @@ The most frequently used functions are:
 .. code:: python
 
    filtering.poa_filter(poa_global); filtering.tcell_filter(temperature_cell); 
-   filtering.clip_filter(power_ac); filtering.normalized_filter(energy_normalized);
+   filtering.clip_filter(power_ac); filtering.logic_clip_filter(power_ac);
+   filtering.xgboost_clip_filter(power_ac); filtering.normalized_filter(energy_normalized);
    filtering.csi_filter(poa_global_measured, poa_global_clearsky); 
      '''
      Inputs: Pandas time series of raw data to be filtered.
@@ -213,6 +221,20 @@ The most frequently used functions are:
      Inputs: Pandas time series system and subsystem power and energy data
      Outputs: DataFrame of production loss and availability metrics
      '''
+
+Documentation
+-------------
+
+Some RdTools function parameters can take one of several types.  For example,
+the ``albedo`` parameter of :py:class:`TrendAnalysis` can be a static value like
+``0.2`` or a time-varying ``pandas.Series``.  To indicate that a parameter can
+take one of several types, we document them using the type alises listed below:
+
+.. glossary ::
+
+   ``numeric``
+      scalar or ``pandas.Series``. Typically int or float dtype.
+
 
 Citing RdTools
 --------------

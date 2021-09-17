@@ -14,6 +14,7 @@ analysis workflow.
 .. autosummary::
    :toctree: generated/
 
+   analysis_chains
    degradation
    soiling   
    availability
@@ -23,7 +24,25 @@ analysis workflow.
    clearsky_temperature
    plotting
 
+Analysis Chains
+===============
 
+Object-oriented end-to-end analysis
+
+.. autosummary::
+   :toctree: generated/
+
+   analysis_chains.TrendAnalysis
+   analysis_chains.TrendAnalysis.set_clearsky
+   analysis_chains.TrendAnalysis.sensor_analysis
+   analysis_chains.TrendAnalysis.clearsky_analysis
+   analysis_chains.TrendAnalysis.plot_degradation_summary
+   analysis_chains.TrendAnalysis.plot_soiling_rate_histogram
+   analysis_chains.TrendAnalysis.plot_soiling_interval
+   analysis_chains.TrendAnalysis.plot_soiling_monte_carlo
+   analysis_chains.TrendAnalysis.plot_pv_vs_irradiance
+   
+   
 Degradation
 ===========
 
@@ -78,6 +97,9 @@ Filtering
    :toctree: generated/
     
    clip_filter
+   quantile_clip_filter
+   logic_clip_filter
+   xgboost_clip_filter
    csi_filter
    poa_filter
    tcell_filter
@@ -143,3 +165,4 @@ Plotting
    soiling_interval_plot
    soiling_rate_histogram
    availability_summary_plots
+   tune_filter_plot
