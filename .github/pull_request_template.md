@@ -1,4 +1,5 @@
 - [ ] Code changes are covered by tests
+- [ ] Code changes have been evaluated for compatibility/integration with TrendAnalysis
 - [ ] New functions added to `__init__.py`
 - [ ] API.rst is up to date, along with other sphinx docs pages
 - [ ] Example notebooks are rerun and differences in results scrutinized

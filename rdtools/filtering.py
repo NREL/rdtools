@@ -133,7 +133,10 @@ def clip_filter(power_ac, model="quantile", **kwargs):
         For best performance, timestamps should be in local time.
     model : str, default 'quantile'
         Clipping filter model to run. Can be 'quantile',
-        'xgboost', or 'logic'.
+        'xgboost', or 'logic'. Note: using the xgboost model can
+        result in errors on some systems. These can often be alleviated
+        by using conda to install xgboost, see
+        https://anaconda.org/conda-forge/xgboost.
     kwargs :
         Additional clipping filter args, specific to the model being
         used. Keyword must be passed with value.
@@ -362,8 +365,8 @@ def logic_clip_filter(power_ac,
                       roll_periods=None):
     '''
     This filter is a logic-based filter that is used to filter out
-    clipping periods in AC power or energy time series, it is based
-    on the method presented in [1]_. A boolean filter is returned
+    clipping periods in AC power or energy time series. It is based
+    on the method presented in [1]. A boolean filter is returned
     based on the maximum range over a rolling window, as compared to
     a user-set rolling_range_max_cutoff (default set to 0.2). Periods
     where the relative maximum difference between any two points is
@@ -406,7 +409,7 @@ def logic_clip_filter(power_ac,
     ----------
     .. [1] Perry K., Muller, M., and Anderson K. "Performance comparison of clipping
        detection techniques in AC power time series", 2021 IEEE 48th Photovoltaic
-       Specialists Conference (PVSC).
+       Specialists Conference (PVSC). DOI: 10.1109/PVSC43889.2021.9518733.
     '''
     # Throw a warning that this is still an experimental filter
     warnings.warn("The logic-based filter is an experimental clipping filter "
@@ -606,7 +609,8 @@ def xgboost_clip_filter(power_ac,
                         mounting_type='fixed'):
     """
     This function generates the features to run through the XGBoost
-    clipping model, and generates model outputs.
+    clipping model, runs the data through the model, and generates
+    model outputs.
 
     Parameters
     ----------
@@ -630,7 +634,7 @@ def xgboost_clip_filter(power_ac,
     ----------
     .. [1] Perry K., Muller, M., and Anderson K. "Performance comparison of clipping
        detection techniques in AC power time series", 2021 IEEE 48th Photovoltaic
-       Specialists Conference (PVSC).
+       Specialists Conference (PVSC). DOI: 10.1109/PVSC43889.2021.9518733.
     """
     # Throw a warning that this is still an experimental filter
     warnings.warn("The XGBoost filter is an experimental clipping filter "
