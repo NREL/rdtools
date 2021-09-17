@@ -10,7 +10,7 @@ matplotlib==3.3.4
 numpy==1.19.5
 pandas==1.1.3
 patsy==0.5.1
-Pillow==8.2.0
+Pillow==8.3.2
 plotly==4.10.0
 pvlib==0.9.0
 pyparsing==2.4.7
