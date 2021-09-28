@@ -1,0 +1,22 @@
+name: requirements
+
+on: [pull_request, push]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.7
+    - name: Install ${{ matrix.env }}
+      run: |
+        python -m pip install --upgrade pip wheel
+        pip install -r requirements.txt -r docs/notebook_requirements.txt
+    - name: Import RdTools 
+      run: |
+        python -c "import rdtools"
