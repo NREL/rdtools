@@ -21,6 +21,8 @@ jobs:
             env: '-r requirements-min.txt .[test]'
           - python-version: 3.9
             env: '-r requirements-min.txt .[test]'
+          - python-version: "3.10"
+            env: '-r requirements-min.txt .[test]'
 
     steps:
     - uses: actions/checkout@v2
