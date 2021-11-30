@@ -1,5 +1,5 @@
 python:
-    version: 3.6
+    version: 3.7
     use_system_site_packages: true
     pip_install: true
     extra_requirements:
