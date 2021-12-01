@@ -11,7 +11,7 @@ import rdtools
 # Load in the XGBoost clipping model using joblib.
 xgboost_clipping_model = None
 model_path = (os.path.dirname(__file__)) + \
-                             "/models/xgboost_clipping_model.dat"
+                             "/models/xgboost_clipping_model.json"
 
 
 def _load_xgboost_clipping_model():
