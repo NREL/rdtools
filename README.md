@@ -43,19 +43,19 @@ appropriate:
 
 -  Dirk Jordan, Chris Deline, Sarah Kurtz, Gregory Kimball, Michael Anderson, "Robust PV
    Degradation Methodology and Application", IEEE Journal of
-   Photovoltaics, 8(2) pp. 525-531, 2018
+   Photovoltaics, 8(2) pp. 525-531, 2018, DOI: [10.1109/JPHOTOV.2017.2779779](https://doi.org/10.1109/JPHOTOV.2017.2779779)
 
 -  Michael G. Deceglie, Leonardo Micheli and Matthew Muller, "Quantifying Soiling Loss
    Directly From PV Yield," in IEEE Journal of Photovoltaics, 8(2),
-   pp. 547-551, 2018
+   pp. 547-551, 2018, DOI: [10.1109/JPHOTOV.2017.2784682](https://doi.org/10.1109/JPHOTOV.2017.2784682)
 
 -  Kevin Anderson and Ryan Blumenthal, "Overcoming Communications Outages in
    Inverter Downtime Analysis", 2020 IEEE 47th Photovoltaic Specialists
-   Conference (PVSC)."
+   Conference (PVSC)" DOI: [0.1109/PVSC45281.2020.9300635](https://doi.org/0.1109/PVSC45281.2020.9300635)
 
 -  Kirsten Perry, Matthew Muller and Kevin Anderson, "Performance Comparison of Clipping
    Detection Techniques in AC Power Time Series," 2021 IEEE 48th Photovoltaic
-   Specialists Conference (PVSC), 2021, pp. 1638-1643, doi: 10.1109/PVSC43889.2021.9518733.
+   Specialists Conference (PVSC), pp. 1638-1643 2021, DOI: [10.1109/PVSC43889.2021.9518733](https://doi.org/10.1109/PVSC43889.2021.9518733).
 
   
 ## References
