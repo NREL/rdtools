@@ -239,7 +239,7 @@ take one of several types, we document them using the type alises listed below:
 Citing RdTools
 --------------
 To cite RdTools, please use the following along with the version number
-and the specific DOI coresponding to that version from `zenodo <https://doi.org/10.5281/zenodo.1210316>`_:
+and the specific DOI coresponding to that version from `Zenodo <https://doi.org/10.5281/zenodo.1210316>`_:
 
 -  Michael G. Deceglie, Ambarish Nag, Adam Shinn, Gregory Kimball,
    Daniel Ruth, Dirk Jordan, Jiyang Yan, Kevin Anderson, Kirsten Perry,
