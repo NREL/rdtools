@@ -7,6 +7,7 @@ import os
 import warnings
 from numbers import Number
 import rdtools
+import xgboost as xgb
 
 # Load in the XGBoost clipping model using joblib.
 xgboost_clipping_model = None
@@ -17,7 +18,8 @@ model_path = (os.path.dirname(__file__)) + \
 def _load_xgboost_clipping_model():
     global xgboost_clipping_model
     if xgboost_clipping_model is None:
-        xgboost_clipping_model = joblib.load(model_path)
+        xgboost_clipping_model = xgb.XGBClassifier()
+        xgboost_clipping_model.load_model(model_path)
     return xgboost_clipping_model
 
 
