@@ -2,7 +2,6 @@
 
 import numpy as np
 import pandas as pd
-import joblib
 import os
 import warnings
 from numbers import Number
@@ -11,8 +10,8 @@ import xgboost as xgb
 
 # Load in the XGBoost clipping model using joblib.
 xgboost_clipping_model = None
-model_path = (os.path.dirname(__file__)) + \
-                             "/models/xgboost_clipping_model.json"
+model_path = os.path.join(os.path.dirname(__file__), 
+              "models", "xgboost_clipping_model.json")
 
 
 def _load_xgboost_clipping_model():
