@@ -51,7 +51,7 @@ appropriate:
 
 -  Kevin Anderson and Ryan Blumenthal, "Overcoming Communications Outages in
    Inverter Downtime Analysis", 2020 IEEE 47th Photovoltaic Specialists
-   Conference (PVSC)" DOI: [10.1109/PVSC45281.2020.9300635](https://doi.org/0.1109/PVSC45281.2020.9300635)
+   Conference (PVSC)" DOI: [10.1109/PVSC45281.2020.9300635](https://doi.org/10.1109/PVSC45281.2020.9300635)
 
 -  Kirsten Perry, Matthew Muller and Kevin Anderson, "Performance Comparison of Clipping
    Detection Techniques in AC Power Time Series," 2021 IEEE 48th Photovoltaic
