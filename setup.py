@@ -33,6 +33,10 @@ SETUP_REQUIRES = [
 
 TESTS_REQUIRE = [
     'pytest >= 3.6.3',
+    'coverage',
+    'flake8',
+    'pytest-mock',
+    'pytest-notebook==0.6.1',
 ]
 
 INSTALL_REQUIRES = [
@@ -61,12 +65,7 @@ EXTRAS_REQUIRE = {
         # https://nbsphinx.readthedocs.io/en/0.6.0/subdir/gallery.html#Creating-Thumbnail-Galleries
         'sphinx-gallery==0.8.1',
     ],
-    'test': [
-        'pytest',
-        'coverage',
-        'flake8',
-        'pytest-mock',
-    ]
+    'test': TESTS_REQUIRE,
 }
 EXTRAS_REQUIRE['all'] = sorted(set(sum(EXTRAS_REQUIRE.values(), [])))
 
