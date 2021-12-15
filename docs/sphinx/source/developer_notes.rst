@@ -132,6 +132,19 @@ specific details, you can run ``coverage html`` to generate a detailed HTML
 report at ``htmlcov/index.html`` to view in a browser.  
 
 
+Running the notebooks as tests
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Re-running the example notebooks to see if their outputs have changed is
+another good check. Besides re-running and examining the notebook outputs
+manually, this command will automatically re-run the specified notebook
+and compare outputs for you:
+
+::
+
+    pytest --nb-test-files --nb-exec-timeout=500 system_availability_example.ipynb
+
+
 Checking for code style
 -----------------------
 
