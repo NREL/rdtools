@@ -17,7 +17,7 @@ jobs:
 
     - name: Install test environment
       run: |
-        python -m pip install --upgrade pip wheel pytest-notebook==0.6.1
+        python -m pip install --upgrade pip wheel
         pip install -r requirements.txt -r docs/notebook_requirements.txt .[test]
 
     # test notebooks using pytest-notebook; see setup.cfg for configuration

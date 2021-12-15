@@ -36,6 +36,7 @@ TESTS_REQUIRE = [
     'coverage',
     'flake8',
     'pytest-mock',
+    'pytest-notebook==0.6.1',
 ]
 
 INSTALL_REQUIRES = [
