@@ -32,8 +32,8 @@ jobs:
 
     - name: pytest-notebook -- TrendAnalysis_example_pvdaq4.ipynb
       run: | 
-        pytest --nb-test-files --nb-exec-timeout=500 TrendAnalysis_example_pvdaq4.ipynb
+        pytest --nb-test-files --nb-exec-timeout=500 docs/TrendAnalysis_example_pvdaq4.ipynb
 
     - name: pytest-notebook -- degradation_and_soiling_example_pvdaq_4.ipynb
       run: | 
-        pytest --nb-test-files --nb-exec-timeout=500 degradation_and_soiling_example_pvdaq_4.ipynb
+        pytest --nb-test-files --nb-exec-timeout=500 docs/degradation_and_soiling_example_pvdaq_4.ipynb
