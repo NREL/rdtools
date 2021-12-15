@@ -14,7 +14,7 @@ jobs:
         ]
         notebook: [
           'TrendAnalysis_example_pvdaq4.ipynb',
-          'degradation_and_soiling_example_pvdaq4.ipynb',
+          'degradation_and_soiling_example_pvdaq_4.ipynb',
           'system_availability_example.ipynb',
           # we can't download the data file automatically, so skip the DKASC notebook
           # 'degradation_and_soiling_example.ipynb',
