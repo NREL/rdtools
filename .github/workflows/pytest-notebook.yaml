@@ -26,14 +26,14 @@ jobs:
     #   because the two PVDAQ4 notebooks might conflict when writing the pickle data file.
     # - the PVDAQ4 notebooks have some slow cells and require a longer timeout
     # - can't run the DKASC notebook here because it requires pre-downloaded data
-    - name: pytest-notebook: system_availability_example.ipynb
+    - name: pytest-notebook -- system_availability_example.ipynb
       run: | 
         pytest --nb-test-files docs/system_availability_example.ipynb
 
-    - name: pytest-notebook: TrendAnalysis_example_pvdaq4.ipynb
+    - name: pytest-notebook -- TrendAnalysis_example_pvdaq4.ipynb
       run: | 
         pytest --nb-test-files --nb-exec-timeout=500 TrendAnalysis_example_pvdaq4.ipynb
 
-    - name: pytest-notebook: degradation_and_soiling_example_pvdaq_4.ipynb
+    - name: pytest-notebook -- degradation_and_soiling_example_pvdaq_4.ipynb
       run: | 
         pytest --nb-test-files --nb-exec-timeout=500 degradation_and_soiling_example_pvdaq_4.ipynb
