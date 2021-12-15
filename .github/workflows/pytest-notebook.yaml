@@ -1,4 +1,4 @@
-name: nbval
+name: notebook-check
 
 on: [pull_request, push]
 
