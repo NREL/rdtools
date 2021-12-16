@@ -4,6 +4,14 @@ on: [pull_request, push]
 
 jobs:
   notebook-check:
+    strategy:
+      matrix:
+        notebook-file: [
+          'system_availability_example.ipynb',
+          'TrendAnalysis_example_pvdaq4.ipynb',
+          'degradation_and_soiling_example_pvdaq_4.ipynb'
+          # can't run the DKASC notebook here because it requires pre-downloaded data
+        ]
 
     runs-on: ubuntu-latest
 
@@ -20,20 +28,7 @@ jobs:
         python -m pip install --upgrade pip wheel
         pip install -r requirements.txt -r docs/notebook_requirements.txt .[test]
 
-    # test notebooks using pytest-notebook; see setup.cfg for configuration
-    # notes: 
-    # - better to run the notebooks in serial (instead of parallel jobs)
-    #   because the two PVDAQ4 notebooks might conflict when writing the pickle data file.
-    # - the PVDAQ4 notebooks have some slow cells and require a longer timeout
-    # - can't run the DKASC notebook here because it requires pre-downloaded data
-    - name: pytest-notebook -- system_availability_example.ipynb
+    # test notebook using pytest-notebook; see setup.cfg for configuration
+    - name: pytest-notebook 
       run: | 
-        pytest --nb-test-files docs/system_availability_example.ipynb
-
-    - name: pytest-notebook -- TrendAnalysis_example_pvdaq4.ipynb
-      run: | 
-        pytest --nb-test-files --nb-exec-timeout=500 docs/TrendAnalysis_example_pvdaq4.ipynb
-
-    - name: pytest-notebook -- degradation_and_soiling_example_pvdaq_4.ipynb
-      run: | 
-        pytest --nb-test-files --nb-exec-timeout=500 docs/degradation_and_soiling_example_pvdaq_4.ipynb
+        pytest --nb-test-files --nb-exec-timeout=500 docs/${{ matrix.notebook-file }}
