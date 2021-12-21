@@ -22,8 +22,8 @@ sys.path.insert(0, os.path.abspath('../../..'))
 # -- Project information -----------------------------------------------------
 
 project = 'RdTools'
-copyright = '2016–2020 kwhanalytics, Alliance for Sustainable Energy, LLC, and SunPower'
-author = 'kwhanalytics, Alliance for Sustainable Energy, LLC, and SunPower'
+copyright = '2016–2021 kWh Analytics, Alliance for Sustainable Energy, LLC, SunPower, and DNV'
+author = 'kWh Analytics, Alliance for Sustainable Energy, LLC, SunPower, and DNV'
 
 # The full version, including alpha/beta/rc tags
 import rdtools  # noqa: E402
@@ -105,7 +105,7 @@ napoleon_type_aliases = {
 
 # A workaround for the responsive tables always having annoying scrollbars.
 def setup(app):
-    app.add_stylesheet("no_scrollbars.css")
+    app.add_css_file("no_scrollbars.css")
 
 
 # %% helper functions for intelligent "View on Github" linking

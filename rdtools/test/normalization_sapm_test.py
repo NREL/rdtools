@@ -10,10 +10,11 @@ import pvlib
 from rdtools.normalization import normalize_with_sapm
 from rdtools.normalization import sapm_dc_power
 
-from conftest import fail_on_rdtools_version
+from conftest import fail_on_rdtools_version, requires_pvlib_below_090
 from rdtools._deprecation import rdtoolsDeprecationWarning
 
 
+@requires_pvlib_below_090
 class SapmNormalizationTestCase(unittest.TestCase):
     ''' Unit tests for energy normalization module. '''
 

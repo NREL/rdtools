@@ -101,8 +101,8 @@ TrendAnalysis
 ^^^^^^^^^^^^^
 An object-oriented API for complete soiling and degradation analysis including 
 the normalize, filter, aggregate, analyze steps is available in
-:py:class:`.analysis_chains.TrendAnalysis`. See the `TrendAnalysis example`_ 
-for details. 
+:py:class:`.analysis_chains.TrendAnalysis`. See the
+`TrendAnalysis example <examples/TrendAnalysis_example_pvdaq4.html>`_ for details. 
 
 Availability
 ------------
@@ -179,7 +179,8 @@ The most frequently used functions are:
 .. code:: python
 
    filtering.poa_filter(poa_global); filtering.tcell_filter(temperature_cell); 
-   filtering.clip_filter(power_ac); filtering.normalized_filter(energy_normalized);
+   filtering.clip_filter(power_ac); filtering.logic_clip_filter(power_ac);
+   filtering.xgboost_clip_filter(power_ac); filtering.normalized_filter(energy_normalized);
    filtering.csi_filter(poa_global_measured, poa_global_clearsky); 
      '''
      Inputs: Pandas time series of raw data to be filtered.

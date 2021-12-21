@@ -66,16 +66,16 @@ class SRRAnalysis():
         # insolation-weighted soiling ratios in _calc_monte:
         self.monte_losses = []
 
-        if self.pm.index.freq != 'D':
+        if pd.infer_freq(self.pm.index) != 'D':
             raise ValueError('Daily performance metric series must have '
                              'daily frequency')
 
-        if self.insolation_daily.index.freq != 'D':
+        if pd.infer_freq(self.insolation_daily.index) != 'D':
             raise ValueError('Daily insolation series must have '
                              'daily frequency')
 
         if self.precipitation_daily is not None:
-            if self.precipitation_daily.index.freq != 'D':
+            if pd.infer_freq(self.precipitation_daily.index) != 'D':
                 raise ValueError('Precipitation series must have '
                                  'daily frequency')
 
@@ -111,7 +111,8 @@ class SRRAnalysis():
             * 'shift', only rolling median shifts are treated as cleaning events.
             * 'precip', only precipitation events are treated as cleaning events.
         precip_threshold : float, default 0.01
-            The daily precipitation threshold for defining precipitation cleaning events.
+            The daily precipitation threshold for defining precipitation
+            cleaning events.
             Units must be consistent with ``self.precipitation_daily``.
         outlier_factor : float, default 1.5
             The factor used in the Tukey fence definition of outliers for flagging positive shifts
@@ -184,7 +185,8 @@ class SRRAnalysis():
         precip_event = (df['precip'] > precip_threshold)
 
         if clean_criterion == 'precip_and_shift':
-            # Detect which cleaning events are associated with rain within a 3 day window
+            # Detect which cleaning events are associated with rain
+            # within a 3 day window
             precip_event = precip_event.rolling(
                 3, center=True, min_periods=1).apply(any).astype(bool)
             df['clean_event'] = (df['clean_event_detected'] & precip_event)
@@ -196,7 +198,8 @@ class SRRAnalysis():
             df['clean_event'] = df['clean_event_detected']
         else:
             raise ValueError('clean_criterion must be one of '
-                             '{"precip_and_shift", "precip_or_shift", "precip", "shift"}')
+                             '{"precip_and_shift", "precip_or_shift", '
+                             '"precip", "shift"}')
 
         df['clean_event'] = df.clean_event | out_start | out_end
 
@@ -287,7 +290,8 @@ class SRRAnalysis():
         # Filter results for each interval,
         # setting invalid interval to slope of 0
         results['slope_err'] = (
-            results.run_slope_high - results.run_slope_low) / abs(results.run_slope)
+            results.run_slope_high - results.run_slope_low)\
+            / abs(results.run_slope)
         # critera for exclusions
         filt = (
             (results.run_slope > 0) |
@@ -362,9 +366,10 @@ class SRRAnalysis():
             * 'perfect_clean' - each cleaning event returns the performance
               metric to 1
             * 'half_norm_clean' - The starting point of each interval is taken
-              randomly from a half normal distribution with its mode (mu) at 1 and
-              its sigma equal to 1/3 * (1-b) where b is the intercept of the fit to
-              the interval.
+              randomly from a half normal distribution with its
+              mode (mu) at 1 and
+              its sigma equal to 1/3 * (1-b) where b is the intercept
+              of the fit to the interval.
         '''
 
         # Raise a warning if there is >20% invalid data
@@ -490,7 +495,8 @@ class SRRAnalysis():
             df_rand['soil_insol'] = df_rand.loss * df_rand.insol
 
             soiling_ratio = (
-                df_rand.soil_insol.sum() / df_rand.insol[~df_rand.soil_insol.isnull()].sum()
+                df_rand.soil_insol.sum() / df_rand.insol[
+                    ~df_rand.soil_insol.isnull()].sum()
             )
             monte_losses.append(soiling_ratio)
             random_profile = df_rand['loss'].copy()
@@ -548,7 +554,8 @@ class SRRAnalysis():
             * 'shift', only rolling median shifts are treated as cleaning events.
             * 'precip', only precipitation events are treated as cleaning events.
         precip_threshold : float, default 0.01
-            The daily precipitation threshold for defining precipitation cleaning events.
+            The daily precipitation threshold for defining
+            precipitation cleaning events.
             Units must be consistent with ``self.precipitation_daily``
         min_interval_length : int, default 7
             The minimum duration for an interval to be considered
@@ -731,8 +738,8 @@ def soiling_srr(energy_normalized_daily, insolation_daily, reps=1000,
         * 'shift', only rolling median shifts are treated as cleaning events.
         * 'precip', only precipitation events are treated as cleaning events.
     precip_threshold : float, default 0.01
-        The daily precipitation threshold for defining precipitation cleaning events.
-        Units must be consistent with precip.
+        The daily precipitation threshold for defining precipitation
+        cleaning events. Units must be consistent with precip.
     min_interval_length : int, default 7
         The minimum duration, in days, for an interval to be considered
         valid.  Cannot be less than 2 (days).
@@ -833,7 +840,8 @@ def soiling_srr(energy_normalized_daily, insolation_daily, reps=1000,
 
 
 def _count_month_days(start, end):
-    '''Return a dict of number of days between start and end (inclusive) in each month'''
+    '''Return a dict of number of days between start and end
+    (inclusive) in each month'''
     days = pd.date_range(start, end)
     months = [x.month for x in days]
     out_dict = {}
@@ -843,12 +851,13 @@ def _count_month_days(start, end):
     return out_dict
 
 
-def annual_soiling_ratios(stochastic_soiling_profiles, insolation_daily, confidence_level=68.2):
+def annual_soiling_ratios(stochastic_soiling_profiles,
+                          insolation_daily, confidence_level=68.2):
     '''
     Return annualized soiling ratios and associated confidence intervals based
-    on stochastic soiling profiles from SRR. Note that each year may be affected
-    by previous years' profiles for all SRR cleaning assumptions (i.e. method) except
-    perfect_clean.
+    on stochastic soiling profiles from SRR. Note that each year
+    may be affected by previous years' profiles for all SRR cleaning
+    assumptions (i.e. method) except perfect_clean.
 
     Parameters
     ----------
@@ -859,9 +868,9 @@ def annual_soiling_ratios(stochastic_soiling_profiles, insolation_daily, confide
     insolation_daily : pandas.Series
         Daily plane-of-array insolation with DatetimeIndex. Arbitrary units.
     confidence_level : float, default 68.2
-        The size of the confidence interval to use in determining the upper and lower
-        quantiles reported in the returned DataFrame. (The median is always included in
-        the result.)
+        The size of the confidence interval to use in determining the
+        upper and lower quantiles reported in the returned DataFrame.
+        (The median is always included in the result.)
 
     Returns
     -------
@@ -892,9 +901,10 @@ def annual_soiling_ratios(stochastic_soiling_profiles, insolation_daily, confide
 
     if not all_profiles.index.isin(insolation_daily.index).all():
         warnings.warn(
-            'The indexes of stochastic_soiling_profiles are not entirely contained '
-            'within the index of insolation_daily. Every day in stochastic_soiling_profiles '
-            'should be represented in insolation_daily. This may cause erroneous results.')
+            'The indexes of stochastic_soiling_profiles are not entirely '
+            'contained within the index of insolation_daily. Every day in '
+            'stochastic_soiling_profiles should be represented in '
+            'insolation_daily. This may cause erroneous results.')
 
     insolation_daily = insolation_daily.reindex(all_profiles.index)
 
@@ -902,14 +912,19 @@ def annual_soiling_ratios(stochastic_soiling_profiles, insolation_daily, confide
     all_profiles_weighted = all_profiles.multiply(insolation_daily, axis=0)
 
     # Compute the insolation-weighted soiling ratio (IWSR) for each realization
-    annual_insolation = insolation_daily.groupby(insolation_daily.index.year).sum()
-    all_annual_weighted_sums = all_profiles_weighted.groupby(all_profiles_weighted.index.year).sum()  # noqa: E501
-    all_annual_iwsr = all_annual_weighted_sums.multiply(1/annual_insolation, axis=0)
+    annual_insolation = insolation_daily.groupby(
+                        insolation_daily.index.year).sum()
+    all_annual_weighted_sums = all_profiles_weighted.groupby(
+                                all_profiles_weighted.index.year).sum()
+    all_annual_iwsr = all_annual_weighted_sums.multiply(
+                            1/annual_insolation, axis=0)
 
     annual_soiling = pd.DataFrame({
         'soiling_ratio_median': all_annual_iwsr.quantile(0.5, axis=1),
-        'soiling_ratio_low': all_annual_iwsr.quantile(0.5 - confidence_level/2/100, axis=1),
-        'soiling_ratio_high': all_annual_iwsr.quantile(0.5 + confidence_level/2/100, axis=1),
+        'soiling_ratio_low': all_annual_iwsr.quantile(
+                            0.5 - confidence_level/2/100, axis=1),
+        'soiling_ratio_high': all_annual_iwsr.quantile(
+                            0.5 + confidence_level/2/100, axis=1),
     })
     annual_soiling.index.name = 'year'
     annual_soiling = annual_soiling.reset_index()
@@ -921,10 +936,11 @@ def monthly_soiling_rates(soiling_interval_summary, min_interval_length=14,
                           max_relative_slope_error=500.0, reps=100000,
                           confidence_level=68.2):
     '''
-    Use Monte Carlo to calculate typical monthly soiling rates. Samples possible
-    soiling rates from soiling rate confidence intervals associated with soiling
-    intervals assuming a uniform distribution. Soiling intervals get samples
-    proportionally to their overlap with each calendar month.
+    Use Monte Carlo to calculate typical monthly soiling rates.
+    Samples possible soiling rates from soiling rate confidence
+    intervals associated with soiling intervals assuming a uniform
+    distribution. Soiling intervals get samples proportionally
+    to their overlap with each calendar month.
 
     Parameters
     ----------
@@ -933,8 +949,8 @@ def monthly_soiling_rates(soiling_interval_summary, min_interval_length=14,
         ``soiling_info['soiling_interval_summary']`` obtained with
         :py:func:`rdtools.soiling.soiling_srr` or
         :py:meth:`rdtools.soiling.SRRAnalysis.run` Must have columns
-        ``soiling_rate_high``, ``soiling_rate_low``, ``soiling_rate``, ``length``, ``valid``,
-        ``start``, and ``end``.
+        ``soiling_rate_high``, ``soiling_rate_low``, ``soiling_rate``,
+        ``length``, ``valid``,``start``, and ``end``.
 
     min_interval_length : int, default 14
         The minimum number of days a soiling interval must contain to be
@@ -951,9 +967,9 @@ def monthly_soiling_rates(soiling_interval_summary, min_interval_length=14,
         The number of Monte Carlo samples to take for each month.
 
     confidence_level : float, default 68.2
-        The size of the confidence interval, as a percentage, to use in determining the
-        upper and lower quantiles reported in the returned DataFrame. (The median is
-        always included in the result.)
+        The size of the confidence interval, as a percentage, to use
+        in determining the upper and lower quantiles reported in the
+        returned DataFrame. (The median is always included in the result.)
 
     Returns
     -------
@@ -1024,12 +1040,16 @@ def monthly_soiling_rates(soiling_interval_summary, min_interval_length=14,
         relevant_intervals = intervals[intervals[sample_col] > 0]
         for _, row in relevant_intervals.iterrows():
             rates.append(np.random.uniform(
-                row['soiling_rate_low'], row['soiling_rate_high'], row[sample_col]))
+                row['soiling_rate_low'],
+                row['soiling_rate_high'],
+                row[sample_col]))
 
         rates = [x for sublist in rates for x in sublist]
 
         if rates:
-            monthly_rate_data.append(np.quantile(rates, [0.5, ci_quantiles[0], ci_quantiles[1]]))
+            monthly_rate_data.append(np.quantile(rates,
+                                                 [0.5, ci_quantiles[0],
+                                                  ci_quantiles[1]]))
         else:
             monthly_rate_data.append(np.array([np.nan]*3))
 

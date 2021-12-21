@@ -102,6 +102,9 @@ Filtering
    :toctree: generated/
     
    clip_filter
+   quantile_clip_filter
+   logic_clip_filter
+   xgboost_clip_filter
    csi_filter
    poa_filter
    tcell_filter
@@ -167,6 +170,7 @@ Plotting
    soiling_interval_plot
    soiling_rate_histogram
    availability_summary_plots
+   tune_filter_plot
 
 
 Bootstrap
