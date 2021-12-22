@@ -9,7 +9,7 @@ Bug fixes
 Requirements
 ------------
 * ``joblib`` removed as requirement (:pull:`304`)
-* XGBoost version in ``requirements.txt`` updated to 1.5.1
+* XGBoost version in ``requirements.txt`` updated to 1.5.1 (:pull:`304`)
 
 Documentation
 -------------
