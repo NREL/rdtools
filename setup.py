@@ -41,7 +41,7 @@ INSTALL_REQUIRES = [
     # exclude pandas==1.0.0 & 1.0.1 for GH142, and 0.24.0 for GH114
     'pandas >= 0.23.0,!=0.24.0,!=1.0.0,!=1.0.1',
     'statsmodels >= 0.11.1',
-    'scipy >= 0.19.1',
+    'scipy >= 1.0.0',
     'h5py >= 2.7.1',
     'plotly>=4.0.0',
     'joblib >= 0.16.0',

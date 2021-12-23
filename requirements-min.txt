@@ -3,7 +3,7 @@ matplotlib==3.0.0
 numpy==1.15
 pandas==0.23.0
 pvlib==0.7.0
-scipy==0.19.1
+scipy==1.0.0
 statsmodels==0.11.1
 tables==3.4.2
 numexpr==2.7.1  # https://github.com/pydata/numexpr/issues/369
