@@ -1,6 +1,6 @@
 h5py==2.7.1
 matplotlib==3.0.0
-numpy==1.15
+numpy==1.16
 pandas==0.23.0
 pvlib==0.7.0
 scipy==1.0.0
