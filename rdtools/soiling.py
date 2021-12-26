@@ -2004,12 +2004,12 @@ class CODSAnalysis():
             prescient_cleaning_events = \
                 _collapse_cleaning_events(ce, rm9.diff().values, 5)
         cleaning_events = prescient_cleaning_events[prescient_cleaning_events
-                                                    ].index.to_list()
+                                                    ].index.tolist()
 
         # Find soiling events (e.g. dust storms)
         soiling_events = _soiling_event_detection(
             zs_series.index, zs_series, ffill=ffill, tuner=5)
-        soiling_events = soiling_events[soiling_events].index.to_list()
+        soiling_events = soiling_events[soiling_events].index.tolist()
 
         # Initialize various parameters
         if ffill:
@@ -2062,7 +2062,7 @@ class CODSAnalysis():
                 false_positives = _find_numeric_outliers(pi_after_cleaning,
                                                          pruning_tuner, 'lower')
                 cleaning_events = \
-                    false_positives[~false_positives].index.to_list()
+                    false_positives[~false_positives].index.tolist()
 
             # 2: Remove longer periods with positive (soiling) rates
             if (dfk.smooth_rates > max_soiling_rates).sum() > 1:
