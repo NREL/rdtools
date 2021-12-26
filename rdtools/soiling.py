@@ -1993,18 +1993,24 @@ class CODSAnalysis():
         # Check prescient_cleaning_events. If not present, find cleaning events
         if isinstance(prescient_cleaning_events, list):
             cleaning_events = prescient_cleaning_events
-        elif (isinstance(prescient_cleaning_events, type(zs_series))
-              and np.sum(prescient_cleaning_events) > 4
-              and (prescient_cleaning_events.index != zs_series.index).all()):
-            prescient_cleaning_events = prescient_cleaning_events.copy()
-            prescient_cleaning_events.index = zs_series.index
-        else:  # If no prescient cleaning events, detect cleaning events
-            ce, rm9 = _rolling_median_ce_detection(
-                zs_series.index, zs_series, tuner=0.5)
-            prescient_cleaning_events = \
-                _collapse_cleaning_events(ce, rm9.diff().values, 5)
-        cleaning_events = prescient_cleaning_events[prescient_cleaning_events
-                                                    ].index.tolist()
+        else:
+            if isinstance(prescient_cleaning_events, type(zs_series)) \
+                and (prescient_cleaning_events.sum() > 4):
+                    if len(prescient_cleaning_events) == len(zs_series):
+                        prescient_cleaning_events = prescient_cleaning_events.copy()
+                        prescient_cleaning_events.index = zs_series.index
+                    else:
+                        raise ValueError(
+                            "The indices of prescient_cleaning_events must correspond to the"
+                            + " indices of zs_series; they must be of the same length")
+            else:  # If no prescient cleaning events, detect cleaning events
+                ce, rm9 = _rolling_median_ce_detection(
+                    zs_series.index, zs_series, tuner=0.5)
+                prescient_cleaning_events = \
+                    _collapse_cleaning_events(ce, rm9.diff().values, 5)
+
+            cleaning_events = prescient_cleaning_events[prescient_cleaning_events
+                ].index.tolist()
 
         # Find soiling events (e.g. dust storms)
         soiling_events = _soiling_event_detection(
