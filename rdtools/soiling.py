@@ -913,18 +913,18 @@ def annual_soiling_ratios(stochastic_soiling_profiles,
 
     # Compute the insolation-weighted soiling ratio (IWSR) for each realization
     annual_insolation = insolation_daily.groupby(
-                        insolation_daily.index.year).sum()
+        insolation_daily.index.year).sum()
     all_annual_weighted_sums = all_profiles_weighted.groupby(
-                                all_profiles_weighted.index.year).sum()
+        all_profiles_weighted.index.year).sum()
     all_annual_iwsr = all_annual_weighted_sums.multiply(
-                            1/annual_insolation, axis=0)
+        1/annual_insolation, axis=0)
 
     annual_soiling = pd.DataFrame({
         'soiling_ratio_median': all_annual_iwsr.quantile(0.5, axis=1),
         'soiling_ratio_low': all_annual_iwsr.quantile(
-                            0.5 - confidence_level/2/100, axis=1),
+            0.5 - confidence_level/2/100, axis=1),
         'soiling_ratio_high': all_annual_iwsr.quantile(
-                            0.5 + confidence_level/2/100, axis=1),
+            0.5 + confidence_level/2/100, axis=1),
     })
     annual_soiling.index.name = 'year'
     annual_soiling = annual_soiling.reset_index()
@@ -1314,8 +1314,8 @@ class CODSAnalysis():
             order = tuple([c for c in order if c != 'Rd'])
 
         if 'SR' not in order:
-            raise ValueError('\'SR\' must be in argument \'order\' '
-                             + '(e.g. order=[\'SR\', \'SC\', \'Rd\']')
+            raise ValueError('\'SR\' must be in argument \'order\' ' +
+                             '(e.g. order=[\'SR\', \'SC\', \'Rd\']')
         n_steps = len(order)
         day = np.arange(len(pi))
         degradation_trend = [1]
@@ -1357,21 +1357,21 @@ class CODSAnalysis():
                     pruning_tuner /= 1.1  # Decrease value of pruning tuner
 
                 # Decompose input signal
-                soiling_dummy = (pi
-                                 / degradation_trend[-1]
-                                 / seasonal_component[-1]
-                                 / residual_shift)
+                soiling_dummy = (pi /
+                                 degradation_trend[-1] /
+                                 seasonal_component[-1] /
+                                 residual_shift)
 
                 # Run Kalman Filter for obtaining soiling component
                 kdf, Ps = self._Kalman_filter_for_SR(
-                                zs_series=soiling_dummy,
-                                clip_soiling=clip_soiling,
-                                prescient_cleaning_events=pce,
-                                pruning_iterations=pruning_iterations,
-                                pruning_tuner=pruning_tuner,
-                                perfect_cleaning=perfect_cleaning,
-                                process_noise=process_noise,
-                                renormalize_SR=renormalize_SR)
+                    zs_series=soiling_dummy,
+                    clip_soiling=clip_soiling,
+                    prescient_cleaning_events=pce,
+                    pruning_iterations=pruning_iterations,
+                    pruning_tuner=pruning_tuner,
+                    perfect_cleaning=perfect_cleaning,
+                    process_noise=process_noise,
+                    renormalize_SR=renormalize_SR)
                 soiling_ratio.append(kdf.soiling_ratio)
                 soiling_dfs.append(kdf)
 
@@ -1405,9 +1405,9 @@ class CODSAnalysis():
             # Find degradation component
             if order[(ic-1) % n_steps] == 'Rd':
                 # Decompose signal
-                trend_dummy = (pi
-                               / seasonal_component[-1]
-                               / soiling_ratio[-1])
+                trend_dummy = (pi /
+                               seasonal_component[-1] /
+                               soiling_ratio[-1])
                 # Run YoY
                 yoy = RdToolsDeg.degradation_year_on_year(
                     trend_dummy, uncertainty_method='none')
@@ -1417,9 +1417,9 @@ class CODSAnalysis():
                 yoy_save.append(yoy)
 
             # Combine and calculate residual flatness
-            total_model = (degradation_trend[-1]
-                           * seasonal_component[-1]
-                           * soiling_ratio[-1])
+            total_model = (degradation_trend[-1] *
+                           seasonal_component[-1] *
+                           soiling_ratio[-1])
             residuals = pi / total_model
             residual_shift = residuals.mean()
             total_model *= residual_shift
@@ -1433,25 +1433,25 @@ class CODSAnalysis():
             # Convergence happens if there is no improvement in RMSE from one
             # step to the next
             if ic >= n_steps:
-                relative_improvement = ((convergence_metric[-n_steps-1]
-                                         - convergence_metric[-1])
-                                        / convergence_metric[-n_steps-1])
+                relative_improvement = ((convergence_metric[-n_steps-1] -
+                                         convergence_metric[-1]) /
+                                        convergence_metric[-n_steps-1])
                 if perfect_cleaning and (
-                        ic >= max_iterations / 2
-                        or relative_improvement < convergence_criterium):
+                        ic >= max_iterations / 2 or
+                        relative_improvement < convergence_criterium):
                     # From now on, do not assume perfect cleaning
                     perfect_cleaning = False
                     # Reorder to ensure SR first
                     order = tuple([order[(i+n_steps-1-(ic-1) % n_steps) % n_steps]
-                                  for i in range(n_steps)])
+                                   for i in range(n_steps)])
                     change_point = ic
                     if verbose:
                         print('Now not assuming perfect cleaning')
-                elif (not perfect_cleaning
-                      and (ic >= max_iterations
-                           or (ic >= change_point + n_steps
-                               and relative_improvement
-                               < convergence_criterium))):
+                elif (not perfect_cleaning and
+                      (ic >= max_iterations or
+                        (ic >= change_point + n_steps and
+                         relative_improvement <
+                         convergence_criterium))):
                     if verbose:
                         if relative_improvement < convergence_criterium:
                             print('Convergence reached.')
@@ -1479,18 +1479,18 @@ class CODSAnalysis():
         soiling_loss = (1 - df_out.soiling_ratio).mean() * 100
 
         # Total model
-        df_out.total_model = (df_out.soiling_ratio
-                              * df_out.seasonal_component
-                              * df_out.degradation_trend)
+        df_out.total_model = (df_out.soiling_ratio *
+                              df_out.seasonal_component *
+                              df_out.degradation_trend)
         df_out.residuals = pi / df_out.total_model
         residual_shift = df_out.residuals.mean()
         df_out.total_model *= residual_shift
         RMSE = _RMSE(pi, df_out.total_model)
         adf_res = adfuller(df_out.residuals.dropna(), regression='ctt', autolag=None)
         if verbose:
-            print('p-value for the H0 that there is a unit root in the'
-                  + 'residuals (using the Augmented Dickey-fuller test):'
-                  + '{:.3e}'.format(adf_res[1]))
+            print('p-value for the H0 that there is a unit root in the' +
+                  'residuals (using the Augmented Dickey-fuller test):' +
+                  '{:.3e}'.format(adf_res[1]))
 
         # Check size of soiling signal vs residuals
         SR_amp = float(np.diff(df_out.soiling_ratio.quantile([.1, .9])))
@@ -1666,10 +1666,10 @@ class CODSAnalysis():
         for c, (order, dt, pt, ff) in enumerate(combination_of_knobs):
             try:
                 result = self.iterative_signal_decomposition(
-                     max_iterations=18, order=order, clip_soiling=True,
-                     detection_tuner=dt, pruning_iterations=1,
-                     pruning_tuner=pt, process_noise=process_noise, ffill=ff,
-                     degradation_method=degradation_method, **kwargs)
+                    max_iterations=18, order=order, clip_soiling=True,
+                    detection_tuner=dt, pruning_iterations=1,
+                    pruning_tuner=pt, process_noise=process_noise, ffill=ff,
+                    degradation_method=degradation_method, **kwargs)
 
                 # Save results
                 results.append(result)
@@ -1738,9 +1738,9 @@ class CODSAnalysis():
             self.soiling_loss = [0, 0, (1 - df_out.soiling_ratio).mean()]
             self.sss = True
             self.errors = (
-                    'Soiling signal is small relative to the noise.'
-                    'Iterative decomposition not possible.\n'
-                    'Degradation found by RdTools YoY')
+                'Soiling signal is small relative to the noise.'
+                'Iterative decomposition not possible.\n'
+                'Degradation found by RdTools YoY')
             print(self.errors)
             return
         self.sss = False
@@ -1882,9 +1882,9 @@ class CODSAnalysis():
         df_out['seasonal_high'] = seasonal_samples.quantile(ci_high_edge, 1)
 
         # Total model with confidence intervals
-        df_out.total_model = (df_out.degradation_trend
-                              * df_out.seasonal_component
-                              * df_out.soiling_ratio)
+        df_out.total_model = (df_out.degradation_trend *
+                              df_out.seasonal_component *
+                              df_out.soiling_ratio)
         df_out['model_low'] = concat_tot_mod.quantile(ci_low_edge, 1)
         df_out['model_high'] = concat_tot_mod.quantile(ci_high_edge, 1)
 
@@ -1994,23 +1994,22 @@ class CODSAnalysis():
         if isinstance(prescient_cleaning_events, list):
             cleaning_events = prescient_cleaning_events
         else:
-            if isinstance(prescient_cleaning_events, type(zs_series)) \
-                and (prescient_cleaning_events.sum() > 4):
-                    if len(prescient_cleaning_events) == len(zs_series):
-                        prescient_cleaning_events = prescient_cleaning_events.copy()
-                        prescient_cleaning_events.index = zs_series.index
-                    else:
-                        raise ValueError(
-                            "The indices of prescient_cleaning_events must correspond to the"
-                            + " indices of zs_series; they must be of the same length")
+            if (isinstance(prescient_cleaning_events, type(zs_series)) and
+                    (prescient_cleaning_events.sum() > 4)):
+                if len(prescient_cleaning_events) == len(zs_series):
+                    prescient_cleaning_events = prescient_cleaning_events.copy()
+                    prescient_cleaning_events.index = zs_series.index
+                else:
+                    raise ValueError(
+                        "The indices of prescient_cleaning_events must correspond to the" +
+                        " indices of zs_series; they must be of the same length")
             else:  # If no prescient cleaning events, detect cleaning events
                 ce, rm9 = _rolling_median_ce_detection(
                     zs_series.index, zs_series, tuner=0.5)
                 prescient_cleaning_events = \
                     _collapse_cleaning_events(ce, rm9.diff().values, 5)
 
-            cleaning_events = prescient_cleaning_events[prescient_cleaning_events
-                ].index.tolist()
+            cleaning_events = prescient_cleaning_events[prescient_cleaning_events].index.tolist()
 
         # Find soiling events (e.g. dust storms)
         soiling_events = _soiling_event_detection(
@@ -2592,6 +2591,6 @@ def _progressBarWithETA(value, endvalue, time, bar_length=20):
     used = time / 60  # Time Used
     left = used / percent*(100-percent)  # Estimated time left
     sys.stdout.write(
-        "\r# {:} | Used: {:.1f} min | Left: {:.1f}".format(value, used, left)
-        + " min | Progress: [{:}] {:.0f} %".format(arrow + spaces, percent))
+        "\r# {:} | Used: {:.1f} min | Left: {:.1f}".format(value, used, left) +
+        " min | Progress: [{:}] {:.0f} %".format(arrow + spaces, percent))
     sys.stdout.flush()
