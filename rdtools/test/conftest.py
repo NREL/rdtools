@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 import itertools
 import pvlib
+import re
 
 import rdtools
 
@@ -36,6 +37,25 @@ def fail_on_rdtools_version(version):
 
 def assert_isinstance(obj, klass):
     assert isinstance(obj, klass), f'got {type(obj)}, expected {klass}'
+
+
+def assert_warnings(messages, record):
+    """
+    Assert that every regex in ``messages`` matches
+    a warning message in ``record``.
+
+    Parameters
+    ----------
+    messages : list of str
+        Regexes to match with warning messages
+    record : list of warnings.WarningMessage
+        A list of warnings, e.g. the one returned by the
+        ``warnings.catch_warnings()`` context manager
+    """
+    warning_messages = [warning.message.args[0] for warning in record]
+    for pattern in messages:
+        found_match = any(re.match(pattern, msg) for msg in warning_messages)
+        assert found_match, f"warning '{pattern}' not in {warning_messages}"
 
 
 requires_pvlib_below_090 = \
