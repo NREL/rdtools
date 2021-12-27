@@ -1,0 +1,41 @@
+************************
+v2.1.3 (Month Day, Year)
+************************
+
+API Changes
+-----------
+
+
+Enhancements
+------------
+
+
+Bug fixes
+---------
+
+
+
+Documentation
+-------------
+
+
+Requirements
+------------
+* Added support for python 3.10 and dropped support for python 3.6
+  (which reached end of life on Dec 23, 2021) (:pull:`302`)
+* Bumped several minimum package versions (:pull:`302`):
+
+  + h5py increased to 2.8.0 (released June 4, 2018)
+  + pandas increased to 0.23.2 (released July 6, 2018)
+  + scipy increased to 1.1.0 (released May 5, 2018)
+  + statsmodels increased to 0.9.0 (released May 14, 2018)
+
+
+Example Updates
+---------------
+
+
+Contributors
+------------
+
+* Kevin Anderson (:ghuser:`kanderso-nrel`)
