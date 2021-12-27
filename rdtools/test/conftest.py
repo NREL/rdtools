@@ -50,7 +50,7 @@ def assert_warnings(messages, record):
         Regexes to match with warning messages
     record : list of warnings.WarningMessage
         A list of warnings, e.g. the one returned by the
-        ``warnings.catch_warnings()`` context manager
+        ``warnings.catch_warnings(record=True)`` context manager
     """
     warning_messages = [warning.message.args[0] for warning in record]
     for pattern in messages:
