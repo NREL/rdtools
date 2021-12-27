@@ -30,6 +30,8 @@ Requirements
   + scipy increased to 1.1.0 (released May 5, 2018)
   + statsmodels increased to 0.9.0 (released May 14, 2018)
 
+* TODO requirements.txt updates
+
 
 Example Updates
 ---------------
@@ -37,5 +39,4 @@ Example Updates
 
 Contributors
 ------------
-
 * Kevin Anderson (:ghuser:`kanderso-nrel`)
