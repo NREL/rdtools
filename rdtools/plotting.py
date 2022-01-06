@@ -395,18 +395,19 @@ def availability_summary_plots(power_system, power_subsystem, loss_total,
     ax3 = fig.add_subplot(gs[2, 0], sharex=ax1)
     ax4 = fig.add_subplot(gs[:, 1], sharex=ax1)
 
-    # inverter power
-    power_system.plot(ax=ax1)
-    ax1.set_ylabel('Inverter Power [kW]')
     # meter power
-    power_subsystem.plot(ax=ax2)
-    ax2.set_ylabel('System power [kW]')
+    ax1.plot(power_system.index, power_system.values)
+    ax1.set_ylabel('System power [kW]')
+    # meter power
+    ax2.plot(power_subsystem.index, power_subsystem.values)
+    ax2.set_ylabel('Inverter power [kW]')
     # lost power
-    loss_total.plot(ax=ax3)
+    ax3.plot(loss_total.index, loss_total.values)
     ax3.set_ylabel('Estimated lost power [kW]')
 
     # cumulative energy
-    energy_cumulative.plot(ax=ax4, label='Reported Production')
+    ax4.plot(energy_cumulative.index, energy_cumulative.values,
+             label='Reported Production')
 
     # we'll use the index value to only set legend entries for the first
     # outage we plot.  Just in case the index has some other values, we'll
@@ -422,8 +423,8 @@ def availability_summary_plots(power_system, power_subsystem, loss_total,
         lo, hi = np.abs(expected_energy - row[['ci_lower', 'ci_upper']])
         expected_curve = energy_expected_rescaled[start:end].cumsum()
         expected_curve += start_energy
-        expected_curve.plot(c='tab:orange', ax=ax4,
-                            label=prefix + 'Expected Production')
+        ax4.plot(expected_curve.index, expected_curve.values, c='tab:orange',
+                 label=prefix + 'Expected Production')
         energy_end = expected_curve.iloc[-1]
         ax4.errorbar([end], [energy_end], [[lo], [hi]], c='k',
                      label=prefix + 'Uncertainty')
