@@ -398,7 +398,7 @@ def availability_summary_plots(power_system, power_subsystem, loss_total,
     # meter power
     ax1.plot(power_system.index, power_system.values)
     ax1.set_ylabel('System power [kW]')
-    # meter power
+    # inverter power
     ax2.plot(power_subsystem.index, power_subsystem.values)
     ax2.set_ylabel('Inverter power [kW]')
     # lost power
