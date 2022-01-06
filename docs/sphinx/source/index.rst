@@ -145,7 +145,7 @@ installing requirements. If this occurs, the requirements specified in
 
 For more detailed instructions, see the :ref:`developer_notes` page.
 
-RdTools currently is tested on Python 3.6+.
+RdTools currently is tested on Python 3.7+.
 
 Usage and examples
 ------------------
