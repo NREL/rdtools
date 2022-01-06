@@ -20,3 +20,9 @@ Requirements
   + statsmodels increased to 0.9.0 (released May 14, 2018)
 
 * Update pinned versions of several dependencies in ``requirements.txt`` (:pull:`302`)
+
+
+Testing
+-------
+* Drop python 3.6 and add 3.10 to the CI configuration (:pull:`302`)
+* Add new ``assert_warnings`` helper function to ``conftest.py`` (:pull:`302`)
