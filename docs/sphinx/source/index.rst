@@ -145,7 +145,7 @@ installing requirements. If this occurs, the requirements specified in
 
 For more detailed instructions, see the :ref:`developer_notes` page.
 
-RdTools currently is tested on Python 3.6+.
+RdTools currently is tested on Python 3.7+.
 
 Usage and examples
 ------------------
@@ -238,27 +238,35 @@ take one of several types, we document them using the type alises listed below:
 
 Citing RdTools
 --------------
+To cite RdTools, please use the following along with the version number
+and the specific DOI coresponding to that version from `Zenodo <https://doi.org/10.5281/zenodo.1210316>`_:
+
+-  Michael G. Deceglie, Ambarish Nag, Adam Shinn, Gregory Kimball,
+   Daniel Ruth, Dirk Jordan, Jiyang Yan, Kevin Anderson, Kirsten Perry,
+   Mark Mikofski, Matthew Muller, Will Vining, and Chris Deline
+   RdTools, version {insert version}, Compuer Software,
+   https://github.com/NREL/rdtools. DOI:{insert DOI}
 
 The underlying workflow of RdTools has been published in several places.
-If you use RdTools in a published work, please cite the following as
+If you use RdTools in a published work, you may also wish to cite the following as
 appropriate:
 
--  D. Jordan, C. Deline, S. Kurtz, G. Kimball, M. Anderson, "Robust PV
+-  Dirk Jordan, Chris Deline, Sarah Kurtz, Gregory Kimball, Michael Anderson, "Robust PV
    Degradation Methodology and Application", IEEE Journal of
-   Photovoltaics, 8(2) pp. 525-531, 2018
-   ‌‌
--  M. G. Deceglie, L. Micheli and M. Muller, "Quantifying Soiling Loss
-   Directly From PV Yield," in IEEE Journal of Photovoltaics, 8(2),
-   pp. 547-551, 2018
+   Photovoltaics, 8(2) pp. 525-531, 2018 DOI: `10.1109/JPHOTOV.2017.2779779 <https://doi.org/10.1109/JPHOTOV.2017.2779779>`_
 
--  K. Anderson and R. Blumenthal, "Overcoming Communications Outages in
+-  Michael G. Deceglie, Leonardo Micheli and Matthew Muller, "Quantifying Soiling Loss
+   Directly From PV Yield," in IEEE Journal of Photovoltaics, 8(2),
+   pp. 547-551, 2018 DOI: `10.1109/JPHOTOV.2017.2784682 <https://doi.org/10.1109/JPHOTOV.2017.2784682>`_
+
+-  Kevin Anderson and Ryan Blumenthal, "Overcoming Communications Outages in
    Inverter Downtime Analysis", 2020 IEEE 47th Photovoltaic Specialists
-   Conference (PVSC)."
-   ‌‌
--  RdTools, version x.x.x, https://github.com/NREL/rdtools,
-   https://doi.org/10.5281/zenodo.1210316
-   
-   + Be sure to include the version number used in your analysis!
+   Conference (PVSC). DOI: `10.1109/PVSC45281.2020.9300635 <https://doi.org/10.1109/PVSC45281.2020.9300635>`_
+
+-  Kirsten Perry, Matthew Muller and Kevin Anderson, "Performance Comparison of Clipping
+   Detection Techniques in AC Power Time Series," 2021 IEEE 48th Photovoltaic
+   Specialists Conference (PVSC), 2021, pp. 1638-1643, DOI: `10.1109/PVSC43889.2021.9518733 <https://doi.org/10.1109/PVSC43889.2021.9518733>`_
+
 
 References
 ----------
