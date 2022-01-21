@@ -1,15 +1,18 @@
 import pandas as pd
 import numpy as np
 from rdtools.degradation import degradation_year_on_year
+from rdtools.filtering import logic_clip_filter
 from rdtools.soiling import soiling_srr
 from rdtools.plotting import (
     degradation_summary_plots,
     soiling_monte_carlo_plot,
     soiling_interval_plot,
     soiling_rate_histogram,
-    availability_summary_plots,
+    tune_filter_plot,
+    availability_summary_plots
 )
 import matplotlib.pyplot as plt
+import plotly
 import pytest
 
 from conftest import assert_isinstance
@@ -57,6 +60,7 @@ def test_degradation_summary_plots(degradation_info):
     # test defaults
     result = degradation_summary_plots(yoy_rd, yoy_ci, yoy_info, power)
     assert_isinstance(result, plt.Figure)
+    plt.close('all')
 
 
 def test_degradation_summary_plots_kwargs(degradation_info):
@@ -72,10 +76,12 @@ def test_degradation_summary_plots_kwargs(degradation_info):
         plot_color='g',
         summary_title='test',
         scatter_alpha=1.0,
+        detailed=True,
     )
     result = degradation_summary_plots(yoy_rd, yoy_ci, yoy_info, power,
                                        **kwargs)
     assert_isinstance(result, plt.Figure)
+    plt.close('all')
 
 
 @pytest.fixture()
@@ -102,9 +108,11 @@ def test_soiling_monte_carlo_plot(soiling_normalized_daily, soiling_info):
     # test defaults
     result = soiling_monte_carlo_plot(soiling_info, soiling_normalized_daily)
     assert_isinstance(result, plt.Figure)
+    plt.close('all')
 
 
-def test_soiling_monte_carlo_plot_kwargs(soiling_normalized_daily, soiling_info):
+def test_soiling_monte_carlo_plot_kwargs(soiling_normalized_daily,
+                                         soiling_info):
     # test kwargs
     kwargs = dict(
         point_alpha=0.1,
@@ -118,12 +126,14 @@ def test_soiling_monte_carlo_plot_kwargs(soiling_normalized_daily, soiling_info)
     result = soiling_monte_carlo_plot(soiling_info, soiling_normalized_daily,
                                       **kwargs)
     assert_isinstance(result, plt.Figure)
+    plt.close('all')
 
 
 def test_soiling_interval_plot(soiling_normalized_daily, soiling_info):
     # test defaults
     result = soiling_interval_plot(soiling_info, soiling_normalized_daily)
     assert_isinstance(result, plt.Figure)
+    plt.close('all')
 
 
 def test_soiling_interval_plot_kwargs(soiling_normalized_daily, soiling_info):
@@ -139,12 +149,14 @@ def test_soiling_interval_plot_kwargs(soiling_normalized_daily, soiling_info):
     result = soiling_interval_plot(soiling_info, soiling_normalized_daily,
                                    **kwargs)
     assert_isinstance(result, plt.Figure)
+    plt.close('all')
 
 
 def test_soiling_rate_histogram(soiling_info):
     # test defaults
     result = soiling_rate_histogram(soiling_info)
     assert_isinstance(result, plt.Figure)
+    plt.close('all')
 
 
 def test_soiling_rate_histogram_kwargs(soiling_info):
@@ -154,6 +166,57 @@ def test_soiling_rate_histogram_kwargs(soiling_info):
     )
     result = soiling_rate_histogram(soiling_info, **kwargs)
     assert_isinstance(result, plt.Figure)
+    plt.close('all')
+
+
+@pytest.fixture()
+def clipping_power_degradation_signal():
+    clipping_power_series = pd.Series(np.arange(1, 101))
+    # Add datetime index to second series
+    time_range = pd.date_range('2016-12-02T11:00:00.000Z',
+                               '2017-06-06T07:00:00.000Z', freq='H')
+    clipping_power_series.index = pd.to_datetime(time_range[:100])
+    return clipping_power_series
+
+
+@pytest.fixture()
+def clipping_info(clipping_power_degradation_signal):
+    '''
+    Return results of clipping filter applied to a degradation signal.
+
+    Returns
+    -------
+    signal_filtered: Pandas series, filtered degradation power signal
+    clipping_mask_series: Pandas series, boolean mask time series for
+    clipping, with True indicating a non-clipping period and False
+    representing a clipping period
+    '''
+    clipping_mask_series = logic_clip_filter(clipping_power_degradation_signal)
+    return clipping_mask_series
+
+
+def test_clipping_filter_plots(clipping_info,
+                               clipping_power_degradation_signal):
+    clipping_mask_series = clipping_info
+    # test defaults
+    result = tune_filter_plot(clipping_power_degradation_signal,
+                              clipping_mask_series,
+                              display_web_browser=False)
+    assert_isinstance(result, plotly.graph_objs._figure.Figure)
+
+
+def test_filter_plots_kwargs(clipping_info,
+                             clipping_power_degradation_signal):
+    clipping_mask_series = clipping_info
+
+    # test kwargs
+    kwargs = dict(
+        display_web_browser=False
+    )
+    result = tune_filter_plot(clipping_power_degradation_signal,
+                              clipping_mask_series,
+                              **kwargs)
+    assert_isinstance(result, plotly.graph_objs._figure.Figure)
 
 
 def test_availability_summary_plots(availability_analysis_object):
@@ -163,6 +226,7 @@ def test_availability_summary_plots(availability_analysis_object):
         aa.energy_cumulative, aa.energy_expected_rescaled,
         aa.outage_info)
     assert_isinstance(result, plt.Figure)
+    plt.close('all')
 
 
 def test_availability_summary_plots_empty(availability_analysis_object):
@@ -174,3 +238,4 @@ def test_availability_summary_plots_empty(availability_analysis_object):
         aa.energy_cumulative, aa.energy_expected_rescaled,
         empty)
     assert_isinstance(result, plt.Figure)
+    plt.close('all')

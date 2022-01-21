@@ -22,8 +22,8 @@ sys.path.insert(0, os.path.abspath('../../..'))
 # -- Project information -----------------------------------------------------
 
 project = 'RdTools'
-copyright = '2016–2020 kwhanalytics, Alliance for Sustainable Energy, LLC, and SunPower'
-author = 'kwhanalytics, Alliance for Sustainable Energy, LLC, and SunPower'
+copyright = '2016–2021 kWh Analytics, Alliance for Sustainable Energy, LLC, SunPower, and DNV'
+author = 'kWh Analytics, Alliance for Sustainable Energy, LLC, SunPower, and DNV'
 
 # The full version, including alpha/beta/rc tags
 import rdtools  # noqa: E402
@@ -43,6 +43,7 @@ extensions = [
     'nbsphinx',
     'nbsphinx_link',
     'sphinx_gallery.load_style',
+    'sphinx.ext.intersphinx',
 ]
 
 autosummary_generate = True
@@ -86,10 +87,25 @@ smartquotes = False
 
 master_doc = 'index'
 
+# Example configuration for intersphinx: refer to the Python standard library.
+intersphinx_mapping = {
+    'python': ('https://docs.python.org/3/', None),
+    'pandas': ('https://pandas.pydata.org/pandas-docs/stable/', None),
+    'numpy': ('https://numpy.org/doc/stable/', None),
+    'scipy': ('https://docs.scipy.org/doc/scipy/reference/', None),
+    'matplotlib': ('https://matplotlib.org/stable/', None),
+    'pvlib': ('https://pvlib-python.readthedocs.io/en/stable/', None),
+}
+
+napoleon_use_param = True
+napoleon_type_aliases = {
+    'numeric': ":term:`numeric`",
+}
+
 
 # A workaround for the responsive tables always having annoying scrollbars.
 def setup(app):
-    app.add_stylesheet("no_scrollbars.css")
+    app.add_css_file("no_scrollbars.css")
 
 
 # %% helper functions for intelligent "View on Github" linking

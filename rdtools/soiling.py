@@ -31,15 +31,15 @@ class SRRAnalysis():
 
     Parameters
     ----------
-    energy_normalized_daily : pd.Series
+    energy_normalized_daily : pandas.Series
         Daily performance metric (i.e. performance index, yield, etc.)
         Alternatively, the soiling ratio output of a soiling sensor (e.g. the
         photocurrent ratio between matched dirty and clean PV reference cells).
         In either case, data should be insolation-weighted daily aggregates.
-    insolation_daily : pd.Series
+    insolation_daily : pandas.Series
         Daily plane-of-array insolation corresponding to
         `energy_normalized_daily`. Arbitrary units.
-    precipitation_daily : pd.Series, default None
+    precipitation_daily : pandas.Series, default None
         Daily total precipitation. (Ignored if ``clean_criterion='shift'`` in
         subsequent calculations.)
     '''
@@ -53,21 +53,22 @@ class SRRAnalysis():
         # insolation-weighted soiling ratios in _calc_monte:
         self.monte_losses = []
 
-        if self.pm.index.freq != 'D':
+        if pd.infer_freq(self.pm.index) != 'D':
             raise ValueError('Daily performance metric series must have '
                              'daily frequency')
 
-        if self.insolation_daily.index.freq != 'D':
+        if pd.infer_freq(self.insolation_daily.index) != 'D':
             raise ValueError('Daily insolation series must have '
                              'daily frequency')
 
         if self.precipitation_daily is not None:
-            if self.precipitation_daily.index.freq != 'D':
+            if pd.infer_freq(self.precipitation_daily.index) != 'D':
                 raise ValueError('Precipitation series must have '
                                  'daily frequency')
 
-    def _calc_daily_df(self, day_scale=14, clean_threshold='infer',
-                       recenter=True, clean_criterion='shift', precip_threshold=0.01):
+    def _calc_daily_df(self, day_scale=13, clean_threshold='infer',
+                       recenter=True, clean_criterion='shift', precip_threshold=0.01,
+                       outlier_factor=1.5):
         '''
         Calculates self.daily_df, a pandas dataframe prepared for SRR analysis,
         and self.renorm_factor, the renormalization factor for the daily
@@ -75,8 +76,9 @@ class SRRAnalysis():
 
         Parameters
         ----------
-        day_scale : int, default 14
-            The number of days to use in rolling median for cleaning detection
+        day_scale : int, default 13
+            The number of days to use in rolling median for cleaning detection.
+            An odd value is recommended.
         clean_threshold : float or 'infer', default 'infer'
             If float: the fractional positive shift in rolling median for
             cleaning detection.
@@ -85,19 +87,30 @@ class SRRAnalysis():
         recenter : bool, default True
             Whether to recenter (renormalize) the daily performance to the
             median of the first year
-        clean_criterion : {'precip_and_shift', 'precip_or_shift', 'precip', 'shift'} \
+        clean_criterion : str, {'shift', 'precip_and_shift', 'precip_or_shift', 'precip'} \
                 default 'shift'
             The method of partitioning the dataset into soiling intervals.
-            If 'precip_and_shift', rolling median shifts must coincide
-            with precipitation to be a valid cleaning event.
-            If 'precip_or_shift', rolling median shifts and precipitation
-            events are each sufficient on their own to be a cleaning event.
-            If 'shift', only rolling median shifts are treated as cleaning events.
-            If 'precip', only precipitation events are treated as cleaning events.
+
+            * 'precip_and_shift' - rolling median shifts must coincide
+              with precipitation to be a valid cleaning event.
+            * 'precip_or_shift' - rolling median shifts and precipitation
+              events are each sufficient on their own to be a cleaning event.
+            * 'shift', only rolling median shifts are treated as cleaning events.
+            * 'precip', only precipitation events are treated as cleaning events.
         precip_threshold : float, default 0.01
-            The daily precipitation threshold for defining precipitation cleaning events.
+            The daily precipitation threshold for defining precipitation
+            cleaning events.
             Units must be consistent with ``self.precipitation_daily``.
+        outlier_factor : float, default 1.5
+            The factor used in the Tukey fence definition of outliers for flagging positive shifts
+            in the rolling median used for cleaning detection. A smaller value will cause more and
+            smaller shifts to be classified as cleaning events.
         '''
+        if (day_scale % 2 == 0) and ('shift' in clean_criterion):
+            warnings.warn('An even value of day_scale was passed. An odd value is '
+                          'recommended, otherwise, consecutive days may be erroneously '
+                          'flagged as cleaning events. '
+                          'See https://github.com/NREL/rdtools/issues/189')
 
         df = self.pm.to_frame()
         df.columns = ['pi']
@@ -153,13 +166,14 @@ class SRRAnalysis():
         if clean_threshold == 'infer':
             deltas = abs(df.delta)
             clean_threshold = deltas.quantile(0.75) + \
-                1.5 * (deltas.quantile(0.75) - deltas.quantile(0.25))
+                outlier_factor * (deltas.quantile(0.75) - deltas.quantile(0.25))
 
         df['clean_event_detected'] = (df.delta > clean_threshold)
         precip_event = (df['precip'] > precip_threshold)
 
         if clean_criterion == 'precip_and_shift':
-            # Detect which cleaning events are associated with rain within a 3 day window
+            # Detect which cleaning events are associated with rain
+            # within a 3 day window
             precip_event = precip_event.rolling(
                 3, center=True, min_periods=1).apply(any).astype(bool)
             df['clean_event'] = (df['clean_event_detected'] & precip_event)
@@ -171,11 +185,10 @@ class SRRAnalysis():
             df['clean_event'] = df['clean_event_detected']
         else:
             raise ValueError('clean_criterion must be one of '
-                             '{"precip_and_shift", "precip_or_shift", "precip", "shift"}')
+                             '{"precip_and_shift", "precip_or_shift", '
+                             '"precip", "shift"}')
 
         df['clean_event'] = df.clean_event | out_start | out_end
-        df['clean_event'] = (df.clean_event) & (
-            ~df.clean_event.shift(-1).fillna(False))
 
         df = df.fillna(0)
 
@@ -187,7 +200,7 @@ class SRRAnalysis():
         self.daily_df = df
 
     def _calc_result_df(self, trim=False, max_relative_slope_error=500.0,
-                        max_negative_step=0.05, min_interval_length=2):
+                        max_negative_step=0.05, min_interval_length=7):
         '''
         Calculates self.result_df, a pandas dataframe summarizing the soiling
         intervals identified and self.analyzed_daily_df, a version of
@@ -205,7 +218,7 @@ class SRRAnalysis():
             The maximum magnitude of negative discrete steps allowed in an
             interval for the interval to be considered valid (units of
             normalized performance metric).
-        min_interval_length : int, default 2
+        min_interval_length : int, default 7
             The minimum duration for an interval to be considered
             valid.  Cannot be less than 2 (days).
         '''
@@ -264,7 +277,8 @@ class SRRAnalysis():
         # Filter results for each interval,
         # setting invalid interval to slope of 0
         results['slope_err'] = (
-            results.run_slope_high - results.run_slope_low) / abs(results.run_slope)
+            results.run_slope_high - results.run_slope_low)\
+            / abs(results.run_slope)
         # critera for exclusions
         filt = (
             (results.run_slope > 0) |
@@ -286,11 +300,10 @@ class SRRAnalysis():
             results.next_inferred_start_loss - results.inferred_end_loss,
             0, 1)
 
-        # Don't consider data outside of first and last valid intervals
         if len(results[results.valid]) == 0:
             raise NoValidIntervalError('No valid soiling intervals were found')
-        new_start = results[results.valid].start.iloc[0]
-        new_end = results[results.valid].end.iloc[-1]
+        new_start = results.start.iloc[0]
+        new_end = results.end.iloc[-1]
         pm_frame_out = daily_df[new_start:new_end]
         pm_frame_out = pm_frame_out.reset_index() \
                                    .merge(results, how='left', on='run') \
@@ -332,17 +345,32 @@ class SRRAnalysis():
         ----------
         monte : int
             number of Monte Carlo simulations to run
-        method : str, default 'half_norm_clean'
-            how to treat the recovery of each cleaning event:
+        method : str, {'half_norm_clean', 'random_clean', 'perfect_clean'} \
+                default 'half_norm_clean'
+            How to treat the recovery of each cleaning event
+
             * 'random_clean' - a random recovery between 0-100%
             * 'perfect_clean' - each cleaning event returns the performance
               metric to 1
             * 'half_norm_clean' - The starting point of each interval is taken
-              randomly from a half normal distribution with its mode (mu) at 1 and
-              its sigma equal to 1/3 * (1-b) where b is the intercept of the fit to
-              the interval.
+              randomly from a half normal distribution with its
+              mode (mu) at 1 and
+              its sigma equal to 1/3 * (1-b) where b is the intercept
+              of the fit to the interval.
         '''
 
+        # Raise a warning if there is >20% invalid data
+        if (method == 'half_norm_clean') or (method == 'random_clean'):
+            valid_fraction = self.analyzed_daily_df['valid'].mean()
+            if valid_fraction <= 0.8:
+                warnings.warn('20% or more of the daily data is assigned to invalid soiling '
+                              'intervals. This can be problematic with the "half_norm_clean" '
+                              'and "random_clean" cleaning assumptions. Consider more permissive '
+                              'validity criteria such as increasing "max_relative_slope_error" '
+                              'and/or "max_negative_step" and/or decreasing "min_interval_length".'
+                              ' Alternatively, consider using method="perfect_clean". For more'
+                              ' info see https://github.com/NREL/rdtools/issues/272'
+                              )
         monte_losses = []
         random_profiles = []
         for _ in range(monte):
@@ -373,7 +401,7 @@ class SRRAnalysis():
             # randomize the extent of the cleaning
             inter_start = 1.0
             start_list = []
-            if method == 'half_norm_clean':
+            if (method == 'half_norm_clean') or (method == 'random_clean'):
                 # Randomize recovery of valid intervals only
                 valid_intervals = results_rand[results_rand.valid].copy()
                 valid_intervals['inferred_recovery'] = \
@@ -385,10 +413,13 @@ class SRRAnalysis():
                     end = inter_start + row.run_loss
                     end_list.append(end)
 
-                    # Use a half normal with the inferred clean at the
-                    # 3sigma point
-                    x = np.clip(end + row.inferred_recovery, 0, 1)
-                    inter_start = 1 - abs(np.random.normal(0.0, (1 - x) / 3))
+                    if method == 'half_norm_clean':
+                        # Use a half normal with the inferred clean at the
+                        # 3sigma point
+                        x = np.clip(end + row.inferred_recovery, 0, 1)
+                        inter_start = 1 - abs(np.random.normal(0.0, (1 - x) / 3))
+                    elif method == 'random_clean':
+                        inter_start = np.random.uniform(end, 1)
 
                 # Update the valid rows in results_rand
                 valid_update = pd.DataFrame()
@@ -429,13 +460,6 @@ class SRRAnalysis():
                     invalid_update.index = invalid_intervals.index
                     results_rand.update(invalid_update)
 
-            elif method == 'random_clean':
-                for i, row in results_rand.iterrows():
-                    start_list.append(inter_start)
-                    end = inter_start + row.run_loss
-                    inter_start = np.random.uniform(end, 1)
-                results_rand['start_loss'] = start_list
-
             elif method == 'perfect_clean':
                 for i, row in results_rand.iterrows():
                     start_list.append(inter_start)
@@ -458,7 +482,8 @@ class SRRAnalysis():
             df_rand['soil_insol'] = df_rand.loss * df_rand.insol
 
             soiling_ratio = (
-                df_rand.soil_insol.sum() / df_rand.insol[~df_rand.soil_insol.isnull()].sum()
+                df_rand.soil_insol.sum() / df_rand.insol[
+                    ~df_rand.soil_insol.isnull()].sum()
             )
             monte_losses.append(soiling_ratio)
             random_profile = df_rand['loss'].copy()
@@ -468,11 +493,11 @@ class SRRAnalysis():
         self.random_profiles = random_profiles
         self.monte_losses = monte_losses
 
-    def run(self, reps=1000, day_scale=14, clean_threshold='infer',
+    def run(self, reps=1000, day_scale=13, clean_threshold='infer',
             trim=False, method='half_norm_clean',
-            clean_criterion='shift', precip_threshold=0.01, min_interval_length=2,
+            clean_criterion='shift', precip_threshold=0.01, min_interval_length=7,
             exceedance_prob=95.0, confidence_level=68.2, recenter=True,
-            max_relative_slope_error=500.0, max_negative_step=0.05):
+            max_relative_slope_error=500.0, max_negative_step=0.05, outlier_factor=1.5):
         '''
         Run the SRR method from beginning to end.  Perform the stochastic rate
         and recovery soiling loss calculation. Based on the methods presented
@@ -483,10 +508,10 @@ class SRRAnalysis():
         ----------
         reps : int, default 1000
             number of Monte Carlo realizations to calculate
-        day_scale : int, default 14
+        day_scale : int, default 13
             The number of days to use in rolling median for cleaning detection,
             and the maximum number of days of missing data to tolerate in a
-            valid interval
+            valid interval. An odd value is recommended.
         clean_threshold : float or 'infer', default 'infer'
             The fractional positive shift in rolling median for cleaning
             detection. Or specify 'infer' to automatically use outliers in the
@@ -494,8 +519,9 @@ class SRRAnalysis():
         trim : bool, default False
             Whether to trim (remove) the first and last soiling intervals to
             avoid inclusion of partial intervals
-        method : str, default 'half_norm_clean'
-            How to treat the recovery of each cleaning event:
+        method : str, {'half_norm_clean', 'random_clean', 'perfect_clean'} \
+            default 'half_norm_clean'
+            How to treat the recovery of each cleaning event
 
             * 'random_clean' - a random recovery between 0-100%
             * 'perfect_clean' - each cleaning event returns the performance
@@ -504,20 +530,21 @@ class SRRAnalysis():
               randomly from a half normal distribution with its mode (mu) at 1 and
               its sigma equal to 1/3 * (1-b) where b is the intercept of the fit to
               the interval.
+        clean_criterion : str, {'shift', 'precip_and_shift', 'precip_or_shift', 'precip'} \
+            default 'shift'
+            The method of partitioning the dataset into soiling intervals
 
-        clean_criterion : {'precip_and_shift', 'precip_or_shift', 'precip', 'shift'} \
-                default 'shift'
-            The method of partitioning the dataset into soiling intervals.
-            If 'precip_and_shift', rolling median shifts must coincide
-            with precipitation to be a valid cleaning event.
-            If 'precip_or_shift', rolling median shifts and precipitation
-            events are each sufficient on their own to be a cleaning event.
-            If 'shift', only rolling median shifts are treated as cleaning events.
-            If 'precip', only precipitation events are treated as cleaning events.
+            * 'precip_and_shift' - rolling median shifts must coincide
+              with precipitation to be a valid cleaning event.
+            * 'precip_or_shift' - rolling median shifts and precipitation
+              events are each sufficient on their own to be a cleaning event.
+            * 'shift', only rolling median shifts are treated as cleaning events.
+            * 'precip', only precipitation events are treated as cleaning events.
         precip_threshold : float, default 0.01
-            The daily precipitation threshold for defining precipitation cleaning events.
+            The daily precipitation threshold for defining
+            precipitation cleaning events.
             Units must be consistent with ``self.precipitation_daily``
-        min_interval_length : int, default 2
+        min_interval_length : int, default 7
             The minimum duration for an interval to be considered
             valid.  Cannot be less than 2 (days).
         exceedance_prob : float, default 95.0
@@ -535,13 +562,17 @@ class SRRAnalysis():
             The maximum magnitude of negative discrete steps allowed in an
             interval for the interval to be considered valid (units of
             normalized performance metric).
+        outlier_factor : float, default 1.5
+            The factor used in the Tukey fence definition of outliers for flagging positive shifts
+            in the rolling median used for cleaning detection. A smaller value will cause more and
+            smaller shifts to be classified as cleaning events.
 
         Returns
         -------
         insolation_weighted_soiling_ratio : float
             P50 insolation-weighted soiling ratio based on stochastic rate and
             recovery analysis
-        confidence_interval : np.array
+        confidence_interval : numpy.array
             confidence interval (size specified by confidence_level) of
             insolation-weighted soiling ratio
         calc_info : dict
@@ -593,7 +624,8 @@ class SRRAnalysis():
                             clean_threshold=clean_threshold,
                             recenter=recenter,
                             clean_criterion=clean_criterion,
-                            precip_threshold=precip_threshold)
+                            precip_threshold=precip_threshold,
+                            outlier_factor=outlier_factor)
         self._calc_result_df(trim=trim,
                              max_relative_slope_error=max_relative_slope_error,
                              max_negative_step=max_negative_step,
@@ -634,11 +666,11 @@ class SRRAnalysis():
 
 
 def soiling_srr(energy_normalized_daily, insolation_daily, reps=1000,
-                precipitation_daily=None, day_scale=14, clean_threshold='infer',
+                precipitation_daily=None, day_scale=13, clean_threshold='infer',
                 trim=False, method='half_norm_clean',
-                clean_criterion='shift', precip_threshold=0.01, min_interval_length=2,
+                clean_criterion='shift', precip_threshold=0.01, min_interval_length=7,
                 exceedance_prob=95.0, confidence_level=68.2, recenter=True,
-                max_relative_slope_error=500.0, max_negative_step=0.05):
+                max_relative_slope_error=500.0, max_negative_step=0.05, outlier_factor=1.5):
     '''
     Functional wrapper for :py:class:`~rdtools.soiling.SRRAnalysis`. Perform
     the stochastic rate and recovery soiling loss calculation. Based on the
@@ -646,24 +678,24 @@ def soiling_srr(energy_normalized_daily, insolation_daily, reps=1000,
 
     Parameters
     ----------
-    energy_normalized_daily : pd.Series
+    energy_normalized_daily : pandas.Series
         Daily performance metric (i.e. performance index, yield, etc.)
         Alternatively, the soiling ratio output of a soiling sensor (e.g. the
         photocurrent ratio between matched dirty and clean PV reference cells).
         In either case, data should be insolation-weighted daily aggregates.
-    insolation_daily : pd.Series
+    insolation_daily : pandas.Series
         Daily plane-of-array insolation corresponding to
         `energy_normalized_daily`. Arbitrary units.
     reps : int, default 1000
         number of Monte Carlo realizations to calculate
-    precipitation_daily : pd.Series, default None
+    precipitation_daily : pandas.Series, default None
         Daily total precipitation. Units ambiguous but should be the same as
         precip_threshold. Note default behavior of precip_threshold. (Ignored
         if ``clean_criterion='shift'``.)
-    day_scale : int, default 14
+    day_scale : int, default 13
         The number of days to use in rolling median for cleaning detection,
         and the maximum number of days of missing data to tolerate in a valid
-        interval
+        interval. An odd value is recommended.
     clean_threshold : float or 'infer', default 'infer'
         The fractional positive shift in rolling median for cleaning detection.
         Or specify 'infer' to automatically use outliers in the shift as the
@@ -671,29 +703,31 @@ def soiling_srr(energy_normalized_daily, insolation_daily, reps=1000,
     trim : bool, default False
         Whether to trim (remove) the first and last soiling intervals to avoid
         inclusion of partial intervals
-    method : str, default 'half_norm_clean'
+    method : str, {'half_norm_clean', 'random_clean', 'perfect_clean'} \
+        default 'half_norm_clean'
         How to treat the recovery of each cleaning event
 
         * 'random_clean' - a random recovery between 0-100%
-        * 'perfect_clean' - each cleaning event returns the performance metric
-          to 1
-        * 'half_norm_clean'(default) - The starting point of each interval is taken
-              randomly from a half normal distribution with its mode (mu) at 1 and
-              its sigma equal to 1/3 * (1-b) where b is the intercept of the fit to
-              the interval.
-    clean_criterion : {'precip_and_shift', 'precip_or_shift', 'precip', 'shift'} \
-                default 'shift'
-            The method of partitioning the dataset into soiling intervals.
-            If 'precip_and_shift', rolling median shifts must coincide
-            with precipitation to be a valid cleaning event.
-            If 'precip_or_shift', rolling median shifts and precipitation
-            events are each sufficient on their own to be a cleaning event.
-            If 'shift', only rolling median shifts are treated as cleaning events.
-            If 'precip', only precipitation events are treated as cleaning events.
+        * 'perfect_clean' - each cleaning event returns the performance
+          metric to 1
+        * 'half_norm_clean' - The starting point of each interval is taken
+          randomly from a half normal distribution with its mode (mu) at 1 and
+          its sigma equal to 1/3 * (1-b) where b is the intercept of the fit to
+          the interval.
+    clean_criterion : str, {'shift', 'precip_and_shift', 'precip_or_shift', 'precip'} \
+        default 'shift'
+        The method of partitioning the dataset into soiling intervals
+
+        * 'precip_and_shift' - rolling median shifts must coincide
+          with precipitation to be a valid cleaning event.
+        * 'precip_or_shift' - rolling median shifts and precipitation
+          events are each sufficient on their own to be a cleaning event.
+        * 'shift', only rolling median shifts are treated as cleaning events.
+        * 'precip', only precipitation events are treated as cleaning events.
     precip_threshold : float, default 0.01
-        The daily precipitation threshold for defining precipitation cleaning events.
-        Units must be consistent with precip.
-    min_interval_length : int, default 2
+        The daily precipitation threshold for defining precipitation
+        cleaning events. Units must be consistent with precip.
+    min_interval_length : int, default 7
         The minimum duration, in days, for an interval to be considered
         valid.  Cannot be less than 2 (days).
     exceedance_prob : float, default 95.0
@@ -711,13 +745,17 @@ def soiling_srr(energy_normalized_daily, insolation_daily, reps=1000,
         The maximum magnitude of negative discrete steps allowed in an interval
         for the interval to be considered valid (units of normalized
         performance metric).
+    outlier_factor : float, default 1.5
+        The factor used in the Tukey fence definition of outliers for flagging positive shifts
+        in the rolling median used for cleaning detection. A smaller value will cause more and
+        smaller shifts to be classified as cleaning events.
 
     Returns
     -------
     insolation_weighted_soiling_ratio : float
         P50 insolation weighted soiling ratio based on stochastic rate and
         recovery analysis
-    confidence_interval : np.array
+    confidence_interval : numpy.array
         confidence interval (size specified by ``confidence_level``) of
         degradation rate estimate
     calc_info : dict
@@ -782,13 +820,15 @@ def soiling_srr(energy_normalized_daily, insolation_daily, reps=1000,
         confidence_level=confidence_level,
         recenter=recenter,
         max_relative_slope_error=max_relative_slope_error,
-        max_negative_step=max_negative_step)
+        max_negative_step=max_negative_step,
+        outlier_factor=outlier_factor)
 
     return sr, sr_ci, soiling_info
 
 
 def _count_month_days(start, end):
-    '''Return a dict of number of days between start and end (inclusive) in each month'''
+    '''Return a dict of number of days between start and end
+    (inclusive) in each month'''
     days = pd.date_range(start, end)
     months = [x.month for x in days]
     out_dict = {}
@@ -798,12 +838,13 @@ def _count_month_days(start, end):
     return out_dict
 
 
-def annual_soiling_ratios(stochastic_soiling_profiles, insolation_daily, confidence_level=68.2):
+def annual_soiling_ratios(stochastic_soiling_profiles,
+                          insolation_daily, confidence_level=68.2):
     '''
     Return annualized soiling ratios and associated confidence intervals based
-    on stochastic soiling profiles from SRR. Note that each year may be affected
-    by previous years' profiles for all SRR cleaning assumptions (i.e. method) except
-    perfect_clean.
+    on stochastic soiling profiles from SRR. Note that each year
+    may be affected by previous years' profiles for all SRR cleaning
+    assumptions (i.e. method) except perfect_clean.
 
     Parameters
     ----------
@@ -811,16 +852,16 @@ def annual_soiling_ratios(stochastic_soiling_profiles, insolation_daily, confide
         List of pd.Series representing profile realizations from the SRR monte carlo.
         Typically ``soiling_interval_summary['stochastic_soiling_profiles']`` obtained with
         :py:func:`rdtools.soiling.soiling_srr` or :py:meth:`rdtools.soiling.SRRAnalysis.run`
-    insolation_daily : pd.Series
+    insolation_daily : pandas.Series
         Daily plane-of-array insolation with DatetimeIndex. Arbitrary units.
     confidence_level : float, default 68.2
-        The size of the confidence interval to use in determining the upper and lower
-        quantiles reported in the returned DataFrame. (The median is always included in
-        the result.)
+        The size of the confidence interval to use in determining the
+        upper and lower quantiles reported in the returned DataFrame.
+        (The median is always included in the result.)
 
     Returns
     -------
-    pd.DataFrame
+    pandas.DataFrame
         DataFrame describing annual soiling rates.
 
         +------------------------+-------------------------------------------+
@@ -847,9 +888,10 @@ def annual_soiling_ratios(stochastic_soiling_profiles, insolation_daily, confide
 
     if not all_profiles.index.isin(insolation_daily.index).all():
         warnings.warn(
-            'The indexes of stochastic_soiling_profiles are not entirely contained '
-            'within the index of insolation_daily. Every day in stochastic_soiling_profiles '
-            'should be represented in insolation_daily. This may cause erroneous results.')
+            'The indexes of stochastic_soiling_profiles are not entirely '
+            'contained within the index of insolation_daily. Every day in '
+            'stochastic_soiling_profiles should be represented in '
+            'insolation_daily. This may cause erroneous results.')
 
     insolation_daily = insolation_daily.reindex(all_profiles.index)
 
@@ -857,14 +899,19 @@ def annual_soiling_ratios(stochastic_soiling_profiles, insolation_daily, confide
     all_profiles_weighted = all_profiles.multiply(insolation_daily, axis=0)
 
     # Compute the insolation-weighted soiling ratio (IWSR) for each realization
-    annual_insolation = insolation_daily.groupby(insolation_daily.index.year).sum()
-    all_annual_weighted_sums = all_profiles_weighted.groupby(all_profiles_weighted.index.year).sum()  # noqa: E501
-    all_annual_iwsr = all_annual_weighted_sums.multiply(1/annual_insolation, axis=0)
+    annual_insolation = insolation_daily.groupby(
+                        insolation_daily.index.year).sum()
+    all_annual_weighted_sums = all_profiles_weighted.groupby(
+                                all_profiles_weighted.index.year).sum()
+    all_annual_iwsr = all_annual_weighted_sums.multiply(
+                            1/annual_insolation, axis=0)
 
     annual_soiling = pd.DataFrame({
         'soiling_ratio_median': all_annual_iwsr.quantile(0.5, axis=1),
-        'soiling_ratio_low': all_annual_iwsr.quantile(0.5 - confidence_level/2/100, axis=1),
-        'soiling_ratio_high': all_annual_iwsr.quantile(0.5 + confidence_level/2/100, axis=1),
+        'soiling_ratio_low': all_annual_iwsr.quantile(
+                            0.5 - confidence_level/2/100, axis=1),
+        'soiling_ratio_high': all_annual_iwsr.quantile(
+                            0.5 + confidence_level/2/100, axis=1),
     })
     annual_soiling.index.name = 'year'
     annual_soiling = annual_soiling.reset_index()
@@ -876,25 +923,27 @@ def monthly_soiling_rates(soiling_interval_summary, min_interval_length=14,
                           max_relative_slope_error=500.0, reps=100000,
                           confidence_level=68.2):
     '''
-    Use Monte Carlo to calculate typical monthly soiling rates. Samples possible
-    soiling rates from soiling rate confidence intervals associated with soiling
-    intervals assuming a uniform distribution. Soiling intervals get samples
-    proportionally to their overlap with each calendar month.
+    Use Monte Carlo to calculate typical monthly soiling rates.
+    Samples possible soiling rates from soiling rate confidence
+    intervals associated with soiling intervals assuming a uniform
+    distribution. Soiling intervals get samples proportionally
+    to their overlap with each calendar month.
 
     Parameters
     ----------
-    soiling_interval_summary : pd.DataFrame
+    soiling_interval_summary : pandas.DataFrame
         DataFrame describing soiling intervals. Typically from
         ``soiling_info['soiling_interval_summary']`` obtained with
         :py:func:`rdtools.soiling.soiling_srr` or
         :py:meth:`rdtools.soiling.SRRAnalysis.run` Must have columns
-        ``soiling_rate_high``, ``soiling_rate_low``, ``soiling_rate``, ``length``, ``valid``,
-        ``start``, and ``end``.
+        ``soiling_rate_high``, ``soiling_rate_low``, ``soiling_rate``,
+        ``length``, ``valid``,``start``, and ``end``.
 
     min_interval_length : int, default 14
         The minimum number of days a soiling interval must contain to be
-        included in the calculation. Similar to the same parameter in soiling_srr()
-        and SRRAnalysis.run() but with a more conservative default value as a
+        included in the calculation. Similar to the same parameter in
+        :py:func:`soiling_srr` and :py:meth:`SRRAnalysis.run` but with a
+        more conservative default value as a
         starting point for monthly soiling rate analyses.
 
     max_relative_slope_error : float, default 500.0
@@ -905,13 +954,13 @@ def monthly_soiling_rates(soiling_interval_summary, min_interval_length=14,
         The number of Monte Carlo samples to take for each month.
 
     confidence_level : float, default 68.2
-        The size of the confidence interval, as a percentage, to use in determining the
-        upper and lower quantiles reported in the returned DataFrame. (The median is
-        always included in the result.)
+        The size of the confidence interval, as a percentage, to use
+        in determining the upper and lower quantiles reported in the
+        returned DataFrame. (The median is always included in the result.)
 
     Returns
     -------
-    pd.DataFrame
+    pandas.DataFrame
         DataFrame describing monthly soiling rates.
 
         +-----------------------+--------------------------------------------------+
@@ -978,12 +1027,16 @@ def monthly_soiling_rates(soiling_interval_summary, min_interval_length=14,
         relevant_intervals = intervals[intervals[sample_col] > 0]
         for _, row in relevant_intervals.iterrows():
             rates.append(np.random.uniform(
-                row['soiling_rate_low'], row['soiling_rate_high'], row[sample_col]))
+                row['soiling_rate_low'],
+                row['soiling_rate_high'],
+                row[sample_col]))
 
         rates = [x for sublist in rates for x in sublist]
 
         if rates:
-            monthly_rate_data.append(np.quantile(rates, [0.5, ci_quantiles[0], ci_quantiles[1]]))
+            monthly_rate_data.append(np.quantile(rates,
+                                                 [0.5, ci_quantiles[0],
+                                                  ci_quantiles[1]]))
         else:
             monthly_rate_data.append(np.array([np.nan]*3))
 

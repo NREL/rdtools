@@ -13,7 +13,7 @@ def degradation_ols(energy_normalized, confidence_level=68.2):
 
     Parameters
     ----------
-    energy_normalized: pd.Series
+    energy_normalized: pandas.Series
         Daily or lower frequency time series of normalized system ouput.
     confidence_level: float, default 68.2
         The size of the confidence interval to return, in percent.
@@ -22,7 +22,7 @@ def degradation_ols(energy_normalized, confidence_level=68.2):
     -------
     Rd_pct : float
         Estimated degradation relative to the year 0 system capacity [%/year]
-    Rd_CI : np.array
+    Rd_CI : numpy.array
         The calculated confidence interval bounds.
     calc_info : dict
         A dict that contains slope, intercept,
@@ -85,7 +85,7 @@ def degradation_classical_decomposition(energy_normalized,
 
     Parameters
     ----------
-    energy_normalized: pd.Series
+    energy_normalized: pandas.Series
         Daily or lower frequency time series of normalized system ouput.
         Must be regular time series.
     confidence_level: float, default 68.2
@@ -95,7 +95,7 @@ def degradation_classical_decomposition(energy_normalized,
     -------
     Rd_pct : float
         Estimated degradation relative to the year 0 system capacity [%/year]
-    Rd_CI : np.array
+    Rd_CI : numpy.array
         The calculated confidence interval bounds.
     calc_info : dict
         A dict that contains slope, intercept,
@@ -188,7 +188,7 @@ def degradation_year_on_year(energy_normalized, recenter=True,
 
     Parameters
     ----------
-    energy_normalized: pd.Series
+    energy_normalized: pandas.Series
         Daily or lower frequency time series of normalized system ouput.
     recenter : bool, default True
         Specify whether data is internally recentered to normalized yield
@@ -205,7 +205,7 @@ def degradation_year_on_year(energy_normalized, recenter=True,
     -------
     Rd_pct : float
         Estimated degradation relative to the year 0 median system capacity [%/year]
-    confidence_interval : np.array
+    confidence_interval : numpy.array
         confidence interval (size specified by ``confidence_level``) of
         degradation rate estimate
     calc_info : dict
@@ -214,6 +214,10 @@ def degradation_year_on_year(energy_normalized, recenter=True,
         * `renormalizing_factor` - float of value used to recenter data
         * `exceedance_level` - the degradation rate that was outperformed with
           probability of `exceedance_prob`
+        * `usage_of_points` - number of times each point in energy_normalized
+          is used to calculate a degradation slope. 0: point is never used. 1:
+          point is either used as a start or endpoint. 2: point is used as both
+          start and endpoint for an Rd calculation.
     '''
 
     # Ensure the data is in order
@@ -259,10 +263,14 @@ def degradation_year_on_year(energy_normalized, recenter=True,
     df.index = df.dt
 
     yoy_result = df.yoy.dropna()
+    df_right = df.set_index(df.dt_right).drop_duplicates('dt_right')
+    df['usage_of_points'] = df.yoy.notnull().astype(int).add(
+                df_right.yoy.notnull().astype(int), fill_value=0)
 
     calc_info = {
         'YoY_values': yoy_result,
-        'renormalizing_factor': renorm
+        'renormalizing_factor': renorm,
+        'usage_of_points': df['usage_of_points']
     }
 
     if not len(yoy_result):
