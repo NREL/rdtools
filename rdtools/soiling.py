@@ -1602,7 +1602,7 @@ class CODSAnalysis():
             +------------------------+----------------------------------------------+
             | 'SR_high'              | upper bound of 95 % conf. interval of SR     |
             +------------------------+----------------------------------------------+
-            | 'rates_low'            | lower bound of 95 % conf. interval of SR     |
+            | 'rates_low'            | lower bound of 95 % conf. interval of        |
             |                        | soiling rates                                |
             +------------------------+----------------------------------------------+
             | 'rates_high'           | upper bound of 95 % conf. interval of        |
