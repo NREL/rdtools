@@ -4,8 +4,8 @@ confidence intervals.
 
 References
 ----------
-[1] Skomedal, Å. and Deceglie, M. G., IEEE Journal of
-    Photovoltaics, Sept. 2020. https://doi.org/10.1109/JPHOTOV.2020.3018219
+.. [1] Skomedal, Å. and Deceglie, M. G., IEEE Journal of
+   Photovoltaics, Sept. 2020. https://doi.org/10.1109/JPHOTOV.2020.3018219
 
 '''
 
