@@ -77,7 +77,7 @@ def _construct_confidence_intervals(
     Parameters
     ----------
     bootstrap_samples : pandas.DataFrame
-        A dataframe contianing the bootstrap samples in the columns
+        A dataframe containing the bootstrap samples in the columns
     fitting_function : function
         A function that fits a model to the bootstrap samples. Should take a
         series as input and returns a float
