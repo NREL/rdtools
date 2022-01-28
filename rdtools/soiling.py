@@ -1509,7 +1509,6 @@ class CODSAnalysis():
     def run_bootstrap(self,
                       reps=512,
                       confidence_level=68.2,
-                      verbose=False,
                       degradation_method='YoY',
                       process_noise=1e-4,
                       order_alternatives=(('SR', 'SC', 'Rd'),
@@ -1517,6 +1516,7 @@ class CODSAnalysis():
                       detection_tuner_alternatives=(.25, .75),
                       pruning_tuner_alternatives=(1/1.5, 1.5),
                       forward_fill_alternatives=(True, False),
+                      verbose=False,
                       **kwargs):
         '''
         Bootstrapping of CODS alforithm for uncertainty analysis, inherently accounting
@@ -1544,27 +1544,26 @@ class CODSAnalysis():
             knobs/parameters defined in knob_alternatives
         confidence_level : float, default 68.2
             The size of the confidence intervals to return, in percent
-        verbose : bool, default False
-            Wheter or not to print information about progress
         degradation_method : string, default 'YoY'
             Either 'YoY' or 'STL'. If anything else, 'YoY' will be assumed.
             Decides whether to use the YoY method [3] for estimating the
             degradation trend (assumes linear trend), or the STL-method (does
             not assume linear trend). The latter is slower.
-        order_alternatives : tuple of tuples, default (('SR', 'SC', 'Rd'), \
-            ('SC', 'SR', 'Rd'))
+        order_alternatives : tuple of tuples, default (('SR', 'SC', 'Rd'), ('SC', 'SR', 'Rd'))
             Component estimation orders that will be tested during initial
             model fitting.
-        detection_tuner_alternatives : tuple, default (.4, .8)
+        detection_tuner_alternatives : tuple, default (.25, .75)
             Detection tuner values that will be tested during initial fitting.
             Length must be >= 1. First and last values define limits of values
             that will be used during bootstrapping.
-        pruning_tuner_alternatives : tuple, default (.75, 1.25)
+        pruning_tuner_alternatives : tuple, default (1/1.5, 1.5)
             Pruning tuner values that will be tested during initial fitting.
             Length must be >= 1. First and last values define limits of values
             that will be used during bootstrapping.
         forward_fill_alternatives : tuple, default (True, False)
             Forward fill values that will be tested during initial fitting.
+        verbose : bool, default False
+            Wheter or not to print information about progress
         **kwargs
             Keyword arguments that are passed on to
             :py:func:`iterative_signal_decomposition`
@@ -2248,7 +2247,6 @@ class CODSAnalysis():
 def soiling_cods(energy_normalized_daily,
                  reps=512,
                  confidence_level=68.2,
-                 verbose=False,
                  degradation_method='YoY',
                  process_noise=1e-4,
                  order_alternatives=(('SR', 'SC', 'Rd'),
@@ -2256,6 +2254,7 @@ def soiling_cods(energy_normalized_daily,
                  detection_tuner_alternatives=(.25, .75),
                  pruning_tuner_alternatives=(1/1.5, 1.5),
                  forward_fill_alternatives=(True, False),
+                 verbose=False,
                  **kwargs):
     '''
     Functional wrapper for :py:class:`~rdtools.soiling.CODSAnalysis` and its
@@ -2274,27 +2273,26 @@ def soiling_cods(energy_normalized_daily,
         number of bootstrap realizations to calculate
     confidence_level : float, default 68.2
         The size of the confidence interval to return, in percent
-    verbose : bool, default False
-        Wheter or not to print information about progress
     degradation_method : string, default 'YoY'
         Either 'YoY' or 'STL'. If anything else, 'YoY' will be assumed.
         Decides whether to use the YoY method [3] for estimating the
         degradation trend (assumes linear trend), or the STL-method (does
         not assume linear trend). The latter is slower.
-    order_alternatives : tuple of tuples, default (('SR', 'SC', 'Rd'), \
-        ('SC', 'SR', 'Rd'))
+    order_alternatives : tuple of tuples, default (('SR', 'SC', 'Rd'), ('SC', 'SR', 'Rd'))
         Component estimation orders that will be tested during initial
         model fitting.
-    detection_tuner_alternatives : tuple, default (.4, .8)
+    detection_tuner_alternatives : tuple, default (.25, .75)
         Detection tuner values that will be tested during initial fitting.
         Length must be >= 1. First and last values define limits of values
         that will be used during bootstrapping.
-    pruning_tuner_alternatives : tuple, default (.75, 1.25)
+    pruning_tuner_alternatives : tuple, default (1/1.5, 1.5)
         Pruning tuner values that will be tested during initial fitting.
         Length must be >= 1. First and last values define limits of values
         that will be used during bootstrapping.
     forward_fill_alternatives : tuple, default (True, False)
         Forward fill values that will be tested during initial fitting.
+    verbose : bool, default False
+        Wheter or not to print information about progress
     **kwargs
         keyword arguments that are passed on to :py:func:`iterative_signal_decomposition`
 
@@ -2340,7 +2338,7 @@ def soiling_cods(energy_normalized_daily,
             +------------------------+----------------------------------------------+
             | 'SR_high'              | upper bound of 95 % conf. interval of SR     |
             +------------------------+----------------------------------------------+
-            | 'rates_low'            | lower bound of 95 % conf. interval of SR     |
+            | 'rates_low'            | lower bound of 95 % conf. interval of        |
             |                        | soiling rates                                |
             +------------------------+----------------------------------------------+
             | 'rates_high'           | upper bound of 95 % conf. interval of        |
