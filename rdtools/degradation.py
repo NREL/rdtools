@@ -257,7 +257,7 @@ def degradation_year_on_year(energy_normalized, recenter=True,
         if isinstance(freq, type(None)):
             raise ValueError('energy_normalized must have a fixed frequency')
         # ... require a block length shorter than a third of the time series
-        if block_length > len(energy_normalized) / 3:
+        if block_length > (len(energy_normalized) / 3):
             raise ValueError(
                 'block_length must must be shorter than a third of the time series')
 
