@@ -172,13 +172,3 @@ Plotting
    availability_summary_plots
    tune_filter_plot
 
-
-Bootstrap
-=========
-
-.. automodule:: rdtools.bootstrap
-   :noindex:
-
-.. autosummary::
-   :toctree: generated/
-
