@@ -1400,7 +1400,7 @@ class CODSAnalysis():
                                           data=STL_res.trend.apply(np.exp))
                     degradation_trend.append(deg_trend / deg_trend.iloc[0])
                     yoy_save.append(RdToolsDeg.degradation_year_on_year(
-                        degradation_trend[-1], uncertainty_method='none'))
+                        degradation_trend[-1], uncertainty_method=None))
 
             # Find degradation component
             if order[(ic-1) % n_steps] == 'Rd':
@@ -1410,7 +1410,7 @@ class CODSAnalysis():
                                soiling_ratio[-1])
                 # Run YoY
                 yoy = RdToolsDeg.degradation_year_on_year(
-                    trend_dummy, uncertainty_method='none')
+                    trend_dummy, uncertainty_method=None)
                 # Convert degradation rate to trend
                 degradation_trend.append(pd.Series(
                     index=pi.index, data=(1 + day * yoy / 100 / 365.24)))
