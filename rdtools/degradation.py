@@ -211,7 +211,8 @@ def degradation_year_on_year(energy_normalized, recenter=True,
         is considerably faster, and only returns the `Rd_pct`.
     block_length : int, default 30
         If `uncertainty_method` is 'circular_block_bootstrap', `block_length`
-        determines the length of the blocks used in the circular block bootstrapping,
+        determines the length of the blocks used in the circular block bootstrapping
+        in number of days. Must be shorter than a third of the time series.
 
     Returns
     -------
@@ -255,7 +256,10 @@ def degradation_year_on_year(energy_normalized, recenter=True,
         freq = pd.infer_freq(energy_normalized.index)
         if isinstance(freq, type(None)):
             raise ValueError('energy_normalized must have a fixed frequency')
-        # ... require a block length shorter than
+        # ... require a block length shorter than a third of the time series
+        if block_length > len(energy_normalized) / 3:
+            raise ValueError(
+                'block_length must must be shorter than a third of the time series')
 
     # Auto center
     if recenter:
