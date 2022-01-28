@@ -204,9 +204,9 @@ def degradation_year_on_year(energy_normalized, recenter=True,
     confidence_level : float, default 68.2
         The size of the confidence interval to return, in percent.
     uncertainty_method : string, default 'simple_bootstrap'
-        Either 'simple_bootstrap', 'circular_block_bootstrap', or 'none'
+        Either 'simple_bootstrap', 'circular_block_bootstrap', or None
         Determines what bootstrapping method to use to construct confidence
-        intervals and exceedance levels. If 'none' (or anything other than the three
+        intervals and exceedance levels. If None (or anything other than the three
         alternatives), the algorithm does not construct confidence intervals,
         is considerably faster, and only returns the `Rd_pct`.
     block_length : int, default 30
