@@ -134,9 +134,12 @@ class DegradationTestCase(unittest.TestCase):
         for input_freq in self.list_YOY_input_freq:
             if input_freq != 'Irregular_D':
                 logging.debug('Frequency: {}'.format(input_freq))
+                length_of_series = len(self.test_corr_energy[input_freq])
+                block_length = 30 if length_of_series > 100 else int(length_of_series / 5)
                 rd_result = degradation_year_on_year(
                     self.test_corr_energy[input_freq],
-                    uncertainty_method='circular_block_bootstrap')
+                    uncertainty_method='circular_block_bootstrap',
+                    block_length=block_length)
                 self.assertAlmostEqual(rd_result[0], 100 * self.rd, places=1)
                 logging.debug('Actual: {}'.format(100 * self.rd))
                 logging.debug('Estimated: {}'.format(rd_result[0]))
