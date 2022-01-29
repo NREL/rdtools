@@ -24,7 +24,7 @@ pip install rdtools
 
 For API documentation and full examples, please see the [documentation](https://rdtools.readthedocs.io).
 
-RdTools currently is tested on Python 3.6+.
+RdTools currently is tested on Python 3.7+.
 
 ## Citing RdTools
 

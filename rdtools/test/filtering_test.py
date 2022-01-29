@@ -12,6 +12,7 @@ from rdtools import (csi_filter,
                      logic_clip_filter,
                      xgboost_clip_filter)
 import warnings
+from conftest import assert_warnings
 
 
 def test_csi_filter():
@@ -156,10 +157,12 @@ def test_logic_clip_filter(generate_power_time_series_no_clipping,
                   power_datetime_index_nc[:9])
     # Test that a warning is thrown when the time series is tz-naive
     warnings.simplefilter("always")
-    with warnings.catch_warnings(record=True) as w:
+    with warnings.catch_warnings(record=True) as record:
         logic_clip_filter(power_nc_tz_naive)
         # Warning thrown for it being an experimental filter + tz-naive
-        assert len(w) == 2
+        assert_warnings(['The logic-based filter is an experimental',
+                         'Function expects timestamps in local time'],
+                        record)
     # Scramble the index and run through the filter. This should throw
     # an IndexError.
     power_datetime_index_nc_shuffled = power_datetime_index_nc.sample(frac=1)
@@ -176,11 +179,14 @@ def test_logic_clip_filter(generate_power_time_series_no_clipping,
     # Make sure that the routine throws a warning when the data sampling
     # frequency is less than 95% consistent
     warnings.simplefilter("always")
-    with warnings.catch_warnings(record=True) as w:
+    with warnings.catch_warnings(record=True) as record:
         logic_clip_filter(power_datetime_index_irregular)
         # Warning thrown for it being an experimental filter + irregular
         # sampling frequency.
-        assert len(w) == 2
+        assert_warnings(['The logic-based filter is an experimental',
+                         'Variable sampling frequency across time series'],
+                        record)
+
     # Check that the returned time series index for the logic filter is
     # the same as the passed time series index
     mask_irregular = logic_clip_filter(power_datetime_index_irregular)
@@ -223,10 +229,12 @@ def test_xgboost_clip_filter(generate_power_time_series_no_clipping,
                   power_datetime_index_nc[:9])
     # Test that a warning is thrown when the time series is tz-naive
     warnings.simplefilter("always")
-    with warnings.catch_warnings(record=True) as w:
+    with warnings.catch_warnings(record=True) as record:
         xgboost_clip_filter(power_nc_tz_naive)
         # Warning thrown for it being an experimental filter + tz-naive
-        assert len(w) == 2
+        assert_warnings(['The XGBoost filter is an experimental',
+                         'Function expects timestamps in local time'],
+                        record)
     # Scramble the index and run through the filter. This should throw
     # an IndexError.
     power_datetime_index_nc_shuffled = power_datetime_index_nc.sample(frac=1)
@@ -275,9 +283,10 @@ def test_clip_filter(generate_power_time_series_no_clipping):
     # Check that the clip filter defaults to quantile clip filter when
     # deprecated params are passed
     warnings.simplefilter("always")
-    with warnings.catch_warnings(record=True) as w:
+    with warnings.catch_warnings(record=True) as record:
         clip_filter(power_datetime_index_nc, 0.98)
-        assert len(w) == 1
+        assert_warnings(['Function clip_filter is now a wrapper'], record)
+
     # Check that a ValueError is thrown when a model is passed that
     # is not in the acceptable list.
     pytest.raises(ValueError, clip_filter,
