@@ -1,0 +1,42 @@
+name: nbval
+
+on: [pull_request]
+
+jobs:
+  notebook-check:
+
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false  # don't cancel other matrix jobs when one fails
+      matrix:
+        notebook-file: [
+          'TrendAnalysis_example_pvdaq4.ipynb',
+          'degradation_and_soiling_example_pvdaq_4.ipynb',
+          'system_availability_example.ipynb'
+          # can't run the DKASC notebook here because it requires pre-downloaded data
+        ]
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.7
+    - name: Install notebook environment
+      run: |
+        python -m pip install --upgrade pip wheel
+        pip install -r requirements.txt -r docs/notebook_requirements.txt .[test]
+    - name: Run notebook and check output
+      run: |
+        # --sanitize-with:  pre-process text to remove irrelevant differences (e.g. warning filepaths)
+        pytest --nbval --sanitize-with docs/nbval_sanitization_rules.cfg docs/${{ matrix.notebook-file }}
+    - name: Run notebooks again, save files
+      run: |
+        pip install nbconvert[webpdf]
+        mkdir docs/artifacts
+        jupyter nbconvert --to html --execute --ExecutePreprocessor.timeout=600 --allow-errors --output artifacts/${{ matrix.notebook-file }}.html docs/${{ matrix.notebook-file }}
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v2
+      with:
+        name: executed_notebooks
+        path: docs/artifacts
