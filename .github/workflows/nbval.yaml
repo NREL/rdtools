@@ -30,3 +30,13 @@ jobs:
       run: |
         # --sanitize-with:  pre-process text to remove irrelevant differences (e.g. warning filepaths)
         pytest --nbval --sanitize-with docs/nbval_sanitization_rules.cfg docs/${{ matrix.notebook-file }}
+    - name: Run notebooks again, save files
+      run: |
+        pip install nbconvert[webpdf]
+        mkdir docs/artifacts
+        jupyter nbconvert --to html --execute --ExecutePreprocessor.timeout=600 --allow-errors --output artifacts/${{ matrix.notebook-file }}.html docs/${{ matrix.notebook-file }}
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v2
+      with:
+        name: executed_notebooks
+        path: docs/artifacts
