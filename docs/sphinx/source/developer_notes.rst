@@ -132,6 +132,27 @@ specific details, you can run ``coverage html`` to generate a detailed HTML
 report at ``htmlcov/index.html`` to view in a browser.  
 
 
+Running the notebooks as tests
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Re-running the example notebooks to see if their outputs have changed is
+another good check. Besides re-running and examining the notebook outputs
+manually, this command will automatically re-run the specified notebook
+and compare outputs for you:
+
+::
+
+    pytest --nbval docs/system_availability_example.ipynb
+
+Some helpful options are ``--nbdime`` to display a visual before/after diff
+and ``--sanitize-with docs/nbval_sanitization_rules.cfg`` to ignore nuisance
+differences like the username shown in warning messages:
+
+::
+
+    pytest --nbval --nbdime --sanitize-with docs/nbval_sanitization_rules.cfg docs/system_availability_example.ipynb
+
+
 Checking for code style
 -----------------------
 
