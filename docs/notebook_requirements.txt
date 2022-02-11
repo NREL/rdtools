@@ -11,13 +11,13 @@ entrypoints==0.2.3
 html5lib==1.0.1
 ipykernel==4.8.2
 ipython-genutils==0.2.0
-ipython==5.8.0
+ipython==7.16.3
 ipywidgets==7.3.0
 jedi==0.12.1
 Jinja2==2.11.3
 jsonschema==2.6.0
 jupyter-client==6.1.7
-jupyter-console==5.2.0
+jupyter-console==6.4.0
 jupyter-core==4.6.3
 jupyter==1.0.0
 MarkupSafe==1.1.1
@@ -32,7 +32,7 @@ parso==0.3.1
 pexpect==4.6.0
 pickleshare==0.7.4
 prometheus-client==0.3.0
-prompt-toolkit==1.0.15
+prompt-toolkit==3.0.27
 ptyprocess==0.6.0
 pycparser==2.20
 Pygments==2.7.4
