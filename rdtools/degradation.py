@@ -240,7 +240,7 @@ def degradation_year_on_year(energy_normalized, recenter=True,
         renorm = 1.0
 
     is_leap_day = energy_normalized.index.strftime('%m-%d') == '02-28'
-    energy_normalized = energy_normalized.loc[~is_leap_day, :]
+    energy_normalized = energy_normalized.loc[~is_leap_day]
 
     energy_normalized = energy_normalized.reset_index()
     energy_normalized['energy'] = energy_normalized['energy'] / renorm
