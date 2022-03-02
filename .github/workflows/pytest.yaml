@@ -3,7 +3,8 @@ name: pytest
 on:
   push:
     branches:
-    - [master, development]
+    - master
+    - development
   pull_request:
 
 
