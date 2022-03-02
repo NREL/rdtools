@@ -1,0 +1,9 @@
+************************
+v2.1.4 (TBD)
+************************
+
+Requirements
+------------
+* Bump ``nbsphinx`` version from 0.8.5 to 0.8.8 in the optional
+  ``[doc]`` requirements (:pull:`317`)
+
