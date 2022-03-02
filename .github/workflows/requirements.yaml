@@ -1,6 +1,11 @@
 name: requirements
 
-on: [pull_request, push]
+on:
+  push:
+    branches:
+    - [master, development]
+  pull_request:
+
 
 jobs:
   requirements:
