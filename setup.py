@@ -56,7 +56,7 @@ INSTALL_REQUIRES = [
 EXTRAS_REQUIRE = {
     'doc': [
         'sphinx==3.2',
-        'nbsphinx==0.8.5',
+        'nbsphinx==0.8.8',
         'nbsphinx-link==1.3.0',
         'sphinx_rtd_theme==0.5.2',
         'ipython',
