@@ -14,6 +14,8 @@ from rdtools import (csi_filter,
 import warnings
 from conftest import assert_warnings
 
+from rdtools._deprecation import rdtoolsDeprecationWarning
+
 
 def test_csi_filter():
     ''' Unit tests for clear sky index filter.'''
@@ -312,6 +314,31 @@ def test_clip_filter(generate_power_time_series_no_clipping):
                 .all(axis=None))
     assert bool(filtered_xgboost.all(axis=None))
     assert bool(filtered_logic.all(axis=None))
+
+
+def test_quantile_clip_filter_take_subset():
+    # GH #313
+    power = pd.Series(np.hstack([
+        np.zeros(1000) * np.nan,
+        np.linspace(0, 1, num=1000),
+    ]))
+    # ensure the four combinations of (nan/0, True/False) behave as intended:
+    filt = quantile_clip_filter(power, take_subset=True)
+    assert pytest.approx(0.97, rel=1e-4) == power[filt].max()
+
+    filt = quantile_clip_filter(power.fillna(0), take_subset=True)
+    assert pytest.approx(0.97, rel=1e-4) == power[filt].max()
+
+    filt = quantile_clip_filter(power, take_subset=False)
+    assert pytest.approx(0.97, rel=1e-4) == power[filt].max()
+
+    filt = quantile_clip_filter(power.fillna(0), take_subset=False)
+    assert pytest.approx(0.95, rel=1e-4) == power[filt].max()
+
+
+def test_quantile_clip_filter_take_subset_warning():
+    with pytest.warns(rdtoolsDeprecationWarning):
+        quantile_clip_filter(pd.Series([0, 1, 2]))
 
 
 def test_normalized_filter_default():

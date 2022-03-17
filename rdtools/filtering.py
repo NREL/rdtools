@@ -8,6 +8,8 @@ from numbers import Number
 import rdtools
 import xgboost as xgb
 
+from rdtools._deprecation import rdtoolsDeprecationWarning
+
 # Load in the XGBoost clipping model using joblib.
 xgboost_clipping_model = None
 model_path = os.path.join(os.path.dirname(__file__),
@@ -174,7 +176,7 @@ def clip_filter(power_ac, model="quantile", **kwargs):
     return clip_mask
 
 
-def quantile_clip_filter(power_ac, quantile=0.98):
+def quantile_clip_filter(power_ac, quantile=0.98, take_subset=None):
     '''
     Filter data points likely to be affected by clipping
     with power or energy greater than or equal to 99% of the `quant`
@@ -186,6 +188,8 @@ def quantile_clip_filter(power_ac, quantile=0.98):
         AC power or AC energy time series
     quantile : float, default 0.98
         Value for upper threshold quantile
+    take_subset : bool, optional
+        If True, 
 
     Returns
     -------
@@ -193,7 +197,19 @@ def quantile_clip_filter(power_ac, quantile=0.98):
         Boolean Series of whether the given measurement is below 99% of the
         quantile filter.
     '''
-    v = power_ac.quantile(quantile)
+    if take_subset:
+        minimum = 0.01 * power_ac.fillna(0).quantile(quantile)
+        subset = power_ac[power_ac > minimum]
+    else:
+        if take_subset is None:
+            warnings.warn(
+                'PSM3 variable names will be renamed to pvlib conventions by '
+                'default starting in pvlib 0.11.0. Specify map_variables=True '
+                'to enable that behavior now, or specify map_variables=False '
+                'to hide this warning.', rdtoolsDeprecationWarning)
+        subset = power_ac
+
+    v = subset.quantile(quantile)
     return (power_ac < v * 0.99)
 
 

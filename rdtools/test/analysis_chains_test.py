@@ -160,6 +160,7 @@ def test_sensor_analysis_exp_power(sensor_analysis_exp_power):
 
 def test_sensor_analysis_power_dc_rated(sensor_parameters):
     rd_analysis = TrendAnalysis(**sensor_parameters, power_dc_rated=1.0)
+    rd_analysis.filter_params['clip_filter']['take_subset'] = True
     rd_analysis.sensor_analysis(analyses=['yoy_degradation'])
     yoy_results = rd_analysis.results['sensor']['yoy_degradation']
     rd = yoy_results['p50_rd']
