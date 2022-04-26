@@ -51,9 +51,12 @@ def degradation_summary_plots(yoy_rd, yoy_ci, yoy_info, normalized_yield,
     scatter_alpha : float, default 0.5
         Transparency of the scatter plot
     detailed : bool, optional
-        Color code points by the number of times they get used in calculating
-        Rd slopes.  Default color: 2 times (as a start and endpoint). Green:
-        1 time. Red: 0 times.
+        Include extra information in the returned figure:
+
+        * Color code points by the number of times they get used in calculating
+          Rd slopes.  Default color: 2 times (as a start and endpoint). Green:
+          1 time. Red: 0 times.
+        * The number of year-on-year slopes contributing to the histogram.
 
     Note
     ----
@@ -96,7 +99,11 @@ def degradation_summary_plots(yoy_rd, yoy_ci, yoy_info, normalized_yield,
         'confidence interval: \n'
         '%.2f to %.2f %%/yr' % (yoy_rd, yoy_ci[0], yoy_ci[1])
     )
-    ax2.annotate(label, xy=(0.5, 0.7), xycoords='axes fraction',
+    if detailed:
+        n = yoy_values.notnull().sum()
+        label += '\n' + f'n = {n}'
+
+    ax2.annotate(label, xy=(0.5, 0.6), xycoords='axes fraction',
                  bbox=dict(facecolor='white', edgecolor=None, alpha=0))
     ax2.set_xlabel('Annual degradation (%)')
 
