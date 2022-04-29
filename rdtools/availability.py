@@ -17,7 +17,7 @@ import warnings
 warnings.warn(
     'The availability module is currently experimental. The API, results, '
     'and default behaviors may change in future releases (including MINOR '
-    'and PATCH releases) as the code matures.'
+    'and PATCH releases) as the code matures.', stacklevel=2
 )
 
 
@@ -537,7 +537,7 @@ class AvailabilityAnalysis:
                 'levels. This is unexpected and could indicate a problem with '
                 'the input time series data.'
             )
-            warnings.warn(msg, UserWarning)
+            warnings.warn(msg, UserWarning, stacklevel=3)
 
         self.loss_total = self.loss_system + self.loss_subsystem
 

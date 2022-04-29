@@ -157,7 +157,8 @@ def clip_filter(power_ac, model="quantile", **kwargs):
                       "parameters have been interpreted as model= "
                       f"'quantile_clip_filter', quantile={quantile}. "
                       "This syntax will be removed in a future version.",
-                      rdtools._deprecation.rdtoolsDeprecationWarning)
+                      rdtools._deprecation.rdtoolsDeprecationWarning,
+                      stacklevel=2)
         kwargs['quantile'] = quantile
         model = 'quantile'
 
@@ -232,7 +233,8 @@ def _format_clipping_time_series(power_ac, mounting_type):
     if not has_timezone.all():
         warnings.warn("Function expects timestamps in local time. "
                       "For best results pass a time-zone-localized "
-                      "time series localized to the correct local time zone.")
+                      "time series localized to the correct local time zone.",
+                      stacklevel=3)
     # Check the other input variables to ensure that they are the
     # correct format
     if (mounting_type != "single_axis_tracking") & (mounting_type != "fixed"):
@@ -285,7 +287,8 @@ def _check_data_sampling_frequency(power_ac):
         warnings.warn("Variable sampling frequency across time series. "
                       "Less than 95% of the time series is sampled at the "
                       "same interval. This function was not tested "
-                      "on variable frequency data--use at your own risk!")
+                      "on variable frequency data--use at your own risk!",
+                      stacklevel=3)
     return
 
 
@@ -416,7 +419,8 @@ def logic_clip_filter(power_ac,
     warnings.warn("The logic-based filter is an experimental clipping filter "
                   "that is still under development. The API, results, and "
                   "default behaviors may change in future releases (including "
-                  "MINOR and PATCH). Use at your own risk!")
+                  "MINOR and PATCH). Use at your own risk!",
+                  stacklevel=2)
     # Format the time series
     power_ac, index_name = _format_clipping_time_series(power_ac,
                                                         mounting_type)
@@ -641,7 +645,8 @@ def xgboost_clip_filter(power_ac,
     warnings.warn("The XGBoost filter is an experimental clipping filter "
                   "that is still under development. The API, results, and "
                   "default behaviors may change in future releases (including "
-                  "MINOR and PATCH). Use at your own risk!")
+                  "MINOR and PATCH). Use at your own risk!",
+                  stacklevel=2)
     # Load in the XGBoost model
     xgboost_clipping_model = _load_xgboost_clipping_model()
     # Format the power or energy time series

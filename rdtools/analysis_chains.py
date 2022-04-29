@@ -358,7 +358,8 @@ class TrendAnalysis():
 
         if self.gamma_pdc is None:
             warnings.warn('Temperature coefficient not passed in to TrendAnalysis'
-                          '. No temperature correction will be conducted.')
+                          '. No temperature correction will be conducted.',
+                          stacklevel=3)
         pvwatts_kws = {"poa_global": poa_global,
                        "power_dc_rated": power_dc_rated,
                        "temperature_cell": temperature_cell,
@@ -455,13 +456,15 @@ class TrendAnalysis():
             ad_hoc_filter = self.filter_params['ad_hoc_filter']
 
             if ad_hoc_filter.isnull().any():
-                warnings.warn('ad_hoc_filter contains NaN values; setting to False (excluding)')
+                warnings.warn('ad_hoc_filter contains NaN values; setting to False (excluding)',
+                              stacklevel=3)
                 ad_hoc_filter = ad_hoc_filter.fillna(False)
 
             if not filter_components.index.equals(ad_hoc_filter.index):
                 warnings.warn('ad_hoc_filter index does not match index of other filters; missing '
                               'values will be set to True (kept). Align the index with the index '
-                              'of the filter_components attribute to prevent this warning')
+                              'of the filter_components attribute to prevent this warning',
+                              stacklevel=3)
                 ad_hoc_filter = ad_hoc_filter.reindex(filter_components.index).fillna(True)
 
             filter_components['ad_hoc_filter'] = ad_hoc_filter

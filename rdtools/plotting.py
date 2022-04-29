@@ -165,7 +165,7 @@ def soiling_monte_carlo_plot(soiling_info, normalized_yield, point_alpha=0.5,
     warnings.warn(
         'The soiling module is currently experimental. The API, results, '
         'and default behaviors may change in future releases (including MINOR '
-        'and PATCH releases) as the code matures.'
+        'and PATCH releases) as the code matures.', stacklevel=2
     )
 
     fig, ax = plt.subplots()
@@ -225,7 +225,7 @@ def soiling_interval_plot(soiling_info, normalized_yield, point_alpha=0.5,
     warnings.warn(
         'The soiling module is currently experimental. The API, results, '
         'and default behaviors may change in future releases (including MINOR '
-        'and PATCH releases) as the code matures.'
+        'and PATCH releases) as the code matures.', stacklevel=2
     )
 
     sratio = soiling_info['soiling_ratio_perfect_clean']
@@ -265,7 +265,7 @@ def soiling_rate_histogram(soiling_info, bins=None):
     warnings.warn(
         'The soiling module is currently experimental. The API, results, '
         'and default behaviors may change in future releases (including MINOR '
-        'and PATCH releases) as the code matures.'
+        'and PATCH releases) as the code matures.', stacklevel=2
     )
 
     soiling_summary = soiling_info['soiling_interval_summary']
@@ -385,7 +385,7 @@ def availability_summary_plots(power_system, power_subsystem, loss_total,
     warnings.warn(
         'The availability module is currently experimental. The API, results, '
         'and default behaviors may change in future releases (including MINOR '
-        'and PATCH releases) as the code matures.'
+        'and PATCH releases) as the code matures.', stacklevel=2
     )
 
     fig = plt.figure(figsize=(16, 8))
