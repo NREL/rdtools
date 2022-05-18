@@ -2,6 +2,12 @@
 Pending
 ************************
 
+Enhancements
+------------
+* Specifying ``detailed=True`` in :py:func:`rdtools.plotting.degradation_summary_plots`
+  now shows the number of year-on-year slopes in addition to color coding points
+  (:issue:`298`, :pull:`324`)
+
 Testing
 -------
 * Added a CI notebook check (:pull:`270`)
