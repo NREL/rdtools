@@ -14,7 +14,7 @@ from scipy.stats.mstats import theilslopes
 warnings.warn(
     'The soiling module is currently experimental. The API, results, '
     'and default behaviors may change in future releases (including MINOR '
-    'and PATCH releases) as the code matures.'
+    'and PATCH releases) as the code matures.', stacklevel=2
 )
 
 
@@ -110,7 +110,8 @@ class SRRAnalysis():
             warnings.warn('An even value of day_scale was passed. An odd value is '
                           'recommended, otherwise, consecutive days may be erroneously '
                           'flagged as cleaning events. '
-                          'See https://github.com/NREL/rdtools/issues/189')
+                          'See https://github.com/NREL/rdtools/issues/189',
+                          stacklevel=2)
 
         df = self.pm.to_frame()
         df.columns = ['pi']
@@ -369,8 +370,8 @@ class SRRAnalysis():
                               'validity criteria such as increasing "max_relative_slope_error" '
                               'and/or "max_negative_step" and/or decreasing "min_interval_length".'
                               ' Alternatively, consider using method="perfect_clean". For more'
-                              ' info see https://github.com/NREL/rdtools/issues/272'
-                              )
+                              ' info see https://github.com/NREL/rdtools/issues/272',
+                              stacklevel=3)
         monte_losses = []
         random_profiles = []
         for _ in range(monte):
@@ -891,7 +892,8 @@ def annual_soiling_ratios(stochastic_soiling_profiles,
             'The indexes of stochastic_soiling_profiles are not entirely '
             'contained within the index of insolation_daily. Every day in '
             'stochastic_soiling_profiles should be represented in '
-            'insolation_daily. This may cause erroneous results.')
+            'insolation_daily. This may cause erroneous results.',
+            stacklevel=2)
 
     insolation_daily = insolation_daily.reindex(all_profiles.index)
 

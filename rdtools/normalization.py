@@ -727,7 +727,7 @@ def _interpolate_series(time_series, target_index, max_timedelta=None,
         warnings.warn("Fraction of excluded data "
                       f"({100*fraction_excluded:0.02f}%) "
                       "exceeded threshold",
-                      UserWarning)
+                      UserWarning, stacklevel=3)
 
     # put data on index that includes both original and target indicies
     target_timestamps = pd.Index(target_index.view('int64'))
