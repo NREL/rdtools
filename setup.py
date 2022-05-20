@@ -52,7 +52,7 @@ INSTALL_REQUIRES = [
     'pvlib >= 0.7.0, <0.10.0',
     'scikit-learn >= 0.22.0',
     'arch >= 4.11',
-    'filterpy >= 1.4.5'
+    'filterpy >= 1.4.2'
 ]
 
 EXTRAS_REQUIRE = {
