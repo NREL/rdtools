@@ -862,7 +862,7 @@ def annual_soiling_ratios(stochastic_soiling_profiles,
     Parameters
     ----------
     stochastic_soiling_profiles : list
-        List of o representing profile realizations from the SRR monte carlo.
+        List of pd.Series representing profile realizations from the SRR monte carlo.
         Typically ``soiling_interval_summary['stochastic_soiling_profiles']`` obtained with
         :py:func:`rdtools.soiling.soiling_srr` or :py:meth:`rdtools.soiling.SRRAnalysis.run`
     insolation_daily : pandas.Series
@@ -1158,6 +1158,11 @@ class CODSAnalysis():
         Contains information about the knobs used in each bootstrap model
         fit, and the resultant weight
 
+    Raises
+    ------
+    ValueError
+        If the performance metrix does not have daily index frequency
+
     References
     ----------
     .. [1] Skomedal, Å. and Deceglie, M. G., IEEE Journal of
@@ -1178,13 +1183,11 @@ class CODSAnalysis():
 
     def iterative_signal_decomposition(
             self, order=('SR', 'SC', 'Rd'), degradation_method='YoY',
-            max_iterations=18, detection_tuner=.5, convergence_criterium=5e-3,
+            max_iterations=18, detection_tuner=.5, convergence_criterion=5e-3,
             pruning_iterations=1, pruning_tuner=.6, soiling_significance_knob=.75,
             process_noise=1e-4, renormalize_SR=None, ffill=True, clip_soiling=True,
             verbose=False):
         '''
-        Description
-        -----------
         Estimates the soiling losses and the degradation rate of a PV system
         based on its daily normalized energy, or daily Performance Index (PI).
         The underlying assumption is that the PI
@@ -1226,11 +1229,14 @@ class CODSAnalysis():
         detection_tuner : float, default .5
             Higher value gives lower cleaning event detection sensitivity.
             Should be between 0.1 and 2
-        convergence_criterium : float, default 5e-3
+        convergence_criterion : float, default 5e-3
             the relative change in the convergence metric required for
             convergence
         pruning_iterations : int, default 1
+            Number of iterations when pruning (removing) cleaning events
         pruning_tuner : float, default .6
+            Sensitivity tuner that decides how easily a cleaning event is pruned
+            (removed). Larger values means a smaller chance of pruning a given event.
             Should be between 0.1 and 2
         soiling_significance_knob float, defualt 0.75
         process_noise : float, default 1e-4
@@ -1244,7 +1250,6 @@ class CODSAnalysis():
             Whether or not to clip the soiling ratio at max 1 and minimum 0.
         verbose : bool, default False
             If true, prints a progress report
-        ...
 
         Returns
         -------
@@ -1294,7 +1299,6 @@ class CODSAnalysis():
         adf_res : list
             The results of an Augmented Dickey-Fuller test (telling whether the
             residuals are stationary or not)
-        ...
 
         References
         ----------
@@ -1438,7 +1442,7 @@ class CODSAnalysis():
                                         convergence_metric[-n_steps-1])
                 if perfect_cleaning and (
                         ic >= max_iterations / 2 or
-                        relative_improvement < convergence_criterium):
+                        relative_improvement < convergence_criterion):
                     # From now on, do not assume perfect cleaning
                     perfect_cleaning = False
                     # Reorder to ensure SR first
@@ -1451,9 +1455,9 @@ class CODSAnalysis():
                       (ic >= max_iterations or
                         (ic >= change_point + n_steps and
                          relative_improvement <
-                         convergence_criterium))):
+                         convergence_criterion))):
                     if verbose:
-                        if relative_improvement < convergence_criterium:
+                        if relative_improvement < convergence_criterion:
                             print('Convergence reached.')
                         else:
                             print('Max iterations reached.')
@@ -1694,7 +1698,7 @@ class CODSAnalysis():
         RMSEs = np.array([r[4] for r in results])
         SR_is_one_fraction = np.array(
             [(r[0].soiling_ratio == 1).mean() for r in results])
-        sss = [r[5] for r in results]
+        small_soiling_signal = [r[5] for r in results]
 
         # Calculate weights
         weights = 1 / RMSEs / (1 + SR_is_one_fraction)
@@ -1705,23 +1709,21 @@ class CODSAnalysis():
                                      pd.Series(RMSEs),
                                      pd.Series(SR_is_one_fraction),
                                      pd.Series(weights),
-                                     pd.Series(sss)],
+                                     pd.Series(small_soiling_signal)],
                                     axis=1, ignore_index=True)
 
         if verbose:  # Print summary
             knobs_n_weights.columns = ['order', 'dt', 'pt', 'ff', 'RMSE',
-                                       'SR==1', 'weights', 'sss']
+                                       'SR==1', 'weights', 'small_soiling_signal']
             if verbose:
                 print('\n', knobs_n_weights)
 
         # Check if data is decomposable
         if np.sum(adfs == 0) > nr_models / 2:
-            self.errors = (
+            raise RuntimeError(
                 'Test for stationary residuals (Augmented Dickey-Fuller'
-                'test) not passed in half  of the instances:\nData not'
-                ' decomposable.')
-            print(self.errors)
-            return
+                + ' test) not passed in half  of the instances:\nData not'
+                + ' decomposable.')
 
         # Save best model
         self.initial_fits = [r[0] for r in results]
@@ -1729,20 +1731,20 @@ class CODSAnalysis():
 
         # If more than half of the model fits indicate small soiling signal,
         # don't do bootstrapping
-        if np.sum(sss) > nr_models / 2:
+        if np.sum(small_soiling_signal) > nr_models / 2:
             self.result_df = df_out
             self.residual_shift = results[np.argmax(weights)][3]
             YOY = RdToolsDeg.degradation_year_on_year(pi)
             self.degradation = [YOY[0], YOY[1][0], YOY[1][1]]
             self.soiling_loss = [0, 0, (1 - df_out.soiling_ratio).mean()]
-            self.sss = True
+            self.small_soiling_signal = True
             self.errors = (
                 'Soiling signal is small relative to the noise.'
                 'Iterative decomposition not possible.\n'
                 'Degradation found by RdTools YoY')
             print(self.errors)
             return
-        self.sss = False
+        self.small_soiling_signal = False
 
         # Aggregate all bootstrap samples
         all_bootstrap_samples = pd.concat(bootstrap_samples_list, axis=1,
@@ -1792,7 +1794,7 @@ class CODSAnalysis():
                 temporary_cods_instance = CODSAnalysis(bootstrap_sample)
 
                 # Do Signal decomposition for soiling and degradation component
-                kdf, deg, SL, rs, RMSE, sss, adf = \
+                kdf, deg, SL, rs, RMSE, small_soiling_signal, adf = \
                     temporary_cods_instance.iterative_signal_decomposition(
                         max_iterations=4, order=order, clip_soiling=True,
                         detection_tuner=dt, pruning_iterations=1,
