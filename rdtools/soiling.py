@@ -1282,23 +1282,34 @@ class CODSAnalysis():
             |                        | PI / (SR * SC * Rd)                          |
             +------------------------+----------------------------------------------+
 
-        degradation : list
-            List of linear degradation rate of system in %/year, lower and
-            upper bound of 95% confidence interval
-        soiling_loss : list
-            List of average soiling losses over the time series in %, lower and
-            upper bound of 95% confidence interval
-        residual_shift : float
-            Mean value of residuals. Multiply total model by this number for
-            complete overlap with input pi
-        RMSE : float
-            Root Means Squared Error of total model vs input pi
-        small_soiling_signal : bool
-            Whether or not the signal is deemed too small to infer soiling
-            ratio
-        adf_res : list
-            The results of an Augmented Dickey-Fuller test (telling whether the
-            residuals are stationary or not)
+        results_dict: dict
+            Dictionary with the following entries:
+
+            +------------------------+----------------------------------------------+
+            | Key                    | Description                                  |
+            +========================+==============================================+
+            | 'degradation'          | List of linear degradation rate of system in |
+            |                        | %/year, lower and upper bound of 95%         |
+            |                        | confidence interval (list)                   |
+            +------------------------+----------------------------------------------+
+            | 'soiling_loss'         | List of average soiling losses over the time |
+            |                        | series in %, lower and upper bound of 95%    |
+            |                        | confidence interval (list)                   |
+            +------------------------+----------------------------------------------+
+            | 'residual_shift'       | Mean value of residuals. Multiply total      |
+            |                        | model by this number for complete overlap    |
+            |                        | with input pi (float)                        |
+            +------------------------+----------------------------------------------+
+            | 'RMSE'                 | Root Means Squared Error of total model vs   |
+            |                        | input pi (float)                             |
+            +------------------------+----------------------------------------------+
+            | 'small_soiling_signal' | Whether or not the signal is deemed too      |
+            |                        | small to infer soiling ratio (bool)          |
+            +------------------------+----------------------------------------------+
+            | 'adf_res'              | The results of an Augmented Dickey-Fuller    |
+            |                        | test (telling whether the residuals are      |
+            |                        | stationary or not) (list)                    |
+            +------------------------+----------------------------------------------+
 
         References
         ----------
@@ -1656,7 +1667,7 @@ class CODSAnalysis():
                                  for j in range(len(knob_alternatives))]
                                 for indexes in index_list]
         nr_models = len(index_list)
-        bootstrap_samples_list, results = [], []
+        bootstrap_samples_list, list_of_df_out, results = [], [], []
 
         # Check boostrap number
         if reps % nr_models != 0:
@@ -1668,22 +1679,23 @@ class CODSAnalysis():
         # For each combination of model knobs/parameters, fit one model:
         for c, (order, dt, pt, ff) in enumerate(combination_of_knobs):
             try:
-                result = self.iterative_signal_decomposition(
+                df_out, result_dict = self.iterative_signal_decomposition(
                     max_iterations=18, order=order, clip_soiling=True,
                     detection_tuner=dt, pruning_iterations=1,
                     pruning_tuner=pt, process_noise=process_noise, ffill=ff,
                     degradation_method=degradation_method, **kwargs)
 
                 # Save results
-                results.append(result)
-                adf = result[-1]
+                list_of_df_out.append(df_out)
+                results.append(result_dict)
+                adf = result_dict['adf_res']
                 # If we can reject the null-hypothesis that there is a unit
                 # root in the residuals:
                 if adf[1] < .05:
                     # ... generate bootstrap samples based on the fit:
                     bootstrap_samples_list.append(
                         _make_time_series_bootstrap_samples(
-                            pi, result[0].total_model,
+                            pi, df_out.total_model,
                             sample_nr=int(reps / nr_models)))
 
                 # Print progress
@@ -1694,11 +1706,11 @@ class CODSAnalysis():
                 print(ex)
 
         # Revive results
-        adfs = np.array([(r[-1][0] if r[-1][1] < 0.05 else 0) for r in results])
-        RMSEs = np.array([r[4] for r in results])
+        adfs = np.array([(r['adf_res'][0] if r['adf_res'][1] < 0.05 else 0) for r in results])
+        RMSEs = np.array([r[['RMSE']] for r in results])
         SR_is_one_fraction = np.array(
-            [(r[0].soiling_ratio == 1).mean() for r in results])
-        small_soiling_signal = [r[5] for r in results]
+            [(df.soiling_ratio == 1).mean() for df in list_of_df_out])
+        small_soiling_signal = [r['small_soiling_signal'] for r in results]
 
         # Calculate weights
         weights = 1 / RMSEs / (1 + SR_is_one_fraction)
@@ -1726,17 +1738,17 @@ class CODSAnalysis():
                 + ' decomposable.')
 
         # Save best model
-        self.initial_fits = [r[0] for r in results]
-        df_out = results[np.argmax(weights)][0]
+        self.initial_fits = [df for df in list_of_df_out]
+        result_df = list_of_df_out[np.argmax(weights)]
 
         # If more than half of the model fits indicate small soiling signal,
         # don't do bootstrapping
         if np.sum(small_soiling_signal) > nr_models / 2:
-            self.result_df = df_out
-            self.residual_shift = results[np.argmax(weights)][3]
+            self.result_df = result_df
+            self.residual_shift = results[np.argmax(weights)]['residual_shift']
             YOY = RdToolsDeg.degradation_year_on_year(pi)
             self.degradation = [YOY[0], YOY[1][0], YOY[1][1]]
-            self.soiling_loss = [0, 0, (1 - df_out.soiling_ratio).mean()]
+            self.soiling_loss = [0, 0, (1 - result_df.soiling_ratio).mean()]
             self.small_soiling_signal = True
             self.errors = (
                 'Soiling signal is small relative to the noise.'
@@ -1754,7 +1766,7 @@ class CODSAnalysis():
         # components, by perturbing amplitude and phase shift
         # Number of samples per fit:
         sample_nr = int(reps / nr_models)
-        list_of_SCs = [results[m][0].seasonal_component
+        list_of_SCs = [list_of_df_out[m].seasonal_component
                        for m in range(nr_models) if weights[m] > 0]
         seasonal_samples = _make_seasonal_samples(list_of_SCs,
                                                   sample_nr=sample_nr,
@@ -1794,8 +1806,7 @@ class CODSAnalysis():
                 temporary_cods_instance = CODSAnalysis(bootstrap_sample)
 
                 # Do Signal decomposition for soiling and degradation component
-                kdf, deg, SL, rs, RMSE, small_soiling_signal, adf = \
-                    temporary_cods_instance.iterative_signal_decomposition(
+                kdf, results_dict = temporary_cods_instance.iterative_signal_decomposition(
                         max_iterations=4, order=order, clip_soiling=True,
                         detection_tuner=dt, pruning_iterations=1,
                         pruning_tuner=pt, process_noise=pn,
@@ -1804,13 +1815,13 @@ class CODSAnalysis():
 
                 # If we can reject the null-hypothesis that there is a unit
                 # root in the residuals:
-                if adf[1] < .05:  # Save the results
+                if results_dict['adf_res'][1] < .05:  # Save the results
                     bt_kdfs.append(kdf)
-                    adfs.append(adf[0])
-                    RMSEs.append(RMSE)
-                    bt_deg.append(deg)
-                    bt_SL.append(SL)
-                    rss.append(rs)
+                    adfs.append(results_dict['adf_res'][0])
+                    RMSEs.append(results_dict['RMSE'])
+                    bt_deg.append(results_dict['degradation'])
+                    bt_SL.append(results_dict['soiling_loss'])
+                    rss.append(results_dict['residual_shift'])
                     SR_is_1.append((kdf.soiling_ratio == 1).mean())
                 else:
                     seasonal_samples.drop(columns=[b], inplace=True)
