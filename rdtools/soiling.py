@@ -1210,7 +1210,7 @@ class CODSAnalysis():
 
         Parameters
         ----------
-        order : tuple, defualt ('SR', 'SC', 'Rd')
+        order : tuple, default ('SR', 'SC', 'Rd')
             Tuple containing 1 to 3 of the following strings 'SR' (soiling
             ratio), 'SC' (seasonal component), 'Rd' (degradation component),
             defining the order in which these components will be found during
