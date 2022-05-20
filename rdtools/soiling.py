@@ -1519,7 +1519,7 @@ class CODSAnalysis():
                       verbose=False,
                       **kwargs):
         '''
-        Bootstrapping of CODS alforithm for uncertainty analysis, inherently accounting
+        Bootstrapping of CODS algorithm for uncertainty analysis, inherently accounting
         for model and parameter choices.
 
         First, calls on :py:func:`iterative_signal_decomposition` to fit N different
