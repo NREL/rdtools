@@ -12,8 +12,10 @@ from rdtools.plotting import (
     availability_summary_plots
 )
 import matplotlib.pyplot as plt
+import matplotlib
 import plotly
 import pytest
+import re
 
 from conftest import assert_isinstance
 
@@ -81,6 +83,12 @@ def test_degradation_summary_plots_kwargs(degradation_info):
     result = degradation_summary_plots(yoy_rd, yoy_ci, yoy_info, power,
                                        **kwargs)
     assert_isinstance(result, plt.Figure)
+
+    # ensure the number of points is included when detailed=True
+    ax = result.axes[1]
+    labels = [c for c in ax.get_children() if isinstance(c, matplotlib.text.Annotation)]
+    text = labels[0].get_text()
+    assert re.search(r'n = \d', text)
     plt.close('all')
 
 
