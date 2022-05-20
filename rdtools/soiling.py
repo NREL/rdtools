@@ -1518,8 +1518,17 @@ class CODSAnalysis():
             df_out.SR_high = 1.0
             df_out.SR_low = 1.0 - SR_amp
 
-        return df_out, degradation, soiling_loss, residual_shift, RMSE, \
-            small_soiling_signal, adf_res
+        # Set up results dictionary
+        results_dict = dict(
+            degradation=degradation,
+            soiling_loss=soiling_loss,
+            residual_shift=residual_shift,
+            RMSE=RMSE,
+            small_soiling_signal=small_soiling_signal,
+            adf_res=adf_res
+        )
+
+        return df_out, results_dict
 
     def run_bootstrap(self,
                       reps=512,
@@ -1707,7 +1716,7 @@ class CODSAnalysis():
 
         # Revive results
         adfs = np.array([(r['adf_res'][0] if r['adf_res'][1] < 0.05 else 0) for r in results])
-        RMSEs = np.array([r[['RMSE']] for r in results])
+        RMSEs = np.array([r['RMSE'] for r in results])
         SR_is_one_fraction = np.array(
             [(df.soiling_ratio == 1).mean() for df in list_of_df_out])
         small_soiling_signal = [r['small_soiling_signal'] for r in results]
