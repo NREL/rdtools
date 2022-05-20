@@ -138,9 +138,10 @@ def test_Kalman_filter_for_SR(cods_normalized_daily):
             "'{}' was expected as a column, but not in Kalman Filter results".format(x)
     assert Ps.shape == (732, 2, 2), "Shape of array of covariance matrices (Ps) not as expected"
 
+
 def test_make_seasonal_samples(cods_normalized_daily):
     '''Test the make seasonal samples method.'''
-    sample_nr=10
+    sample_nr = 10
     seasonal_dummy = cods_normalized_daily.iloc[100:]
     samples = soiling._make_seasonal_samples([seasonal_dummy, ], sample_nr)
     assert samples.index.equals(seasonal_dummy.index), \
