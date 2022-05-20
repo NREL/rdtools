@@ -51,7 +51,7 @@ def test_iterative_signal_decomposition(cods_normalized_daily):
                                    check_exact=False, check_less_precise=True)
 
 
-def test_iterative_signal_decompositionwith_nan_interval(cods_normalized_daily):
+def test_iterative_signal_decomposition_with_nan_interval(cods_normalized_daily):
     ''' Test the CODS algorithm with fixed test case with a NaN period'''
     normalized_corrupt = cods_normalized_daily.copy()
     normalized_corrupt[26:50] = np.nan
