@@ -1197,7 +1197,7 @@ class CODSAnalysis():
 
             PI = Rd * SC * SR * R
 
-        The function has a huristic for detecting whether the soiling signal is
+        The function has a heuristic for detecting whether the soiling signal is
         significant enough for soiling loss inference, which is based on the
         ratio between the spread in the soiling signal versus the spread in the
         residuals (defined by the 2.5th and 97.5th percentiles)
