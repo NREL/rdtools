@@ -2508,9 +2508,10 @@ def _make_seasonal_samples(list_of_SCs, sample_nr=10, min_multiplier=0.5,
         signal_mean = signal.mean()
         unique_years = signal.index.year.unique()  # Unique years
         # Make a signal matrix where each column is a year and each row a date
-        year_matrix = pd.concat([pd.Series(signal.loc[str(year)].values)
-                                 for year in unique_years],
-                                axis=1, ignore_index=True)
+        year_matrix = signal.rename('values').to_frame().assign(
+                doy=signal.index.dayofyear,
+                year=signal.index.year
+            ).pivot(index='doy', columns='year', values='values')
         # We will use the median signal through all the years...
         median_signal = year_matrix.median(1)
         for j in range(sample_nr):
@@ -2522,7 +2523,7 @@ def _make_seasonal_samples(list_of_SCs, sample_nr=10, min_multiplier=0.5,
             shifted_signal = pd.Series(
                 index=signal.index,
                 data=median_signal.reindex(
-                    (signal.index.dayofyear-shift) % 365).values)
+                    (signal.index.dayofyear-shift) % 365 + 1).values)
             # Perturb amplitude by recentering to 0 multiplying by multiplier
             samples.loc[:, i*sample_nr + j] = \
                 multiplier * (shifted_signal - signal_mean) + 1
