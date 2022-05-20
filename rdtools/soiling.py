@@ -1069,7 +1069,7 @@ def monthly_soiling_rates(soiling_interval_summary, min_interval_length=14,
 
 class CODSAnalysis():
     '''
-    Container for the Combined Degradation and Soling (CODS) algorithm
+    Container for the Combined Degradation and Soiling (CODS) algorithm
     for degradation and soiling loss analysis. Based on the
     method presented in [1]_.
 
@@ -1114,7 +1114,7 @@ class CODSAnalysis():
         +------------------------+----------------------------------------------+
         | 'SR_high'              | upper bound of 95 % conf. interval of SR     |
         +------------------------+----------------------------------------------+
-        | 'rates_low'            | lower bound of 95 % conf. interval of SR     |
+        | 'rates_low'            | lower bound of 95 % conf. interval of        |
         |                        | soiling rates                                |
         +------------------------+----------------------------------------------+
         | 'rates_high'           | upper bound of 95 % conf. interval of        |
@@ -1200,7 +1200,7 @@ class CODSAnalysis():
 
             PI = Rd * SC * SR * R
 
-        The function has a huristic for detecting whether the soiling signal is
+        The function has a heuristic for detecting whether the soiling signal is
         significant enough for soiling loss inference, which is based on the
         ratio between the spread in the soiling signal versus the spread in the
         residuals (defined by the 2.5th and 97.5th percentiles)
@@ -1213,7 +1213,7 @@ class CODSAnalysis():
 
         Parameters
         ----------
-        order : tuple, defualt ('SR', 'SC', 'Rd')
+        order : tuple, default ('SR', 'SC', 'Rd')
             Tuple containing 1 to 3 of the following strings 'SR' (soiling
             ratio), 'SC' (seasonal component), 'Rd' (degradation component),
             defining the order in which these components will be found during
@@ -1238,7 +1238,7 @@ class CODSAnalysis():
             Sensitivity tuner that decides how easily a cleaning event is pruned
             (removed). Larger values means a smaller chance of pruning a given event.
             Should be between 0.1 and 2
-        soiling_significance_knob float, defualt 0.75
+        soiling_significance_knob : float, default 0.75
         process_noise : float, default 1e-4
         renormalize_SR : float, default None
             If not none, defines the percentile for which the SR will be
@@ -1523,7 +1523,7 @@ class CODSAnalysis():
                       verbose=False,
                       **kwargs):
         '''
-        Bootstrapping of CODS alforithm for uncertainty analysis, inherently accounting
+        Bootstrapping of CODS algorithm for uncertainty analysis, inherently accounting
         for model and parameter choices.
 
         First, calls on :py:func:`iterative_signal_decomposition` to fit N different
