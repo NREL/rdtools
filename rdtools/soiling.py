@@ -1069,7 +1069,7 @@ def monthly_soiling_rates(soiling_interval_summary, min_interval_length=14,
 
 class CODSAnalysis():
     '''
-    Container for the Combined Degradation and Soling (CODS) algorithm
+    Container for the Combined Degradation and Soiling (CODS) algorithm
     for degradation and soiling loss analysis. Based on the
     method presented in [1]_.
 
