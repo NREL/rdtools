@@ -2506,7 +2506,6 @@ def _make_seasonal_samples(list_of_SCs, sample_nr=10, min_multiplier=0.5,
     for i, signal in enumerate(list_of_SCs):
         # Remove beginning and end of signal
         signal_mean = signal.mean()
-        unique_years = signal.index.year.unique()  # Unique years
         # Make a signal matrix where each column is a year and each row a date
         year_matrix = signal.rename('values').to_frame().assign(
                 doy=signal.index.dayofyear,
