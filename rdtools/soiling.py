@@ -1232,7 +1232,7 @@ class CODSAnalysis():
         pruning_iterations : int, default 1
         pruning_tuner : float, default .6
             Should be between 0.1 and 2
-        soiling_significance_knob float, defualt 0.75
+        soiling_significance_knob : float, default 0.75
         process_noise : float, default 1e-4
         renormalize_SR : float, default None
             If not none, defines the percentile for which the SR will be
