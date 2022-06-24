@@ -184,7 +184,7 @@ def degradation_classical_decomposition(energy_normalized,
 
 def degradation_year_on_year(energy_normalized, recenter=True,
                              exceedance_prob=95, confidence_level=68.2,
-                             uncertainty_method='simple_bootstrap', block_length=30):
+                             uncertainty_method='simple', block_length=30):
     '''
     Estimate the trend of a timeseries using the year-on-year decomposition
     approach and calculate a Monte Carlo-derived confidence interval of slope.
@@ -203,14 +203,14 @@ def degradation_year_on_year(energy_normalized, recenter=True,
         in percent.
     confidence_level : float, default 68.2
         The size of the confidence interval to return, in percent.
-    uncertainty_method : string, default 'simple_bootstrap'
-        Either 'simple_bootstrap', 'circular_block_bootstrap', or None
+    uncertainty_method : string, default 'simple'
+        Either 'simple', 'circular_block', or None
         Determines what bootstrapping method to use to construct confidence
         intervals and exceedance levels. If None (or anything other than the three
         alternatives), the algorithm does not construct confidence intervals,
         is considerably faster, and only returns the `Rd_pct`.
     block_length : int, default 30
-        If `uncertainty_method` is 'circular_block_bootstrap', `block_length`
+        If `uncertainty_method` is 'circular_block', `block_length`
         determines the length of the blocks used in the circular block bootstrapping
         in number of days. Must be shorter than a third of the time series.
 
@@ -251,7 +251,7 @@ def degradation_year_on_year(energy_normalized, recenter=True,
                          'normalized energy')
 
     # If circular block bootstrapping...
-    if uncertainty_method == 'circular_block_bootstrap':
+    if uncertainty_method == 'circular_block':
         # ... require regular logging frequency
         freq = pd.infer_freq(energy_normalized.index)
         if isinstance(freq, type(None)):
@@ -296,7 +296,7 @@ def degradation_year_on_year(energy_normalized, recenter=True,
 
     Rd_pct = yoy_result.median()
 
-    if uncertainty_method == 'simple_bootstrap':  # If we need the full results
+    if uncertainty_method == 'simple':  # If we need the full results
         calc_info = {
             'YoY_values': yoy_result,
             'renormalizing_factor': renorm,
@@ -318,7 +318,7 @@ def degradation_year_on_year(energy_normalized, recenter=True,
 
         return (Rd_pct, Rd_CI, calc_info)
 
-    elif uncertainty_method == 'circular_block_bootstrap':
+    elif uncertainty_method == 'circular_block':
         # Number of bootstrap repetitions
         reps = 1000
 
