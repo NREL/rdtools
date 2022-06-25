@@ -1428,7 +1428,7 @@ class CODSAnalysis():
                     trend_dummy, uncertainty_method=None)
                 # Convert degradation rate to trend
                 degradation_trend.append(pd.Series(
-                    index=pi.index, data=(1 + day * yoy / 100 / 365.24)))
+                    index=pi.index, data=(1 + day * yoy / 100 / 365.0)))
                 yoy_save.append(yoy)
 
             # Combine and calculate residual flatness
@@ -1890,7 +1890,7 @@ class CODSAnalysis():
                             np.quantile(bt_deg, ci_low_edge),
                             np.quantile(bt_deg, ci_high_edge)]
         df_out.degradation_trend = 1 + np.arange(len(pi)) * \
-            self.degradation[0] / 100 / 365.24
+            self.degradation[0] / 100 / 365.0
 
         # Soiling losses
         self.soiling_loss = [np.dot(bt_SL, weights),
