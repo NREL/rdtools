@@ -1154,9 +1154,9 @@ class CODSAnalysis():
     adf_res : list
         The results of an Augmented Dickey-Fuller test (telling whether the
         residuals are stationary or not)
-    knobs_n_weights : pandas.DataFrame
+    _knobs_n_weights : pandas.DataFrame
         Contains information about the knobs used in each bootstrap model
-        fit, and the resultant weight
+        fit, and the resultant weight.
 
     Raises
     ------
@@ -1726,18 +1726,18 @@ class CODSAnalysis():
         weights /= np.sum(weights)
 
         # Save knobs and weights for initial model fits
-        knobs_n_weights = pd.concat([pd.DataFrame(combination_of_knobs),
-                                     pd.Series(RMSEs),
-                                     pd.Series(SR_is_one_fraction),
-                                     pd.Series(weights),
-                                     pd.Series(small_soiling_signal)],
-                                    axis=1, ignore_index=True)
+        _knobs_n_weights = pd.concat([pd.DataFrame(combination_of_knobs),
+                                      pd.Series(RMSEs),
+                                      pd.Series(SR_is_one_fraction),
+                                      pd.Series(weights),
+                                      pd.Series(small_soiling_signal)],
+                                     axis=1, ignore_index=True)
 
         if verbose:  # Print summary
-            knobs_n_weights.columns = ['order', 'dt', 'pt', 'ff', 'RMSE',
-                                       'SR==1', 'weights', 'small_soiling_signal']
+            _knobs_n_weights.columns = ['order', 'dt', 'pt', 'ff', 'RMSE',
+                                        'SR==1', 'weights', 'small_soiling_signal']
             if verbose:
-                print('\n', knobs_n_weights)
+                print('\n', _knobs_n_weights)
 
         # Check if data is decomposable
         if np.sum(adfs == 0) > nr_models / 2:
@@ -1846,15 +1846,15 @@ class CODSAnalysis():
         # Reweight and save weights
         weights = 1 / np.array(RMSEs) / (1 + np.array(SR_is_1))
         weights /= np.sum(weights)
-        self.knobs_n_weights = pd.concat(
+        self._knobs_n_weights = pd.concat(
             [pd.DataFrame(knobs),
              pd.Series(RMSEs),
              pd.Series(adfs),
              pd.Series(SR_is_1),
              pd.Series(weights)],
             axis=1, ignore_index=True)
-        self.knobs_n_weights.columns = ['dt', 'pt', 'pn', 'RSR', 'ffill',
-                                        'RMSE', 'ADF', 'SR==1', 'weights']
+        self._knobs_n_weights.columns = ['dt', 'pt', 'pn', 'RSR', 'ffill',
+                                         'RMSE', 'ADF', 'SR==1', 'weights']
 
         # ###################### #
         # ###### STAGE 3 ####### #
