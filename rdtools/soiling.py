@@ -1154,8 +1154,8 @@ class CODSAnalysis():
     adf_res : list
         The results of an Augmented Dickey-Fuller test (telling whether the
         residuals are stationary or not)
-    _knobs_n_weights : pandas.DataFrame
-        Contains information about the knobs used in each bootstrap model
+    _parameters_n_weights : pandas.DataFrame
+        Contains information about the parameters used in each bootstrap model
         fit, and the resultant weight.
 
     Raises
@@ -1184,7 +1184,7 @@ class CODSAnalysis():
     def iterative_signal_decomposition(
             self, order=('SR', 'SC', 'Rd'), degradation_method='YoY',
             max_iterations=18, detection_tuner=.5, convergence_criterion=5e-3,
-            pruning_iterations=1, pruning_tuner=.6, soiling_significance_knob=.75,
+            pruning_iterations=1, pruning_tuner=.6, soiling_significance=.75,
             process_noise=1e-4, renormalize_SR=None, ffill=True, clip_soiling=True,
             verbose=False):
         '''
@@ -1238,8 +1238,13 @@ class CODSAnalysis():
             Sensitivity tuner that decides how easily a cleaning event is pruned
             (removed). Larger values means a smaller chance of pruning a given event.
             Should be between 0.1 and 2
-        soiling_significance_knob : float, default 0.75
+        soiling_significance : float, default 0.75
+            The minimum amplitude of the soiling signal relative to the amplitude of
+            the residuals that is considered a significant soiling signal.
         process_noise : float, default 1e-4
+            A Kalman Filter parameter that represents the expected amount of unmodeled
+            variation in the process, the process being the variation in the
+            performance index that is due to soiling, seasonality and degradation.
         renormalize_SR : float, default None
             If not none, defines the percentile for which the SR will be
             normalized to, based on the SR just after cleaning events
@@ -1511,7 +1516,7 @@ class CODSAnalysis():
         SR_amp = float(np.diff(df_out.soiling_ratio.quantile([.1, .9])))
         residuals_amp = float(np.diff(df_out.residuals.quantile([.1, .9])))
         soiling_signal_strength = SR_amp / residuals_amp
-        if soiling_signal_strength < soiling_significance_knob:
+        if soiling_signal_strength < soiling_significance:
             if verbose:
                 print('Soiling signal is small relative to the noise')
             small_soiling_signal = True
@@ -1565,7 +1570,9 @@ class CODSAnalysis():
         reps : int, default 512,
             Number of bootstrap realizations to be run
             minimum N, where N is the possible combinations of model
-            knobs/parameters defined in knob_alternatives
+            alternatives defined by possible combination of order_alternatives,
+            detection_tuner_alternatives, pruning_tuner_alternatives and
+            forward_fill_alternatives.
         confidence_level : float, default 68.2
             The size of the confidence intervals to return, in percent
         degradation_method : string, default 'YoY'
@@ -1666,15 +1673,15 @@ class CODSAnalysis():
         # ###### STAGE 1 ####### #
         # ###################### #
 
-        # Generate combinations of model knobs/parameters
-        knob_alternatives = [order_alternatives,
-                             detection_tuner_alternatives,
-                             pruning_tuner_alternatives,
-                             forward_fill_alternatives]
-        index_list = list(itertools.product([0, 1], repeat=len(knob_alternatives)))
-        combination_of_knobs = [[knob_alternatives[j][indexes[j]]
-                                 for j in range(len(knob_alternatives))]
-                                for indexes in index_list]
+        # Generate combinations of model parameter alternatives
+        parameter_alternatives = [order_alternatives,
+                                  detection_tuner_alternatives,
+                                  pruning_tuner_alternatives,
+                                  forward_fill_alternatives]
+        index_list = list(itertools.product([0, 1], repeat=len(parameter_alternatives)))
+        combination_of_parameters = [[parameter_alternatives[j][indexes[j]]
+                                     for j in range(len(parameter_alternatives))]
+                                     for indexes in index_list]
         nr_models = len(index_list)
         bootstrap_samples_list, list_of_df_out, results = [], [], []
 
@@ -1685,8 +1692,8 @@ class CODSAnalysis():
         if verbose:
             print('Initially fitting {:} models'.format(nr_models))
         t00 = time.time()
-        # For each combination of model knobs/parameters, fit one model:
-        for c, (order, dt, pt, ff) in enumerate(combination_of_knobs):
+        # For each combination of model parameter alternatives, fit one model:
+        for c, (order, dt, pt, ff) in enumerate(combination_of_parameters):
             try:
                 df_out, result_dict = self.iterative_signal_decomposition(
                     max_iterations=18, order=order, clip_soiling=True,
@@ -1725,19 +1732,19 @@ class CODSAnalysis():
         weights = 1 / RMSEs / (1 + SR_is_one_fraction)
         weights /= np.sum(weights)
 
-        # Save knobs and weights for initial model fits
-        _knobs_n_weights = pd.concat([pd.DataFrame(combination_of_knobs),
-                                      pd.Series(RMSEs),
-                                      pd.Series(SR_is_one_fraction),
-                                      pd.Series(weights),
-                                      pd.Series(small_soiling_signal)],
-                                     axis=1, ignore_index=True)
+        # Save sensitivities and weights for initial model fits
+        _parameters_n_weights = pd.concat([pd.DataFrame(combination_of_parameters),
+                                           pd.Series(RMSEs),
+                                           pd.Series(SR_is_one_fraction),
+                                           pd.Series(weights),
+                                           pd.Series(small_soiling_signal)],
+                                          axis=1, ignore_index=True)
 
         if verbose:  # Print summary
-            _knobs_n_weights.columns = ['order', 'dt', 'pt', 'ff', 'RMSE',
-                                        'SR==1', 'weights', 'small_soiling_signal']
+            _parameters_n_weights.columns = ['order', 'dt', 'pt', 'ff', 'RMSE',
+                                                'SR==1', 'weights', 'small_soiling_signal']
             if verbose:
-                print('\n', _knobs_n_weights)
+                print('\n', _parameters_n_weights)
 
         # Check if data is decomposable
         if np.sum(adfs == 0) > nr_models / 2:
@@ -1792,20 +1799,20 @@ class CODSAnalysis():
                   '({:} realizations):'.format(reps))
         order = ('SR', 'SC' if degradation_method == 'STL' else 'Rd')
         t0 = time.time()
-        bt_kdfs, bt_SL, bt_deg, knobs, adfs, RMSEs, SR_is_1, rss, errors = \
+        bt_kdfs, bt_SL, bt_deg, parameters, adfs, RMSEs, SR_is_1, rss, errors = \
             [], [], [], [], [], [], [], [], ['Bootstrapping errors']
         for b in range(reps):
             try:
-                # randomly choose model knobs
-                dt = np.random.uniform(knob_alternatives[1][0],
-                                       knob_alternatives[1][-1])
-                pt = np.random.uniform(knob_alternatives[2][0],
-                                       knob_alternatives[2][-1])
+                # randomly choose model sensitivities
+                dt = np.random.uniform(parameter_alternatives[1][0],
+                                       parameter_alternatives[1][-1])
+                pt = np.random.uniform(parameter_alternatives[2][0],
+                                       parameter_alternatives[2][-1])
                 pn = np.random.uniform(process_noise / 1.5, process_noise * 1.5)
                 renormalize_SR = np.random.choice([None,
                                                    np.random.uniform(.5, .95)])
                 ffill = np.random.choice([True, False])
-                knobs.append([dt, pt, pn, renormalize_SR, ffill])
+                parameters.append([dt, pt, pn, renormalize_SR, ffill])
 
                 # Sample to infer soiling from
                 bootstrap_sample = \
@@ -1846,15 +1853,15 @@ class CODSAnalysis():
         # Reweight and save weights
         weights = 1 / np.array(RMSEs) / (1 + np.array(SR_is_1))
         weights /= np.sum(weights)
-        self._knobs_n_weights = pd.concat(
-            [pd.DataFrame(knobs),
+        self._parameters_n_weights = pd.concat(
+            [pd.DataFrame(parameters),
              pd.Series(RMSEs),
              pd.Series(adfs),
              pd.Series(SR_is_1),
              pd.Series(weights)],
             axis=1, ignore_index=True)
-        self._knobs_n_weights.columns = ['dt', 'pt', 'pn', 'RSR', 'ffill',
-                                         'RMSE', 'ADF', 'SR==1', 'weights']
+        self._parameters_n_weights.columns = ['dt', 'pt', 'pn', 'RSR', 'ffill',
+                                              'RMSE', 'ADF', 'SR==1', 'weights']
 
         # ###################### #
         # ###### STAGE 3 ####### #
@@ -2300,6 +2307,10 @@ def soiling_cods(energy_normalized_daily,
         Decides whether to use the YoY method [3] for estimating the
         degradation trend (assumes linear trend), or the STL-method (does
         not assume linear trend). The latter is slower.
+    process_noise : float, default 1e-4
+        A Kalman Filter parameter that represents the expected amount of unmodeled
+        variation in the process, the process being the variation in the
+        performance index that is due to soiling, seasonality and degradation.
     order_alternatives : tuple of tuples, default (('SR', 'SC', 'Rd'), ('SC', 'SR', 'Rd'))
         Component estimation orders that will be tested during initial
         model fitting.
