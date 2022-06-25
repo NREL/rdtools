@@ -12,9 +12,9 @@ def test_iterative_signal_decomposition(cods_normalized_daily):
     cods = soiling.CODSAnalysis(cods_normalized_daily)
     df_out, results_dict = \
         cods.iterative_signal_decomposition()
-    assert 0.080563 == pytest.approx(results_dict['degradation'], abs=1e-6),\
+    assert 0.080641 == pytest.approx(results_dict['degradation'], abs=1e-6),\
         'Degradation rate different from expected value'
-    assert 3.305137 == pytest.approx(results_dict['soiling_loss'], abs=1e-6),\
+    assert 3.305136 == pytest.approx(results_dict['soiling_loss'], abs=1e-6),\
         'Soiling loss different from expected value'
     assert 0.999359 == pytest.approx(results_dict['residual_shift'], abs=1e-6),\
         'Residual shift different from expected value'
