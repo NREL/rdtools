@@ -327,7 +327,7 @@ def degradation_year_on_year(energy_normalized, recenter=True,
         numeric_index = np.arange(N)
         days_per_index = \
             (energy_normalized.dt.iloc[-1] - energy_normalized.dt.iloc[0]).days / N
-        degradation_trend = 1 + (Rd_pct / 100 / 365.24 * numeric_index
+        degradation_trend = 1 + (Rd_pct / 100 / 365.0 * numeric_index
                                  * days_per_index)
         degradation_trend = pd.Series(
             index=energy_normalized.dt, data=degradation_trend)
