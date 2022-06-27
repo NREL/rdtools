@@ -1742,7 +1742,7 @@ class CODSAnalysis():
 
         if verbose:  # Print summary
             _parameters_n_weights.columns = ['order', 'dt', 'pt', 'ff', 'RMSE',
-                                                'SR==1', 'weights', 'small_soiling_signal']
+                                             'SR==1', 'weights', 'small_soiling_signal']
             if verbose:
                 print('\n', _parameters_n_weights)
 
