@@ -23,7 +23,6 @@ analysis workflow.
    aggregation
    clearsky_temperature
    plotting
-   bootstrap
 
 Analysis Chains
 ===============
