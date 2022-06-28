@@ -18,6 +18,7 @@ from rdtools.filtering import logic_clip_filter
 from rdtools.filtering import xgboost_clip_filter
 from rdtools.filtering import normalized_filter
 # from rdtools.soiling import soiling_srr
+# from rdtools.soiling import soiling_cods
 # from rdtools.soiling import monthly_soiling_rates
 # from rdtools.soiling import annual_soiling_ratios
 from rdtools.analysis_chains import TrendAnalysis

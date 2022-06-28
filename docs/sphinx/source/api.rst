@@ -71,6 +71,10 @@ Soiling
    annual_soiling_ratios
    SRRAnalysis
    SRRAnalysis.run
+   soiling_cods
+   CODSAnalysis
+   CODSAnalysis.iterative_signal_decomposition
+   CODSAnalysis.run_bootstrap
 
 
 System Availability
@@ -166,3 +170,4 @@ Plotting
    soiling_rate_histogram
    availability_summary_plots
    tune_filter_plot
+

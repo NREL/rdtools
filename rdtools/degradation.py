@@ -3,6 +3,8 @@
 import pandas as pd
 import numpy as np
 import statsmodels.api as sm
+from rdtools.bootstrap import _make_time_series_bootstrap_samples, \
+    _construct_confidence_intervals
 
 
 def degradation_ols(energy_normalized, confidence_level=68.2):
@@ -181,7 +183,8 @@ def degradation_classical_decomposition(energy_normalized,
 
 
 def degradation_year_on_year(energy_normalized, recenter=True,
-                             exceedance_prob=95, confidence_level=68.2):
+                             exceedance_prob=95, confidence_level=68.2,
+                             uncertainty_method='simple', block_length=30):
     '''
     Estimate the trend of a timeseries using the year-on-year decomposition
     approach and calculate a Monte Carlo-derived confidence interval of slope.
@@ -200,6 +203,16 @@ def degradation_year_on_year(energy_normalized, recenter=True,
         in percent.
     confidence_level : float, default 68.2
         The size of the confidence interval to return, in percent.
+    uncertainty_method : string, default 'simple'
+        Either 'simple', 'circular_block', or None
+        Determines what bootstrapping method to use to construct confidence
+        intervals and exceedance levels. If None (or anything other than the three
+        alternatives), the algorithm does not construct confidence intervals,
+        is considerably faster, and only returns the `Rd_pct`.
+    block_length : int, default 30
+        If `uncertainty_method` is 'circular_block', `block_length`
+        determines the length of the blocks used in the circular block bootstrapping
+        in number of days. Must be shorter than a third of the time series.
 
     Returns
     -------
@@ -237,6 +250,17 @@ def degradation_year_on_year(energy_normalized, recenter=True,
         raise ValueError('must provide at least two years of '
                          'normalized energy')
 
+    # If circular block bootstrapping...
+    if uncertainty_method == 'circular_block':
+        # ... require regular logging frequency
+        freq = pd.infer_freq(energy_normalized.index)
+        if isinstance(freq, type(None)):
+            raise ValueError('energy_normalized must have a fixed frequency')
+        # ... require a block length shorter than a third of the time series
+        if block_length > (len(energy_normalized) / 3):
+            raise ValueError(
+                'block_length must must be shorter than a third of the time series')
+
     # Auto center
     if recenter:
         start = energy_normalized.index[0]
@@ -267,31 +291,70 @@ def degradation_year_on_year(energy_normalized, recenter=True,
     df['usage_of_points'] = df.yoy.notnull().astype(int).add(
                 df_right.yoy.notnull().astype(int), fill_value=0)
 
-    calc_info = {
-        'YoY_values': yoy_result,
-        'renormalizing_factor': renorm,
-        'usage_of_points': df['usage_of_points']
-    }
-
     if not len(yoy_result):
         raise ValueError('no year-over-year aggregated data pairs found')
 
     Rd_pct = yoy_result.median()
 
-    # bootstrap to determine 68% CI and exceedance probability
-    n1 = len(yoy_result)
-    reps = 10000
-    xb1 = np.random.choice(yoy_result, (n1, reps), replace=True)
-    mb1 = np.median(xb1, axis=0)
+    if uncertainty_method == 'simple':  # If we need the full results
+        calc_info = {
+            'YoY_values': yoy_result,
+            'renormalizing_factor': renorm,
+            'usage_of_points': df['usage_of_points']
+        }
 
-    half_ci = confidence_level / 2.0
-    Rd_CI = np.percentile(mb1, [50.0 - half_ci, 50.0 + half_ci])
+        # bootstrap to determine 68% CI and exceedance probability
+        n1 = len(yoy_result)
+        reps = 10000
+        xb1 = np.random.choice(yoy_result, (n1, reps), replace=True)
+        mb1 = np.median(xb1, axis=0)
 
-    P_level = np.percentile(mb1, 100.0 - exceedance_prob)
+        half_ci = confidence_level / 2.0
+        Rd_CI = np.percentile(mb1, [50.0 - half_ci, 50.0 + half_ci])
 
-    calc_info['exceedance_level'] = P_level
+        P_level = np.percentile(mb1, 100.0 - exceedance_prob)
 
-    return (Rd_pct, Rd_CI, calc_info)
+        calc_info['exceedance_level'] = P_level
+
+        return (Rd_pct, Rd_CI, calc_info)
+
+    elif uncertainty_method == 'circular_block':
+        # Number of bootstrap repetitions
+        reps = 1000
+
+        # Construct degradation trend time series
+        N = len(energy_normalized)
+        numeric_index = np.arange(N)
+        days_per_index = \
+            (energy_normalized.dt.iloc[-1] - energy_normalized.dt.iloc[0]).days / N
+        degradation_trend = 1 + (Rd_pct / 100 / 365.0 * numeric_index
+                                 * days_per_index)
+        degradation_trend = pd.Series(
+            index=energy_normalized.dt, data=degradation_trend)
+
+        # Generate bootstrap_samples
+        bootstrap_samples = _make_time_series_bootstrap_samples(
+            energy_normalized.set_index('dt')['energy'], degradation_trend,
+            sample_nr=reps, block_length=block_length)
+
+        # Construct confidence interval
+        Rd_CI, exceedance_level, bootstrap_rates = \
+            _construct_confidence_intervals(
+                bootstrap_samples, degradation_year_on_year,
+                exceedance_prob=exceedance_prob, confidence_level=confidence_level,
+                recenter=False, uncertainty_method='none')
+
+        # Save calculation information
+        calc_info = {
+            'renormalizing_factor': renorm,
+            'exceedance_level': exceedance_level,
+            'usage_of_points': df['usage_of_points'],
+            'bootstrap_rates': bootstrap_rates}
+
+        return (Rd_pct, Rd_CI, calc_info)
+
+    else:  # If we do not need confidence intervals and exceedance level
+        return Rd_pct
 
 
 def _mk_test(x, alpha=0.05):
