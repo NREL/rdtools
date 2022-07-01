@@ -8,6 +8,9 @@ Testing
 
 Requirements
 ------------
+* Upgrade the notebook environment from python 3.7 to python 3.10.
+  Several dependency versions in ``docs/notebook_requirements.txt`` are
+  updated as well. (:issue:`319`, :pull:`326`)
 * Bump ``ipython==7.16.3``, ``jupyter-console==6.4.0``,
   and ``prompt-toolkit==3.0.27`` in ``docs/notebook_requirements.txt``
   and bump ``Pillow==9.0.0`` in ``requirements.txt`` (:pull:`314`)
