@@ -1872,10 +1872,10 @@ class CODSAnalysis():
         ci_high_edge = (50 + confidence_level / 2) / 100
 
         # Concatenate boostrap model fits
-        concat_tot_mod = pd.concat([kdf.total_model for kdf in bt_kdfs], 1)
-        concat_SR = pd.concat([kdf.soiling_ratio for kdf in bt_kdfs], 1)
-        concat_r_s = pd.concat([kdf.soiling_rates for kdf in bt_kdfs], 1)
-        concat_ce = pd.concat([kdf.cleaning_events for kdf in bt_kdfs], 1)
+        concat_tot_mod = pd.concat([kdf.total_model for kdf in bt_kdfs], axis=1)
+        concat_SR = pd.concat([kdf.soiling_ratio for kdf in bt_kdfs], axis=1)
+        concat_r_s = pd.concat([kdf.soiling_rates for kdf in bt_kdfs], axis=1)
+        concat_ce = pd.concat([kdf.cleaning_events for kdf in bt_kdfs], axis=1)
 
         # Find confidence intervals for SR and soiling rates
         df_out['SR_low'] = concat_SR.quantile(ci_low_edge, 1)
