@@ -1183,7 +1183,7 @@ class CODSAnalysis():
 
     def iterative_signal_decomposition(
             self, order=('SR', 'SC', 'Rd'), degradation_method='YoY',
-            max_iterations=18, detection_tuner=.5, convergence_criterion=5e-3,
+            max_iterations=18, cleaning_sensitivity=.5, convergence_criterion=5e-3,
             pruning_iterations=1, pruning_tuner=.6, soiling_significance=.75,
             process_noise=1e-4, renormalize_SR=None, ffill=True, clip_soiling=True,
             verbose=False):
@@ -1226,7 +1226,7 @@ class CODSAnalysis():
         max_iterations : int, default 18
             Max number of iterations to perform. Each iteration fits only one of the
             components, so three iterations are needed to fit all three components.
-        detection_tuner : float, default .5
+        cleaning_sensitivity : float, default .5
             Higher value gives lower cleaning event detection sensitivity.
             Should be between 0.1 and 2
         convergence_criterion : float, default 5e-3
@@ -1349,7 +1349,7 @@ class CODSAnalysis():
 
         # Find possible cleaning events based on the performance index
         ce, rm9 = _rolling_median_ce_detection(pi.index, pi, ffill=ffill,
-                                               tuner=detection_tuner)
+                                               tuner=cleaning_sensitivity)
         pce = _collapse_cleaning_events(ce, rm9.diff().values, 5)
 
         small_soiling_signal, perfect_cleaning = False, True
@@ -1368,10 +1368,10 @@ class CODSAnalysis():
                 if ic > 2:  # Add possible cleaning events found by considering
                     # the residuals
                     pce = soiling_dfs[-1].cleaning_events.copy()
-                    detection_tuner *= 1.2  # Increase value of detection tuner
+                    cleaning_sensitivity *= 1.2  # decrease sensitivity
                     ce, rm9 = _rolling_median_ce_detection(
                         pi.index, residuals, ffill=ffill,
-                        tuner=detection_tuner)
+                        tuner=cleaning_sensitivity)
                     ce = _collapse_cleaning_events(ce, rm9.diff().values, 5)
                     pce[ce] = True
                     pruning_tuner /= 1.1  # Decrease value of pruning tuner
@@ -1542,7 +1542,7 @@ class CODSAnalysis():
                       process_noise=1e-4,
                       order_alternatives=(('SR', 'SC', 'Rd'),
                                           ('SC', 'SR', 'Rd')),
-                      detection_tuner_alternatives=(.25, .75),
+                      cleaning_sensitivity_alternatives=(.25, .75),
                       pruning_tuner_alternatives=(1/1.5, 1.5),
                       forward_fill_alternatives=(True, False),
                       verbose=False,
@@ -1571,7 +1571,7 @@ class CODSAnalysis():
             Number of bootstrap realizations to be run
             minimum N, where N is the possible combinations of model
             alternatives defined by possible combination of order_alternatives,
-            detection_tuner_alternatives, pruning_tuner_alternatives and
+            cleaning_sensitivity_alternatives, pruning_tuner_alternatives and
             forward_fill_alternatives.
         confidence_level : float, default 68.2
             The size of the confidence intervals to return, in percent
@@ -1583,7 +1583,7 @@ class CODSAnalysis():
         order_alternatives : tuple of tuples, default (('SR', 'SC', 'Rd'), ('SC', 'SR', 'Rd'))
             Component estimation orders that will be tested during initial
             model fitting.
-        detection_tuner_alternatives : tuple, default (.25, .75)
+        cleaning_sensitivity_alternatives : tuple, default (.25, .75)
             Detection tuner values that will be tested during initial fitting.
             Length must be >= 1. First and last values define limits of values
             that will be used during bootstrapping.
@@ -1675,7 +1675,7 @@ class CODSAnalysis():
 
         # Generate combinations of model parameter alternatives
         parameter_alternatives = [order_alternatives,
-                                  detection_tuner_alternatives,
+                                  cleaning_sensitivity_alternatives,
                                   pruning_tuner_alternatives,
                                   forward_fill_alternatives]
         index_list = list(itertools.product([0, 1], repeat=len(parameter_alternatives)))
@@ -1697,7 +1697,7 @@ class CODSAnalysis():
             try:
                 df_out, result_dict = self.iterative_signal_decomposition(
                     max_iterations=18, order=order, clip_soiling=True,
-                    detection_tuner=dt, pruning_iterations=1,
+                    cleaning_sensitivity=dt, pruning_iterations=1,
                     pruning_tuner=pt, process_noise=process_noise, ffill=ff,
                     degradation_method=degradation_method, **kwargs)
 
@@ -1824,7 +1824,7 @@ class CODSAnalysis():
                 # Do Signal decomposition for soiling and degradation component
                 kdf, results_dict = temporary_cods_instance.iterative_signal_decomposition(
                         max_iterations=4, order=order, clip_soiling=True,
-                        detection_tuner=dt, pruning_iterations=1,
+                        cleaning_sensitivity=dt, pruning_iterations=1,
                         pruning_tuner=pt, process_noise=pn,
                         renormalize_SR=renormalize_SR, ffill=ffill,
                         degradation_method=degradation_method, **kwargs)
@@ -2280,7 +2280,7 @@ def soiling_cods(energy_normalized_daily,
                  process_noise=1e-4,
                  order_alternatives=(('SR', 'SC', 'Rd'),
                                      ('SC', 'SR', 'Rd')),
-                 detection_tuner_alternatives=(.25, .75),
+                 cleaning_sensitivity_alternatives=(.25, .75),
                  pruning_tuner_alternatives=(1/1.5, 1.5),
                  forward_fill_alternatives=(True, False),
                  verbose=False,
@@ -2314,7 +2314,7 @@ def soiling_cods(energy_normalized_daily,
     order_alternatives : tuple of tuples, default (('SR', 'SC', 'Rd'), ('SC', 'SR', 'Rd'))
         Component estimation orders that will be tested during initial
         model fitting.
-    detection_tuner_alternatives : tuple, default (.25, .75)
+    cleaning_sensitivity_alternatives : tuple, default (.25, .75)
         Detection tuner values that will be tested during initial fitting.
         Length must be >= 1. First and last values define limits of values
         that will be used during bootstrapping.
@@ -2409,7 +2409,7 @@ def soiling_cods(energy_normalized_daily,
         degradation_method=degradation_method,
         process_noise=process_noise,
         order_alternatives=order_alternatives,
-        detection_tuner_alternatives=detection_tuner_alternatives,
+        cleaning_sensitivity_alternatives=cleaning_sensitivity_alternatives,
         pruning_tuner_alternatives=pruning_tuner_alternatives,
         forward_fill_alternatives=forward_fill_alternatives,
         **kwargs)
