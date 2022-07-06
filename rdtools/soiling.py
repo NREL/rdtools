@@ -1154,9 +1154,6 @@ class CODSAnalysis():
     adf_res : list
         The results of an Augmented Dickey-Fuller test (telling whether the
         residuals are stationary or not)
-    _parameters_n_weights : pandas.DataFrame
-        Contains information about the parameters used in each bootstrap model
-        fit, and the resultant weight.
 
     Raises
     ------
@@ -1293,13 +1290,11 @@ class CODSAnalysis():
             +------------------------+----------------------------------------------+
             | Key                    | Description                                  |
             +========================+==============================================+
-            | 'degradation'          | List of linear degradation rate of system in |
-            |                        | %/year, lower and upper bound of 95%         |
-            |                        | confidence interval (list)                   |
+            | 'degradation'          | Linear degradation rate of system in %/year  |
+            |                        | (float)                                      |
             +------------------------+----------------------------------------------+
-            | 'soiling_loss'         | List of average soiling losses over the time |
-            |                        | series in %, lower and upper bound of 95%    |
-            |                        | confidence interval (list)                   |
+            | 'soiling_loss'         | Average soiling losses over the time series  |
+            |                        | in % (float)                                 |
             +------------------------+----------------------------------------------+
             | 'residual_shift'       | Mean value of residuals. Multiply total      |
             |                        | model by this number for complete overlap    |
