@@ -1184,7 +1184,7 @@ class CODSAnalysis():
     def iterative_signal_decomposition(
             self, order=('SR', 'SC', 'Rd'), degradation_method='YoY',
             max_iterations=18, cleaning_sensitivity=.5, convergence_criterion=5e-3,
-            pruning_iterations=1, pruning_tuner=.6, soiling_significance=.75,
+            pruning_iterations=1, clean_pruning_sensitivity=.6, soiling_significance=.75,
             process_noise=1e-4, renormalize_SR=None, ffill=True, clip_soiling=True,
             verbose=False):
         '''
@@ -1234,7 +1234,7 @@ class CODSAnalysis():
             convergence
         pruning_iterations : int, default 1
             Number of iterations when pruning (removing) cleaning events
-        pruning_tuner : float, default .6
+        clean_pruning_sensitivity : float, default .6
             Sensitivity tuner that decides how easily a cleaning event is pruned
             (removed). Larger values means a smaller chance of pruning a given event.
             Should be between 0.1 and 2
@@ -1374,7 +1374,7 @@ class CODSAnalysis():
                         tuner=cleaning_sensitivity)
                     ce = _collapse_cleaning_events(ce, rm9.diff().values, 5)
                     pce[ce] = True
-                    pruning_tuner /= 1.1  # Decrease value of pruning tuner
+                    clean_pruning_sensitivity /= 1.1  # increase pruning sensitivity
 
                 # Decompose input signal
                 soiling_dummy = (pi /
@@ -1388,7 +1388,7 @@ class CODSAnalysis():
                     clip_soiling=clip_soiling,
                     prescient_cleaning_events=pce,
                     pruning_iterations=pruning_iterations,
-                    pruning_tuner=pruning_tuner,
+                    clean_pruning_sensitivity=clean_pruning_sensitivity,
                     perfect_cleaning=perfect_cleaning,
                     process_noise=process_noise,
                     renormalize_SR=renormalize_SR)
@@ -1543,7 +1543,7 @@ class CODSAnalysis():
                       order_alternatives=(('SR', 'SC', 'Rd'),
                                           ('SC', 'SR', 'Rd')),
                       cleaning_sensitivity_alternatives=(.25, .75),
-                      pruning_tuner_alternatives=(1/1.5, 1.5),
+                      clean_pruning_sensitivity_alternatives=(1/1.5, 1.5),
                       forward_fill_alternatives=(True, False),
                       verbose=False,
                       **kwargs):
@@ -1571,7 +1571,7 @@ class CODSAnalysis():
             Number of bootstrap realizations to be run
             minimum N, where N is the possible combinations of model
             alternatives defined by possible combination of order_alternatives,
-            cleaning_sensitivity_alternatives, pruning_tuner_alternatives and
+            cleaning_sensitivity_alternatives, clean_pruning_sensitivity_alternatives and
             forward_fill_alternatives.
         confidence_level : float, default 68.2
             The size of the confidence intervals to return, in percent
@@ -1587,7 +1587,7 @@ class CODSAnalysis():
             Detection tuner values that will be tested during initial fitting.
             Length must be >= 1. First and last values define limits of values
             that will be used during bootstrapping.
-        pruning_tuner_alternatives : tuple, default (1/1.5, 1.5)
+        clean_pruning_sensitivity_alternatives : tuple, default (1/1.5, 1.5)
             Pruning tuner values that will be tested during initial fitting.
             Length must be >= 1. First and last values define limits of values
             that will be used during bootstrapping.
@@ -1676,7 +1676,7 @@ class CODSAnalysis():
         # Generate combinations of model parameter alternatives
         parameter_alternatives = [order_alternatives,
                                   cleaning_sensitivity_alternatives,
-                                  pruning_tuner_alternatives,
+                                  clean_pruning_sensitivity_alternatives,
                                   forward_fill_alternatives]
         index_list = list(itertools.product([0, 1], repeat=len(parameter_alternatives)))
         combination_of_parameters = [[parameter_alternatives[j][indexes[j]]
@@ -1698,7 +1698,7 @@ class CODSAnalysis():
                 df_out, result_dict = self.iterative_signal_decomposition(
                     max_iterations=18, order=order, clip_soiling=True,
                     cleaning_sensitivity=dt, pruning_iterations=1,
-                    pruning_tuner=pt, process_noise=process_noise, ffill=ff,
+                    clean_pruning_sensitivity=pt, process_noise=process_noise, ffill=ff,
                     degradation_method=degradation_method, **kwargs)
 
                 # Save results
@@ -1825,7 +1825,7 @@ class CODSAnalysis():
                 kdf, results_dict = temporary_cods_instance.iterative_signal_decomposition(
                         max_iterations=4, order=order, clip_soiling=True,
                         cleaning_sensitivity=dt, pruning_iterations=1,
-                        pruning_tuner=pt, process_noise=pn,
+                        clean_pruning_sensitivity=pt, process_noise=pn,
                         renormalize_SR=renormalize_SR, ffill=ffill,
                         degradation_method=degradation_method, **kwargs)
 
@@ -1935,7 +1935,7 @@ class CODSAnalysis():
 
     def _Kalman_filter_for_SR(self, zs_series, process_noise=1e-4, zs_std=.05,
                               rate_std=.005, max_soiling_rates=.0005,
-                              pruning_iterations=1, pruning_tuner=.6,
+                              pruning_iterations=1, clean_pruning_sensitivity=.6,
                               renormalize_SR=None, perfect_cleaning=False,
                               prescient_cleaning_events=None,
                               clip_soiling=True, ffill=True):
@@ -1960,7 +1960,7 @@ class CODSAnalysis():
             Represents the maximum allowed positive soiling rate (when soiling is removed)
         pruning_iterations : int, default 1
             Number of iterations when pruning (removing) cleaning events
-        pruning_tuner : float, default 0.6
+        clean_pruning_sensitivity : float, default 0.6
             Sensitivity tuner that decides how easily a cleaning event is pruned
             (removed). Larger values means a smaller chance of pruning a given event.
         renormalize_SR : float or None, default None
@@ -2093,7 +2093,7 @@ class CODSAnalysis():
                 pi_after_cleaning = rm_smooth_pi.loc[cleaning_events]
                 # Detect outiers/false positives
                 false_positives = _find_numeric_outliers(pi_after_cleaning,
-                                                         pruning_tuner, 'lower')
+                                                         clean_pruning_sensitivity, 'lower')
                 cleaning_events = \
                     false_positives[~false_positives].index.tolist()
 
@@ -2281,7 +2281,7 @@ def soiling_cods(energy_normalized_daily,
                  order_alternatives=(('SR', 'SC', 'Rd'),
                                      ('SC', 'SR', 'Rd')),
                  cleaning_sensitivity_alternatives=(.25, .75),
-                 pruning_tuner_alternatives=(1/1.5, 1.5),
+                 clean_pruning_sensitivity_alternatives=(1/1.5, 1.5),
                  forward_fill_alternatives=(True, False),
                  verbose=False,
                  **kwargs):
@@ -2318,7 +2318,7 @@ def soiling_cods(energy_normalized_daily,
         Detection tuner values that will be tested during initial fitting.
         Length must be >= 1. First and last values define limits of values
         that will be used during bootstrapping.
-    pruning_tuner_alternatives : tuple, default (1/1.5, 1.5)
+    clean_pruning_sensitivity_alternatives : tuple, default (1/1.5, 1.5)
         Pruning tuner values that will be tested during initial fitting.
         Length must be >= 1. First and last values define limits of values
         that will be used during bootstrapping.
@@ -2410,7 +2410,7 @@ def soiling_cods(energy_normalized_daily,
         process_noise=process_noise,
         order_alternatives=order_alternatives,
         cleaning_sensitivity_alternatives=cleaning_sensitivity_alternatives,
-        pruning_tuner_alternatives=pruning_tuner_alternatives,
+        clean_pruning_sensitivity_alternatives=clean_pruning_sensitivity_alternatives,
         forward_fill_alternatives=forward_fill_alternatives,
         **kwargs)
 
