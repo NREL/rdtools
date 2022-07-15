@@ -11,6 +11,7 @@ from rdtools import (csi_filter,
                      normalized_filter,
                      logic_clip_filter,
                      xgboost_clip_filter)
+from rdtools.filtering import hampel_filter
 import warnings
 from conftest import assert_warnings
 
@@ -333,3 +334,7 @@ def test_normalized_filter_default():
     pd.testing.assert_series_equal(normalized_filter(
                         pd.Series([0.01 - eps, 0.01 + eps, 1e308])),
                         pd.Series([False, True, True]))
+
+def test_hampel_filter():
+    a = pd.Series([5,4,6,3,4,5,4,5,3,4,5,3,5,3,4,5,20])
+    assert(np.isnan(hampel_filter(a).iloc[-1]))
