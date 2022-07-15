@@ -41,6 +41,7 @@ Object-oriented end-to-end analysis
    analysis_chains.TrendAnalysis.plot_soiling_interval
    analysis_chains.TrendAnalysis.plot_soiling_monte_carlo
    analysis_chains.TrendAnalysis.plot_pv_vs_irradiance
+   analysis_chains.TrendAnalysis.plot_degradation_timeseries
    
    
 Degradation
