@@ -885,3 +885,35 @@ class TrendAnalysis():
         ax.set_xlabel('Irradiance (W/m$^2$)')
         ax.set_ylabel('PV Energy (Wh/timestep)')
         return fig
+
+    def plot_degradation_timeseries(self, case, resample_days=365, **kwargs):
+        '''
+        Plot resampled time series of degradation trend with time
+
+        Parameters
+        ----------
+        case: str
+            The workflow result to plot, allowed values are 'sensor' and 'clearsky'
+        resample_days: int
+            Number of days to resample the Rd trend data over
+        kwargs :
+            Extra parameters passed to plotting.degradation_summary_plots()
+
+        Returns
+        -------
+        matplotlib.figure.Figure
+        '''
+
+        if case == 'sensor':
+            results_values = self.results['sensor']['yoy_degradation']['calc_info']['YoY_values']
+        elif case == 'clearsky':
+            results_values = self.results['clearsky']['yoy_degradation']['calc_info']['YoY_values']
+        else:
+            raise ValueError("case must be either 'sensor' or 'clearsky'")
+
+        fig, ax = plt.subplots()
+        ax.plot(results_values.resample(f'{round(resample_days)}d').median(),**kwargs)
+        #plt.ylim([-5,5])
+        plt.ylabel('Degradation trend (%/yr)')
+        fig.autofmt_xdate()
+        return fig
