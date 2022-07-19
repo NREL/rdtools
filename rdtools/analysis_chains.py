@@ -897,7 +897,7 @@ class TrendAnalysis():
         resample_days: int
             Number of days to resample the Rd trend data over
         kwargs :
-            Extra parameters passed to plotting.degradation_summary_plots()
+            Extra parameters passed to plotting.degradation_timeseries_plot()
 
         Returns
         -------
@@ -905,15 +905,11 @@ class TrendAnalysis():
         '''
 
         if case == 'sensor':
-            results_values = self.results['sensor']['yoy_degradation']['calc_info']['YoY_values']
+            yoy_info = self.results['sensor']['yoy_degradation']['calc_info']
         elif case == 'clearsky':
-            results_values = self.results['clearsky']['yoy_degradation']['calc_info']['YoY_values']
+            yoy_info = self.results['clearsky']['yoy_degradation']['calc_info']
         else:
             raise ValueError("case must be either 'sensor' or 'clearsky'")
 
-        fig, ax = plt.subplots()
-        ax.plot(results_values.resample(f'{round(resample_days)}d').median(),**kwargs)
-        #plt.ylim([-5,5])
-        plt.ylabel('Degradation trend (%/yr)')
-        fig.autofmt_xdate()
+        fig = plotting.degradation_timeseries_plot(yoy_info, resample_days, **kwargs)
         return fig

@@ -438,3 +438,46 @@ def availability_summary_plots(power_system, power_subsystem, loss_total,
     ax4.legend()
     ax4.set_ylabel('Cumulative Energy [kWh]')
     return fig
+
+
+def degradation_timeseries_plot(yoy_info, resample_days=365, **kwargs):
+    '''
+    Plot resampled time series of degradation trend with time
+
+    Parameters
+    ----------
+    yoy_info : dict
+        a dictionary with keys:
+
+        * YoY_values - pandas series of right-labeled year on year slopes
+        * renormalizing_factor - float value used to recenter data
+        * exceedance_level - the degradation rate that was outperformed with
+          a probability given by the ``exceedance_prob`` parameter in
+          the :py:func:`.degradation.degradation_year_on_year`
+    resample_days: int
+        Number of days to resample the Rd trend data over
+    kwargs :
+        Extra parameters passed to plotting.degradation_summary_plots()
+
+    Note
+    ----
+    It should be noted that the yoy_rd, yoy_ci and yoy_info are the outputs
+    from :py:func:`.degradation.degradation_year_on_year`.
+
+    Returns
+    -------
+    matplotlib.figure.Figure
+    '''
+
+    try:
+        results_values = yoy_info['YoY_values']
+
+    except KeyError:
+        raise KeyError("yoy_info input dictionary does not contain key `YoY_values`.")
+
+    fig, ax = plt.subplots()
+    ax.plot(results_values.rolling(resample_days, center=True).median(), **kwargs)
+    plt.ylabel('Degradation trend (%/yr)')
+    fig.autofmt_xdate()
+
+    return fig
