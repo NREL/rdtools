@@ -440,7 +440,7 @@ def availability_summary_plots(power_system, power_subsystem, loss_total,
     return fig
 
 
-def degradation_timeseries_plot(yoy_info, resample_days=365, **kwargs):
+def degradation_timeseries_plot(yoy_info, rolling_days=365, **kwargs):
     '''
     Plot resampled time series of degradation trend with time
 
@@ -454,8 +454,9 @@ def degradation_timeseries_plot(yoy_info, resample_days=365, **kwargs):
         * exceedance_level - the degradation rate that was outperformed with
           a probability given by the ``exceedance_prob`` parameter in
           the :py:func:`.degradation.degradation_year_on_year`
-    resample_days: int
-        Number of days to resample the Rd trend data over
+    rolling_days: int
+        Number of days for rolling window. Note that the window must contain
+        at least 50% of datapoints to be included in rolling plot.
     kwargs :
         Extra parameters passed to plotting.degradation_summary_plots()
 
@@ -476,7 +477,8 @@ def degradation_timeseries_plot(yoy_info, resample_days=365, **kwargs):
         raise KeyError("yoy_info input dictionary does not contain key `YoY_values`.")
 
     fig, ax = plt.subplots()
-    ax.plot(results_values.rolling(resample_days, center=True).median(), **kwargs)
+    # ax.plot(results_values.rolling(resample_days, center=True).median(), **kwargs)
+    ax.plot(results_values.rolling(f"{rolling_days}d", min_periods=round(rolling_days/2)).median(), **kwargs)
     plt.ylabel('Degradation trend (%/yr)')
     fig.autofmt_xdate()
 

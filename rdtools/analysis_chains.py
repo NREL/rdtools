@@ -886,7 +886,7 @@ class TrendAnalysis():
         ax.set_ylabel('PV Energy (Wh/timestep)')
         return fig
 
-    def plot_degradation_timeseries(self, case, resample_days=365, **kwargs):
+    def plot_degradation_timeseries(self, case, rolling_days=365, **kwargs):
         '''
         Plot resampled time series of degradation trend with time
 
@@ -894,8 +894,9 @@ class TrendAnalysis():
         ----------
         case: str
             The workflow result to plot, allowed values are 'sensor' and 'clearsky'
-        resample_days: int
-            Number of days to resample the Rd trend data over
+        rolling_days: int
+            Number of days for rolling window. Note that the window must contain
+            at least 50% of datapoints to be included in rolling plot.
         kwargs :
             Extra parameters passed to plotting.degradation_timeseries_plot()
 
@@ -911,5 +912,5 @@ class TrendAnalysis():
         else:
             raise ValueError("case must be either 'sensor' or 'clearsky'")
 
-        fig = plotting.degradation_timeseries_plot(yoy_info, resample_days, **kwargs)
+        fig = plotting.degradation_timeseries_plot(yoy_info, rolling_days, **kwargs)
         return fig
