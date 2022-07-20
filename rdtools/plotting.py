@@ -440,7 +440,7 @@ def availability_summary_plots(power_system, power_subsystem, loss_total,
     return fig
 
 
-def degradation_timeseries_plot(yoy_info, rolling_days=365, **kwargs):
+def degradation_timeseries_plot(yoy_info, rolling_days=365, include_ci=True, **kwargs):
     '''
     Plot resampled time series of degradation trend with time
 
@@ -457,6 +457,9 @@ def degradation_timeseries_plot(yoy_info, rolling_days=365, **kwargs):
     rolling_days: int
         Number of days for rolling window. Note that the window must contain
         at least 50% of datapoints to be included in rolling plot.
+    include_ci : boolean
+        calculate and plot 2-sigma confidence intervals along with rolling median
+        (true by default)
     kwargs :
         Extra parameters passed to plotting.degradation_summary_plots()
 
@@ -470,15 +473,31 @@ def degradation_timeseries_plot(yoy_info, rolling_days=365, **kwargs):
     matplotlib.figure.Figure
     '''
 
+    def _bootstrap(x, percentile, reps):
+        # stolen from degradation_year_on_year
+        n1 = len(x)
+        xb1 = np.random.choice(x, (n1, reps), replace=True)
+        mb1 = np.nanmedian(xb1, axis=0)
+        return np.percentile(mb1, percentile)
+
     try:
         results_values = yoy_info['YoY_values']
 
     except KeyError:
         raise KeyError("yoy_info input dictionary does not contain key `YoY_values`.")
 
+    roller = results_values.resample('d').mean().rolling(rolling_days, min_periods=rolling_days//2)
+    # unfortunately it seems that you can't return multiple values in the rolling.apply() kernel.
+    # TODO: figure out some workaround to return both percentiles in a single pass
+    if include_ci:
+        ci_lower = roller.apply(_bootstrap, kwargs={'percentile': 2.5, 'reps': 100}, raw=True)
+        ci_upper = roller.apply(_bootstrap, kwargs={'percentile': 97.5, 'reps': 100}, raw=True)
+
     fig, ax = plt.subplots()
-    # ax.plot(results_values.rolling(resample_days, center=True).median(), **kwargs)
-    ax.plot(results_values.rolling(f"{rolling_days}d", min_periods=round(rolling_days/2)).median(), **kwargs)
+    if include_ci:
+        ax.fill_between(ci_lower.index, ci_lower, ci_upper)
+    ax.plot(roller.median(), c='tab:orange', **kwargs)
+    ax.axhline(results_values.median(), c='k', ls='--')
     plt.ylabel('Degradation trend (%/yr)')
     fig.autofmt_xdate()
 
