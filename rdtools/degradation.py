@@ -238,12 +238,6 @@ def degradation_year_on_year(energy_normalized, recenter=True,
     energy_normalized.name = 'energy'
     energy_normalized.index.name = 'dt'
 
-    # Detect sub-daily data:
-    if min(np.diff(energy_normalized.index.values, n=1)) < \
-            np.timedelta64(23, 'h'):
-        raise ValueError('energy_normalized must not be '
-                         'more frequent than daily')
-
     # Detect less than 2 years of data
     if energy_normalized.index[-1] - energy_normalized.index[0] < \
             pd.Timedelta('730d'):
@@ -268,6 +262,9 @@ def degradation_year_on_year(energy_normalized, recenter=True,
         renorm = energy_normalized[start:oneyear].median()
     else:
         renorm = 1.0
+
+    is_leap_day = energy_normalized.index.strftime('%m-%d') == '02-28'
+    energy_normalized = energy_normalized.loc[~is_leap_day]
 
     energy_normalized = energy_normalized.reset_index()
     energy_normalized['energy'] = energy_normalized['energy'] / renorm
