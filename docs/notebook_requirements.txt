@@ -24,7 +24,7 @@ MarkupSafe==1.1.1
 mistune==0.8.3
 nbconvert==6.1.0
 nbformat==5.0.7
-notebook==6.4.1
+notebook==6.4.12
 numexpr==2.8.0
 packaging==20.9
 pandocfilters==1.4.2
@@ -38,7 +38,7 @@ pycparser==2.20
 Pygments==2.7.4
 pyzmq==22.2.1
 qtconsole==4.3.1
-Send2Trash==1.5.0
+Send2Trash==1.8.0
 simplegeneric==0.8.1
 terminado==0.8.3
 testpath==0.3.1
