@@ -1,6 +1,9 @@
+version: 2
+
 python:
-    version: 3.7
-    use_system_site_packages: true
-    pip_install: true
-    extra_requirements:
-        - doc
+    version: "3.7"
+    install:
+        - method: pip
+          path: .
+          extra_requirements:
+              - docs
