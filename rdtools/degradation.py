@@ -232,7 +232,7 @@ def degradation_year_on_year(energy_normalized, recenter=True,
                          'more frequent than daily')
 
     # Detect less than 2 years of data
-    if energy_normalized.index[-1] - energy_normalized.index[0] < \
+    if energy_normalized.index[-1] - energy_normalized.index[0] <= \
             pd.Timedelta('730d'):
         raise ValueError('must provide at least two years of '
                          'normalized energy')
