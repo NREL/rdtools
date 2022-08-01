@@ -1,5 +1,5 @@
 from rdtools import TrendAnalysis, normalization
-from conftest import assert_isinstance
+from conftest import assert_isinstance, assert_warnings
 import pytest
 import pvlib
 import pandas as pd
@@ -249,8 +249,7 @@ def test_no_gamma_pdc(sensor_parameters):
     with pytest.warns(UserWarning) as record:
         rd_analysis.sensor_analysis()
 
-    assert len(record) == 1
-    assert str(record[0].message).startswith("Temperature coefficient not passed")
+    assert_warnings(["Temperature coefficient not passed"], record)
 
 
 @pytest.fixture
