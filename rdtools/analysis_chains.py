@@ -894,11 +894,11 @@ class TrendAnalysis():
         ----------
         case: str
             The workflow result to plot, allowed values are 'sensor' and 'clearsky'
-        rolling_days: int
+        rolling_days: int, default 365
             Number of days for rolling window. Note that the window must contain
             at least 50% of datapoints to be included in rolling plot.
         kwargs :
-            Extra parameters passed to plotting.degradation_timeseries_plot()
+            Extra parameters passed to :py:func:`rdtools.plotting.degradation_timeseries_plot`
 
         Returns
         -------
