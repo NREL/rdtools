@@ -465,7 +465,7 @@ def degradation_timeseries_plot(yoy_info, rolling_days=365, include_ci=True, **k
     Note
     ----
     It should be noted that the yoy_rd, yoy_ci and yoy_info are the outputs
-    from :py:func:`.degradation.degradation_year_on_year`.
+    from :py:func:`rdtools.degradation.degradation_year_on_year`.
 
     Returns
     -------
