@@ -450,10 +450,6 @@ def degradation_timeseries_plot(yoy_info, rolling_days=365, include_ci=True, **k
         a dictionary with keys:
 
         * YoY_values - pandas series of right-labeled year on year slopes
-        * renormalizing_factor - float value used to recenter data
-        * exceedance_level - the degradation rate that was outperformed with
-          a probability given by the ``exceedance_prob`` parameter in
-          the :py:func:`.degradation.degradation_year_on_year`
     rolling_days: int, default 365
         Number of days for rolling window. Note that the window must contain
         at least 50% of datapoints to be included in rolling plot.
@@ -464,7 +460,7 @@ def degradation_timeseries_plot(yoy_info, rolling_days=365, include_ci=True, **k
 
     Note
     ----
-    It should be noted that the yoy_rd, yoy_ci and yoy_info are the outputs
+    It should be noted that ``yoy_info`` is an output
     from :py:func:`rdtools.degradation.degradation_year_on_year`.
 
     Returns
