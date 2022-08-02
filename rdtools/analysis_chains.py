@@ -665,9 +665,9 @@ class TrendAnalysis():
             Analyses to perform as a list of strings. Valid entries are 'yoy_degradation'
             and 'srr_soiling'
         yoy_kwargs : dict
-            kwargs to pass to degradation.degradation_year_on_year()
+            kwargs to pass to :py:func:`rdtools.degradation.degradation_year_on_year`
         srr_kwargs : dict
-            kwargs to pass to soiling.soiling_srr()
+            kwargs to pass to :py:func:`rdtools.soiling.soiling_srr`
 
         Returns
         -------
@@ -701,9 +701,9 @@ class TrendAnalysis():
             Analyses to perform as a list of strings. Valid entries are 'yoy_degradation'
             and 'srr_soiling'
         yoy_kwargs : dict
-            kwargs to pass to degradation.degradation_year_on_year()
+            kwargs to pass to :py:func:`rdtools.degradation.degradation_year_on_year`
         srr_kwargs : dict
-            kwargs to pass to soiling.soiling_srr()
+            kwargs to pass to :py:func:`rdtools.soiling.soiling_srr`
 
         Returns
         -------
@@ -735,7 +735,7 @@ class TrendAnalysis():
         case : str
             The workflow result to plot, allowed values are 'sensor' and 'clearsky'
         kwargs :
-            Extra parameters passed to plotting.degradation_summary_plots()
+            Extra parameters passed to :py:func:`rdtools.plotting.degradation_summary_plots`
 
         Returns
         -------
@@ -767,7 +767,7 @@ class TrendAnalysis():
         case : str
             The workflow result to plot, allowed values are 'sensor' and 'clearsky'
         kwargs :
-            Extra parameters passed to plotting.soiling_monte_carlo_plot()
+            Extra parameters passed to :py:func:`rdtools.plotting.soiling_monte_carlo_plot`
 
         Returns
         -------
@@ -798,7 +798,7 @@ class TrendAnalysis():
         case : str
             The workflow result to plot, allowed values are 'sensor' and 'clearsky'
         kwargs :
-            Extra parameters passed to plotting.soiling_interval_plot()
+            Extra parameters passed to :py:func:`rdtools.plotting.soiling_interval_plot`
 
         Returns
         -------
@@ -829,7 +829,7 @@ class TrendAnalysis():
         case : str
             The workflow result to plot, allowed values are 'sensor' and 'clearsky'
         kwargs :
-            Extra parameters passed to plotting.soiling_rate_histogram()
+            Extra parameters passed to :py:func:`rdtools.plotting.soiling_rate_histogram`
 
         Returns
         -------
