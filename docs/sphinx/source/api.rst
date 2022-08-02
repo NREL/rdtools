@@ -166,6 +166,7 @@ Plotting
    :toctree: generated/
 
    degradation_summary_plots
+   degradation_timeseries_plot
    soiling_monte_carlo_plot
    soiling_interval_plot
    soiling_rate_histogram
