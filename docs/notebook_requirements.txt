@@ -23,7 +23,7 @@ jupyter==1.0.0
 MarkupSafe==1.1.1
 mistune==2.0.3
 nbconvert==7.0.0
-nbformat==5.0.7
+nbformat==5.1
 notebook==6.4.12
 numexpr==2.8.0
 packaging==20.9
