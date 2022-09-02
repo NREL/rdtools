@@ -2,9 +2,6 @@ name: requirements
 
 on:
   push:
-    branches:
-    - master
-    - development
   pull_request:
 
 
