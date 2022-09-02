@@ -32,8 +32,8 @@ def assert_equal(installed, required):
 out = subprocess.check_output(['pip', 'list', '--format', 'json'])
 installed_packages = json.loads(out.decode())
 
-requirements1 = parse_requirements_file(r'C:\Users\KANDERSO\projects\rdtools\requirements.txt')
-requirements2 = parse_requirements_file(r'C:\Users\KANDERSO\projects\rdtools\docs\notebook_requirements.txt')
+requirements1 = parse_requirements_file(r'requirements.txt')
+requirements2 = parse_requirements_file(r'docs/notebook_requirements.txt')
 requirements = requirements1 + requirements2
 
 assert_equal(installed_packages, requirements)
