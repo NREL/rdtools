@@ -26,4 +26,4 @@ jobs:
         pip install -r requirements.txt -r docs/notebook_requirements.txt
     - name: Check installed packages against requirements files
       run: |
-        python .github/docs/validate_requirements_versus_installed.py
+        python .github/workflows/validate_requirements_versus_installed.py
