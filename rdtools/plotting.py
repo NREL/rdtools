@@ -440,7 +440,8 @@ def availability_summary_plots(power_system, power_subsystem, loss_total,
     return fig
 
 
-def degradation_timeseries_plot(yoy_info, rolling_days=365, include_ci=True, **kwargs):
+def degradation_timeseries_plot(yoy_info, rolling_days=365, include_ci=True,
+                                fig=None, plot_color=None, ci_color=None, **kwargs):
     '''
     Plot resampled time series of degradation trend with time
 
@@ -455,6 +456,12 @@ def degradation_timeseries_plot(yoy_info, rolling_days=365, include_ci=True, **k
         at least 50% of datapoints to be included in rolling plot.
     include_ci : bool, default True
         calculate and plot 2-sigma confidence intervals along with rolling median
+    fig     : matplotlib, optional
+        fig object to add new plot to (first set of axes only)
+    plot_color : str, optional
+        color of the timeseries trendline
+    ci_color : str, optional
+        color of the confidence interval 'fuzz'
     kwargs :
         Extra parameters passed to matplotlib.pyplot.axis.plot()
 
@@ -480,18 +487,25 @@ def degradation_timeseries_plot(yoy_info, rolling_days=365, include_ci=True, **k
 
     except KeyError:
         raise KeyError("yoy_info input dictionary does not contain key `YoY_values`.")
-
+        
+    if plot_color is None:
+        plot_color = 'tab:orange'
+    if ci_color is None:
+        ci_color = 'C0'
+        
     roller = results_values.rolling(f'{rolling_days}d', min_periods=rolling_days//2)
     # unfortunately it seems that you can't return multiple values in the rolling.apply() kernel.
     # TODO: figure out some workaround to return both percentiles in a single pass
     if include_ci:
         ci_lower = roller.apply(_bootstrap, kwargs={'percentile': 2.5, 'reps': 100}, raw=True)
         ci_upper = roller.apply(_bootstrap, kwargs={'percentile': 97.5, 'reps': 100}, raw=True)
-
-    fig, ax = plt.subplots()
+    if fig is None:
+        fig,ax = plt.subplots()
+    else:
+        ax = fig.axes[0]
     if include_ci:
-        ax.fill_between(ci_lower.index, ci_lower, ci_upper)
-    ax.plot(roller.median(), c='tab:orange', **kwargs)
+        ax.fill_between(ci_lower.index, ci_lower, ci_upper, color=ci_color)
+    ax.plot(roller.median(), color=plot_color, **kwargs)
     ax.axhline(results_values.median(), c='k', ls='--')
     plt.ylabel('Degradation trend (%/yr)')
     fig.autofmt_xdate()
