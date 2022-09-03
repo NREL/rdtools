@@ -487,12 +487,12 @@ def degradation_timeseries_plot(yoy_info, rolling_days=365, include_ci=True,
 
     except KeyError:
         raise KeyError("yoy_info input dictionary does not contain key `YoY_values`.")
-        
+
     if plot_color is None:
         plot_color = 'tab:orange'
     if ci_color is None:
         ci_color = 'C0'
-        
+
     roller = results_values.rolling(f'{rolling_days}d', min_periods=rolling_days//2)
     # unfortunately it seems that you can't return multiple values in the rolling.apply() kernel.
     # TODO: figure out some workaround to return both percentiles in a single pass
@@ -500,7 +500,7 @@ def degradation_timeseries_plot(yoy_info, rolling_days=365, include_ci=True,
         ci_lower = roller.apply(_bootstrap, kwargs={'percentile': 2.5, 'reps': 100}, raw=True)
         ci_upper = roller.apply(_bootstrap, kwargs={'percentile': 97.5, 'reps': 100}, raw=True)
     if fig is None:
-        fig,ax = plt.subplots()
+        fig, ax = plt.subplots()
     else:
         ax = fig.axes[0]
     if include_ci:
