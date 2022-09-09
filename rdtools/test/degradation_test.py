@@ -170,7 +170,7 @@ class DegradationTestCase(unittest.TestCase):
     ('2015-01-01', '2016-12-31', 'D'),   # leap day included in index
     ('2015-01-01', '2016-12-29', '7D'),  # leap day in period but not in index
     ('2016-06-01', '2018-05-31', 'D'),   # leap year, but no leap day in period
-    #('2016-02-29', '2018-02-28', 'd'),   # starts on leap day (doesn't work)
+    #  ('2016-02-29', '2018-02-28', 'd'),   # starts on leap day (doesn't work)
     ('2014-03-01', '2016-02-29', 'D'),   # ends on leap day
     ('2015-01-01', '2016-12-31', 'M'),   # month end
     ('2015-01-01', '2016-12-31', 'MS'),   # month start
