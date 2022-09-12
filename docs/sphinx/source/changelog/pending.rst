@@ -2,6 +2,11 @@
 Pending
 ************************
 
+Bug Fixes
+---------
+* :py:func:`~rdtools.degradation.degradation_year_on_year` no longer raises
+  an error for inputs exactly two years long (:pull:`339`)
+
 Testing
 -------
 * Added a CI notebook check (:pull:`270`)
@@ -17,3 +22,10 @@ Requirements
 * Bump ``sphinx`` version from 3.2 to 4.5 and ``nbsphinx`` version
   from 0.8.5 to 0.8.8 in the optional ``[doc]`` requirements (:pull:`317`, :pull:`325`)
 * A number of other requirements updates (:pull:`337`)
+
+Contributors
+------------
+* Sandra Villamar (:ghuser:`SandraVillamar`)
+* Michael Deceglie (:ghuser:`mdeceglie`)
+* Chris Deline (:ghuser:`cdeline`)
+* Kevin Anderson (:ghuser:`kanderso-nrel`)
