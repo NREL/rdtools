@@ -9,7 +9,8 @@ from rdtools.plotting import (
     soiling_interval_plot,
     soiling_rate_histogram,
     tune_filter_plot,
-    availability_summary_plots
+    availability_summary_plots,
+    degradation_timeseries_plot
 )
 import matplotlib.pyplot as plt
 import matplotlib
@@ -245,5 +246,14 @@ def test_availability_summary_plots_empty(availability_analysis_object):
         aa.power_system, aa.power_subsystem, aa.loss_total,
         aa.energy_cumulative, aa.energy_expected_rescaled,
         empty)
+    assert_isinstance(result, plt.Figure)
+    plt.close('all')
+
+
+def test_degradation_timeseries_plot(degradation_info):
+    power, yoy_rd, yoy_ci, yoy_info = degradation_info
+
+    # test defaults
+    result = degradation_timeseries_plot(yoy_info)
     assert_isinstance(result, plt.Figure)
     plt.close('all')

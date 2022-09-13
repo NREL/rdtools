@@ -11,6 +11,9 @@ Enhancements
   in the soiling module and illustrated in an example notebook (:pull:`150`)
 * Circular block bootstrapping added as a method for calculating uncertainty in
   ``degradation_year_on_year()`` via the ``Uncertainty_method`` argument (:pull:`150`)
+* New plotting functions :py:func:`rdtools.analysis_chains.TrendAnalysis.plot_degradation_timeseries` 
+  in TrendAnalysis object and :py:func:`rdtools.plotting.degradation_timeseries_plot`
+  to plot time series degradation trend.  (:issue:`334`, :pull:`335`)
 
 Testing
 -------
