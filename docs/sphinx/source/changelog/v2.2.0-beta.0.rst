@@ -22,12 +22,12 @@ Testing
 Requirements
 ------------
 * Upgrade the notebook environment from python 3.7 to python 3.10.
-  Several dependency versions in ``docs/notebook_requirements.txt`` are
-  updated as well. (:issue:`319`, :pull:`326`)
-* Bump ``ipython==7.16.3``, ``jupyter-console==6.4.0``,
-  and ``prompt-toolkit==3.0.27`` in ``docs/notebook_requirements.txt``
-  and bump ``Pillow==9.0.0`` in ``requirements.txt`` (:pull:`314`)
+  (:issue:`319`, :pull:`326`)
 * Bump ``sphinx`` version from 3.2 to 4.5 and ``nbsphinx`` version
   from 0.8.5 to 0.8.8 in the optional ``[doc]`` requirements (:pull:`317`, :pull:`325`)
 * ``arch`` and ``filterpy`` added as dependencies (:pull:`150`)
-* A number of other requirements updates (:pull:`337`)
+* minimum version of ``numpy`` increased to 1.16 and minimum version of
+  statsmodels increased to 0.11.1 (:pull:`150`)
+* A number of updates to the environments specified in ``requirements.txt``,
+  ``requirements-min.txt``, and ``docs/notebook_requirements.txt``
+  (:pull:`326`, :pull:`314`, :pull:`337`)
