@@ -24,6 +24,7 @@ from rdtools.filtering import normalized_filter
 from rdtools.analysis_chains import TrendAnalysis
 from rdtools.plotting import degradation_summary_plots
 from rdtools.plotting import tune_filter_plot
+from rdtools.plotting import degradation_timeseries_plot
 # from rdtools.plotting import soiling_monte_carlo_plot
 # from rdtools.plotting import soiling_interval_plot
 # from rdtools.plotting import soiling_rate_histogram
