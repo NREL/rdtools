@@ -8,6 +8,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from rdtools import normalization, filtering, aggregation, degradation
 from rdtools import clearsky_temperature, plotting
+from rdtools.filtering import hampel_filter
 import warnings
 
 
@@ -131,6 +132,7 @@ class TrendAnalysis():
             'tcell_filter': {},
             'clip_filter': {},
             'csi_filter': {},
+            'hampel_filter': {},
             'ad_hoc_filter': None  # use this to include an explict filter
         }
         # remove tcell_filter from list if power_expected is passed in
@@ -683,6 +685,10 @@ class TrendAnalysis():
 
         self._sensor_preprocess()
         sensor_results = {}
+        
+        if self.filter_params['hampel_filter']:
+            self.sensor_aggregated_performance = hampel_filter(self.sensor_aggregated_performance,
+                                                               **self.filter_params['hampel_filter'])
 
         if 'yoy_degradation' in analyses:
             yoy_results = self._yoy_degradation(
@@ -719,6 +725,10 @@ class TrendAnalysis():
 
         self._clearsky_preprocess()
         clearsky_results = {}
+        
+        if self.filter_params['hampel_filter']:
+            self.clearsky_aggregated_performance = hampel_filter(self.clearsky_aggregated_performance,
+                                                               **self.filter_params['hampel_filter'])
 
         if 'yoy_degradation' in analyses:
             yoy_results = self._yoy_degradation(

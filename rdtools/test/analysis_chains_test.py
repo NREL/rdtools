@@ -168,6 +168,14 @@ def test_sensor_analysis_power_dc_rated(sensor_parameters):
     assert -1 == pytest.approx(rd, abs=1e-2)
     assert [-1, -1] == pytest.approx(ci, abs=1e-2)
 
+def test_sensor_analysis_csifilter(sensor_parameters):
+    rd_analysis = TrendAnalysis(**sensor_parameters)
+    rd_analysis.set_clearsky(pvlib_location=pvlib.location.Location(40, -80),
+                         poa_global_clearsky=rd_analysis.poa_global)
+    rd_analysis.filter_params['csi_filter'] = {'enable':True}
+    rd_analysis._sensor_preprocess()
+    assert rd_analysis.sensor_filter_components['csi_filter']['2012-01-01 0:0:0'] == False
+    assert rd_analysis.sensor_filter_components['csi_filter']['2012-01-01 1:0:0'] == True
 
 def test_sensor_analysis_ad_hoc_filter(sensor_parameters):
     # by excluding all but a few points, we should trigger the <2yr error
@@ -250,7 +258,7 @@ def test_no_gamma_pdc(sensor_parameters):
         rd_analysis.sensor_analysis()
 
     assert_warnings(["Temperature coefficient not passed"], record)
-
+    
 
 @pytest.fixture
 def clearsky_parameters(basic_parameters, sensor_parameters,
