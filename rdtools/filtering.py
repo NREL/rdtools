@@ -744,9 +744,10 @@ def xgboost_clip_filter(power_ac,
     final_clip = final_clip.reindex(index=power_ac.index, fill_value=False)
     return ~(final_clip.astype(bool))
 
+
 def hampel_filter(vals, k=14, t0=3, **kwargs):
     '''
-    Hampel outlier filter primarily used for daily normalized but broadly 
+    Hampel outlier filter primarily used for daily normalized but broadly
     applicable. code by Dirk Jordan
 
     Parameters
@@ -754,10 +755,10 @@ def hampel_filter(vals, k=14, t0=3, **kwargs):
     vals : pandas.Series
         daily normalized time series
     k : int, default 14
-        size of window including the sample; 14 is equal to 7 on either side of 
+        size of window including the sample; 14 is equal to 7 on either side of
         value
     t0 : int, default 3
-        Threshold value, defaults to 3 sigma Pearson's rule. 
+        Threshold value, defaults to 3 sigma Pearson's rule.
 
     Returns
     -------
@@ -765,14 +766,14 @@ def hampel_filter(vals, k=14, t0=3, **kwargs):
         Boolean Series of whether the given measurement is below 99% of the
         quantile filter.
     '''
-    #Make copy so original not edited
-    vals_copy=vals.copy()    
-    #Hampel Filter
-    L= 1.4826
-    rolling_median=vals_copy.rolling(k, center=True, min_periods=1).median()
-    difference=np.abs(rolling_median-vals_copy)
-    median_abs_deviation=difference.rolling(k, center=True, min_periods=1).median()
-    threshold= t0 *L * median_abs_deviation
-    outlier_idx=difference>threshold
-    vals_copy[outlier_idx]=np.nan
+    # Make copy so original not edited
+    vals_copy = vals.copy()
+    # Hampel Filter
+    L = 1.4826
+    rolling_median = vals_copy.rolling(k, center=True, min_periods=1).median()
+    difference = np.abs(rolling_median-vals_copy)
+    median_abs_deviation = difference.rolling(k, center=True, min_periods=1).median()
+    threshold = t0 * L * median_abs_deviation
+    outlier_idx = difference > threshold
+    vals_copy[outlier_idx] = np.nan
     return(vals_copy)
