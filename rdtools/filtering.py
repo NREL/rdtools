@@ -744,7 +744,7 @@ def xgboost_clip_filter(power_ac,
     final_clip = final_clip.reindex(index=power_ac.index, fill_value=False)
     return ~(final_clip.astype(bool))
 
-def hampel_filter(vals, k=14, t0=3):
+def hampel_filter(vals, k=14, t0=3, **kwargs):
     '''
     Hampel outlier filter primarily used for daily normalized but broadly 
     applicable. code by Dirk Jordan
