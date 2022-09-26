@@ -178,15 +178,13 @@ def test_sensor_analysis_csifilter(sensor_parameters):
     assert rd_analysis.sensor_filter_components['csi_filter']['2012-01-01 0:0:0'] is False
     assert rd_analysis.sensor_filter_components['csi_filter']['2012-01-01 1:0:0'] is True
 
-    
+
 def test_sensor_analysis_hampel_filter(sensor_parameters):
     rd_analysis = TrendAnalysis(**sensor_parameters)
-    rd_analysis.filter_params['hampel_filter'] = {'enable': True, 't0':1}
+    rd_analysis.filter_params['hampel_filter'] = {'enable': True, 't0': 1}
     rd_analysis.sensor_analysis(analyses=['yoy_degradation'])
     assert np.isnan(rd_analysis.sensor_aggregated_performance['2012-04-05'])
     assert ~np.isnan(rd_analysis.sensor_aggregated_performance['2012-04-04'])
-    assert 0
-    
 
 
 def test_sensor_analysis_ad_hoc_filter(sensor_parameters):
