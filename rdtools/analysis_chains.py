@@ -438,7 +438,7 @@ class TrendAnalysis():
             f = filtering.clip_filter(
                 self.pv_power, **self.filter_params['clip_filter'])
             filter_components['clip_filter'] = f
-        if case == 'clearsky':
+        if (case == 'clearsky') or (self.filter_params['csi_filter']):
             if self.poa_global is None or self.poa_global_clearsky is None:
                 raise ValueError('Both poa_global and poa_global_clearsky must be available to '
                                  'do clearsky filtering with csi_filter')
@@ -604,7 +604,14 @@ class TrendAnalysis():
         if self.poa_global is None:
             raise ValueError(
                 'poa_global must be available to perform _sensor_preprocess')
-
+        # doing clearsky filtering of sensor analysis
+        if self.filter_params['csi_filter']:
+            try:
+                if self.poa_global_clearsky is None:
+                    self._calc_clearsky_poa(model='isotropic')
+            except AttributeError:
+                raise AttributeError("No poa_global_clearsky. 'set_clearsky' must be run " +
+                                     "to allow filter_params['csi_filter'].")
         if self.power_expected is None:
             # Thermal details required if power_expected is not manually set.
             if self.temperature_cell is None and self.temperature_ambient is None:
