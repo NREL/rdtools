@@ -98,7 +98,7 @@ def tcell_filter(temperature_cell, temperature_cell_low=-50,
             (temperature_cell < temperature_cell_high))
 
 
-def csi_filter(poa_global_measured, poa_global_clearsky, threshold=0.15):
+def csi_filter(poa_global_measured, poa_global_clearsky, threshold=0.15, **kwargs):
     '''
     Filtering based on clear-sky index (csi)
 
