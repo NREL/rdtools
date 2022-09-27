@@ -776,4 +776,4 @@ def hampel_filter(vals, k=14, t0=3, **kwargs):
     threshold = t0 * L * median_abs_deviation
     outlier_idx = difference > threshold
     vals_copy[outlier_idx] = np.nan
-    return(vals_copy)
+    return vals_copy

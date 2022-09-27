@@ -175,8 +175,8 @@ def test_sensor_analysis_csifilter(sensor_parameters):
                              poa_global_clearsky=rd_analysis.poa_global)
     rd_analysis.filter_params['csi_filter'] = {'enable': True}
     rd_analysis._sensor_preprocess()
-    assert rd_analysis.sensor_filter_components['csi_filter']['2012-01-01 0:0:0'] is False
-    assert rd_analysis.sensor_filter_components['csi_filter']['2012-01-01 1:0:0'] is True
+    assert ~rd_analysis.sensor_filter_components['csi_filter']['2012-01-01 0:0:0']
+    assert rd_analysis.sensor_filter_components['csi_filter']['2012-01-01 1:0:0']
 
 
 def test_sensor_analysis_hampel_filter(sensor_parameters):
