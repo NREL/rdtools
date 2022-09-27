@@ -445,7 +445,7 @@ class TrendAnalysis():
             f = filtering.clip_filter(
                 self.pv_power, **self.filter_params['clip_filter'])
             filter_components['clip_filter'] = f
-        if (case == 'clearsky') or (self.filter_params['csi_filter']):
+        if (case == 'clearsky') or (self.filter_params.get('csi_filter')):
             if self.poa_global is None or self.poa_global_clearsky is None:
                 raise ValueError('Both poa_global and poa_global_clearsky must be available to '
                                  'do clearsky filtering with csi_filter')
@@ -671,7 +671,7 @@ class TrendAnalysis():
             raise ValueError(
                 'poa_global must be available to perform _sensor_preprocess')
         # doing clearsky filtering of sensor analysis
-        if self.filter_params['csi_filter']:
+        if self.filter_params.get('csi_filter'):
             try:
                 if self.poa_global_clearsky is None:
                     self._calc_clearsky_poa(model='isotropic')
@@ -756,7 +756,7 @@ class TrendAnalysis():
         self._sensor_preprocess()
         sensor_results = {}
 
-        if self.filter_params['hampel_filter']:
+        if self.filter_params.get('hampel_filter'):
             self.sensor_aggregated_performance = hampel_filter(
                 self.sensor_aggregated_performance,
                 **self.filter_params['hampel_filter'])
@@ -797,7 +797,7 @@ class TrendAnalysis():
         self._clearsky_preprocess()
         clearsky_results = {}
 
-        if self.filter_params['hampel_filter']:
+        if self.filter_params.get('hampel_filter'):
             self.clearsky_aggregated_performance = hampel_filter(
                 self.clearsky_aggregated_performance,
                 **self.filter_params['hampel_filter'])
