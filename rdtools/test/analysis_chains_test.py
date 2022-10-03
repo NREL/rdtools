@@ -172,7 +172,8 @@ def test_sensor_analysis_power_dc_rated(sensor_parameters):
 def test_sensor_analysis_csifilter(sensor_parameters):
     rd_analysis = TrendAnalysis(**sensor_parameters)
     rd_analysis.set_clearsky(pvlib_location=pvlib.location.Location(40, -80),
-                             poa_global_clearsky=rd_analysis.poa_global)
+                             poa_global_clearsky=rd_analysis.poa_global,
+                             solar_position_method='ephemeris')
     rd_analysis.filter_params['csi_filter'] = {'enable': True}
     rd_analysis._sensor_preprocess()
     assert ~rd_analysis.sensor_filter_components['csi_filter']['2012-01-01 0:0:0']
