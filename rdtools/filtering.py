@@ -748,7 +748,7 @@ def xgboost_clip_filter(power_ac,
 def hampel_filter(vals, k=14, t0=3, **kwargs):
     '''
     Hampel outlier filter primarily applied on daily normalized data but broadly
-    applicable. 
+    applicable.
 
     Parameters
     ----------
@@ -775,4 +775,3 @@ def hampel_filter(vals, k=14, t0=3, **kwargs):
     median_abs_deviation = difference.rolling(k, center=True, min_periods=1).median()
     threshold = t0 * L * median_abs_deviation
     return difference <= threshold
-
