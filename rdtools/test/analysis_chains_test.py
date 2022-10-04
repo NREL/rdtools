@@ -184,8 +184,8 @@ def test_sensor_analysis_hampel_filter(sensor_parameters):
     rd_analysis = TrendAnalysis(**sensor_parameters)
     rd_analysis.filter_params['hampel_filter'] = {'enable': True, 't0': 1}
     rd_analysis.sensor_analysis(analyses=['yoy_degradation'])
-    assert np.isnan(rd_analysis.sensor_aggregated_performance['2012-04-05'])
-    assert ~np.isnan(rd_analysis.sensor_aggregated_performance['2012-04-04'])
+    assert '2012-04-05' not in rd_analysis.sensor_aggregated_performance
+    assert '2012-04-04' in rd_analysis.sensor_aggregated_performance
 
 
 def test_sensor_analysis_ad_hoc_filter(sensor_parameters):

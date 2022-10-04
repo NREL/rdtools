@@ -338,5 +338,5 @@ def test_normalized_filter_default():
 
 def test_hampel_filter():
     a = pd.Series([5, 4, 7, 3, 4, 5, 4, 100, 3, 4, 5, 3, 5, 3, 5, 4, 12])
-    assert np.isnan(hampel_filter(a).iloc[-1])
-    assert np.isnan(hampel_filter(a).iloc[7])
+    assert ~(hampel_filter(a).iloc[-1])
+    assert ~(hampel_filter(a).iloc[7])

@@ -687,9 +687,11 @@ class TrendAnalysis():
         sensor_results = {}
 
         if self.filter_params.get('hampel_filter'):
-            self.sensor_aggregated_performance = hampel_filter(
+            hampel_mask = hampel_filter(
                 self.sensor_aggregated_performance,
                 **self.filter_params['hampel_filter'])
+            self.sensor_aggregated_performance = \
+            self.sensor_aggregated_performance[hampel_mask]
 
         if 'yoy_degradation' in analyses:
             yoy_results = self._yoy_degradation(
@@ -728,9 +730,11 @@ class TrendAnalysis():
         clearsky_results = {}
 
         if self.filter_params.get('hampel_filter'):
-            self.clearsky_aggregated_performance = hampel_filter(
+            hampel_mask = hampel_filter(
                 self.clearsky_aggregated_performance,
                 **self.filter_params['hampel_filter'])
+            self.clearsky_aggregated_performance = \
+            self.clearsky_aggregated_performance[hampel_mask]
 
         if 'yoy_degradation' in analyses:
             yoy_results = self._yoy_degradation(

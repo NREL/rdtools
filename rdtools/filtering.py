@@ -747,8 +747,8 @@ def xgboost_clip_filter(power_ac,
 
 def hampel_filter(vals, k=14, t0=3, **kwargs):
     '''
-    Hampel outlier filter primarily used for daily normalized but broadly
-    applicable. code by Dirk Jordan
+    Hampel outlier filter primarily applied on daily normalized data but broadly
+    applicable. 
 
     Parameters
     ----------
@@ -763,8 +763,8 @@ def hampel_filter(vals, k=14, t0=3, **kwargs):
     Returns
     -------
     pandas.Series
-        Boolean Series of whether the given measurement is below 99% of the
-        quantile filter.
+        Boolean Series of whether the given measurement is within 3 sigma of the
+        median.  False points indicate outliers to be removed.
     '''
     # Make copy so original not edited
     vals_copy = vals.copy()
@@ -774,6 +774,5 @@ def hampel_filter(vals, k=14, t0=3, **kwargs):
     difference = np.abs(rolling_median-vals_copy)
     median_abs_deviation = difference.rolling(k, center=True, min_periods=1).median()
     threshold = t0 * L * median_abs_deviation
-    outlier_idx = difference > threshold
-    vals_copy[outlier_idx] = np.nan
-    return vals_copy
+    return difference <= threshold
+
