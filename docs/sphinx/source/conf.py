@@ -108,6 +108,21 @@ def setup(app):
     app.add_css_file("no_scrollbars.css")
 
 
+# Custom mathjax settings to get plotly graphs working in the notebook gallery
+# https://github.com/sphinx-doc/sphinx/issues/9563
+# https://github.com/spatialaudio/nbsphinx/issues/572#issuecomment-853389268
+# https://github.com/plotly/plotly.py/issues/3152#issuecomment-855432931
+
+mathjax_path = 'https://cdn.jsdelivr.net/npm/mathjax@2/MathJax.js?config=TeX-AMS-MML_HTMLorMML'
+mathjax2_config = {
+    'tex2jax': {
+        'inlineMath': [['$', '$'], ['\\(', '\\)']],
+        'processEscapes': True,
+        'ignoreClass': 'document',
+        'processClass': 'math|output_area',
+    }
+}
+
 # %% helper functions for intelligent "View on Github" linking
 # based on
 # https://gist.github.com/flying-sheep/b65875c0ce965fbdd1d9e5d0b9851ef1
