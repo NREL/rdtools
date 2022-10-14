@@ -474,6 +474,45 @@ class TrendAnalysis():
         elif case == 'clearsky':
             self.clearsky_filter = bool_filter
             self.clearsky_filter_components = filter_components
+    
+    def _daily_filter(self, aggregated, case):
+        """
+        Mirrors the _filter private function, but with daily filters applied. 
+        These daily filters based on those in rdtools.filtering. Uses
+        self.filter_params, which is a dict, the keys of which are names of
+        functions in rdtools.filtering, and the values of which are dicts
+        containing the associated parameters with which to run the filtering
+        functions. See examples for details on how to modify filter parameters.
+
+        Parameters
+        ----------
+        aggregated : pandas.Series
+            Time series of daily-aggregated normalized AC energy
+        case : str
+            'sensor' or 'clearsky' which filtering protocol to apply. Affects
+            whether result is stored in self.sensor_filter_daily or
+            self.clearsky_filter_daily)
+
+        Returns
+        -------
+        None
+        """
+        filter_components_daily = {'default':
+                                   pd.Series(True, index=aggregated.index)}
+        # Add daily filters as they come online--this logic is omitted until
+        # we add the hampel clearsky filter and other daily filters.
+        # Convert the dictionary into a dataframe (after running filters)
+        filter_components_daily = pd.DataFrame(
+            filter_components_daily).fillna(False)
+        bool_filter_daily = filter_components_daily.all(axis=1)
+        filter_components_daily = filter_components_daily.drop(
+            columns=['default'])
+        if case == 'sensor':
+            self.sensor_filter_daily = bool_filter_daily
+            self.sensor_filter_components_daily = filter_components_daily
+        elif case == 'clearsky':
+            self.clearsky_filter_daily = bool_filter_daily
+            self.clearsky_filter_components_daily = filter_components_daily
 
     def _filter_check(self, post_filter):
         '''
@@ -621,8 +660,11 @@ class TrendAnalysis():
         self._filter(energy_normalized, 'sensor')
         aggregated, aggregated_insolation = self._aggregate(
             energy_normalized[self.sensor_filter], insolation[self.sensor_filter])
-        self.sensor_aggregated_performance = aggregated
-        self.sensor_aggregated_insolation = aggregated_insolation
+        # Run daily filters on aggregated data
+        self._daily_filter(aggregated, 'sensor')
+        # Apply daily filter to aggregated data and store
+        self.sensor_aggregated_performance = aggregated[self.sensor_filter_daily]
+        self.sensor_aggregated_insolation = aggregated_insolation[self.sensor_filter_daily]
 
     def _clearsky_preprocess(self):
         '''
