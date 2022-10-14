@@ -474,10 +474,10 @@ class TrendAnalysis():
         elif case == 'clearsky':
             self.clearsky_filter = bool_filter
             self.clearsky_filter_components = filter_components
-    
+
     def _daily_filter(self, aggregated, case):
         """
-        Mirrors the _filter private function, but with daily filters applied. 
+        Mirrors the _filter private function, but with daily filters applied.
         These daily filters based on those in rdtools.filtering. Uses
         self.filter_params, which is a dict, the keys of which are names of
         functions in rdtools.filtering, and the values of which are dicts
