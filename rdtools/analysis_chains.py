@@ -520,9 +520,10 @@ class TrendAnalysis():
                 ad_hoc_filter_daily = ad_hoc_filter_daily.fillna(False)
 
             if not filter_components_daily.index.equals(ad_hoc_filter_daily.index):
-                warnings.warn('Daily ad_hoc_filter index does not match index of other filters; missing '
-                              'values will be set to True (kept). Align the index with the index '
-                              'of the filter_components_daily attribute to prevent this warning')
+                warnings.warn('Daily ad_hoc_filter index does not match index of other '
+                              'filters; missing values will be set to True (kept). '
+                              'Align the index with the index of the '
+                              'filter_components_daily attribute to prevent this warning')
                 ad_hoc_filter_daily = ad_hoc_filter_daily.reindex(
                     filter_components_daily.index).fillna(True)
 
