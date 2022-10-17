@@ -133,6 +133,9 @@ class TrendAnalysis():
             'csi_filter': {},
             'ad_hoc_filter': None  # use this to include an explict filter
         }
+        self.filter_params_daily = {
+            'ad_hoc_filter': None
+            }
         # remove tcell_filter from list if power_expected is passed in
         if power_expected is not None and temperature_cell is None:
             del self.filter_params['tcell_filter']
@@ -499,11 +502,26 @@ class TrendAnalysis():
         """
         filter_components_daily = {'default':
                                    pd.Series(True, index=aggregated.index)}
-        # Add daily filters as they come online--this logic is omitted until
-        # we add the hampel clearsky filter and other daily filters.
+        # Add daily filters as they come online here.
         # Convert the dictionary into a dataframe (after running filters)
         filter_components_daily = pd.DataFrame(
             filter_components_daily).fillna(False)
+        # Run the ad-hoc filter from filter_params_daily, if available
+        if self.filter_params_daily.get('ad_hoc_filter', None) is not None:
+            ad_hoc_filter_daily = self.filter_params_daily['ad_hoc_filter']
+
+            if ad_hoc_filter_daily.isnull().any():
+                warnings.warn('ad_hoc_filter contains NaN values; setting to False (excluding)')
+                ad_hoc_filter_daily = ad_hoc_filter_daily.fillna(False)
+
+            if not filter_components_daily.index.equals(ad_hoc_filter_daily.index):
+                warnings.warn('Daily ad_hoc_filter index does not match index of other filters; missing '
+                              'values will be set to True (kept). Align the index with the index '
+                              'of the filter_components_daily attribute to prevent this warning')
+                ad_hoc_filter_daily = ad_hoc_filter_daily.reindex(filter_components_daily.index).fillna(True)
+
+            filter_components_daily['ad_hoc_filter'] = ad_hoc_filter_daily
+        
         bool_filter_daily = filter_components_daily.all(axis=1)
         filter_components_daily = filter_components_daily.drop(
             columns=['default'])
@@ -693,8 +711,11 @@ class TrendAnalysis():
         self._filter(cs_normalized, 'clearsky')
         cs_aggregated, cs_aggregated_insolation = self._aggregate(
             cs_normalized[self.clearsky_filter], cs_insolation[self.clearsky_filter])
-        self.clearsky_aggregated_performance = cs_aggregated
-        self.clearsky_aggregated_insolation = cs_aggregated_insolation
+        # Run daily filters on aggregated data
+        self._daily_filter(cs_aggregated, 'clearsky')
+        # Apply daily filter to aggregated data and store
+        self.clearsky_aggregated_performance = cs_aggregated[self.clearsky_filter_daily]
+        self.clearsky_aggregated_insolation = cs_aggregated_insolation[self.clearsky_filter_daily]
 
     def sensor_analysis(self, analyses=['yoy_degradation'], yoy_kwargs={}, srr_kwargs={}):
         '''
