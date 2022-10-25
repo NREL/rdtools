@@ -516,7 +516,7 @@ class TrendAnalysis():
 
             if ad_hoc_filter_daily.isnull().any():
                 warnings.warn(
-                    'ad_hoc_filter contains NaN values; setting to False (excluding)')
+                    'daily ad_hoc_filter contains NaN values; setting to False (excluding)')
                 ad_hoc_filter_daily = ad_hoc_filter_daily.fillna(False)
 
             if not filter_components_daily.index.equals(ad_hoc_filter_daily.index):
