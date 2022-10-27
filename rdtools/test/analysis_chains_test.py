@@ -184,7 +184,6 @@ def test_sensor_analysis_daily_ad_hoc_filter(sensor_parameters):
     filt = pd.Series(False,
                      index=sensor_parameters['pv'].index)
     filt = filt.resample('1D').first().dropna(how='all')
-    filt = df3 = filt[~filt.index.duplicated(keep='first')]
     filt.iloc[-500:] = True
     rd_analysis = TrendAnalysis(**sensor_parameters, power_dc_rated=1.0)
     rd_analysis.filter_params_daily['ad_hoc_filter'] = filt
