@@ -178,11 +178,12 @@ def test_sensor_analysis_ad_hoc_filter(sensor_parameters):
     with pytest.raises(ValueError, match="Less than two years of data left after filtering"):
         rd_analysis.sensor_analysis(analyses=['yoy_degradation'])
 
+
 def test_sensor_analysis_daily_ad_hoc_filter(sensor_parameters):
     # by excluding all but a few points, we should trigger the <2yr error
     filt = pd.Series(False,
                      index=sensor_parameters['pv'].index)
-    filt =filt.resample('1D').first().dropna(how='all')
+    filt = filt.resample('1D').first().dropna(how='all')
     filt = df3 = filt[~filt.index.duplicated(keep='first')]
     filt.iloc[-500:] = True
     rd_analysis = TrendAnalysis(**sensor_parameters, power_dc_rated=1.0)
@@ -190,12 +191,14 @@ def test_sensor_analysis_daily_ad_hoc_filter(sensor_parameters):
     with pytest.raises(ValueError, match="Less than two years of data left after filtering"):
         rd_analysis.sensor_analysis(analyses=['yoy_degradation'])
 
+
 def test_filter_components(sensor_parameters):
     poa = sensor_parameters['poa_global']
     poa_filter = (poa > 200) & (poa < 1200)
     rd_analysis = TrendAnalysis(**sensor_parameters, power_dc_rated=1.0)
     rd_analysis.sensor_analysis(analyses=['yoy_degradation'])
-    assert (poa_filter == rd_analysis.sensor_filter_components['poa_filter']).all()
+    assert (poa_filter ==
+            rd_analysis.sensor_filter_components['poa_filter']).all()
 
 
 def test_filter_components_no_filters(sensor_parameters):
@@ -362,8 +365,10 @@ def test_index_mismatch():
     # GH #277
     times = pd.date_range('2019-01-01', '2022-01-01', freq='15min')
     pv = pd.Series(1.0, index=times)
-    dummy_series = pd.Series(1.0, index=times[::4])  # low-frequency weather inputs
-    keys = ['poa_global', 'temperature_cell', 'temperature_ambient', 'power_expected', 'windspeed']
+    # low-frequency weather inputs
+    dummy_series = pd.Series(1.0, index=times[::4])
+    keys = ['poa_global', 'temperature_cell',
+            'temperature_ambient', 'power_expected', 'windspeed']
     kwargs = {key: dummy_series.copy() for key in keys}
     rd_analysis = TrendAnalysis(pv, **kwargs)
     for key in keys:
