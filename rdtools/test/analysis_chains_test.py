@@ -270,6 +270,9 @@ def test_daily_filter_ad_hoc_warnings(workflow, sensor_parameters):
     assert components['ad_hoc_filter'].all()
 
     # warning about NaNs
+    rd_analysis = TrendAnalysis(**sensor_parameters, power_dc_rated=1.0)
+    rd_analysis.set_clearsky(pvlib_location=pvlib.location.Location(40, -80),
+                             poa_global_clearsky=rd_analysis.poa_global)
     daily_ad_hoc_filter = pd.Series(True, index=sensor_parameters['pv'].index)
     daily_ad_hoc_filter = daily_ad_hoc_filter.resample(
         '1D').first().dropna(how='all')
