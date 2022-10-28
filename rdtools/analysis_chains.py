@@ -486,7 +486,7 @@ class TrendAnalysis():
         """
         Mirrors the _filter private function, but with daily filters applied.
         These daily filters based on those in rdtools.filtering. Uses
-        self.filter_params, which is a dict, the keys of which are names of
+        self.filter_params_daily, which is a dict, the keys of which are names of
         functions in rdtools.filtering, and the values of which are dicts
         containing the associated parameters with which to run the filtering
         functions. See examples for details on how to modify filter parameters.
