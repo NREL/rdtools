@@ -244,8 +244,8 @@ def test_filter_ad_hoc_warnings(workflow, sensor_parameters):
     # NaN values set to False
     assert not components['ad_hoc_filter'].iloc[10]
     assert components.drop(components.index[10])['ad_hoc_filter'].all()
-    
-    
+
+
 @pytest.mark.parametrize('workflow', ['sensor', 'clearsky'])
 def test_daily_filter_ad_hoc_warnings(workflow, sensor_parameters):
     rd_analysis = TrendAnalysis(**sensor_parameters, power_dc_rated=1.0)
@@ -255,7 +255,8 @@ def test_daily_filter_ad_hoc_warnings(workflow, sensor_parameters):
     # warning for incomplete index
     daily_ad_hoc_filter = pd.Series(True,
                                     index=sensor_parameters['pv'].index[:-5])
-    daily_ad_hoc_filter = daily_ad_hoc_filter.resample('1D').first().dropna(how='all')
+    daily_ad_hoc_filter = daily_ad_hoc_filter.resample(
+        '1D').first().dropna(how='all')
     rd_analysis.filter_params_daily['ad_hoc_filter'] = daily_ad_hoc_filter
     with pytest.warns(UserWarning, match='ad_hoc_filter index does not match index'):
         if workflow == 'sensor':
@@ -270,7 +271,8 @@ def test_daily_filter_ad_hoc_warnings(workflow, sensor_parameters):
 
     # warning about NaNs
     daily_ad_hoc_filter = pd.Series(True, index=sensor_parameters['pv'].index)
-    daily_ad_hoc_filter = daily_ad_hoc_filter.resample('1D').first().dropna(how='all')
+    daily_ad_hoc_filter = daily_ad_hoc_filter.resample(
+        '1D').first().dropna(how='all')
     daily_ad_hoc_filter.iloc[10] = np.nan
     rd_analysis.filter_params_daily['ad_hoc_filter'] = daily_ad_hoc_filter
     with pytest.warns(UserWarning, match='ad_hoc_filter contains NaN values; setting to False'):
