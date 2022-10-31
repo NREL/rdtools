@@ -198,11 +198,34 @@ def test_filter_components(sensor_parameters):
     rd_analysis.sensor_analysis(analyses=['yoy_degradation'])
     assert (poa_filter ==
             rd_analysis.sensor_filter_components['poa_filter']).all()
+    
+def test_daily_filter_components(sensor_parameters):
+    daily_ad_hoc_filter = pd.Series(True,
+                                    index=sensor_parameters['pv'].index)
+    daily_ad_hoc_filter[:600] = False
+    daily_ad_hoc_filter = daily_ad_hoc_filter.resample(
+        '1D').first().dropna(how='all')
+    rd_analysis = TrendAnalysis(**sensor_parameters, power_dc_rated=1.0)
+    rd_analysis.filter_params = {}  # disable all index-based filters
+    rd_analysis.filter_params_daily['ad_hoc_filter'] = daily_ad_hoc_filter
+    rd_analysis.sensor_analysis(analyses=['yoy_degradation'])
+    assert (daily_ad_hoc_filter ==
+            rd_analysis.sensor_filter_components_daily['ad_hoc_filter']).all()
 
 
 def test_filter_components_no_filters(sensor_parameters):
     rd_analysis = TrendAnalysis(**sensor_parameters, power_dc_rated=1.0)
     rd_analysis.filter_params = {}  # disable all filters
+    rd_analysis.sensor_analysis(analyses=['yoy_degradation'])
+    expected = pd.Series(True, index=rd_analysis.pv_energy.index)
+    pd.testing.assert_series_equal(rd_analysis.sensor_filter, expected)
+    assert rd_analysis.sensor_filter_components.empty
+    
+
+def test_daily_filter_components_no_filters(sensor_parameters):
+    rd_analysis = TrendAnalysis(**sensor_parameters, power_dc_rated=1.0)
+    rd_analysis.filter_params = {}  # disable all index-based filters
+    rd_analysis.daily_filter_params = {}  # disable all daily filters
     rd_analysis.sensor_analysis(analyses=['yoy_degradation'])
     expected = pd.Series(True, index=rd_analysis.pv_energy.index)
     pd.testing.assert_series_equal(rd_analysis.sensor_filter, expected)
@@ -250,7 +273,7 @@ def test_daily_filter_ad_hoc_warnings(workflow, sensor_parameters):
     rd_analysis = TrendAnalysis(**sensor_parameters, power_dc_rated=1.0)
     rd_analysis.set_clearsky(pvlib_location=pvlib.location.Location(40, -80),
                              poa_global_clearsky=rd_analysis.poa_global)
-    rd_analysis.filter_params = {}  # disable all index-based filters
+    rd_analysis.filter_params = {'csi_filter': {}} # disable all filters outside of CSI
     # warning for incomplete index
     daily_ad_hoc_filter = pd.Series(True,
                                     index=sensor_parameters['pv'].index[:-5])
@@ -272,7 +295,7 @@ def test_daily_filter_ad_hoc_warnings(workflow, sensor_parameters):
     rd_analysis_2 = TrendAnalysis(**sensor_parameters, power_dc_rated=1.0)
     rd_analysis_2.set_clearsky(pvlib_location=pvlib.location.Location(40, -80),
                                poa_global_clearsky=rd_analysis_2.poa_global)
-    rd_analysis_2.filter_params = {}  # disable all index-based filters
+    rd_analysis_2.filter_params = {'csi_filter': {}}  # disable all filters outside of CSI
     daily_ad_hoc_filter = pd.Series(True, index=sensor_parameters['pv'].index)
     daily_ad_hoc_filter = daily_ad_hoc_filter.resample(
         '1D').first().dropna(how='all')
