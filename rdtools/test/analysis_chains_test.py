@@ -273,7 +273,7 @@ def test_daily_filter_ad_hoc_warnings(workflow, sensor_parameters):
     rd_analysis = TrendAnalysis(**sensor_parameters, power_dc_rated=1.0)
     rd_analysis.set_clearsky(pvlib_location=pvlib.location.Location(40, -80),
                              poa_global_clearsky=rd_analysis.poa_global)
-    rd_analysis.filter_params = {'csi_filter': {}} # disable all filters outside of CSI
+    rd_analysis.filter_params = {'csi_filter': {}}  # disable all filters outside of CSI
     # warning for incomplete index
     daily_ad_hoc_filter = pd.Series(True,
                                     index=sensor_parameters['pv'].index[:-5])
