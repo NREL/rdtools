@@ -566,3 +566,10 @@ def test_plot_errors(method_name, sensor_analysis):
     func = getattr(sensor_analysis, method_name)
     with pytest.raises(ValueError, match="case must be either 'sensor' or 'clearsky'"):
         func(case='bad')
+
+
+def test_plot_degradation_timeseries(sensor_analysis, clearsky_analysis):
+    assert_isinstance(
+        sensor_analysis.plot_degradation_timeseries('sensor'), plt.Figure)
+    assert_isinstance(
+        clearsky_analysis.plot_degradation_timeseries('clearsky'), plt.Figure)

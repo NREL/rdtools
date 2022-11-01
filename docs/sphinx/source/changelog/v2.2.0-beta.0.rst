@@ -1,0 +1,33 @@
+**********************************
+v2.2.0-beta.0 (September 14, 2022)
+**********************************
+
+Enhancements
+------------
+* Specifying ``detailed=True`` in :py:func:`rdtools.plotting.degradation_summary_plots`
+  now shows the number of year-on-year slopes in addition to color coding points
+  (:issue:`298`, :pull:`324`)
+* The Combined estimation Of Degradation and Soiling (CODS) algorithm is implemented
+  in the soiling module and illustrated in an example notebook (:pull:`150`, :pull:`333`)
+* Circular block bootstrapping added as a method for calculating uncertainty in
+  ``degradation_year_on_year()`` via the ``Uncertainty_method`` argument (:pull:`150`)
+* New plotting functions :py:func:`rdtools.analysis_chains.TrendAnalysis.plot_degradation_timeseries` 
+  in TrendAnalysis object and :py:func:`rdtools.plotting.degradation_timeseries_plot`
+  to plot time series degradation trend.  (:issue:`334`, :pull:`335`)
+
+Testing
+-------
+* Added a CI notebook check (:pull:`270`)
+
+Requirements
+------------
+* Upgrade the notebook environment from python 3.7 to python 3.10.
+  (:issue:`319`, :pull:`326`)
+* Bump ``sphinx`` version from 3.2 to 4.5 and ``nbsphinx`` version
+  from 0.8.5 to 0.8.8 in the optional ``[doc]`` requirements (:pull:`317`, :pull:`325`)
+* ``arch`` and ``filterpy`` added as dependencies (:pull:`150`)
+* minimum version of ``numpy`` increased to 1.16 and minimum version of
+  statsmodels increased to 0.11.1 (:pull:`150`)
+* A number of updates to the environments specified in ``requirements.txt``,
+  ``requirements-min.txt``, and ``docs/notebook_requirements.txt``
+  (:pull:`326`, :pull:`314`, :pull:`337`)

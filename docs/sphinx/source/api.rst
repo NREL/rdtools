@@ -41,6 +41,7 @@ Object-oriented end-to-end analysis
    analysis_chains.TrendAnalysis.plot_soiling_interval
    analysis_chains.TrendAnalysis.plot_soiling_monte_carlo
    analysis_chains.TrendAnalysis.plot_pv_vs_irradiance
+   analysis_chains.TrendAnalysis.plot_degradation_timeseries
    
    
 Degradation
@@ -71,6 +72,10 @@ Soiling
    annual_soiling_ratios
    SRRAnalysis
    SRRAnalysis.run
+   soiling_cods
+   CODSAnalysis
+   CODSAnalysis.iterative_signal_decomposition
+   CODSAnalysis.run_bootstrap
 
 
 System Availability
@@ -161,8 +166,10 @@ Plotting
    :toctree: generated/
 
    degradation_summary_plots
+   degradation_timeseries_plot
    soiling_monte_carlo_plot
    soiling_interval_plot
    soiling_rate_histogram
    availability_summary_plots
    tune_filter_plot
+
