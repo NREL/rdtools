@@ -735,9 +735,9 @@ class TrendAnalysis():
             Analyses to perform as a list of strings. Valid entries are 'yoy_degradation'
             and 'srr_soiling'
         yoy_kwargs : dict
-            kwargs to pass to degradation.degradation_year_on_year()
+            kwargs to pass to :py:func:`rdtools.degradation.degradation_year_on_year`
         srr_kwargs : dict
-            kwargs to pass to soiling.soiling_srr()
+            kwargs to pass to :py:func:`rdtools.soiling.soiling_srr`
 
         Returns
         -------
@@ -771,9 +771,9 @@ class TrendAnalysis():
             Analyses to perform as a list of strings. Valid entries are 'yoy_degradation'
             and 'srr_soiling'
         yoy_kwargs : dict
-            kwargs to pass to degradation.degradation_year_on_year()
+            kwargs to pass to :py:func:`rdtools.degradation.degradation_year_on_year`
         srr_kwargs : dict
-            kwargs to pass to soiling.soiling_srr()
+            kwargs to pass to :py:func:`rdtools.soiling.soiling_srr`
 
         Returns
         -------
@@ -805,7 +805,7 @@ class TrendAnalysis():
         case : str
             The workflow result to plot, allowed values are 'sensor' and 'clearsky'
         kwargs :
-            Extra parameters passed to plotting.degradation_summary_plots()
+            Extra parameters passed to :py:func:`rdtools.plotting.degradation_summary_plots`
 
         Returns
         -------
@@ -837,7 +837,7 @@ class TrendAnalysis():
         case : str
             The workflow result to plot, allowed values are 'sensor' and 'clearsky'
         kwargs :
-            Extra parameters passed to plotting.soiling_monte_carlo_plot()
+            Extra parameters passed to :py:func:`rdtools.plotting.soiling_monte_carlo_plot`
 
         Returns
         -------
@@ -868,7 +868,7 @@ class TrendAnalysis():
         case : str
             The workflow result to plot, allowed values are 'sensor' and 'clearsky'
         kwargs :
-            Extra parameters passed to plotting.soiling_interval_plot()
+            Extra parameters passed to :py:func:`rdtools.plotting.soiling_interval_plot`
 
         Returns
         -------
@@ -899,7 +899,7 @@ class TrendAnalysis():
         case : str
             The workflow result to plot, allowed values are 'sensor' and 'clearsky'
         kwargs :
-            Extra parameters passed to plotting.soiling_rate_histogram()
+            Extra parameters passed to :py:func:`rdtools.plotting.soiling_rate_histogram`
 
         Returns
         -------
@@ -954,4 +954,33 @@ class TrendAnalysis():
         ax.set_xlim(0, 1500)
         ax.set_xlabel('Irradiance (W/m$^2$)')
         ax.set_ylabel('PV Energy (Wh/timestep)')
+        return fig
+
+    def plot_degradation_timeseries(self, case, rolling_days=365, **kwargs):
+        '''
+        Plot resampled time series of degradation trend with time
+
+        Parameters
+        ----------
+        case: str
+            The workflow result to plot, allowed values are 'sensor' and 'clearsky'
+        rolling_days: int, default 365
+            Number of days for rolling window. Note that the window must contain
+            at least 50% of datapoints to be included in rolling plot.
+        kwargs :
+            Extra parameters passed to :py:func:`rdtools.plotting.degradation_timeseries_plot`
+
+        Returns
+        -------
+        matplotlib.figure.Figure
+        '''
+
+        if case == 'sensor':
+            yoy_info = self.results['sensor']['yoy_degradation']['calc_info']
+        elif case == 'clearsky':
+            yoy_info = self.results['clearsky']['yoy_degradation']['calc_info']
+        else:
+            raise ValueError("case must be either 'sensor' or 'clearsky'")
+
+        fig = plotting.degradation_timeseries_plot(yoy_info, rolling_days, **kwargs)
         return fig

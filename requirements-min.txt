@@ -1,12 +1,14 @@
 h5py==2.8.0
 matplotlib==3.0.0
-numpy==1.15
+numpy==1.16
 pandas==0.23.2
 pvlib==0.7.0
 scipy==1.1.0
-statsmodels==0.9.0
+statsmodels==0.11.1
 tables==3.5.1
 numexpr==2.7.1  # https://github.com/pydata/numexpr/issues/369
+arch==4.11
+filterpy==1.4.5
 plotly==4.0.0
 xgboost==1.3.3
 scikit-learn==0.22.0

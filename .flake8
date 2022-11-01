@@ -9,3 +9,7 @@ per-file-ignores =
     __init__.py:F401
     # invalid escape sequence '\s'
     versioneer.py:W605
+exclude = 
+    docs
+    .eggs
+    build
