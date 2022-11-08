@@ -75,6 +75,14 @@ class TrendAnalysis():
         filter_params defaults to empty dicts for each function in rdtools.filtering,
         in which case those functions use default parameter values,  `ad_hoc_filter`
         defaults to None. See examples for more information.
+    filter_params_aggregated: dict
+        parameters to be passed to rdtools.filtering functions that specifically handle
+        aggregated data (dily filters, etc). Keys are the names of the rdtools.filtering functions.
+        Values are dicts of parameters to be passed to those functions. Also has a special key
+        `ad_hoc_filter`; this filter is a boolean mask joined with the rest of the filters.
+        filter_params_aggregated defaults to empty dicts for each function in rdtools.filtering,
+        in which case those functions use default parameter values,  `ad_hoc_filter`
+        defaults to None. See examples for more information.
     results : dict
         Nested dict used to store the results of methods ending with `_analysis`
     '''
@@ -387,7 +395,8 @@ class TrendAnalysis():
         self.filter_params, which is a dict, the keys of which are names of
         functions in rdtools.filtering, and the values of which are dicts
         containing the associated parameters with which to run the filtering
-        functions. See examples for details on how to modify filter parameters.
+        functions. This private method is specifically for the original indexed
+        data. See examples for details on how to modify filter parameters.
 
         Parameters
         ----------
@@ -485,7 +494,7 @@ class TrendAnalysis():
     def _aggregated_filter(self, aggregated, case):
         """
         Mirrors the _filter private function, but with aggregated filters applied.
-        These aggregated filters based on those in rdtools.filtering. Uses
+        These aggregated filters are based on those in rdtools.filtering. Uses
         self.filter_params_aggregated, which is a dict, the keys of which are names of
         functions in rdtools.filtering, and the values of which are dicts
         containing the associated parameters with which to run the filtering
