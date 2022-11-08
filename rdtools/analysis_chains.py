@@ -700,10 +700,10 @@ class TrendAnalysis():
         self.sensor_aggregated_performance = aggregated[self.sensor_filter_aggregated]
         self.sensor_aggregated_insolation = aggregated_insolation[self.sensor_filter_aggregated]
         # Reindex the data after the fact, so it's on the aggregated interval
-        self.sensor_aggregated_performance = self.sensor_aggregated_performance.reindex(
-            aggregated.index)
-        self.sensor_aggregated_insolation = self.sensor_aggregated_insolation.reindex(
-            aggregated.index)
+        self.sensor_aggregated_performance = self.sensor_aggregated_performance.asfreq(
+            self.aggregation_freq)
+        self.sensor_aggregated_insolation = self.sensor_aggregated_insolation.asfreq(
+            self.aggregation_freq)
 
     def _clearsky_preprocess(self):
         '''
