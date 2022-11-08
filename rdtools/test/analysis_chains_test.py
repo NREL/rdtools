@@ -1,4 +1,4 @@
-from rdtools import TrendAnalysis, normalization
+from rdtools import TrendAnalysis as TA, normalization
 from conftest import assert_isinstance, assert_warnings
 import pytest
 import pvlib
@@ -61,6 +61,14 @@ def sensor_parameters(basic_parameters, degradation_trend):
     basic_parameters['interp_freq'] = 'H'
     return basic_parameters
 
+
+def TrendAnalysis(**kwargs):
+    # overload the RdTools TA object and remove csi and hampel filter by default
+    # This is kind of kludgey- review to see if there's perhaps a better option.
+    rd_analysis = TA(**kwargs)
+    #rd_analysis.filter_params.pop('csi_filter', None) # this will run ok with warnings
+    rd_analysis.filter_params_daily.pop('hampel_filter', None) # this changes Rd slightly (by .0113)
+    return rd_analysis
 
 @pytest.fixture
 def sensor_analysis(sensor_parameters):
@@ -174,7 +182,7 @@ def test_sensor_analysis_csifilter(sensor_parameters):
     rd_analysis.set_clearsky(pvlib_location=pvlib.location.Location(40, -80),
                              poa_global_clearsky=rd_analysis.poa_global,
                              solar_position_method='ephemeris')
-    rd_analysis.filter_params['csi_filter'] = {'enable': True}
+    rd_analysis.filter_params['csi_filter'] = {}
     rd_analysis._sensor_preprocess()
     assert ~rd_analysis.sensor_filter_components['csi_filter']['2012-01-01 0:0:0']
     assert rd_analysis.sensor_filter_components['csi_filter']['2012-01-01 1:0:0']
@@ -182,7 +190,7 @@ def test_sensor_analysis_csifilter(sensor_parameters):
 
 def test_sensor_analysis_hampel_filter(sensor_parameters):
     rd_analysis = TrendAnalysis(**sensor_parameters)
-    rd_analysis.filter_params['hampel_filter'] = {'enable': True, 't0': 1}
+    rd_analysis.filter_params_daily['hampel_filter'] = {'t0': 1}
     rd_analysis.sensor_analysis(analyses=['yoy_degradation'])
     assert '2012-04-05' not in rd_analysis.sensor_aggregated_performance
     assert '2012-04-04' in rd_analysis.sensor_aggregated_performance
@@ -458,7 +466,7 @@ def test_index_mismatch():
     keys = ['poa_global', 'temperature_cell',
             'temperature_ambient', 'power_expected', 'windspeed']
     kwargs = {key: dummy_series.copy() for key in keys}
-    rd_analysis = TrendAnalysis(pv, **kwargs)
+    rd_analysis = TA(pv, **kwargs)
     for key in keys:
         interpolated_series = getattr(rd_analysis, key)
         assert interpolated_series.index.equals(times)
@@ -553,13 +561,15 @@ def test_plot_soiling_cs(soiling_analysis_clearsky):
 
 def test_errors(sensor_parameters, clearsky_analysis):
 
-    rdtemp = TrendAnalysis(sensor_parameters['pv'])
+    rdtemp = TA(sensor_parameters['pv'])
+    rdtemp.filter_params.pop('csi_filter', None)
     with pytest.raises(ValueError, match='poa_global must be available'):
         rdtemp._sensor_preprocess()
 
     # no temperature
-    rdtemp = TrendAnalysis(sensor_parameters['pv'],
+    rdtemp = TA(sensor_parameters['pv'],
                            poa_global=sensor_parameters['poa_global'])
+    rdtemp.filter_params.pop('csi_filter', None)
     with pytest.raises(ValueError, match='either cell or ambient temperature'):
         rdtemp._sensor_preprocess()
 

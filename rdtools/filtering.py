@@ -98,7 +98,7 @@ def tcell_filter(temperature_cell, temperature_cell_low=-50,
             (temperature_cell < temperature_cell_high))
 
 
-def csi_filter(poa_global_measured, poa_global_clearsky, threshold=0.15, **kwargs):
+def csi_filter(poa_global_measured, poa_global_clearsky, threshold=0.15):
     '''
     Filtering based on clear-sky index (csi)
 
@@ -745,7 +745,7 @@ def xgboost_clip_filter(power_ac,
     return ~(final_clip.astype(bool))
 
 
-def hampel_filter(vals, k=14, t0=3, **kwargs):
+def hampel_filter(vals, k=14, t0=3):
     '''
     Hampel outlier filter primarily applied on daily normalized data but broadly
     applicable.
