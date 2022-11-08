@@ -231,7 +231,7 @@ def test_aggregated_filter_components_no_filters(sensor_parameters):
     expected = pd.Series(True, index=rd_analysis.pv_energy.index)
     daily_expected = expected.resample('1D').first().dropna(how='all')
     pd.testing.assert_series_equal(rd_analysis.sensor_filter_aggregated,
-                                   expected)
+                                   daily_expected)
     assert rd_analysis.sensor_filter_components.empty
 
 
