@@ -514,7 +514,7 @@ class TrendAnalysis():
         None
         """
         filter_components_aggregated = {'default':
-                                   pd.Series(True, index=aggregated.index)}
+                                        pd.Series(True, index=aggregated.index)}
         # Add daily aggregate filters as they come online here.
         # Convert the dictionary into a dataframe (after running filters)
         filter_components_aggregated = pd.DataFrame(
@@ -731,7 +731,8 @@ class TrendAnalysis():
         self._aggregated_filter(cs_aggregated, 'clearsky')
         # Apply daily filter to aggregated data and store
         self.clearsky_aggregated_performance = cs_aggregated[self.clearsky_filter_aggregated]
-        self.clearsky_aggregated_insolation = cs_aggregated_insolation[self.clearsky_filter_aggregated]
+        self.clearsky_aggregated_insolation = \
+            cs_aggregated_insolation[self.clearsky_filter_aggregated]
 
     def sensor_analysis(self, analyses=['yoy_degradation'], yoy_kwargs={}, srr_kwargs={}):
         '''
