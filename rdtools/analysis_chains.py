@@ -75,6 +75,14 @@ class TrendAnalysis():
         filter_params defaults to empty dicts for each function in rdtools.filtering,
         in which case those functions use default parameter values,  `ad_hoc_filter`
         defaults to None. See examples for more information.
+    filter_params_aggregated: dict
+        parameters to be passed to rdtools.filtering functions that specifically handle
+        aggregated data (dily filters, etc). Keys are the names of the rdtools.filtering functions.
+        Values are dicts of parameters to be passed to those functions. Also has a special key
+        `ad_hoc_filter`; this filter is a boolean mask joined with the rest of the filters.
+        filter_params_aggregated defaults to empty dicts for each function in rdtools.filtering,
+        in which case those functions use default parameter values,  `ad_hoc_filter`
+        defaults to None. See examples for more information.
     results : dict
         Nested dict used to store the results of methods ending with `_analysis`
     '''
@@ -133,7 +141,7 @@ class TrendAnalysis():
             'csi_filter': {},
             'ad_hoc_filter': None  # use this to include an explict filter
         }
-        self.filter_params_daily = {
+        self.filter_params_aggregated = {
             'ad_hoc_filter': None
         }
         # remove tcell_filter from list if power_expected is passed in
@@ -387,7 +395,8 @@ class TrendAnalysis():
         self.filter_params, which is a dict, the keys of which are names of
         functions in rdtools.filtering, and the values of which are dicts
         containing the associated parameters with which to run the filtering
-        functions. See examples for details on how to modify filter parameters.
+        functions. This private method is specifically for the original indexed
+        data. See examples for details on how to modify filter parameters.
 
         Parameters
         ----------
@@ -482,11 +491,11 @@ class TrendAnalysis():
             self.clearsky_filter = bool_filter
             self.clearsky_filter_components = filter_components
 
-    def _daily_filter(self, aggregated, case):
+    def _aggregated_filter(self, aggregated, case):
         """
-        Mirrors the _filter private function, but with daily filters applied.
-        These daily filters based on those in rdtools.filtering. Uses
-        self.filter_params_daily, which is a dict, the keys of which are names of
+        Mirrors the _filter private function, but with aggregated filters applied.
+        These aggregated filters are based on those in rdtools.filtering. Uses
+        self.filter_params_aggregated, which is a dict, the keys of which are names of
         functions in rdtools.filtering, and the values of which are dicts
         containing the associated parameters with which to run the filtering
         functions. See examples for details on how to modify filter parameters.
@@ -494,50 +503,50 @@ class TrendAnalysis():
         Parameters
         ----------
         aggregated : pandas.Series
-            Time series of daily-aggregated normalized AC energy
+            Time series of aggregated normalized AC energy
         case : str
             'sensor' or 'clearsky' which filtering protocol to apply. Affects
-            whether result is stored in self.sensor_filter_daily or
-            self.clearsky_filter_daily)
+            whether result is stored in self.sensor_filter_aggregated or
+            self.clearsky_filter_aggregated)
 
         Returns
         -------
         None
         """
-        filter_components_daily = {'default':
-                                   pd.Series(True, index=aggregated.index)}
-        # Add daily filters as they come online here.
+        filter_components_aggregated = {'default':
+                                        pd.Series(True, index=aggregated.index)}
+        # Add daily aggregate filters as they come online here.
         # Convert the dictionary into a dataframe (after running filters)
-        filter_components_daily = pd.DataFrame(
-            filter_components_daily).fillna(False)
-        # Run the ad-hoc filter from filter_params_daily, if available
-        if self.filter_params_daily.get('ad_hoc_filter', None) is not None:
-            ad_hoc_filter_daily = self.filter_params_daily['ad_hoc_filter']
+        filter_components_aggregated = pd.DataFrame(
+            filter_components_aggregated).fillna(False)
+        # Run the ad-hoc filter from filter_params_aggregated, if available
+        if self.filter_params_aggregated.get('ad_hoc_filter', None) is not None:
+            ad_hoc_filter_aggregated = self.filter_params_aggregated['ad_hoc_filter']
 
-            if ad_hoc_filter_daily.isnull().any():
+            if ad_hoc_filter_aggregated.isnull().any():
                 warnings.warn(
-                    'daily ad_hoc_filter contains NaN values; setting to False (excluding)')
-                ad_hoc_filter_daily = ad_hoc_filter_daily.fillna(False)
+                    'aggregated ad_hoc_filter contains NaN values; setting to False (excluding)')
+                ad_hoc_filter_aggregated = ad_hoc_filter_aggregated.fillna(False)
 
-            if not filter_components_daily.index.equals(ad_hoc_filter_daily.index):
-                warnings.warn('Daily ad_hoc_filter index does not match index of other '
+            if not filter_components_aggregated.index.equals(ad_hoc_filter_aggregated.index):
+                warnings.warn('Aggregated ad_hoc_filter index does not match index of other '
                               'filters; missing values will be set to True (kept). '
                               'Align the index with the index of the '
-                              'filter_components_daily attribute to prevent this warning')
-                ad_hoc_filter_daily = ad_hoc_filter_daily.reindex(
-                    filter_components_daily.index).fillna(True)
+                              'filter_components_aggregated attribute to prevent this warning')
+                ad_hoc_filter_aggregated = ad_hoc_filter_aggregated.reindex(
+                    filter_components_aggregated.index).fillna(True)
 
-            filter_components_daily['ad_hoc_filter'] = ad_hoc_filter_daily
+            filter_components_aggregated['ad_hoc_filter'] = ad_hoc_filter_aggregated
 
-        bool_filter_daily = filter_components_daily.all(axis=1)
-        filter_components_daily = filter_components_daily.drop(
+        bool_filter_aggregated = filter_components_aggregated.all(axis=1)
+        filter_components_aggregated = filter_components_aggregated.drop(
             columns=['default'])
         if case == 'sensor':
-            self.sensor_filter_daily = bool_filter_daily
-            self.sensor_filter_components_daily = filter_components_daily
+            self.sensor_filter_aggregated = bool_filter_aggregated
+            self.sensor_filter_components_aggregated = filter_components_aggregated
         elif case == 'clearsky':
-            self.clearsky_filter_daily = bool_filter_daily
-            self.clearsky_filter_components_daily = filter_components_daily
+            self.clearsky_filter_aggregated = bool_filter_aggregated
+            self.clearsky_filter_components_aggregated = filter_components_aggregated
 
     def _filter_check(self, post_filter):
         '''
@@ -686,10 +695,15 @@ class TrendAnalysis():
         aggregated, aggregated_insolation = self._aggregate(
             energy_normalized[self.sensor_filter], insolation[self.sensor_filter])
         # Run daily filters on aggregated data
-        self._daily_filter(aggregated, 'sensor')
-        # Apply daily filter to aggregated data and store
-        self.sensor_aggregated_performance = aggregated[self.sensor_filter_daily]
-        self.sensor_aggregated_insolation = aggregated_insolation[self.sensor_filter_daily]
+        self._aggregated_filter(aggregated, 'sensor')
+        # Apply filter to aggregated data and store
+        self.sensor_aggregated_performance = aggregated[self.sensor_filter_aggregated]
+        self.sensor_aggregated_insolation = aggregated_insolation[self.sensor_filter_aggregated]
+        # Reindex the data after the fact, so it's on the aggregated interval
+        self.sensor_aggregated_performance = self.sensor_aggregated_performance.asfreq(
+            self.aggregation_freq)
+        self.sensor_aggregated_insolation = self.sensor_aggregated_insolation.asfreq(
+            self.aggregation_freq)
 
     def _clearsky_preprocess(self):
         '''
@@ -719,10 +733,11 @@ class TrendAnalysis():
         cs_aggregated, cs_aggregated_insolation = self._aggregate(
             cs_normalized[self.clearsky_filter], cs_insolation[self.clearsky_filter])
         # Run daily filters on aggregated data
-        self._daily_filter(cs_aggregated, 'clearsky')
+        self._aggregated_filter(cs_aggregated, 'clearsky')
         # Apply daily filter to aggregated data and store
-        self.clearsky_aggregated_performance = cs_aggregated[self.clearsky_filter_daily]
-        self.clearsky_aggregated_insolation = cs_aggregated_insolation[self.clearsky_filter_daily]
+        self.clearsky_aggregated_performance = cs_aggregated[self.clearsky_filter_aggregated]
+        self.clearsky_aggregated_insolation = \
+            cs_aggregated_insolation[self.clearsky_filter_aggregated]
 
     def sensor_analysis(self, analyses=['yoy_degradation'], yoy_kwargs={}, srr_kwargs={}):
         '''
