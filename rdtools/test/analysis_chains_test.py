@@ -1,4 +1,4 @@
-from rdtools import TrendAnalysis as TA, normalization
+from rdtools import TrendAnalysis, normalization
 from conftest import assert_isinstance, assert_warnings
 import pytest
 import pvlib
@@ -61,14 +61,6 @@ def sensor_parameters(basic_parameters, degradation_trend):
     basic_parameters['interp_freq'] = 'H'
     return basic_parameters
 
-
-def TrendAnalysis(**kwargs):
-    # overload the RdTools TA object and remove csi and hampel filter by default
-    # This is kind of kludgey- review to see if there's perhaps a better option.
-    rd_analysis = TA(**kwargs)
-    #rd_analysis.filter_params.pop('csi_filter', None) # this will run ok with warnings
-    #rd_analysis.filter_params_aggregated.pop('hampel_filter', None) # this changes Rd slightly (by .0113)
-    return rd_analysis
 
 @pytest.fixture
 def sensor_analysis(sensor_parameters):
@@ -468,7 +460,7 @@ def test_index_mismatch():
     keys = ['poa_global', 'temperature_cell',
             'temperature_ambient', 'power_expected', 'windspeed']
     kwargs = {key: dummy_series.copy() for key in keys}
-    rd_analysis = TA(pv, **kwargs)
+    rd_analysis = TrendAnalysis(pv, **kwargs)
     for key in keys:
         interpolated_series = getattr(rd_analysis, key)
         assert interpolated_series.index.equals(times)
@@ -563,13 +555,13 @@ def test_plot_soiling_cs(soiling_analysis_clearsky):
 
 def test_errors(sensor_parameters, clearsky_analysis):
 
-    rdtemp = TA(sensor_parameters['pv'])
+    rdtemp = TrendAnalysis(sensor_parameters['pv'])
     rdtemp.filter_params.pop('csi_filter', None)
     with pytest.raises(ValueError, match='poa_global must be available'):
         rdtemp._sensor_preprocess()
 
     # no temperature
-    rdtemp = TA(sensor_parameters['pv'],
+    rdtemp = TrendAnalysis(sensor_parameters['pv'],
                            poa_global=sensor_parameters['poa_global'])
     rdtemp.filter_params.pop('csi_filter', None)
     with pytest.raises(ValueError, match='either cell or ambient temperature'):
