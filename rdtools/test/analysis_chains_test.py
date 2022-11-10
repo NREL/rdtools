@@ -67,7 +67,7 @@ def TrendAnalysis(**kwargs):
     # This is kind of kludgey- review to see if there's perhaps a better option.
     rd_analysis = TA(**kwargs)
     #rd_analysis.filter_params.pop('csi_filter', None) # this will run ok with warnings
-    rd_analysis.filter_params_daily.pop('hampel_filter', None) # this changes Rd slightly (by .0113)
+    #rd_analysis.filter_params_daily.pop('hampel_filter', None) # this changes Rd slightly (by .0113)
     return rd_analysis
 
 @pytest.fixture
@@ -405,8 +405,8 @@ def test_clearsky_analysis(clearsky_analysis):
     ci = yoy_results['rd_confidence_interval']
     rd = yoy_results['p50_rd']
     print(ci)
-    assert -4.70 == pytest.approx(rd, abs=1e-2)
-    assert [-4.71, -4.69] == pytest.approx(ci, abs=1e-2)
+    assert -4.71 == pytest.approx(rd, abs=1e-2) #hampel_filter changes this by .01
+    assert [-4.72, -4.70] == pytest.approx(ci, abs=1e-2)
 
 
 def test_clearsky_analysis_optional(clearsky_analysis, clearsky_parameters, clearsky_optional):
@@ -417,8 +417,8 @@ def test_clearsky_analysis_optional(clearsky_analysis, clearsky_parameters, clea
     ci = yoy_results['rd_confidence_interval']
     rd = yoy_results['p50_rd']
     print(f'ci:{ci}')
-    assert -4.70 == pytest.approx(rd, abs=1e-2)
-    assert [-4.71, -4.69] == pytest.approx(ci, abs=1e-2)
+    assert -4.71 == pytest.approx(rd, abs=1e-2)
+    assert [-4.72, -4.70] == pytest.approx(ci, abs=1e-2)
 
 
 @pytest.fixture
