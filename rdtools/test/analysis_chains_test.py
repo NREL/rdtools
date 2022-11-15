@@ -226,7 +226,7 @@ def test_filter_components_no_filters(sensor_parameters):
 def test_aggregated_filter_components_no_filters(sensor_parameters):
     rd_analysis = TrendAnalysis(**sensor_parameters, power_dc_rated=1.0)
     rd_analysis.filter_params = {}  # disable all index-based filters
-    rd_analysis.aggregated_filter_params = {}  # disable all daily filters
+    rd_analysis.filter_params_aggregated = {}  # disable all daily filters
     rd_analysis.sensor_analysis(analyses=['yoy_degradation'])
     expected = pd.Series(True, index=rd_analysis.pv_energy.index)
     daily_expected = expected.resample('1D').first().dropna(how='all')
