@@ -11,7 +11,7 @@ Bug Fixes
 
 Testing
 -------
-
+* Added a CI notebook check (:pull:`270`)
 
 Requirements
 ------------
