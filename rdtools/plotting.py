@@ -231,8 +231,8 @@ def soiling_interval_plot(soiling_info, normalized_yield, point_alpha=0.5,
     sratio = soiling_info['soiling_ratio_perfect_clean']
     fig, ax = plt.subplots()
     renormalized = normalized_yield / soiling_info['renormalizing_factor']
-    ax.plot(renormalized.index, renormalized, 'o')
-    ax.plot(sratio.index, sratio, 'o')
+    ax.plot(renormalized.index, renormalized, 'o', c=point_color, alpha=point_alpha)
+    ax.plot(sratio.index, sratio, 'o', c=profile_color, alpha=profile_alpha)
     ax.set_ylim(ymin, ymax)
     ax.set_ylabel('Renormalized energy')
 
