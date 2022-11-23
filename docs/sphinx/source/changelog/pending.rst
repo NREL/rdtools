@@ -6,6 +6,9 @@ Bug Fixes
 ---------
 * :py:func:`~rdtools.degradation.degradation_year_on_year` no longer raises
   an error for inputs exactly two years long (:pull:`339`)
+* :py:func:`~rdtools.plotting.soiling_interval_plot` no longer ignores the optional
+  ``point_color``, ``profile_color``, ``point_alpha``, and ``profile_alpha`` parameters.
+  (:issue:`343`, :pull:`345`)
 
 Testing
 -------
