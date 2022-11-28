@@ -256,8 +256,7 @@ def degradation_year_on_year(energy_normalized, recenter=True,
     df['yoy'] = 100.0 * (df.energy - df.energy_right) / (df.time_diff_years)
     df.index = df.dt
 
-    subset = df.loc[df['yoy'].notnull(), :]
-    yoy_result = subset['yoy']
+    yoy_result = df.yoy.dropna()
 
     # Detect less than 2 years of data. This is complicated by two things:
     #   - leap days muddle the precise meaning of "two years of data".
@@ -270,7 +269,7 @@ def degradation_year_on_year(energy_normalized, recenter=True,
     else:
         step = df.index.to_series().diff().median()
 
-    if subset['dt'].iloc[-1] < subset['dt_right'].iloc[0] + pd.DateOffset(years=2) - step:
+    if df['dt'].iloc[-1] < df['dt_right'].dropna().iloc[0] + pd.DateOffset(years=2) - step:
         raise ValueError('must provide at least two years of '
                          'normalized energy')
 

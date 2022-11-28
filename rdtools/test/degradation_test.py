@@ -179,6 +179,9 @@ def test_yoy_two_years_error(start, end, freq):
     # GH 339
     times = pd.date_range(start, end, freq=freq)
     series = pd.Series(1, index=times)
+    # introduce NaN at the end to ensure that the 2 year requirement applies to
+    # timestamps, not non-nan values:
+    series.iloc[-5:] = np.nan
     # should not raise an error
     _ = degradation_year_on_year(series)
     # but if we shorten it by one element, then it should:
