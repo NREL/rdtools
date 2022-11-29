@@ -738,7 +738,12 @@ class TrendAnalysis():
         self.clearsky_aggregated_performance = cs_aggregated[self.clearsky_filter_aggregated]
         self.clearsky_aggregated_insolation = \
             cs_aggregated_insolation[self.clearsky_filter_aggregated]
-
+        # Reindex the data after the fact, so it's on the aggregated interval
+        self.clearsky_aggregated_performance = self.clearsky_aggregated_performance.asfreq(
+            self.aggregation_freq)
+        self.clearsky_aggregated_insolation = self.clearsky_aggregated_insolation.asfreq(
+            self.aggregation_freq)
+    
     def sensor_analysis(self, analyses=['yoy_degradation'], yoy_kwargs={}, srr_kwargs={}):
         '''
         Perform entire sensor-based analysis workflow.
