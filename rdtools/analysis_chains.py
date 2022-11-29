@@ -420,6 +420,17 @@ class TrendAnalysis():
         # at once.  However, we add a default value of True, with the same index as
         # energy_normalized, so that the output is still correct even when all
         # filters have been disabled.
+        
+        # Clearsky filtering subroutine, called either by clearsky analysis, 
+        # or sensor analysis with sensor_clearsky_filter
+        def _callCSI(filter_string):
+            if self.poa_global is None or self.poa_global_clearsky is None:
+                raise ValueError('Both poa_global and poa_global_clearsky must be available to '
+                                 f'do clearsky filtering with {filter_string}')
+            f = filtering.csi_filter(
+                self.poa_global, self.poa_global_clearsky, **self.filter_params[filter_string])
+            return f 
+        
         filter_components = {'default': pd.Series(
             True, index=energy_normalized.index)}
 
@@ -454,13 +465,11 @@ class TrendAnalysis():
             f = filtering.clip_filter(
                 self.pv_power, **self.filter_params['clip_filter'])
             filter_components['clip_filter'] = f
-        if (case == 'clearsky') or ('csi_filter' in self.filter_params):
-            if self.poa_global is None or self.poa_global_clearsky is None:
-                raise ValueError('Both poa_global and poa_global_clearsky must be available to '
-                                 'do clearsky filtering with csi_filter')
-            f = filtering.csi_filter(
-                self.poa_global, self.poa_global_clearsky, **self.filter_params['csi_filter'])
-            filter_components['csi_filter'] = f
+        if case == 'clearsky' :
+            filter_components['sensor_csi_filter'] = _callCSI('csi_filter')
+
+        if 'sensor_csi_filter' in self.filter_params:
+            filter_components['sensor_csi_filter'] = _callCSI('sensor_csi_filter')        
 
         # note: the previous implementation using the & operator treated NaN
         # filter values as False, so we do the same here for consistency:
@@ -684,7 +693,7 @@ class TrendAnalysis():
             raise ValueError(
                 'poa_global must be available to perform _sensor_preprocess')
         # doing clearsky filtering of sensor analysis
-        if 'csi_filter' in self.filter_params:
+        if 'sensor_csi_filter' in self.filter_params:
             try:
                 if self.poa_global_clearsky is None:
                     self._calc_clearsky_poa(model='isotropic')
@@ -693,9 +702,9 @@ class TrendAnalysis():
                 # on sensor-based analysis then this provides a warning and disables 
                 # csi filter.
                 warnings.warn("No poa_global_clearsky. 'set_clearsky' must be run " +
-                                     "to allow filter_params['csi_filter']. "+
-                                     " Disabling csi_filter.")
-                self.filter_params.pop('csi_filter')
+                                     "to allow filter_params['sensor_csi_filter']. "+
+                                     " Disabling sensor_csi_filter.")
+                self.filter_params.pop('sensor_csi_filter')
         if self.power_expected is None:
             # Thermal details required if power_expected is not manually set.
             if self.temperature_cell is None and self.temperature_ambient is None:
@@ -758,6 +767,11 @@ class TrendAnalysis():
         self.clearsky_aggregated_performance = cs_aggregated[self.clearsky_filter_aggregated]
         self.clearsky_aggregated_insolation = \
             cs_aggregated_insolation[self.clearsky_filter_aggregated]
+        # Reindex the data after the fact, so it's on the aggregated interval
+        self.clearsky_aggregated_performance = self.clearsky_aggregated_performance.asfreq(
+            self.aggregation_freq)
+        self.clearsky_aggregated_insolation = self.clearsky_aggregated_insolation.asfreq(
+            self.aggregation_freq)
 
     def sensor_analysis(self, analyses=['yoy_degradation'], yoy_kwargs={}, srr_kwargs={}):
         '''

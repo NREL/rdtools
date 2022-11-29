@@ -174,10 +174,10 @@ def test_sensor_analysis_csifilter(sensor_parameters):
     rd_analysis.set_clearsky(pvlib_location=pvlib.location.Location(40, -80),
                              poa_global_clearsky=rd_analysis.poa_global,
                              solar_position_method='ephemeris')
-    rd_analysis.filter_params['csi_filter'] = {}
+    rd_analysis.filter_params['sensor_csi_filter'] = {}
     rd_analysis._sensor_preprocess()
-    assert ~rd_analysis.sensor_filter_components['csi_filter']['2012-01-01 0:0:0']
-    assert rd_analysis.sensor_filter_components['csi_filter']['2012-01-01 1:0:0']
+    assert ~rd_analysis.sensor_filter_components['sensor_csi_filter']['2012-01-01 0:0:0']
+    assert rd_analysis.sensor_filter_components['sensor_csi_filter']['2012-01-01 1:0:0']
 
 
 def test_sensor_analysis_hampel_filter(sensor_parameters):
@@ -556,14 +556,12 @@ def test_plot_soiling_cs(soiling_analysis_clearsky):
 def test_errors(sensor_parameters, clearsky_analysis):
 
     rdtemp = TrendAnalysis(sensor_parameters['pv'])
-    rdtemp.filter_params.pop('csi_filter', None)
     with pytest.raises(ValueError, match='poa_global must be available'):
         rdtemp._sensor_preprocess()
 
     # no temperature
     rdtemp = TrendAnalysis(sensor_parameters['pv'],
                            poa_global=sensor_parameters['poa_global'])
-    rdtemp.filter_params.pop('csi_filter', None)
     with pytest.raises(ValueError, match='either cell or ambient temperature'):
         rdtemp._sensor_preprocess()
 
