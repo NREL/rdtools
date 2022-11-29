@@ -422,7 +422,7 @@ class TrendAnalysis():
         # filters have been disabled.
         
         # Clearsky filtering subroutine, called either by clearsky analysis, 
-        # or sensor analysis with sensor_clearsky_filter
+        # or sensor analysis using sensor_clearsky_filter
         def _callCSI(filter_string):
             if self.poa_global is None or self.poa_global_clearsky is None:
                 raise ValueError('Both poa_global and poa_global_clearsky must be available to '
