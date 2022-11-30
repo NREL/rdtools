@@ -8,7 +8,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 from rdtools import normalization, filtering, aggregation, degradation
 from rdtools import clearsky_temperature, plotting
-from rdtools.filtering import hampel_filter
 import warnings
 
 
@@ -420,8 +419,8 @@ class TrendAnalysis():
         # at once.  However, we add a default value of True, with the same index as
         # energy_normalized, so that the output is still correct even when all
         # filters have been disabled.
-        
-        # Clearsky filtering subroutine, called either by clearsky analysis, 
+
+        # Clearsky filtering subroutine, called either by clearsky analysis,
         # or sensor analysis using sensor_clearsky_filter
         def _callCSI(filter_string):
             if self.poa_global is None or self.poa_global_clearsky is None:
@@ -429,8 +428,8 @@ class TrendAnalysis():
                                  f'do clearsky filtering with {filter_string}')
             f = filtering.csi_filter(
                 self.poa_global, self.poa_global_clearsky, **self.filter_params[filter_string])
-            return f 
-        
+            return f
+
         filter_components = {'default': pd.Series(
             True, index=energy_normalized.index)}
 
@@ -465,11 +464,11 @@ class TrendAnalysis():
             f = filtering.clip_filter(
                 self.pv_power, **self.filter_params['clip_filter'])
             filter_components['clip_filter'] = f
-        if case == 'clearsky' :
+        if case == 'clearsky':
             filter_components['sensor_csi_filter'] = _callCSI('csi_filter')
 
         if 'sensor_csi_filter' in self.filter_params:
-            filter_components['sensor_csi_filter'] = _callCSI('sensor_csi_filter')        
+            filter_components['sensor_csi_filter'] = _callCSI('sensor_csi_filter')
 
         # note: the previous implementation using the & operator treated NaN
         # filter values as False, so we do the same here for consistency:
@@ -532,7 +531,7 @@ class TrendAnalysis():
             filter_components_aggregated).fillna(False)
         if 'hampel_filter' in self.filter_params_aggregated:
             hampelmask = filtering.hampel_filter(aggregated,
-                **self.filter_params_aggregated['hampel_filter'])
+                                                 **self.filter_params_aggregated['hampel_filter'])
             filter_components_aggregated['hampel_filter'] = hampelmask
         # Run the ad-hoc filter from filter_params_aggregated, if available
         if self.filter_params_aggregated.get('ad_hoc_filter', None) is not None:
@@ -699,11 +698,11 @@ class TrendAnalysis():
                     self._calc_clearsky_poa(model='isotropic')
             except AttributeError:
                 # Review needed here: if user tries and fails to apply csi filter
-                # on sensor-based analysis then this provides a warning and disables 
+                # on sensor-based analysis then this provides a warning and disables
                 # csi filter.
                 warnings.warn("No poa_global_clearsky. 'set_clearsky' must be run " +
-                                     "to allow filter_params['sensor_csi_filter']. "+
-                                     " Disabling sensor_csi_filter.")
+                              "to allow filter_params['sensor_csi_filter']. " +
+                              " Disabling sensor_csi_filter.")
                 self.filter_params.pop('sensor_csi_filter')
         if self.power_expected is None:
             # Thermal details required if power_expected is not manually set.
@@ -745,7 +744,7 @@ class TrendAnalysis():
             raise AttributeError("No poa_global_clearsky. 'set_clearsky' must be run " +
                                  "prior to 'clearsky_analysis'")
         if 'csi_filter' not in self.filter_params:
-            self.filter_params['csi_filter']={}
+            self.filter_params['csi_filter'] = {}
         if self.temperature_cell_clearsky is None:
             if self.temperature_ambient_clearsky is None:
                 self._calc_clearsky_tamb()

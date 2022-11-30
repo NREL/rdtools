@@ -184,8 +184,8 @@ def test_sensor_analysis_hampel_filter(sensor_parameters):
     rd_analysis = TrendAnalysis(**sensor_parameters)
     rd_analysis.filter_params_aggregated['hampel_filter'] = {'t0': 1}
     rd_analysis.sensor_analysis(analyses=['yoy_degradation'])
-    assert np.isnan( rd_analysis.sensor_aggregated_performance['2012-04-05'])
-    assert ~np.isnan( rd_analysis.sensor_aggregated_performance['2012-04-04'])
+    assert np.isnan(rd_analysis.sensor_aggregated_performance['2012-04-05'])
+    assert ~np.isnan(rd_analysis.sensor_aggregated_performance['2012-04-04'])
 
 
 def test_sensor_analysis_ad_hoc_filter(sensor_parameters):
@@ -399,7 +399,7 @@ def test_clearsky_analysis(clearsky_analysis):
     ci = yoy_results['rd_confidence_interval']
     rd = yoy_results['p50_rd']
     print(ci)
-    assert -4.71 == pytest.approx(rd, abs=1e-2) #hampel_filter changes this by .01
+    assert -4.71 == pytest.approx(rd, abs=1e-2)  # hampel_filter changes this by .01
     assert [-4.72, -4.70] == pytest.approx(ci, abs=1e-2)
 
 
