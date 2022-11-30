@@ -127,6 +127,7 @@ mathjax2_config = {
 # based on
 # https://gist.github.com/flying-sheep/b65875c0ce965fbdd1d9e5d0b9851ef1
 
+
 def get_obj_module(qualname):
     """
     Get a module/class/attribute and its original module by qualname.
