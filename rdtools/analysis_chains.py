@@ -743,7 +743,7 @@ class TrendAnalysis():
             self.aggregation_freq)
         self.clearsky_aggregated_insolation = self.clearsky_aggregated_insolation.asfreq(
             self.aggregation_freq)
-    
+
     def sensor_analysis(self, analyses=['yoy_degradation'], yoy_kwargs={}, srr_kwargs={}):
         '''
         Perform entire sensor-based analysis workflow.
