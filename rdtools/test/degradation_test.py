@@ -1,6 +1,7 @@
 """ Degradation Module Tests. """
 
 import unittest
+import pytest
 import sys
 
 import pandas as pd
@@ -162,6 +163,32 @@ class DegradationTestCase(unittest.TestCase):
         rd_result = degradation_year_on_year(
             self.test_corr_energy[input_freq])
         self.assertTrue((np.sum(rd_result[2]['usage_of_points'])) == 1462)
+
+
+@pytest.mark.parametrize('start,end,freq', [
+    ('2014-01-01', '2015-12-31', 'D'),   # no leap day
+    ('2015-01-01', '2016-12-31', 'D'),   # leap day included in index
+    ('2015-01-01', '2016-12-29', '7D'),  # leap day in period but not in index
+    ('2016-06-01', '2018-05-31', 'D'),   # leap year, but no leap day in period
+    #  ('2016-02-29', '2018-02-28', 'd'),   # starts on leap day (doesn't work)
+    ('2014-03-01', '2016-02-29', 'D'),   # ends on leap day
+    ('2015-01-01', '2016-12-31', 'M'),   # month end
+    ('2015-01-01', '2016-12-31', 'MS'),   # month start
+])
+def test_yoy_two_years_error(start, end, freq):
+    # GH 339
+    times = pd.date_range(start, end, freq=freq)
+    series = pd.Series(1, index=times)
+    # introduce NaN at the end to ensure that the 2 year requirement applies to
+    # timestamps, not non-nan values:
+    series.iloc[-5:] = np.nan
+    # should not raise an error
+    _ = degradation_year_on_year(series)
+    # but if we shorten it by one element, then it should:
+    with pytest.raises(ValueError, match='must provide at least two years'):
+        _ = degradation_year_on_year(series.iloc[:-1])
+    with pytest.raises(ValueError, match='must provide at least two years'):
+        _ = degradation_year_on_year(series.iloc[1:])
 
 
 if __name__ == '__main__':
