@@ -244,11 +244,19 @@ def degradation_year_on_year(energy_normalized, recenter=True,
         raise ValueError('energy_normalized must not be '
                          'more frequent than daily')
 
-    # Detect less than 2 years of data
-    if energy_normalized.index[-1] - energy_normalized.index[0] < \
-            pd.Timedelta('730d'):
-        raise ValueError('must provide at least two years of '
-                         'normalized energy')
+    # Detect less than 2 years of data. This is complicated by two things:
+    #   - leap days muddle the precise meaning of "two years of data".
+    #   - can't just check the number of days between the first and last
+    #     index values, since non-daily (e.g. weekly) inputs span
+    #     a longer period than their index values directly indicate.
+    # See the unit tests for several motivating cases.
+    if energy_normalized.index.inferred_freq is not None:
+        step = pd.tseries.frequencies.to_offset(energy_normalized.index.inferred_freq)
+    else:
+        step = energy_normalized.index.to_series().diff().median()
+
+    if energy_normalized.index[-1] < energy_normalized.index[0] + pd.DateOffset(years=2) - step:
+        raise ValueError('must provide at least two years of normalized energy')
 
     # If circular block bootstrapping...
     if uncertainty_method == 'circular_block':
@@ -287,6 +295,7 @@ def degradation_year_on_year(energy_normalized, recenter=True,
     df.index = df.dt
 
     yoy_result = df.yoy.dropna()
+
     df_right = df.set_index(df.dt_right).drop_duplicates('dt_right')
     df['usage_of_points'] = df.yoy.notnull().astype(int).add(
                 df_right.yoy.notnull().astype(int), fill_value=0)
