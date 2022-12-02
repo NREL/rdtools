@@ -29,6 +29,6 @@ jobs:
     - name: List changed files
       run: |
         git diff --compact-summary "origin/$GITHUB_BASE_REF"
-    - name: Run linter on changed files
+    - name: Run linter
       run: |
-        git diff "origin/$GITHUB_BASE_REF" -- "*.py" | flake8 . --config=.flake8 --diff --count --statistics --show-source
+        flake8 . --config=.flake8 --count --statistics --show-source
