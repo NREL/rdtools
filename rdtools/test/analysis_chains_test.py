@@ -174,18 +174,18 @@ def test_sensor_analysis_csifilter(sensor_parameters):
     rd_analysis.set_clearsky(pvlib_location=pvlib.location.Location(40, -80),
                              poa_global_clearsky=rd_analysis.poa_global,
                              solar_position_method='ephemeris')
-    rd_analysis.filter_params['csi_filter'] = {'enable': True}
+    rd_analysis.filter_params['sensor_csi_filter'] = {}
     rd_analysis._sensor_preprocess()
-    assert ~rd_analysis.sensor_filter_components['csi_filter']['2012-01-01 0:0:0']
-    assert rd_analysis.sensor_filter_components['csi_filter']['2012-01-01 1:0:0']
+    assert ~rd_analysis.sensor_filter_components['sensor_csi_filter']['2012-01-01 0:0:0']
+    assert rd_analysis.sensor_filter_components['sensor_csi_filter']['2012-01-01 1:0:0']
 
 
 def test_sensor_analysis_hampel_filter(sensor_parameters):
     rd_analysis = TrendAnalysis(**sensor_parameters)
-    rd_analysis.filter_params['hampel_filter'] = {'enable': True, 't0': 1}
+    rd_analysis.filter_params_aggregated['hampel_filter'] = {'t0': 1}
     rd_analysis.sensor_analysis(analyses=['yoy_degradation'])
-    assert '2012-04-05' not in rd_analysis.sensor_aggregated_performance
-    assert '2012-04-04' in rd_analysis.sensor_aggregated_performance
+    assert np.isnan(rd_analysis.sensor_aggregated_performance['2012-04-05'])
+    assert ~np.isnan(rd_analysis.sensor_aggregated_performance['2012-04-04'])
 
 
 def test_sensor_analysis_ad_hoc_filter(sensor_parameters):
@@ -198,12 +198,39 @@ def test_sensor_analysis_ad_hoc_filter(sensor_parameters):
         rd_analysis.sensor_analysis(analyses=['yoy_degradation'])
 
 
+def test_sensor_analysis_aggregated_ad_hoc_filter(sensor_parameters):
+    # by excluding all but a few points, we should trigger the <2yr error
+    filt = pd.Series(False,
+                     index=sensor_parameters['pv'].index)
+    filt = filt.resample('1D').first().dropna(how='all')
+    filt.iloc[-500:] = True
+    rd_analysis = TrendAnalysis(**sensor_parameters, power_dc_rated=1.0)
+    rd_analysis.filter_params_aggregated['ad_hoc_filter'] = filt
+    with pytest.raises(ValueError, match="Less than two years of data left after filtering"):
+        rd_analysis.sensor_analysis(analyses=['yoy_degradation'])
+
+
 def test_filter_components(sensor_parameters):
     poa = sensor_parameters['poa_global']
     poa_filter = (poa > 200) & (poa < 1200)
     rd_analysis = TrendAnalysis(**sensor_parameters, power_dc_rated=1.0)
     rd_analysis.sensor_analysis(analyses=['yoy_degradation'])
-    assert (poa_filter == rd_analysis.sensor_filter_components['poa_filter']).all()
+    assert (poa_filter ==
+            rd_analysis.sensor_filter_components['poa_filter']).all()
+
+
+def test_aggregated_filter_components(sensor_parameters):
+    daily_ad_hoc_filter = pd.Series(True,
+                                    index=sensor_parameters['pv'].index)
+    daily_ad_hoc_filter[:600] = False
+    daily_ad_hoc_filter = daily_ad_hoc_filter.resample(
+        '1D').first().dropna(how='all')
+    rd_analysis = TrendAnalysis(**sensor_parameters, power_dc_rated=1.0)
+    rd_analysis.filter_params = {}  # disable all index-based filters
+    rd_analysis.filter_params_aggregated['ad_hoc_filter'] = daily_ad_hoc_filter
+    rd_analysis.sensor_analysis(analyses=['yoy_degradation'])
+    assert (daily_ad_hoc_filter ==
+            rd_analysis.sensor_filter_components_aggregated['ad_hoc_filter']).all()
 
 
 def test_filter_components_no_filters(sensor_parameters):
@@ -215,12 +242,23 @@ def test_filter_components_no_filters(sensor_parameters):
     assert rd_analysis.sensor_filter_components.empty
 
 
+def test_aggregated_filter_components_no_filters(sensor_parameters):
+    rd_analysis = TrendAnalysis(**sensor_parameters, power_dc_rated=1.0)
+    rd_analysis.filter_params = {}  # disable all index-based filters
+    rd_analysis.filter_params_aggregated = {}  # disable all daily filters
+    rd_analysis.sensor_analysis(analyses=['yoy_degradation'])
+    expected = pd.Series(True, index=rd_analysis.pv_energy.index)
+    daily_expected = expected.resample('1D').first().dropna(how='all')
+    pd.testing.assert_series_equal(rd_analysis.sensor_filter_aggregated,
+                                   daily_expected)
+    assert rd_analysis.sensor_filter_components.empty
+
+
 @pytest.mark.parametrize('workflow', ['sensor', 'clearsky'])
 def test_filter_ad_hoc_warnings(workflow, sensor_parameters):
     rd_analysis = TrendAnalysis(**sensor_parameters, power_dc_rated=1.0)
     rd_analysis.set_clearsky(pvlib_location=pvlib.location.Location(40, -80),
                              poa_global_clearsky=rd_analysis.poa_global)
-
     # warning for incomplete index
     ad_hoc_filter = pd.Series(True, index=sensor_parameters['pv'].index[:-5])
     rd_analysis.filter_params['ad_hoc_filter'] = ad_hoc_filter
@@ -246,6 +284,54 @@ def test_filter_ad_hoc_warnings(workflow, sensor_parameters):
         else:
             rd_analysis.clearsky_analysis(analyses=['yoy_degradation'])
             components = rd_analysis.clearsky_filter_components
+
+    # NaN values set to False
+    assert not components['ad_hoc_filter'].iloc[10]
+    assert components.drop(components.index[10])['ad_hoc_filter'].all()
+
+
+@pytest.mark.parametrize('workflow', ['sensor', 'clearsky'])
+def test_aggregated_filter_ad_hoc_warnings(workflow, sensor_parameters):
+    rd_analysis = TrendAnalysis(**sensor_parameters, power_dc_rated=1.0)
+    rd_analysis.set_clearsky(pvlib_location=pvlib.location.Location(40, -80),
+                             poa_global_clearsky=rd_analysis.poa_global)
+    # disable all filters outside of CSI
+    rd_analysis.filter_params = {'csi_filter': {}}
+    # warning for incomplete index
+    daily_ad_hoc_filter = pd.Series(True,
+                                    index=sensor_parameters['pv'].index[:-5])
+    daily_ad_hoc_filter = daily_ad_hoc_filter.resample(
+        '1D').first().dropna(how='all')
+    rd_analysis.filter_params_aggregated['ad_hoc_filter'] = daily_ad_hoc_filter
+    with pytest.warns(UserWarning, match='ad_hoc_filter index does not match index'):
+        if workflow == 'sensor':
+            rd_analysis.sensor_analysis(analyses=['yoy_degradation'])
+            components = rd_analysis.sensor_filter_components_aggregated
+        else:
+            rd_analysis.clearsky_analysis(analyses=['yoy_degradation'])
+            components = rd_analysis.clearsky_filter_components_aggregated
+
+    # missing values set to True
+    assert components['ad_hoc_filter'].all()
+
+    # warning about NaNs
+    rd_analysis_2 = TrendAnalysis(**sensor_parameters, power_dc_rated=1.0)
+    rd_analysis_2.set_clearsky(pvlib_location=pvlib.location.Location(40, -80),
+                               poa_global_clearsky=rd_analysis_2.poa_global)
+    # disable all filters outside of CSI
+    rd_analysis_2.filter_params = {'csi_filter': {}}
+    daily_ad_hoc_filter = pd.Series(True, index=sensor_parameters['pv'].index)
+    daily_ad_hoc_filter = daily_ad_hoc_filter.resample(
+        '1D').first().dropna(how='all')
+    daily_ad_hoc_filter.iloc[10] = np.nan
+    rd_analysis_2.filter_params_aggregated['ad_hoc_filter'] = daily_ad_hoc_filter
+    with pytest.warns(UserWarning, match='ad_hoc_filter contains NaN values; setting to False'):
+        if workflow == 'sensor':
+            rd_analysis_2.sensor_analysis(analyses=['yoy_degradation'])
+            components = rd_analysis_2.sensor_filter_components_aggregated
+        else:
+            rd_analysis_2.clearsky_analysis(analyses=['yoy_degradation'])
+            components = rd_analysis_2.clearsky_filter_components_aggregated
 
     # NaN values set to False
     assert not components['ad_hoc_filter'].iloc[10]
@@ -313,8 +399,8 @@ def test_clearsky_analysis(clearsky_analysis):
     ci = yoy_results['rd_confidence_interval']
     rd = yoy_results['p50_rd']
     print(ci)
-    assert -4.70 == pytest.approx(rd, abs=1e-2)
-    assert [-4.71, -4.69] == pytest.approx(ci, abs=1e-2)
+    assert -4.71 == pytest.approx(rd, abs=1e-2)  # hampel_filter changes this by .01
+    assert [-4.72, -4.70] == pytest.approx(ci, abs=1e-2)
 
 
 def test_clearsky_analysis_optional(clearsky_analysis, clearsky_parameters, clearsky_optional):
@@ -325,8 +411,8 @@ def test_clearsky_analysis_optional(clearsky_analysis, clearsky_parameters, clea
     ci = yoy_results['rd_confidence_interval']
     rd = yoy_results['p50_rd']
     print(f'ci:{ci}')
-    assert -4.70 == pytest.approx(rd, abs=1e-2)
-    assert [-4.71, -4.69] == pytest.approx(ci, abs=1e-2)
+    assert -4.71 == pytest.approx(rd, abs=1e-2)
+    assert [-4.72, -4.70] == pytest.approx(ci, abs=1e-2)
 
 
 @pytest.fixture
@@ -369,8 +455,10 @@ def test_index_mismatch():
     # GH #277
     times = pd.date_range('2019-01-01', '2022-01-01', freq='15min')
     pv = pd.Series(1.0, index=times)
-    dummy_series = pd.Series(1.0, index=times[::4])  # low-frequency weather inputs
-    keys = ['poa_global', 'temperature_cell', 'temperature_ambient', 'power_expected', 'windspeed']
+    # low-frequency weather inputs
+    dummy_series = pd.Series(1.0, index=times[::4])
+    keys = ['poa_global', 'temperature_cell',
+            'temperature_ambient', 'power_expected', 'windspeed']
     kwargs = {key: dummy_series.copy() for key in keys}
     rd_analysis = TrendAnalysis(pv, **kwargs)
     for key in keys:

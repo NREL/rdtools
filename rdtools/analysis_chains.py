@@ -8,7 +8,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 from rdtools import normalization, filtering, aggregation, degradation
 from rdtools import clearsky_temperature, plotting
-from rdtools.filtering import hampel_filter
 import warnings
 
 
@@ -76,6 +75,14 @@ class TrendAnalysis():
         filter_params defaults to empty dicts for each function in rdtools.filtering,
         in which case those functions use default parameter values,  `ad_hoc_filter`
         defaults to None. See examples for more information.
+    filter_params_aggregated: dict
+        parameters to be passed to rdtools.filtering functions that specifically handle
+        aggregated data (dily filters, etc). Keys are the names of the rdtools.filtering functions.
+        Values are dicts of parameters to be passed to those functions. Also has a special key
+        `ad_hoc_filter`; this filter is a boolean mask joined with the rest of the filters.
+        filter_params_aggregated defaults to empty dicts for each function in rdtools.filtering,
+        in which case those functions use default parameter values,  `ad_hoc_filter`
+        defaults to None. See examples for more information.
     results : dict
         Nested dict used to store the results of methods ending with `_analysis`
     '''
@@ -132,8 +139,11 @@ class TrendAnalysis():
             'tcell_filter': {},
             'clip_filter': {},
             'csi_filter': {},
-            'hampel_filter': {},
             'ad_hoc_filter': None  # use this to include an explict filter
+        }
+        self.filter_params_aggregated = {
+            'hampel_filter': {},
+            'ad_hoc_filter': None
         }
         # remove tcell_filter from list if power_expected is passed in
         if power_expected is not None and temperature_cell is None:
@@ -254,7 +264,8 @@ class TrendAnalysis():
         clearsky_poa = clearsky_poa['poa_global']
 
         if aggregate:
-            interval_id = pd.Series(range(len(self.poa_global)), index=self.poa_global.index)
+            interval_id = pd.Series(
+                range(len(self.poa_global)), index=self.poa_global.index)
             interval_id = interval_id.reindex(times, method='backfill')
             clearsky_poa = clearsky_poa.groupby(interval_id).mean()
             clearsky_poa.index = self.poa_global.index
@@ -385,7 +396,8 @@ class TrendAnalysis():
         self.filter_params, which is a dict, the keys of which are names of
         functions in rdtools.filtering, and the values of which are dicts
         containing the associated parameters with which to run the filtering
-        functions. See examples for details on how to modify filter parameters.
+        functions. This private method is specifically for the original indexed
+        data. See examples for details on how to modify filter parameters.
 
         Parameters
         ----------
@@ -407,7 +419,19 @@ class TrendAnalysis():
         # at once.  However, we add a default value of True, with the same index as
         # energy_normalized, so that the output is still correct even when all
         # filters have been disabled.
-        filter_components = {'default': pd.Series(True, index=energy_normalized.index)}
+
+        # Clearsky filtering subroutine, called either by clearsky analysis,
+        # or sensor analysis using sensor_clearsky_filter
+        def _callCSI(filter_string):
+            if self.poa_global is None or self.poa_global_clearsky is None:
+                raise ValueError('Both poa_global and poa_global_clearsky must be available to '
+                                 f'do clearsky filtering with {filter_string}')
+            f = filtering.csi_filter(
+                self.poa_global, self.poa_global_clearsky, **self.filter_params[filter_string])
+            return f
+
+        filter_components = {'default': pd.Series(
+            True, index=energy_normalized.index)}
 
         if case == 'sensor':
             poa = self.poa_global
@@ -440,13 +464,11 @@ class TrendAnalysis():
             f = filtering.clip_filter(
                 self.pv_power, **self.filter_params['clip_filter'])
             filter_components['clip_filter'] = f
-        if (case == 'clearsky') or (self.filter_params.get('csi_filter')):
-            if self.poa_global is None or self.poa_global_clearsky is None:
-                raise ValueError('Both poa_global and poa_global_clearsky must be available to '
-                                 'do clearsky filtering with csi_filter')
-            f = filtering.csi_filter(
-                self.poa_global, self.poa_global_clearsky, **self.filter_params['csi_filter'])
-            filter_components['csi_filter'] = f
+        if case == 'clearsky':
+            filter_components['sensor_csi_filter'] = _callCSI('csi_filter')
+
+        if 'sensor_csi_filter' in self.filter_params:
+            filter_components['sensor_csi_filter'] = _callCSI('sensor_csi_filter')
 
         # note: the previous implementation using the & operator treated NaN
         # filter values as False, so we do the same here for consistency:
@@ -457,14 +479,16 @@ class TrendAnalysis():
             ad_hoc_filter = self.filter_params['ad_hoc_filter']
 
             if ad_hoc_filter.isnull().any():
-                warnings.warn('ad_hoc_filter contains NaN values; setting to False (excluding)')
+                warnings.warn(
+                    'ad_hoc_filter contains NaN values; setting to False (excluding)')
                 ad_hoc_filter = ad_hoc_filter.fillna(False)
 
             if not filter_components.index.equals(ad_hoc_filter.index):
                 warnings.warn('ad_hoc_filter index does not match index of other filters; missing '
                               'values will be set to True (kept). Align the index with the index '
                               'of the filter_components attribute to prevent this warning')
-                ad_hoc_filter = ad_hoc_filter.reindex(filter_components.index).fillna(True)
+                ad_hoc_filter = ad_hoc_filter.reindex(
+                    filter_components.index).fillna(True)
 
             filter_components['ad_hoc_filter'] = ad_hoc_filter
 
@@ -476,6 +500,67 @@ class TrendAnalysis():
         elif case == 'clearsky':
             self.clearsky_filter = bool_filter
             self.clearsky_filter_components = filter_components
+
+    def _aggregated_filter(self, aggregated, case):
+        """
+        Mirrors the _filter private function, but with aggregated filters applied.
+        These aggregated filters are based on those in rdtools.filtering. Uses
+        self.filter_params_aggregated, which is a dict, the keys of which are names of
+        functions in rdtools.filtering, and the values of which are dicts
+        containing the associated parameters with which to run the filtering
+        functions. See examples for details on how to modify filter parameters.
+
+        Parameters
+        ----------
+        aggregated : pandas.Series
+            Time series of aggregated normalized AC energy
+        case : str
+            'sensor' or 'clearsky' which filtering protocol to apply. Affects
+            whether result is stored in self.sensor_filter_aggregated or
+            self.clearsky_filter_aggregated)
+
+        Returns
+        -------
+        None
+        """
+        filter_components_aggregated = {'default':
+                                        pd.Series(True, index=aggregated.index)}
+        # Add daily aggregate filters as they come online here.
+        # Convert the dictionary into a dataframe (after running filters)
+        filter_components_aggregated = pd.DataFrame(
+            filter_components_aggregated).fillna(False)
+        if 'hampel_filter' in self.filter_params_aggregated:
+            hampelmask = filtering.hampel_filter(aggregated,
+                                                 **self.filter_params_aggregated['hampel_filter'])
+            filter_components_aggregated['hampel_filter'] = hampelmask
+        # Run the ad-hoc filter from filter_params_aggregated, if available
+        if self.filter_params_aggregated.get('ad_hoc_filter', None) is not None:
+            ad_hoc_filter_aggregated = self.filter_params_aggregated['ad_hoc_filter']
+
+            if ad_hoc_filter_aggregated.isnull().any():
+                warnings.warn(
+                    'aggregated ad_hoc_filter contains NaN values; setting to False (excluding)')
+                ad_hoc_filter_aggregated = ad_hoc_filter_aggregated.fillna(False)
+
+            if not filter_components_aggregated.index.equals(ad_hoc_filter_aggregated.index):
+                warnings.warn('Aggregated ad_hoc_filter index does not match index of other '
+                              'filters; missing values will be set to True (kept). '
+                              'Align the index with the index of the '
+                              'filter_components_aggregated attribute to prevent this warning')
+                ad_hoc_filter_aggregated = ad_hoc_filter_aggregated.reindex(
+                    filter_components_aggregated.index).fillna(True)
+
+            filter_components_aggregated['ad_hoc_filter'] = ad_hoc_filter_aggregated
+
+        bool_filter_aggregated = filter_components_aggregated.all(axis=1)
+        filter_components_aggregated = filter_components_aggregated.drop(
+            columns=['default'])
+        if case == 'sensor':
+            self.sensor_filter_aggregated = bool_filter_aggregated
+            self.sensor_filter_components_aggregated = filter_components_aggregated
+        elif case == 'clearsky':
+            self.clearsky_filter_aggregated = bool_filter_aggregated
+            self.clearsky_filter_components_aggregated = filter_components_aggregated
 
     def _filter_check(self, post_filter):
         '''
@@ -607,13 +692,18 @@ class TrendAnalysis():
             raise ValueError(
                 'poa_global must be available to perform _sensor_preprocess')
         # doing clearsky filtering of sensor analysis
-        if self.filter_params.get('csi_filter'):
+        if 'sensor_csi_filter' in self.filter_params:
             try:
                 if self.poa_global_clearsky is None:
                     self._calc_clearsky_poa(model='isotropic')
             except AttributeError:
-                raise AttributeError("No poa_global_clearsky. 'set_clearsky' must be run " +
-                                     "to allow filter_params['csi_filter'].")
+                # Review needed here: if user tries and fails to apply csi filter
+                # on sensor-based analysis then this provides a warning and disables
+                # csi filter.
+                warnings.warn("No poa_global_clearsky. 'set_clearsky' must be run " +
+                              "to allow filter_params['sensor_csi_filter']. " +
+                              " Disabling sensor_csi_filter.")
+                self.filter_params.pop('sensor_csi_filter')
         if self.power_expected is None:
             # Thermal details required if power_expected is not manually set.
             if self.temperature_cell is None and self.temperature_ambient is None:
@@ -630,8 +720,16 @@ class TrendAnalysis():
         self._filter(energy_normalized, 'sensor')
         aggregated, aggregated_insolation = self._aggregate(
             energy_normalized[self.sensor_filter], insolation[self.sensor_filter])
-        self.sensor_aggregated_performance = aggregated
-        self.sensor_aggregated_insolation = aggregated_insolation
+        # Run daily filters on aggregated data
+        self._aggregated_filter(aggregated, 'sensor')
+        # Apply filter to aggregated data and store
+        self.sensor_aggregated_performance = aggregated[self.sensor_filter_aggregated]
+        self.sensor_aggregated_insolation = aggregated_insolation[self.sensor_filter_aggregated]
+        # Reindex the data after the fact, so it's on the aggregated interval
+        self.sensor_aggregated_performance = self.sensor_aggregated_performance.asfreq(
+            self.aggregation_freq)
+        self.sensor_aggregated_insolation = self.sensor_aggregated_insolation.asfreq(
+            self.aggregation_freq)
 
     def _clearsky_preprocess(self):
         '''
@@ -645,6 +743,8 @@ class TrendAnalysis():
         except AttributeError:
             raise AttributeError("No poa_global_clearsky. 'set_clearsky' must be run " +
                                  "prior to 'clearsky_analysis'")
+        if 'csi_filter' not in self.filter_params:
+            self.filter_params['csi_filter'] = {}
         if self.temperature_cell_clearsky is None:
             if self.temperature_ambient_clearsky is None:
                 self._calc_clearsky_tamb()
@@ -660,8 +760,17 @@ class TrendAnalysis():
         self._filter(cs_normalized, 'clearsky')
         cs_aggregated, cs_aggregated_insolation = self._aggregate(
             cs_normalized[self.clearsky_filter], cs_insolation[self.clearsky_filter])
-        self.clearsky_aggregated_performance = cs_aggregated
-        self.clearsky_aggregated_insolation = cs_aggregated_insolation
+        # Run daily filters on aggregated data
+        self._aggregated_filter(cs_aggregated, 'clearsky')
+        # Apply daily filter to aggregated data and store
+        self.clearsky_aggregated_performance = cs_aggregated[self.clearsky_filter_aggregated]
+        self.clearsky_aggregated_insolation = \
+            cs_aggregated_insolation[self.clearsky_filter_aggregated]
+        # Reindex the data after the fact, so it's on the aggregated interval
+        self.clearsky_aggregated_performance = self.clearsky_aggregated_performance.asfreq(
+            self.aggregation_freq)
+        self.clearsky_aggregated_insolation = self.clearsky_aggregated_insolation.asfreq(
+            self.aggregation_freq)
 
     def sensor_analysis(self, analyses=['yoy_degradation'], yoy_kwargs={}, srr_kwargs={}):
         '''
@@ -685,12 +794,6 @@ class TrendAnalysis():
 
         self._sensor_preprocess()
         sensor_results = {}
-
-        if self.filter_params.get('hampel_filter'):
-            hampelmask = hampel_filter(
-                self.sensor_aggregated_performance,
-                **self.filter_params['hampel_filter'])
-            self.sensor_aggregated_performance = self.sensor_aggregated_performance[hampelmask]
 
         if 'yoy_degradation' in analyses:
             yoy_results = self._yoy_degradation(
@@ -727,12 +830,6 @@ class TrendAnalysis():
 
         self._clearsky_preprocess()
         clearsky_results = {}
-
-        if self.filter_params.get('hampel_filter'):
-            hampelmask = hampel_filter(
-                self.clearsky_aggregated_performance,
-                **self.filter_params['hampel_filter'])
-            self.clearsky_aggregated_performance = self.clearsky_aggregated_performance[hampelmask]
 
         if 'yoy_degradation' in analyses:
             yoy_results = self._yoy_degradation(
