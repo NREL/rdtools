@@ -74,12 +74,13 @@ class TrendAnalysis():
         the associated value is a boolean mask joined with the rest of the filters.
         filter_params defaults to empty dicts for each function in rdtools.filtering,
         in which case those functions use default parameter values,  `ad_hoc_filter`
-        defaults to None. See examples for more information.
+        defaults to None. Another special value is `sensor_csi_filter` which enables
+        clear-sky filtering for a sensor-based analysis. See examples for more information.
     filter_params_aggregated: dict
         parameters to be passed to rdtools.filtering functions that specifically handle
-        aggregated data (dily filters, etc). Keys are the names of the rdtools.filtering functions.
-        Values are dicts of parameters to be passed to those functions. Also has a special key
-        `ad_hoc_filter`; this filter is a boolean mask joined with the rest of the filters.
+        aggregated data (daily filters, etc). Keys are the names of the rdtools.filtering functions.
+        Currently available values: `ad_hoc_filter` and `hampel_filter` (true by default). Values are
+        dicts of parameters to be passed to those functions.
         filter_params_aggregated defaults to empty dicts for each function in rdtools.filtering,
         in which case those functions use default parameter values,  `ad_hoc_filter`
         defaults to None. See examples for more information.

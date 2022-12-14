@@ -7,9 +7,5 @@ Testing
 
 Enhancements
 ------------
-* Added framework for running aggregated filters in ``analysis_chains.py`` (:pull:`348`)
-
-Requirements
-------------
-* Bump ``Pillow==9.3.0`` in ``requirements.txt`` (:pull:`349`)
-* Bump ``jupyter-core==4.11.2`` in ``docs\notebook_requirements.txt`` (:pull:`350`)
+* New aggregated filter option, 'hampel_filter' in ``analysis_chains.py`` `filter_params_aggregated'. This is enabled by default and does outlier filtering on aggregated (daily) results.(:pull:`346`)
+* New high-frequency filter option, 'sensor_csi_filter' in ``analysis_chains.py`` `filter_params' to allow a clear-sky filtered sensor analysis. (:pull:`346`)
