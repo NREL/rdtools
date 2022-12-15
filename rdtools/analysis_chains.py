@@ -78,9 +78,9 @@ class TrendAnalysis():
         clear-sky filtering for a sensor-based analysis. See examples for more information.
     filter_params_aggregated: dict
         parameters to be passed to rdtools.filtering functions that specifically handle
-        aggregated data (daily filters, etc). Keys are the names of the rdtools.filtering functions.
-        Currently available values: `ad_hoc_filter` and `hampel_filter` (true by default). Values are
-        dicts of parameters to be passed to those functions.
+        aggregated data (daily filters, etc). Keys are the names of the rdtools.filtering
+        functions.  Currently available values: `ad_hoc_filter` and `hampel_filter` (true
+        by default). Values are dicts of parameters to be passed to those functions.
         filter_params_aggregated defaults to empty dicts for each function in rdtools.filtering,
         in which case those functions use default parameter values,  `ad_hoc_filter`
         defaults to None. See examples for more information.
