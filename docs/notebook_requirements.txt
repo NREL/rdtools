@@ -4,7 +4,7 @@ argon2-cffi-bindings==21.2.0
 backcall==0.1.0
 beautifulsoup4==4.11.1
 bleach==3.3.0
-cffi==1.15.0
+cffi==1.15.1
 colorama==0.4.4
 decorator==4.3.0
 defusedxml==0.7.1
@@ -22,7 +22,7 @@ jupyter-client==6.1.7
 jupyter-console==6.4.0
 jupyter-core==4.11.2
 jupyterlab-pygments==0.2.2
-lxml==4.9.1
+lxml==4.9.2
 MarkupSafe==2.0.0
 mistune==2.0.3
 nbclient==0.6.3
@@ -30,7 +30,7 @@ nbconvert==7.0.0
 nbformat==5.1.0
 nest-asyncio==1.5.5
 notebook==6.4.12
-numexpr==2.8.0
+numexpr==2.8.4
 pandocfilters==1.4.2
 parso==0.3.1
 pexpect==4.6.0
@@ -40,7 +40,7 @@ prompt-toolkit==3.0.27
 ptyprocess==0.6.0
 pycparser==2.20
 Pygments==2.7.4
-pyzmq==22.2.1
+pyzmq==25.0.0
 qtconsole==4.3.1
 Send2Trash==1.8.0
 simplegeneric==0.8.1
