@@ -527,6 +527,11 @@ class TrendAnalysis():
                 aggregated, **self.filter_params_aggregated['two_way_window_filter'])
             filter_components_aggregated['two_way_window_filter'] = f
         
+        if 'insolation_filter' in self.filter_params_aggregated:
+            f = filtering.insolation_filter(
+                insol, **self.filter_params_aggregated['two_way_window_filter'])
+            filter_components_aggregated['insolation_filter'] = f
+
         # Convert the dictionary into a dataframe (after running filters)
         filter_components_aggregated = pd.DataFrame(
             filter_components_aggregated).fillna(False)

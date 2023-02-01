@@ -777,3 +777,15 @@ def two_way_window_filter(series, roll_period=pd.to_timedelta('7 Days'), outlier
     
     return mask
 
+
+def insolation_filter(insolation, quantile=0.1):
+    '''
+    TODO: figure out if this should be more general
+
+    returns a filter that excludes everything below quantile from insolation
+    '''
+
+    limit = insolation.quantile(quantile)
+    mask = insolation >= limit
+    return mask
+
