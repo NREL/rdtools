@@ -516,6 +516,11 @@ class TrendAnalysis():
         filter_components_aggregated = {'default':
                                         pd.Series(True, index=aggregated.index)}
         
+        if case == 'sensor':
+            insol = self.sensor_aggregated_insolation
+        if case == 'clearsky':
+            insol = self.clearsky_aggregated_insolation
+        
         # Add daily aggregate filters as they come online here.
         if 'two_way_window_filter' in self.filter_params_aggregated:
             f = filtering.two_way_window_filter(
@@ -700,11 +705,15 @@ class TrendAnalysis():
         self._filter(energy_normalized, 'sensor')
         aggregated, aggregated_insolation = self._aggregate(
             energy_normalized[self.sensor_filter], insolation[self.sensor_filter])
+        
         # Run daily filters on aggregated data
+        self.sensor_aggregated_insolation = aggregated_insolation
         self._aggregated_filter(aggregated, 'sensor')
+        
         # Apply filter to aggregated data and store
         self.sensor_aggregated_performance = aggregated[self.sensor_filter_aggregated]
         self.sensor_aggregated_insolation = aggregated_insolation[self.sensor_filter_aggregated]
+        
         # Reindex the data after the fact, so it's on the aggregated interval
         self.sensor_aggregated_performance = self.sensor_aggregated_performance.asfreq(
             self.aggregation_freq)
@@ -738,12 +747,16 @@ class TrendAnalysis():
         self._filter(cs_normalized, 'clearsky')
         cs_aggregated, cs_aggregated_insolation = self._aggregate(
             cs_normalized[self.clearsky_filter], cs_insolation[self.clearsky_filter])
+        
         # Run daily filters on aggregated data
+        self.clearsky_aggregated_insolation = cs_aggregated_insolation
         self._aggregated_filter(cs_aggregated, 'clearsky')
+        
         # Apply daily filter to aggregated data and store
         self.clearsky_aggregated_performance = cs_aggregated[self.clearsky_filter_aggregated]
         self.clearsky_aggregated_insolation = \
             cs_aggregated_insolation[self.clearsky_filter_aggregated]
+        
         # Reindex the data after the fact, so it's on the aggregated interval
         self.clearsky_aggregated_performance = self.clearsky_aggregated_performance.asfreq(
             self.aggregation_freq)
