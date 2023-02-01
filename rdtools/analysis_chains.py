@@ -515,7 +515,13 @@ class TrendAnalysis():
         """
         filter_components_aggregated = {'default':
                                         pd.Series(True, index=aggregated.index)}
+        
         # Add daily aggregate filters as they come online here.
+        if 'two_way_window_filter' in self.filter_params_aggregated:
+            f = filtering.two_way_window_filter(
+                aggregated, **self.filter_params_aggregated['two_way_window_filter'])
+            filter_components_aggregated['two_way_window_filter'] = f
+        
         # Convert the dictionary into a dataframe (after running filters)
         filter_components_aggregated = pd.DataFrame(
             filter_components_aggregated).fillna(False)

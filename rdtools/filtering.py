@@ -743,3 +743,37 @@ def xgboost_clip_filter(power_ac,
                       & (power_ac_df['scaled_value'] >= .1))
     final_clip = final_clip.reindex(index=power_ac.index, fill_value=False)
     return ~(final_clip.astype(bool))
+
+def two_way_window_filter(series, roll_period=pd.to_timedelta('7 Days'), outlier_threshold=0.03):
+    '''
+    Removes outliers based on forward and backward window of the rolling median. Points beyond
+    outlier_threshold from both the forward and backward-looking median are excluded by the filter.
+
+    Parameters
+    ----------
+    series: pandas.Series
+        Pandas time series to be filtered.
+    roll_period : int or timedelta, default 7 days
+        The window to use for backward and forward
+        rolling medians for detecting outliers.
+    outlier_threshold : default is 0.03 meaning 3%
+    '''
+
+    series = series/series.quantile(0.99)
+    backward_median = series.rolling(roll_period, min_periods=5, closed='both').median()
+    forward_median = series.loc[::-1].rolling(roll_period, min_periods=5, closed='both').median()
+
+    backward_dif = abs(series-backward_median)
+    forward_dif = abs(series-forward_median)
+
+    # This is a change from Matt's original logic, which can exclude
+    # points with a NaN median
+    backward_dif.fillna(0, inplace=True)
+    forward_dif.fillna(0, inplace=True)
+
+    dif_min=backward_dif.combine(forward_dif,min,0)
+
+    mask=dif_min<outlier_threshold
+    
+    return mask
+
