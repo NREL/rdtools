@@ -413,13 +413,6 @@ class TrendAnalysis():
         -------
         None
         '''
-        # Combining filters is non-trivial because of the possibility of index
-        # mismatch.  Adding columns to an existing dataframe performs a left index
-        # join, but probably we actually want an outer join.  We can get an outer
-        # join by keeping this as a dictionary and converting it to a dataframe all
-        # at once.  However, we add a default value of True, with the same index as
-        # energy_normalized, so that the output is still correct even when all
-        # filters have been disabled.
 
         # Clearsky filtering subroutine, called either by clearsky analysis,
         # or sensor analysis using sensor_clearsky_filter
@@ -431,6 +424,13 @@ class TrendAnalysis():
                 self.poa_global, self.poa_global_clearsky, **self.filter_params[filter_string])
             return f
 
+        # Combining filters is non-trivial because of the possibility of index
+        # mismatch.  Adding columns to an existing dataframe performs a left index
+        # join, but probably we actually want an outer join.  We can get an outer
+        # join by keeping this as a dictionary and converting it to a dataframe all
+        # at once.  However, we add a default value of True, with the same index as
+        # energy_normalized, so that the output is still correct even when all
+        # filters have been disabled.
         filter_components = {'default': pd.Series(
             True, index=energy_normalized.index)}
 
