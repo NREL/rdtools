@@ -698,13 +698,9 @@ class TrendAnalysis():
                 if self.poa_global_clearsky is None:
                     self._calc_clearsky_poa(model='isotropic')
             except AttributeError:
-                # Review needed here: if user tries and fails to apply csi filter
-                # on sensor-based analysis then this provides a warning and disables
-                # csi filter.
-                warnings.warn("No poa_global_clearsky. 'set_clearsky' must be run " +
-                              "to allow filter_params['sensor_csi_filter']. " +
-                              " Disabling sensor_csi_filter.")
-                self.filter_params.pop('sensor_csi_filter')
+                raise AttributeError("No poa_global_clearsky. 'set_clearsky' must be run " +
+                              "to allow filter_params['sensor_csi_filter']. " )
+                #self.filter_params.pop('sensor_csi_filter')
         if self.power_expected is None:
             # Thermal details required if power_expected is not manually set.
             if self.temperature_cell is None and self.temperature_ambient is None:
@@ -744,8 +740,6 @@ class TrendAnalysis():
         except AttributeError:
             raise AttributeError("No poa_global_clearsky. 'set_clearsky' must be run " +
                                  "prior to 'clearsky_analysis'")
-        if 'csi_filter' not in self.filter_params:
-            self.filter_params['csi_filter'] = {}
         if self.temperature_cell_clearsky is None:
             if self.temperature_ambient_clearsky is None:
                 self._calc_clearsky_tamb()
