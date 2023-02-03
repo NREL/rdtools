@@ -766,12 +766,10 @@ def hampel_filter(vals, k=14, t0=3):
         Boolean Series of whether the given measurement is within 3 sigma of the
         median.  False points indicate outliers to be removed.
     '''
-    # Make copy so original not edited
-    vals_copy = vals.copy()
     # Hampel Filter
     L = 1.4826
-    rolling_median = vals_copy.rolling(k, center=True, min_periods=1).median()
-    difference = np.abs(rolling_median-vals_copy)
+    rolling_median = vals.rolling(k, center=True, min_periods=1).median()
+    difference = np.abs(rolling_median-vals)
     median_abs_deviation = difference.rolling(k, center=True, min_periods=1).median()
     threshold = t0 * L * median_abs_deviation
     return difference <= threshold
