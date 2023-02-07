@@ -745,7 +745,7 @@ def xgboost_clip_filter(power_ac,
     return ~(final_clip.astype(bool))
 
 
-def hampel_filter(vals, k=14, t0=3):
+def hampel_filter(vals, k='14d', t0=3):
     '''
     Hampel outlier filter primarily applied on daily normalized data but broadly
     applicable.
@@ -754,9 +754,9 @@ def hampel_filter(vals, k=14, t0=3):
     ----------
     vals : pandas.Series
         daily normalized time series
-    k : int, default 14
-        size of window including the sample; 14 is equal to 7 on either side of
-        value
+    k : int or time offset string e.g. 'd', default 14d
+        size of window including the sample; 14d is equal to 7 days on either 
+        side of value
     t0 : int, default 3
         Threshold value, defaults to 3 sigma Pearson's rule.
 

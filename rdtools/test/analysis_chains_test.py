@@ -185,7 +185,7 @@ def test_sensor_analysis_hampel_filter(sensor_parameters):
     rd_analysis.filter_params_aggregated['hampel_filter'] = {'t0': 1}
     rd_analysis.sensor_analysis(analyses=['yoy_degradation'])
     assert np.isnan(rd_analysis.sensor_aggregated_performance['2012-04-05'])
-    assert ~np.isnan(rd_analysis.sensor_aggregated_performance['2012-04-04'])
+    assert ~np.isnan(rd_analysis.sensor_aggregated_performance['2012-04-03'])
 
 
 def test_sensor_analysis_ad_hoc_filter(sensor_parameters):
