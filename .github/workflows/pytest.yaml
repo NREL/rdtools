@@ -18,7 +18,9 @@ jobs:
         env: [
           '-r requirements.txt .[test]',
           '-r requirements-min.txt .[test]',
-          '--upgrade --upgrade-strategy=eager .[test]'
+          '--upgrade --upgrade-strategy=eager .[test]',
+          '--upgrade --upgrade-strategy=eager .[test] pandas==2.0.0rc0',
+
         ]
         exclude:
           - python-version: 3.8
@@ -30,6 +32,9 @@ jobs:
           # required numpy is not available on python 3.7, so exclude:
           - python-version: 3.7
             env: '-r requirements.txt .[test]'
+          # no pandas 2.0.0rc0 for py3.7
+          - python-version: 3.7
+            env: '--upgrade --upgrade-strategy=eager .[test] pandas==2.0.0rc0',
 
     steps:
     - uses: actions/checkout@v2
