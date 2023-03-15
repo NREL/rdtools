@@ -755,7 +755,7 @@ def hampel_filter(vals, k='14d', t0=3):
     vals : pandas.Series
         daily normalized time series
     k : int or time offset string e.g. 'd', default 14d
-        size of window including the sample; 14d is equal to 7 days on either 
+        size of window including the sample; 14d is equal to 7 days on either
         side of value
     t0 : int, default 3
         Threshold value, defaults to 3 sigma Pearson's rule.
