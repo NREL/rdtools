@@ -143,7 +143,7 @@ class TrendAnalysis():
             'ad_hoc_filter': None  # use this to include an explict filter
         }
         self.filter_params_aggregated = {
-            'hampel_filter': {},
+            'hampel_filter': None,
             'ad_hoc_filter': None
         }
         # remove tcell_filter from list if power_expected is passed in
@@ -272,7 +272,7 @@ class TrendAnalysis():
             clearsky_poa.index = self.poa_global.index
             clearsky_poa.iloc[0] = np.nan
 
-        if rescale is True:
+        if rescale:
             if not clearsky_poa.index.equals(self.poa_global.index):
                 raise ValueError(
                     'rescale=True can only be used when clearsky poa is on same index as poa')
@@ -530,7 +530,7 @@ class TrendAnalysis():
         # Convert the dictionary into a dataframe (after running filters)
         filter_components_aggregated = pd.DataFrame(
             filter_components_aggregated).fillna(False)
-        if 'hampel_filter' in self.filter_params_aggregated:
+        if self.filter_params_aggregated.get('hampel_filter', None) is not None:
             hampelmask = filtering.hampel_filter(aggregated,
                                                  **self.filter_params_aggregated['hampel_filter'])
             filter_components_aggregated['hampel_filter'] = hampelmask
