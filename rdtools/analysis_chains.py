@@ -529,7 +529,7 @@ class TrendAnalysis():
         
         if 'insolation_filter' in self.filter_params_aggregated:
             f = filtering.insolation_filter(
-                insol, **self.filter_params_aggregated['two_way_window_filter'])
+                insol, **self.filter_params_aggregated['insolation_filter'])
             filter_components_aggregated['insolation_filter'] = f
 
         # Convert the dictionary into a dataframe (after running filters)
