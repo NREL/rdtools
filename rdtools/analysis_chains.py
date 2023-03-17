@@ -532,6 +532,11 @@ class TrendAnalysis():
                 insol, **self.filter_params_aggregated['insolation_filter'])
             filter_components_aggregated['insolation_filter'] = f
 
+        if 'hampel_filter' in self.filter_params_aggregated:
+            hampelmask = filtering.hampel_filter(aggregated,
+                                                 **self.filter_params_aggregated['hampel_filter'])
+            filter_components_aggregated['hampel_filter'] = hampelmask
+
         # Convert the dictionary into a dataframe (after running filters)
         filter_components_aggregated = pd.DataFrame(
             filter_components_aggregated).fillna(False)

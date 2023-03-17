@@ -789,3 +789,29 @@ def insolation_filter(insolation, quantile=0.1):
     mask = insolation >= limit
     return mask
 
+def hampel_filter(vals, k='14d', t0=3):
+    '''
+    Hampel outlier filter primarily applied on daily normalized data but broadly
+    applicable.
+    Parameters
+    ----------
+    vals : pandas.Series
+        daily normalized time series
+    k : int or time offset string e.g. 'd', default 14d
+        size of window including the sample; 14d is equal to 7 days on either
+        side of value
+    t0 : int, default 3
+        Threshold value, defaults to 3 sigma Pearson's rule.
+    Returns
+    -------
+    pandas.Series
+        Boolean Series of whether the given measurement is within 3 sigma of the
+        median.  False points indicate outliers to be removed.
+    '''
+    # Hampel Filter
+    L = 1.4826
+    rolling_median = vals.rolling(k, center=True, min_periods=1).median()
+    difference = np.abs(rolling_median-vals)
+    median_abs_deviation = difference.rolling(k, center=True, min_periods=1).median()
+    threshold = t0 * L * median_abs_deviation
+    return difference <= threshold
