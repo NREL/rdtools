@@ -537,6 +537,11 @@ class TrendAnalysis():
                                                  **self.filter_params_aggregated['hampel_filter'])
             filter_components_aggregated['hampel_filter'] = hampelmask
 
+        if 'directional_tukey_filter' in self.filter_params_aggregated:
+            f = filtering.directional_tukey_filter(aggregated,
+                                                 **self.filter_params_aggregated['directional_tukey_filter'])
+            filter_components_aggregated['directional_tukey_filter'] = f
+
         # Convert the dictionary into a dataframe (after running filters)
         filter_components_aggregated = pd.DataFrame(
             filter_components_aggregated).fillna(False)

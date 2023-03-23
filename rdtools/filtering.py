@@ -815,3 +815,33 @@ def hampel_filter(vals, k='14d', t0=3):
     median_abs_deviation = difference.rolling(k, center=True, min_periods=1).median()
     threshold = t0 * L * median_abs_deviation
     return difference <= threshold
+
+
+def _tukey_fence(series):
+    'Calculates the upper and lower tukey fences from a pandas series'
+    p25 = series.quantile(0.25)
+    p75 = series.quantile(0.75)
+    iqr = p75 - p25
+    upper_fence = 1.5*iqr + p75
+    lower_fence = p25 - 1.5*iqr
+    return lower_fence, upper_fence
+
+
+def directional_tukey_filter(series, roll_period=pd.to_timedelta('7 Days')):
+    '''
+    Performs a forward and backward looking rolling tukey filter. Points must only
+    pass one of either the forward or backward looking filters to be kept
+    '''
+    backward_median = series.rolling(roll_period, min_periods=5, closed='both').median()
+    forward_median = series.loc[::-1].rolling(roll_period, min_periods=5, closed='both').median()
+    backward_dif = series - backward_median
+    forward_dif = series - forward_median
+
+    backward_dif_lower, backward_dif_upper = _tukey_fence(backward_dif)
+    forward_dif_lower, forward_dif_upper = _tukey_fence(forward_dif)
+
+    mask = (
+            ((forward_dif > forward_dif_lower) & (forward_dif < forward_dif_upper)) |
+            ((backward_dif > backward_dif_lower) & (backward_dif < backward_dif_upper))
+            )
+    return mask
