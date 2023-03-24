@@ -613,7 +613,7 @@ class TrendAnalysis():
         aggregated = aggregation.aggregation_insol(
             energy_normalized, insolation, self.aggregation_freq)
         aggregated_insolation = insolation.resample(
-            self.aggregation_freq).sum()
+            self.aggregation_freq, origin='start_day').sum()
 
         return aggregated, aggregated_insolation
 
@@ -730,10 +730,10 @@ class TrendAnalysis():
         self.sensor_aggregated_insolation = aggregated_insolation[self.sensor_filter_aggregated]
         
         # Reindex the data after the fact, so it's on the aggregated interval
-        self.sensor_aggregated_performance = self.sensor_aggregated_performance.asfreq(
-            self.aggregation_freq)
-        self.sensor_aggregated_insolation = self.sensor_aggregated_insolation.asfreq(
-            self.aggregation_freq)
+        self.sensor_aggregated_performance = self.sensor_aggregated_performance.resample(
+            self.aggregation_freq, origin='start_day').asfreq()
+        self.sensor_aggregated_insolation = self.sensor_aggregated_insolation.resample(
+            self.aggregation_freq, origin='start_day').asfreq()
 
     def _clearsky_preprocess(self):
         '''
@@ -773,10 +773,10 @@ class TrendAnalysis():
             cs_aggregated_insolation[self.clearsky_filter_aggregated]
         
         # Reindex the data after the fact, so it's on the aggregated interval
-        self.clearsky_aggregated_performance = self.clearsky_aggregated_performance.asfreq(
-            self.aggregation_freq)
-        self.clearsky_aggregated_insolation = self.clearsky_aggregated_insolation.asfreq(
-            self.aggregation_freq)
+        self.clearsky_aggregated_performance = self.clearsky_aggregated_performance.resample(
+            self.aggregation_freq, origin='start_day').asfreq()
+        self.clearsky_aggregated_insolation = self.clearsky_aggregated_insolation.resample(
+            self.aggregation_freq, origin='start_day').asfreq()
 
     def sensor_analysis(self, analyses=['yoy_degradation'], yoy_kwargs={}, srr_kwargs={}):
         '''
