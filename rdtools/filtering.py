@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import os
 import warnings
+import pvlib
 from numbers import Number
 import rdtools
 import xgboost as xgb
@@ -120,6 +121,61 @@ def csi_filter(poa_global_measured, poa_global_clearsky, threshold=0.15):
 
     csi = poa_global_measured / poa_global_clearsky
     return (csi >= 1.0 - threshold) & (csi <= 1.0 + threshold)
+
+
+def pvlib_clearsky_filter(poa_global_measured, poa_global_clearsky,
+                          window_length=60, mean_diff=79.144, max_diff=59.152,
+                          lower_line_length=-41.416, upper_line_length=77.789,
+                          var_diff=0.00745, slope_dev=68.579, **kwargs):
+    '''
+    Filtering based on the Reno and Hansen method for clearsky filtering
+    as implimented in pvlib. Requires a regular time series with uniform
+    time steps.
+
+    Parameters
+    ----------
+    poa_global_measured : pandas.Series
+        Plane of array irradiance based on measurments
+    poa_global_clearsky : pandas.Series
+        Plane of array irradiance based on a clear sky model
+    window_length : int, default 10
+        Length of sliding time window in minutes. Must be greater than 2
+        periods.
+    mean_diff : float, default 75
+        Threshold value for agreement between mean values of measured
+        and clearsky in each interval, see Eq. 6 in [1]. [W/m2]
+    max_diff : float, default 75
+        Threshold value for agreement between maxima of measured and
+        clearsky values in each interval, see Eq. 7 in [1]. [W/m2]
+    lower_line_length : float, default -5
+        Lower limit of line length criterion from Eq. 8 in [1].
+        Criterion satisfied when lower_line_length < line length difference
+        < upper_line_length.
+    upper_line_length : float, default 10
+        Upper limit of line length criterion from Eq. 8 in [1].
+    var_diff : float, default 0.005
+        Threshold value in Hz for the agreement between normalized
+        standard deviations of rate of change in irradiance, see Eqs. 9
+        through 11 in [1].
+    slope_dev : float, default 8
+        Threshold value for agreement between the largest magnitude of
+        change in successive values, see Eqs. 12 through 14 in [1].
+    kwargs :
+        Additional arguments passed to pvlib.clearsky.detect_clearsky
+        return_components is set to False and not passed.
+
+    Returns
+    -------
+    pandas.Series
+        Boolean Series of whether or not the given time is clear.
+    '''
+    
+    kwargs['return_components'] = False
+    mask = pvlib.clearsky.detect_clearsky(poa_global_measured, poa_global_clearsky,
+                          window_length=window_length, mean_diff=mean_diff, max_diff=max_diff,
+                          lower_line_length=lower_line_length, upper_line_length=upper_line_length,
+                          var_diff=var_diff, slope_dev=slope_dev, **kwargs)
+    return mask
 
 
 def clip_filter(power_ac, model="quantile", **kwargs):
