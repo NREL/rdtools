@@ -138,7 +138,7 @@ class TrendAnalysis():
             'poa_filter': {},
             'tcell_filter': {},
             'clip_filter': {},
-            'csi_filter': {},
+            'pvlib_clearsky_filter': {},
             'ad_hoc_filter': None  # use this to include an explict filter
         }
         self.filter_params_aggregated = {
@@ -411,6 +411,18 @@ class TrendAnalysis():
         -------
         None
         '''
+
+
+        # Clearsky filtering subroutine, called either by clearsky analysis,
+        # or sensor analysis using sensor_clearsky_filter
+        def _call_clearsky_filter(filter_string):
+            if self.poa_global is None or self.poa_global_clearsky is None:
+                raise ValueError('Both poa_global and poa_global_clearsky must be available to '
+                                 f'do clearsky filtering with {filter_string}')
+            f = filtering.pvlib_clearsky_filter(
+                self.poa_global, self.poa_global_clearsky, **self.filter_params[filter_string])
+            return f
+
         # Combining filters is non-trivial because of the possibility of index
         # mismatch.  Adding columns to an existing dataframe performs a left index
         # join, but probably we actually want an outer join.  We can get an outer
@@ -453,12 +465,7 @@ class TrendAnalysis():
                 self.pv_power, **self.filter_params['clip_filter'])
             filter_components['clip_filter'] = f
         if case == 'clearsky':
-            if self.poa_global is None or self.poa_global_clearsky is None:
-                raise ValueError('Both poa_global and poa_global_clearsky must be available to '
-                                 'do clearsky filtering with csi_filter')
-            f = filtering.csi_filter(
-                self.poa_global, self.poa_global_clearsky, **self.filter_params['csi_filter'])
-            filter_components['csi_filter'] = f
+            filter_components['pvlib_clearsky_filter'] = _call_clearsky_filter('pvlib_clearsky_filter')
 
         # note: the previous implementation using the & operator treated NaN
         # filter values as False, so we do the same here for consistency:
