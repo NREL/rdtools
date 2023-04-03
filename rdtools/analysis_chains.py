@@ -466,7 +466,7 @@ class TrendAnalysis():
                 self.pv_power, **self.filter_params['clip_filter'])
             filter_components['clip_filter'] = f
         if case == 'clearsky':
-            filter_components['sensor_csi_filter'] = _callCSI('csi_filter')
+            filter_components['csi_filter'] = _callCSI('csi_filter')
 
         if 'sensor_csi_filter' in self.filter_params:
             filter_components['sensor_csi_filter'] = _callCSI('sensor_csi_filter')
