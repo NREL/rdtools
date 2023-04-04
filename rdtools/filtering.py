@@ -124,9 +124,9 @@ def csi_filter(poa_global_measured, poa_global_clearsky, threshold=0.15):
 
 
 def pvlib_clearsky_filter(poa_global_measured, poa_global_clearsky,
-                          window_length=60, mean_diff=79.144, max_diff=59.152,
-                          lower_line_length=-41.416, upper_line_length=77.789,
-                          var_diff=0.00745, slope_dev=68.579, **kwargs):
+                          window_length=90, mean_diff=75, max_diff=75,
+                          lower_line_length=-45, upper_line_length=80,
+                          var_diff=0.032, slope_dev=75, **kwargs):
     '''
     Filtering based on the Reno and Hansen method for clearsky filtering
     as implimented in pvlib. Requires a regular time series with uniform
@@ -169,7 +169,7 @@ def pvlib_clearsky_filter(poa_global_measured, poa_global_clearsky,
     pandas.Series
         Boolean Series of whether or not the given time is clear.
     '''
-    
+
     kwargs['return_components'] = False
     mask = pvlib.clearsky.detect_clearsky(poa_global_measured, poa_global_clearsky,
                           window_length=window_length, mean_diff=mean_diff, max_diff=max_diff,
