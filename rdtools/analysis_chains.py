@@ -74,12 +74,13 @@ class TrendAnalysis():
         the associated value is a boolean mask joined with the rest of the filters.
         filter_params defaults to empty dicts for each function in rdtools.filtering,
         in which case those functions use default parameter values,  `ad_hoc_filter`
-        defaults to None. See examples for more information.
+        defaults to None. Another special value is `sensor_csi_filter` which enables
+        clear-sky filtering for a sensor-based analysis. See examples for more information.
     filter_params_aggregated: dict
         parameters to be passed to rdtools.filtering functions that specifically handle
-        aggregated data (dily filters, etc). Keys are the names of the rdtools.filtering functions.
-        Values are dicts of parameters to be passed to those functions. Also has a special key
-        `ad_hoc_filter`; this filter is a boolean mask joined with the rest of the filters.
+        aggregated data (daily filters, etc). Keys are the names of the rdtools.filtering
+        functions.  Currently available values: `ad_hoc_filter` and `hampel_filter` (true
+        by default). Values are dicts of parameters to be passed to those functions.
         filter_params_aggregated defaults to empty dicts for each function in rdtools.filtering,
         in which case those functions use default parameter values,  `ad_hoc_filter`
         defaults to None. See examples for more information.
@@ -270,7 +271,7 @@ class TrendAnalysis():
             clearsky_poa.index = self.poa_global.index
             clearsky_poa.iloc[0] = np.nan
 
-        if rescale is True:
+        if rescale:
             if not clearsky_poa.index.equals(self.poa_global.index):
                 raise ValueError(
                     'rescale=True can only be used when clearsky poa is on same index as poa')
@@ -411,6 +412,17 @@ class TrendAnalysis():
         -------
         None
         '''
+
+        # Clearsky filtering subroutine, called either by clearsky analysis,
+        # or sensor analysis using sensor_clearsky_filter
+        def _callCSI(filter_string):
+            if self.poa_global is None or self.poa_global_clearsky is None:
+                raise ValueError('Both poa_global and poa_global_clearsky must be available to '
+                                 f'do clearsky filtering with {filter_string}')
+            f = filtering.csi_filter(
+                self.poa_global, self.poa_global_clearsky, **self.filter_params[filter_string])
+            return f
+
         # Combining filters is non-trivial because of the possibility of index
         # mismatch.  Adding columns to an existing dataframe performs a left index
         # join, but probably we actually want an outer join.  We can get an outer
@@ -453,12 +465,10 @@ class TrendAnalysis():
                 self.pv_power, **self.filter_params['clip_filter'])
             filter_components['clip_filter'] = f
         if case == 'clearsky':
-            if self.poa_global is None or self.poa_global_clearsky is None:
-                raise ValueError('Both poa_global and poa_global_clearsky must be available to '
-                                 'do clearsky filtering with csi_filter')
-            f = filtering.csi_filter(
-                self.poa_global, self.poa_global_clearsky, **self.filter_params['csi_filter'])
-            filter_components['csi_filter'] = f
+            filter_components['csi_filter'] = _callCSI('csi_filter')
+
+        if 'sensor_csi_filter' in self.filter_params:
+            filter_components['sensor_csi_filter'] = _callCSI('sensor_csi_filter')
 
         # note: the previous implementation using the & operator treated NaN
         # filter values as False, so we do the same here for consistency:
@@ -515,7 +525,33 @@ class TrendAnalysis():
         """
         filter_components_aggregated = {'default':
                                         pd.Series(True, index=aggregated.index)}
+        
+        if case == 'sensor':
+            insol = self.sensor_aggregated_insolation
+        if case == 'clearsky':
+            insol = self.clearsky_aggregated_insolation
+        
         # Add daily aggregate filters as they come online here.
+        if 'two_way_window_filter' in self.filter_params_aggregated:
+            f = filtering.two_way_window_filter(
+                aggregated, **self.filter_params_aggregated['two_way_window_filter'])
+            filter_components_aggregated['two_way_window_filter'] = f
+        
+        if 'insolation_filter' in self.filter_params_aggregated:
+            f = filtering.insolation_filter(
+                insol, **self.filter_params_aggregated['insolation_filter'])
+            filter_components_aggregated['insolation_filter'] = f
+
+        if 'hampel_filter' in self.filter_params_aggregated:
+            hampelmask = filtering.hampel_filter(aggregated,
+                                                 **self.filter_params_aggregated['hampel_filter'])
+            filter_components_aggregated['hampel_filter'] = hampelmask
+
+        if 'directional_tukey_filter' in self.filter_params_aggregated:
+            f = filtering.directional_tukey_filter(aggregated,
+                                                 **self.filter_params_aggregated['directional_tukey_filter'])
+            filter_components_aggregated['directional_tukey_filter'] = f
+
         # Convert the dictionary into a dataframe (after running filters)
         filter_components_aggregated = pd.DataFrame(
             filter_components_aggregated).fillna(False)
@@ -587,7 +623,7 @@ class TrendAnalysis():
         aggregated = aggregation.aggregation_insol(
             energy_normalized, insolation, self.aggregation_freq)
         aggregated_insolation = insolation.resample(
-            self.aggregation_freq).sum()
+            self.aggregation_freq, origin='start_day').sum()
 
         return aggregated, aggregated_insolation
 
@@ -677,7 +713,14 @@ class TrendAnalysis():
         if self.poa_global is None:
             raise ValueError(
                 'poa_global must be available to perform _sensor_preprocess')
-
+        # doing clearsky filtering of sensor analysis
+        if 'sensor_csi_filter' in self.filter_params:
+            try:
+                if self.poa_global_clearsky is None:
+                    self._calc_clearsky_poa(model='isotropic')
+            except AttributeError:
+                raise AttributeError("No poa_global_clearsky. 'set_clearsky' must be run " +
+                                     "to allow filter_params['sensor_csi_filter']. ")
         if self.power_expected is None:
             # Thermal details required if power_expected is not manually set.
             if self.temperature_cell is None and self.temperature_ambient is None:
@@ -694,16 +737,20 @@ class TrendAnalysis():
         self._filter(energy_normalized, 'sensor')
         aggregated, aggregated_insolation = self._aggregate(
             energy_normalized[self.sensor_filter], insolation[self.sensor_filter])
+        
         # Run daily filters on aggregated data
+        self.sensor_aggregated_insolation = aggregated_insolation
         self._aggregated_filter(aggregated, 'sensor')
+        
         # Apply filter to aggregated data and store
         self.sensor_aggregated_performance = aggregated[self.sensor_filter_aggregated]
         self.sensor_aggregated_insolation = aggregated_insolation[self.sensor_filter_aggregated]
+        
         # Reindex the data after the fact, so it's on the aggregated interval
-        self.sensor_aggregated_performance = self.sensor_aggregated_performance.asfreq(
-            self.aggregation_freq)
-        self.sensor_aggregated_insolation = self.sensor_aggregated_insolation.asfreq(
-            self.aggregation_freq)
+        self.sensor_aggregated_performance = self.sensor_aggregated_performance.resample(
+            self.aggregation_freq, origin='start_day').asfreq()
+        self.sensor_aggregated_insolation = self.sensor_aggregated_insolation.resample(
+            self.aggregation_freq, origin='start_day').asfreq()
 
     def _clearsky_preprocess(self):
         '''
@@ -732,17 +779,21 @@ class TrendAnalysis():
         self._filter(cs_normalized, 'clearsky')
         cs_aggregated, cs_aggregated_insolation = self._aggregate(
             cs_normalized[self.clearsky_filter], cs_insolation[self.clearsky_filter])
+        
         # Run daily filters on aggregated data
+        self.clearsky_aggregated_insolation = cs_aggregated_insolation
         self._aggregated_filter(cs_aggregated, 'clearsky')
+        
         # Apply daily filter to aggregated data and store
         self.clearsky_aggregated_performance = cs_aggregated[self.clearsky_filter_aggregated]
         self.clearsky_aggregated_insolation = \
             cs_aggregated_insolation[self.clearsky_filter_aggregated]
+        
         # Reindex the data after the fact, so it's on the aggregated interval
-        self.clearsky_aggregated_performance = self.clearsky_aggregated_performance.asfreq(
-            self.aggregation_freq)
-        self.clearsky_aggregated_insolation = self.clearsky_aggregated_insolation.asfreq(
-            self.aggregation_freq)
+        self.clearsky_aggregated_performance = self.clearsky_aggregated_performance.resample(
+            self.aggregation_freq, origin='start_day').asfreq()
+        self.clearsky_aggregated_insolation = self.clearsky_aggregated_insolation.resample(
+            self.aggregation_freq, origin='start_day').asfreq()
 
     def sensor_analysis(self, analyses=['yoy_degradation'], yoy_kwargs={}, srr_kwargs={}):
         '''

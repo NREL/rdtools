@@ -109,6 +109,7 @@ Filtering
    poa_filter
    tcell_filter
    normalized_filter
+   hampel_filter
 
 
 Normalization

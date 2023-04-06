@@ -169,6 +169,25 @@ def test_sensor_analysis_power_dc_rated(sensor_parameters):
     assert [-1, -1] == pytest.approx(ci, abs=1e-2)
 
 
+def test_sensor_analysis_csifilter(sensor_parameters):
+    rd_analysis = TrendAnalysis(**sensor_parameters)
+    rd_analysis.set_clearsky(pvlib_location=pvlib.location.Location(40, -80),
+                             poa_global_clearsky=rd_analysis.poa_global,
+                             solar_position_method='ephemeris')
+    rd_analysis.filter_params['sensor_csi_filter'] = {}
+    rd_analysis._sensor_preprocess()
+    assert ~rd_analysis.sensor_filter_components['sensor_csi_filter']['2012-01-01 0:0:0']
+    assert rd_analysis.sensor_filter_components['sensor_csi_filter']['2012-01-01 1:0:0']
+
+
+def test_sensor_analysis_hampel_filter(sensor_parameters):
+    rd_analysis = TrendAnalysis(**sensor_parameters)
+    rd_analysis.filter_params_aggregated['hampel_filter'] = {'t0': 1}
+    rd_analysis.sensor_analysis(analyses=['yoy_degradation'])
+    assert np.isnan(rd_analysis.sensor_aggregated_performance['2012-04-05'])
+    assert ~np.isnan(rd_analysis.sensor_aggregated_performance['2012-04-03'])
+
+
 def test_sensor_analysis_ad_hoc_filter(sensor_parameters):
     # by excluding all but a few points, we should trigger the <2yr error
     filt = pd.Series(False, index=sensor_parameters['pv'].index)
@@ -334,7 +353,6 @@ def test_no_gamma_pdc(sensor_parameters):
 
     with pytest.warns(UserWarning) as record:
         rd_analysis.sensor_analysis()
-
     assert_warnings(["Temperature coefficient not passed"], record)
 
 
