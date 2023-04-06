@@ -719,7 +719,7 @@ class TrendAnalysis():
                     self._calc_clearsky_poa(model='isotropic')
             except AttributeError:
                 raise AttributeError("No poa_global_clearsky. 'set_clearsky' must be run " +
-                                     "to allow filter_params['sensor_csi_filter']. ")
+                                     "to allow filter_params['sensor_pvlib_clearsky_filter']. ")
         if self.power_expected is None:
             # Thermal details required if power_expected is not manually set.
             if self.temperature_cell is None and self.temperature_ambient is None:
