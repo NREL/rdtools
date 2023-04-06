@@ -169,9 +169,12 @@ def pvlib_clearsky_filter(poa_global_measured, poa_global_clearsky,
     pandas.Series
         Boolean Series of whether or not the given time is clear.
     '''
+    
+    df = pd.concat([poa_global_measured, poa_global_clearsky], axis=1, join='outer')
+    df.columns=['measured', 'clearsky']
 
     kwargs['return_components'] = False
-    mask = pvlib.clearsky.detect_clearsky(poa_global_measured, poa_global_clearsky,
+    mask = pvlib.clearsky.detect_clearsky(df['measured'], df['clearsky'],
                           window_length=window_length, mean_diff=mean_diff, max_diff=max_diff,
                           lower_line_length=lower_line_length, upper_line_length=upper_line_length,
                           var_diff=var_diff, slope_dev=slope_dev, **kwargs)
