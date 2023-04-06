@@ -143,7 +143,6 @@ class TrendAnalysis():
             'ad_hoc_filter': None  # use this to include an explict filter
         }
         self.filter_params_aggregated = {
-            'hampel_filter': None,
             'ad_hoc_filter': None
         }
         # remove tcell_filter from list if power_expected is passed in
@@ -526,14 +525,36 @@ class TrendAnalysis():
         """
         filter_components_aggregated = {'default':
                                         pd.Series(True, index=aggregated.index)}
+        
+        if case == 'sensor':
+            insol = self.sensor_aggregated_insolation
+        if case == 'clearsky':
+            insol = self.clearsky_aggregated_insolation
+        
         # Add daily aggregate filters as they come online here.
-        # Convert the dictionary into a dataframe (after running filters)
-        filter_components_aggregated = pd.DataFrame(
-            filter_components_aggregated).fillna(False)
-        if self.filter_params_aggregated.get('hampel_filter', None) is not None:
+        if 'two_way_window_filter' in self.filter_params_aggregated:
+            f = filtering.two_way_window_filter(
+                aggregated, **self.filter_params_aggregated['two_way_window_filter'])
+            filter_components_aggregated['two_way_window_filter'] = f
+        
+        if 'insolation_filter' in self.filter_params_aggregated:
+            f = filtering.insolation_filter(
+                insol, **self.filter_params_aggregated['insolation_filter'])
+            filter_components_aggregated['insolation_filter'] = f
+
+        if 'hampel_filter' in self.filter_params_aggregated:
             hampelmask = filtering.hampel_filter(aggregated,
                                                  **self.filter_params_aggregated['hampel_filter'])
             filter_components_aggregated['hampel_filter'] = hampelmask
+
+        if 'directional_tukey_filter' in self.filter_params_aggregated:
+            f = filtering.directional_tukey_filter(aggregated,
+                                                 **self.filter_params_aggregated['directional_tukey_filter'])
+            filter_components_aggregated['directional_tukey_filter'] = f
+
+        # Convert the dictionary into a dataframe (after running filters)
+        filter_components_aggregated = pd.DataFrame(
+            filter_components_aggregated).fillna(False)
         # Run the ad-hoc filter from filter_params_aggregated, if available
         if self.filter_params_aggregated.get('ad_hoc_filter', None) is not None:
             ad_hoc_filter_aggregated = self.filter_params_aggregated['ad_hoc_filter']
@@ -602,7 +623,7 @@ class TrendAnalysis():
         aggregated = aggregation.aggregation_insol(
             energy_normalized, insolation, self.aggregation_freq)
         aggregated_insolation = insolation.resample(
-            self.aggregation_freq).sum()
+            self.aggregation_freq, origin='start_day').sum()
 
         return aggregated, aggregated_insolation
 
@@ -716,16 +737,20 @@ class TrendAnalysis():
         self._filter(energy_normalized, 'sensor')
         aggregated, aggregated_insolation = self._aggregate(
             energy_normalized[self.sensor_filter], insolation[self.sensor_filter])
+        
         # Run daily filters on aggregated data
+        self.sensor_aggregated_insolation = aggregated_insolation
         self._aggregated_filter(aggregated, 'sensor')
+        
         # Apply filter to aggregated data and store
         self.sensor_aggregated_performance = aggregated[self.sensor_filter_aggregated]
         self.sensor_aggregated_insolation = aggregated_insolation[self.sensor_filter_aggregated]
+        
         # Reindex the data after the fact, so it's on the aggregated interval
-        self.sensor_aggregated_performance = self.sensor_aggregated_performance.asfreq(
-            self.aggregation_freq)
-        self.sensor_aggregated_insolation = self.sensor_aggregated_insolation.asfreq(
-            self.aggregation_freq)
+        self.sensor_aggregated_performance = self.sensor_aggregated_performance.resample(
+            self.aggregation_freq, origin='start_day').asfreq()
+        self.sensor_aggregated_insolation = self.sensor_aggregated_insolation.resample(
+            self.aggregation_freq, origin='start_day').asfreq()
 
     def _clearsky_preprocess(self):
         '''
@@ -754,17 +779,21 @@ class TrendAnalysis():
         self._filter(cs_normalized, 'clearsky')
         cs_aggregated, cs_aggregated_insolation = self._aggregate(
             cs_normalized[self.clearsky_filter], cs_insolation[self.clearsky_filter])
+        
         # Run daily filters on aggregated data
+        self.clearsky_aggregated_insolation = cs_aggregated_insolation
         self._aggregated_filter(cs_aggregated, 'clearsky')
+        
         # Apply daily filter to aggregated data and store
         self.clearsky_aggregated_performance = cs_aggregated[self.clearsky_filter_aggregated]
         self.clearsky_aggregated_insolation = \
             cs_aggregated_insolation[self.clearsky_filter_aggregated]
+        
         # Reindex the data after the fact, so it's on the aggregated interval
-        self.clearsky_aggregated_performance = self.clearsky_aggregated_performance.asfreq(
-            self.aggregation_freq)
-        self.clearsky_aggregated_insolation = self.clearsky_aggregated_insolation.asfreq(
-            self.aggregation_freq)
+        self.clearsky_aggregated_performance = self.clearsky_aggregated_performance.resample(
+            self.aggregation_freq, origin='start_day').asfreq()
+        self.clearsky_aggregated_insolation = self.clearsky_aggregated_insolation.resample(
+            self.aggregation_freq, origin='start_day').asfreq()
 
     def sensor_analysis(self, analyses=['yoy_degradation'], yoy_kwargs={}, srr_kwargs={}):
         '''
