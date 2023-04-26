@@ -471,11 +471,11 @@ def logic_clip_filter(power_ac,
        detection techniques in AC power time series", 2021 IEEE 48th Photovoltaic
        Specialists Conference (PVSC). DOI: 10.1109/PVSC43889.2021.9518733.
     '''
-    # Throw a warning that this is still an experimental filter
-    warnings.warn("The logic-based filter is an experimental clipping filter "
-                  "that is still under development. The API, results, and "
-                  "default behaviors may change in future releases (including "
-                  "MINOR and PATCH). Use at your own risk!")
+    # Throw a warning that this is still an experimental filter. (Removed for 3.0.0)
+    #warnings.warn("The logic-based filter is an experimental clipping filter "
+    #              "that is still under development. The API, results, and "
+    #              "default behaviors may change in future releases (including "
+    #              "MINOR and PATCH). Use at your own risk!")
     # Format the time series
     power_ac, index_name = _format_clipping_time_series(power_ac,
                                                         mounting_type)
