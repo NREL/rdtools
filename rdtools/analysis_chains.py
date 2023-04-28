@@ -467,7 +467,7 @@ class TrendAnalysis():
         if case == 'clearsky':
             filter_components['pvlib_clearsky_filter'] = _call_clearsky_filter('pvlib_clearsky_filter')
         if 'sensor_pvlib_clearsky_filter' in self.filter_params:
-            filter_components['sensor_pvlib_clearsky_filter'] = _call_clearsky_filter('pvlib_clearsky_filter')
+            filter_components['sensor_pvlib_clearsky_filter'] = _call_clearsky_filter('sensor_pvlib_clearsky_filter')
 
         # note: the previous implementation using the & operator treated NaN
         # filter values as False, so we do the same here for consistency:
