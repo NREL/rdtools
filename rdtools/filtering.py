@@ -6,6 +6,7 @@ import os
 import warnings
 import pvlib
 from numbers import Number
+from scipy.interpolate import interp1d
 import rdtools
 import xgboost as xgb
 
@@ -126,7 +127,8 @@ def csi_filter(poa_global_measured, poa_global_clearsky, threshold=0.15):
 def pvlib_clearsky_filter(poa_global_measured, poa_global_clearsky,
                           window_length=90, mean_diff=75, max_diff=75,
                           lower_line_length=-45, upper_line_length=80,
-                          var_diff=0.032, slope_dev=75, **kwargs):
+                          var_diff=0.032, slope_dev=75,
+                          lookup_parameters=False, **kwargs):
     '''
     Filtering based on the Reno and Hansen method for clearsky filtering
     as implimented in pvlib. Requires a regular time series with uniform
@@ -160,6 +162,14 @@ def pvlib_clearsky_filter(poa_global_measured, poa_global_clearsky,
     slope_dev : float, default 8
         Threshold value for agreement between the largest magnitude of
         change in successive values, see Eqs. 12 through 14 in [1].
+    lookup_parameters : bool, default False
+        Look up the recomended parameters [2] based on the
+        frequency of poa_global_measured. If poa_global_measured has a defined
+        frequency, this overrides the values of window_length, max_diff,
+        var_diff, and slope_dev. For frequencies below 1 minute or greater than
+        30, the lookup uses the recomended parameters for 1 or 30 minutes
+        respectively. If poa_global_measured doesn't have a defined frequency,
+        the passed or default values of the parameters are used.
     kwargs :
         Additional arguments passed to pvlib.clearsky.detect_clearsky
         return_components is set to False and not passed.
@@ -168,8 +178,42 @@ def pvlib_clearsky_filter(poa_global_measured, poa_global_clearsky,
     -------
     pandas.Series
         Boolean Series of whether or not the given time is clear.
+
+    References
+    ----------
+    [1] M.J. Reno and C.W. Hansen, Renewable Energy 90, pp. 520-531 (2016)
+    [2] D.C. Jordan and C.W. Hansen, Renewable Energy 209 pp. 393-400 (2023)
+
+
     '''
-    
+
+    if lookup_parameters and poa_global_measured.index.freq:
+        frequencies = np.array([1,5,15,30])
+        windows = np.array([50,60,90,120])
+        max_diffs = np.array([60,65,75,90])
+        var_diffs = np.array([0.005, 0.01, 0.032, 0.07])
+        slope_devs = np.array([50,60,75,96])
+
+        windows_interp = interp1d(frequencies, windows,
+            fill_value=(windows[0], windows[-1]),
+            bounds_error=False)
+        max_diffs_interp = interp1d(frequencies, max_diffs,
+            fill_value=(max_diffs[0], max_diffs[-1]),
+            bounds_error=False)
+        var_diffs_interp = interp1d(frequencies, var_diffs,
+            fill_value=(var_diffs[0], var_diffs[-1]),
+            bounds_error=False)
+        slope_devs_interp = interp1d(frequencies, slope_devs,
+            fill_value=(slope_devs[0], slope_devs[-1]),
+            bounds_error=False)
+
+        freq_minutes = poa_global_measured.index.freq.nanos/10**9/60
+        window_length = windows_interp(freq_minutes)
+        max_diff = max_diffs_interp(freq_minutes)
+        var_diff = var_diffs_interp(freq_minutes)
+        slope_dev = slope_devs_interp(freq_minutes)
+
+
     df = pd.concat([poa_global_measured, poa_global_clearsky], axis=1, join='outer')
     df.columns=['measured', 'clearsky']
 
