@@ -1,0 +1,13 @@
+*************************
+v2.1.5 (May 16, 2023)
+*************************
+
+Bug Fixes
+---------
+* Add support for pandas 2.0 (:issue:`361`, :pull:`362`)
+
+
+Contributors
+------------
+* Kevin Anderson (:ghuser:`kanderso-nrel`)
+* Michael Deceglie (:ghuser:`mdeceglie`)
