@@ -332,10 +332,8 @@ def _mk_test(x, alpha=0.05):
     n = len(x)
 
     # calculate S
-    s = 0
-    for k in range(n - 1):
-        for j in range(k + 1, n):
-            s += np.sign(x[j] - x[k])
+    x = np.array(x)
+    s = np.sum(np.triu(np.sign(-np.subtract.outer(x, x)), 1))
 
     # calculate the unique data
     unique_x = np.unique(x)
