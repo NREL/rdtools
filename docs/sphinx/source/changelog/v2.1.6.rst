@@ -1,0 +1,13 @@
+*************************
+v2.1.6 (TBD)
+*************************
+
+Enhancements
+---------
+* :py:func:`rdtools.degradation.degradation_classical_decomposition` now
+  executes significantly faster. (:pull:`371`)
+
+
+Contributors
+------------
+* Kevin Anderson (:ghuser:`kandersolar`)
