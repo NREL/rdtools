@@ -54,4 +54,4 @@ def test_with_tricky_timezones():
     times = pd.date_range(start=start_date, end=end_date, freq=freq)
     times = times.tz_localize(tz=tz, ambiguous='infer',
                               nonexistent='shift_forward')
-    tamb = get_clearsky_tamb(times, lat, lon)
+    get_clearsky_tamb(times, lat, lon)
