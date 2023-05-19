@@ -9,8 +9,13 @@ Enhancements
 
 Requirements
 ------------
-* Increased minimum versions of pandas to 1.3.0 (released July 2, 2021)
-  and numpy to 1.17.3 (released October 17, 2019). (:pull:`371`)
+* Increased the minimum versions of several dependencies: (:pull:`371`)
+  
+  + pandas increased to 1.3.0 (released July 2, 2021)
+  + numpy to 1.17.3 (released October 17, 2019)
+  + statsmodels to 0.11.0 (released February 21, 2020)
+
+
 
 Contributors
 ------------
