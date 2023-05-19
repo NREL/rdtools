@@ -127,7 +127,7 @@ def degradation_classical_decomposition(energy_normalized,
     # Compute yearly rolling mean to isolate trend component using
     # moving average
     energy_ma = df['energy_normalized'].rolling('365d', center=True).mean()
-    has_full_year = (df['years'] > df['years'][0] + 0.5) & (df['years'] < df['years'][-1] - 0.5)
+    has_full_year = (df['years'] >= df['years'][0] + 0.5) & (df['years'] <= df['years'][-1] - 0.5)
     energy_ma[~has_full_year] = np.nan
     df['energy_ma'] = energy_ma
 
