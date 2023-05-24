@@ -464,6 +464,17 @@ class TrendAnalysis():
             f = filtering.clip_filter(
                 self.pv_power, **self.filter_params['clip_filter'])
             filter_components['clip_filter'] = f
+        if 'hour_angle_filter' in self.filter_params:
+            if self.pvlib_location is None:
+                raise ValueError(
+                    'pvlib location must be provided using set_clearsky() '
+                    'in order to use the hour_angle_filter')
+            loc = self.pvlib_location
+            f = filtering.hour_angle_filter(
+                energy_normalized, loc.latitude, loc.longitude,
+                 **self.filter_params['hour_angle_filter'])
+            filter_components['hour_angle_filter'] = f
+        
         if case == 'clearsky':
             filter_components['pvlib_clearsky_filter'] = _call_clearsky_filter('pvlib_clearsky_filter')
         if 'sensor_pvlib_clearsky_filter' in self.filter_params:
