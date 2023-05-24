@@ -948,3 +948,18 @@ def directional_tukey_filter(series, roll_period=pd.to_timedelta('7 Days'), k=1.
             ((backward_dif > backward_dif_lower) & (backward_dif < backward_dif_upper))
             )
     return mask
+
+
+def hour_angle_filter(series, lat, lon, min_hour_angle=-30, max_hour_angle=30):
+    '''
+    Creates a filter based on the hour angle of the sun (15 degrees per hour)
+    '''
+
+    times = series.index
+    spa = pvlib.solarposition.get_solarposition(times, lat, lon)
+    eot = spa['equation_of_time']
+    hour_angle = pvlib.solarposition.hour_angle(times, lon, eot)
+    hour_angle = pd.Series(hour_angle, index=times)
+    mask = (hour_angle >= min_hour_angle) & (hour_angle <= max_hour_angle)
+
+    return mask
