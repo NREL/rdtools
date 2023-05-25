@@ -236,10 +236,10 @@ class TrendAnalysis():
                                   freq='1min')
             aggregate = True
 
-        if self.pvlib_location is None:
+        if not hasattr(self, 'pvlib_location'):
             raise ValueError(
                 'pvlib location must be provided using set_clearsky()')
-        if self.pv_tilt is None or self.pv_azimuth is None:
+        if not hasattr(self, 'pv_tilt') or not hasattr(self, 'pv_azimuth'):
             raise ValueError(
                 'pv_tilt and pv_azimuth must be provided using set_clearsky()')
 
@@ -332,9 +332,9 @@ class TrendAnalysis():
         Calculate clear-sky ambient temperature and store in self.temperature_ambient_clearsky
         '''
         times = self.poa_global_clearsky.index
-        if self.pvlib_location is None:
+        if not hasattr(self, 'pvlib_location'):
             raise ValueError(
-                'pvlib location must be provided using set_clearsky()')
+                'pvlib_location must be provided using set_clearsky()')
         loc = self.pvlib_location
 
         cs_amb_temp = clearsky_temperature.get_clearsky_tamb(
@@ -465,7 +465,7 @@ class TrendAnalysis():
                 self.pv_power, **self.filter_params['clip_filter'])
             filter_components['clip_filter'] = f
         if 'hour_angle_filter' in self.filter_params:
-            if self.pvlib_location is None:
+            if not hasattr(self, 'pvlib_location'):
                 raise ValueError(
                     'The pvlib location must be provided using set_clearsky() '
                     'or by directly setting TrendAnalysis.pvlib_location '
