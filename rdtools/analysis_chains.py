@@ -467,7 +467,8 @@ class TrendAnalysis():
         if 'hour_angle_filter' in self.filter_params:
             if self.pvlib_location is None:
                 raise ValueError(
-                    'pvlib location must be provided using set_clearsky() '
+                    'The pvlib location must be provided using set_clearsky() '
+                    'or by directly setting TrendAnalysis.pvlib_location '
                     'in order to use the hour_angle_filter')
             loc = self.pvlib_location
             f = filtering.hour_angle_filter(
