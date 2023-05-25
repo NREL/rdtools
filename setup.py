@@ -35,7 +35,7 @@ TESTS_REQUIRE = [
     'pytest >= 3.6.3',
     'coverage',
     'flake8',
-    'nbval',
+    'nbval==0.9.6',  # https://github.com/computationalmodelling/nbval/issues/194
     'pytest-mock',
 ]
 

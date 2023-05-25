@@ -34,7 +34,7 @@ class DegradationTestCase(unittest.TestCase):
             freq = input_freq
 
         x = pd.date_range(start=start, end=end, freq=freq)
-        day_deltas = (x - x[0]).astype('timedelta64[s]') / (60.0 * 60.0 * 24)
+        day_deltas = (x - x[0]) / pd.Timedelta('1d')
         noise = (np.random.rand(len(day_deltas)) - 0.5) / 1e3
 
         y = 1 + daily_rd * day_deltas + noise

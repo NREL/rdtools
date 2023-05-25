@@ -527,8 +527,9 @@ def logic_clip_filter(power_ac,
     # series sampling frequency is less than 95% consistent.
     _check_data_sampling_frequency(power_ac)
     # Get the sampling frequency of the time series
-    time_series_sampling_frequency = power_ac.index.to_series().diff()\
-        .astype('timedelta64[m]').mode()[0]
+    time_series_sampling_frequency = (
+        power_ac.index.to_series().diff() / pd.Timedelta('60s')
+    ).mode()[0]
     # Make copies of the original inputs for the cases that the data is
     # changes for clipping evaluation
     original_time_series_sampling_frequency = time_series_sampling_frequency
@@ -754,8 +755,7 @@ def xgboost_clip_filter(power_ac,
     # series sampling frequency is less than 95% consistent.
     _check_data_sampling_frequency(power_ac)
     # Get the most common sampling frequency
-    sampling_frequency = int(power_ac.index.to_series().diff()
-                             .astype('timedelta64[m]').mode()[0])
+    sampling_frequency = int((power_ac.index.to_series().diff() / pd.Timedelta('60s')).mode()[0])
     freq_string = str(sampling_frequency) + "T"
     # Min-max normalize
     # Resample the series based on the most common sampling frequency
