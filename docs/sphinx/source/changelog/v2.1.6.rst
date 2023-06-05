@@ -25,5 +25,5 @@ Requirements
 Contributors
 ------------
 * Michael Deceglie (:ghuser:`mdeceglie`)
-* :ghuser:'BernatNicolau'
+* Bernat Nicolau (:ghuser:'BernatNicolau')
 * Kevin Anderson (:ghuser:`kandersolar`)
