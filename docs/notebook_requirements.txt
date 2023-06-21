@@ -32,7 +32,7 @@ nest-asyncio==1.5.5
 notebook==6.4.12
 numexpr==2.8.0
 pandocfilters==1.4.2
-parso==0.3.1
+parso==0.5.2
 pexpect==4.6.0
 pickleshare==0.7.5
 prometheus-client==0.3.0
