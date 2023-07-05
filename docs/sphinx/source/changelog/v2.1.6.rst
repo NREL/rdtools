@@ -21,6 +21,7 @@ Requirements
   + statsmodels to 0.11.0 (released February 21, 2020)
   + scipy to 1.2.0 (released December 17, 2018)
 
+* Add support for pvlib 0.10 (:pull:`378`)
 
 Contributors
 ------------
