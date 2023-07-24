@@ -40,7 +40,7 @@ jobs:
     - name: Install ${{ matrix.env }}
       run: |
         python -m pip install --upgrade pip wheel
-        pip install ${{ matrix.env }}
+        pip install -timeout=300 ${{ matrix.env }}
     - name: Test with pytest ${{ matrix.env }}
       run: |
         pytest
