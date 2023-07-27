@@ -1,6 +1,6 @@
-*************************
-v2.1.6 (TBD)
-*************************
+**********************
+v2.1.6 (July 28, 2023)
+**********************
 
 Bug Fixes
 ---------
@@ -22,6 +22,12 @@ Requirements
   + scipy to 1.2.0 (released December 17, 2018)
 
 * Add support for pvlib 0.10 (:pull:`378`)
+* Updated notebook requirements (:pull:`360`)
+
+Testing
+-------
+* Extended pip timeout (:pull:`360`)
+* Updated example notebooks with new figure sizes (:pull:`360`)
 
 Contributors
 ------------
