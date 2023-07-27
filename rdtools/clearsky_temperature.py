@@ -57,7 +57,9 @@ def get_clearsky_tamb(times, latitude, longitude, window_size=40,
         freq_actual = times.freq
 
     dt_daily = pd.date_range(times.date[0] - buffer, times.date[-1] + buffer,
-                             freq='D', tz=times.tz)
+                             freq='D')
+    dt_daily = dt_daily.tz_localize(times.tz, ambiguous='infer',
+                                    nonexistent='shift_forward')
 
     f = h5py.File(filepath, "r")
 
