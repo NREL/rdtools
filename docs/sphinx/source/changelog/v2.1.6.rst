@@ -21,6 +21,13 @@ Requirements
   + statsmodels to 0.11.0 (released February 21, 2020)
   + scipy to 1.2.0 (released December 17, 2018)
 
+* Updated notebook requirements (:pull:`360`)
+
+Testing
+-------
+* Extended pip timeout (:pull:`360`)
+* Updated example notebooks with new figure sizes (:pull:`360`)
+
 
 Contributors
 ------------
