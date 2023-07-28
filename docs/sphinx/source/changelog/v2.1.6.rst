@@ -33,5 +33,5 @@ Testing
 Contributors
 ------------
 * Michael Deceglie (:ghuser:`mdeceglie`)
-* Bernat Nicolau (:ghuser:'BernatNicolau')
+* Bernat Nicolau (:ghuser:`BernatNicolau`)
 * Kevin Anderson (:ghuser:`kandersolar`)
