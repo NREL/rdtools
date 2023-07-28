@@ -23,6 +23,7 @@ Requirements
 
 * Add support for pvlib 0.10 (:pull:`378`)
 * Updated notebook requirements (:pull:`360`)
+* Bumps certifi from 2020.12.5 to 2022.12.7 (:pull:`357`)
 
 Testing
 -------
