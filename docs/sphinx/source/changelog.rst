@@ -1,6 +1,9 @@
 RdTools Change Log
 ==================
+
 .. include:: changelog/v2.2.0-beta.1.rst
+.. include:: changelog/v2.1.6.rst
+.. include:: changelog/v2.1.5.rst
 .. include:: changelog/v2.1.4.rst
 .. include:: changelog/v2.2.0-beta.0.rst
 .. include:: changelog/v2.1.3.rst

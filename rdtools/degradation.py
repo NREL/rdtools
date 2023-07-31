@@ -38,7 +38,7 @@ def degradation_ols(energy_normalized, confidence_level=68.2):
 
     # calculate a years column as x value for regression, ignoring leap years
     day_diffs = (df.index - df.index[0])
-    df['days'] = day_diffs.astype('timedelta64[s]') / (60 * 60 * 24)
+    df['days'] = day_diffs / pd.Timedelta('1d')
     df['years'] = df.days / 365.0
 
     # add intercept-constant to the exogeneous variable
@@ -123,22 +123,14 @@ def degradation_classical_decomposition(energy_normalized,
 
     # calculate a years column as x value for regression, ignoring leap years
     day_diffs = (df.index - df.index[0])
-    df['days'] = day_diffs.astype('timedelta64[s]') / (60 * 60 * 24)
+    df['days'] = day_diffs / pd.Timedelta('1d')
     df['years'] = df.days / 365.0
 
     # Compute yearly rolling mean to isolate trend component using
     # moving average
-    it = df.iterrows()
-    energy_ma = []
-    for i, row in it:
-        if row.years - 0.5 >= min(df.years) and \
-           row.years + 0.5 <= max(df.years):
-            roll = df[(df.years <= row.years + 0.5) &
-                      (df.years >= row.years - 0.5)]
-            energy_ma.append(roll.energy_normalized.mean())
-        else:
-            energy_ma.append(np.nan)
-
+    energy_ma = df['energy_normalized'].rolling('365d', center=True).mean()
+    has_full_year = (df['years'] >= df['years'][0] + 0.5) & (df['years'] <= df['years'][-1] - 0.5)
+    energy_ma[~has_full_year] = np.nan
     df['energy_ma'] = energy_ma
 
     # add intercept-constant to the exogeneous variable
@@ -290,7 +282,7 @@ def degradation_year_on_year(energy_normalized, recenter=True,
                        tolerance=pd.Timedelta('8D')
                        )
 
-    df['time_diff_years'] = (df.dt - df.dt_right).astype('timedelta64[h]') / 8760.0
+    df['time_diff_years'] = (df.dt - df.dt_right) / pd.Timedelta('365d')
     df['yoy'] = 100.0 * (df.energy - df.energy_right) / (df.time_diff_years)
     df.index = df.dt
 
@@ -395,10 +387,8 @@ def _mk_test(x, alpha=0.05):
     n = len(x)
 
     # calculate S
-    s = 0
-    for k in range(n - 1):
-        for j in range(k + 1, n):
-            s += np.sign(x[j] - x[k])
+    x = np.array(x)
+    s = np.sum(np.triu(np.sign(-np.subtract.outer(x, x)), 1))
 
     # calculate the unique data
     unique_x = np.unique(x)

@@ -11,10 +11,10 @@ defusedxml==0.7.1
 entrypoints==0.2.3
 html5lib==1.0.1
 ipykernel==4.8.2
-ipython==7.16.3
+ipython==8.10.0
 ipython-genutils==0.2.0
 ipywidgets==7.3.0
-jedi==0.12.1
+jedi==0.16.0
 Jinja2==3.0.0
 jsonschema==2.6.0
 jupyter==1.0.0
@@ -32,11 +32,11 @@ nest-asyncio==1.5.5
 notebook==6.4.12
 numexpr==2.8.0
 pandocfilters==1.4.2
-parso==0.3.1
+parso==0.5.2
 pexpect==4.6.0
 pickleshare==0.7.5
 prometheus-client==0.3.0
-prompt-toolkit==3.0.27
+prompt-toolkit==3.0.30
 ptyprocess==0.6.0
 pycparser==2.20
 Pygments==2.7.4
