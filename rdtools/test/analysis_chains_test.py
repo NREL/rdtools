@@ -407,11 +407,11 @@ def test_srr_soiling(soiling_analysis_sensor):
     ci = srr_results['sratio_confidence_interval']
     renorm_factor = srr_results['calc_info']['renormalizing_factor']
     print(f'soiling ci:{ci}')
-    assert 0.965 == pytest.approx(sratio, abs=1e-3),\
+    assert 0.965 == pytest.approx(sratio, abs=1e-3), \
         'Soiling ratio different from expected value in TrendAnalysis.srr_soiling'
-    assert [0.96, 0.97] == pytest.approx(ci, abs=1e-2),\
+    assert [0.96, 0.97] == pytest.approx(ci, abs=1e-2), \
         'Soiling confidence interval different from expected value in TrendAnalysis.srr_soiling'
-    assert 0.974 == pytest.approx(renorm_factor, abs=1e-3),\
+    assert 0.974 == pytest.approx(renorm_factor, abs=1e-3), \
         'Renormalization factor different from expected value in TrendAnalysis.srr_soiling'
 
 

@@ -41,15 +41,14 @@ TESTS_REQUIRE = [
 
 INSTALL_REQUIRES = [
     'matplotlib >= 3.0.0',
-    'numpy >= 1.15',
-    # exclude pandas==1.0.0 & 1.0.1 for GH142, and 0.24.0 for GH114
-    'pandas >= 0.23.2,!=0.24.0,!=1.0.0,!=1.0.1',
-    'statsmodels >= 0.9.0',
-    'scipy >= 1.1.0',
+    'numpy >= 1.17.3',
+    'pandas >= 1.3.0',
+    'statsmodels >= 0.11.0',
+    'scipy >= 1.2.0',
     'h5py >= 2.8.0',
     'plotly>=4.0.0',
     'xgboost >= 1.3.3',
-    'pvlib >= 0.7.0, <0.10.0',
+    'pvlib >= 0.7.0, <0.11.0',
     'scikit-learn >= 0.22.0',
 ]
 
