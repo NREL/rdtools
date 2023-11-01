@@ -135,6 +135,6 @@ def test_interpolate_warning(test_df, df_target_index, df_expected_result):
     with pytest.warns(None) as record:
         interpolate(test_df, df_target_index, pd.to_timedelta('15 minutes'),
                     warning_threshold=0.5)
-        if record:
+        if 'Fraction of excluded data' in ';'.join([str(x.message) for x in record.list]):
             pytest.fail("normalize.interpolate raised a warning about "
                         "excluded data even though the threshold was high")
