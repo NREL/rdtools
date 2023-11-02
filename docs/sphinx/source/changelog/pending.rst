@@ -8,7 +8,7 @@ Requirements
 
 Documentation
 -------------
-* Update ReadTehDocs configuration (:pull:`395`)
+* Update ReadTheDocs configuration (:pull:`395`)
 
 Contributors
 ------------
