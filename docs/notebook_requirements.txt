@@ -39,7 +39,7 @@ prometheus-client==0.3.0
 prompt-toolkit==3.0.30
 ptyprocess==0.6.0
 pycparser==2.20
-Pygments==2.7.4
+Pygments==2.15.0
 pyzmq==22.2.1
 qtconsole==4.3.1
 Send2Trash==1.8.0
@@ -48,7 +48,7 @@ soupsieve==2.3.2.post1
 terminado==0.8.3
 testpath==0.3.1
 tinycss2==1.1.1
-tornado==6.1
+tornado==6.3.3
 traitlets==5.0.0
 wcwidth==0.1.7
 webencodings==0.5.1
