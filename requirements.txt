@@ -20,7 +20,7 @@ python-dateutil==2.8.1
 pytz==2019.3
 arch==4.11
 filterpy==1.4.5
-requests==2.31.1
+requests==2.31.0
 retrying==1.3.3
 scikit-learn==1.0.2
 scipy==1.10.0
