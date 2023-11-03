@@ -1,10 +1,11 @@
-*******
-Pending
-*******
+*************************
+v2.1.7 (November 3, 2023)
+*************************
 
 Requirements
 ------------
 * Limit pandas version to <2.1 (:pull:`395`)
+* Several packages updated in``requirements.txt`` and ``docs/notebook_requirements.txt`` (:pull:`398`)
 
 Documentation
 -------------
