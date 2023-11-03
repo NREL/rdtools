@@ -42,7 +42,10 @@ TESTS_REQUIRE = [
 INSTALL_REQUIRES = [
     'matplotlib >= 3.0.0',
     'numpy >= 1.17.3',
-    'pandas >= 1.3.0',
+    # pandas restricted to <2.1 until
+    # https://github.com/pandas-dev/pandas/issues/55794
+    # is resolved
+    'pandas >= 1.3.0, <2.1',
     'statsmodels >= 0.11.1',
     'scipy >= 1.2.0',
     'h5py >= 2.8.0',
