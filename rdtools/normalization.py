@@ -380,7 +380,7 @@ def irradiance_rescale(irrad, irrad_sim, max_iterations=100,
     '''
 
     if method == 'iterative':
-        def _rmse(fact):
+        def _rmse(fact, filt):
             """
             Calculates RMSE with a given rescale fact(or) according to global
             filt(er)
@@ -392,10 +392,9 @@ def irradiance_rescale(irrad, irrad_sim, max_iterations=100,
 
         def _single_rescale(irrad, irrad_sim, guess):
             "Optimizes rescale factor once"
-            global filt
             csi = irrad / (guess * irrad_sim)  # clear sky index
             filt = (csi >= 0.8) & (csi <= 1.2) & (irrad > 200)
-            min_result = minimize(_rmse, guess, method='Nelder-Mead')
+            min_result = minimize(_rmse, guess, (filt), method='Nelder-Mead')
 
             factor = min_result['x'][0]
             return factor
@@ -429,7 +428,7 @@ def irradiance_rescale(irrad, irrad_sim, max_iterations=100,
 
         guess = np.percentile(irrad.dropna(), 90) / \
             np.percentile(irrad_sim.dropna(), 90)
-        min_result = minimize(_rmse, guess, method='Nelder-Mead')
+        min_result = minimize(_rmse, guess, (filt), method='Nelder-Mead')
         factor = min_result['x'][0]
 
         out_irrad = factor * irrad_sim
