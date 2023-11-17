@@ -134,7 +134,7 @@ def test_Kalman_filter_for_SR(cods_normalized_daily):
         assert x in expected_columns, \
             "'{}' not an expected column in Kalman Filter results]".format(x)
     for x in expected_columns:
-        assert x in actual_columns,\
+        assert x in actual_columns, \
             "'{}' was expected as a column, but not in Kalman Filter results".format(x)
     assert Ps.shape == (732, 2, 2), "Shape of array of covariance matrices (Ps) not as expected"
 
