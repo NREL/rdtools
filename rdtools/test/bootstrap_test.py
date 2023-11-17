@@ -1,6 +1,6 @@
 '''Bootstrap module tests.'''
 
-from rdtools.bootstrap import _construct_confidence_intervals,\
+from rdtools.bootstrap import _construct_confidence_intervals, \
     _make_time_series_bootstrap_samples
 from rdtools.degradation import degradation_year_on_year
 

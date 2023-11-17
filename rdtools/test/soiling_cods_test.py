@@ -12,17 +12,17 @@ def test_iterative_signal_decomposition(cods_normalized_daily):
     cods = soiling.CODSAnalysis(cods_normalized_daily)
     df_out, results_dict = \
         cods.iterative_signal_decomposition()
-    assert 0.080641 == pytest.approx(results_dict['degradation'], abs=1e-6),\
+    assert 0.080641 == pytest.approx(results_dict['degradation'], abs=1e-6), \
         'Degradation rate different from expected value'
-    assert 3.305136 == pytest.approx(results_dict['soiling_loss'], abs=1e-6),\
+    assert 3.305136 == pytest.approx(results_dict['soiling_loss'], abs=1e-6), \
         'Soiling loss different from expected value'
-    assert 0.999359 == pytest.approx(results_dict['residual_shift'], abs=1e-6),\
+    assert 0.999359 == pytest.approx(results_dict['residual_shift'], abs=1e-6), \
         'Residual shift different from expected value'
-    assert 0.008144 == pytest.approx(results_dict['RMSE'], abs=1e-6),\
+    assert 0.008144 == pytest.approx(results_dict['RMSE'], abs=1e-6), \
         'RMSE different from expected value'
     assert not results_dict['small_soiling_signal'], \
         'Small soiling signal assertion different from expected value'
-    assert 7.019626e-11 == pytest.approx(results_dict['adf_res'][1], abs=1e-6),\
+    assert 7.019626e-11 == pytest.approx(results_dict['adf_res'][1], abs=1e-6), \
         'p-value of Augmented Dickey-Fuller test different from expected value'
 
     # Check result dataframe
@@ -31,10 +31,10 @@ def test_iterative_signal_decomposition(cods_normalized_daily):
          'seasonal_component', 'degradation_trend', 'total_model', 'residuals']
     actual_columns = df_out.columns.values
     for x in actual_columns:
-        assert x in expected_columns,\
+        assert x in expected_columns, \
             "'{}' not an expected column in result_df]".format(x)
     for x in expected_columns:
-        assert x in actual_columns,\
+        assert x in actual_columns, \
             "'{}' was expected as a column, but not in result_df".format(x)
     assert isinstance(df_out, pd.DataFrame), 'result_df not a dataframe'
     expected_means = pd.Series({'soiling_ratio': 0.9669486267086722,
@@ -59,17 +59,17 @@ def test_iterative_signal_decomposition_with_nan_interval(cods_normalized_daily)
     cods = soiling.CODSAnalysis(normalized_corrupt)
     df_out, results_dict = \
         cods.iterative_signal_decomposition()
-    assert -0.004968 == pytest.approx(results_dict['degradation'], abs=1e-5),\
+    assert -0.004968 == pytest.approx(results_dict['degradation'], abs=1e-5), \
         'Degradation rate different from expected value'
-    assert 3.232171 == pytest.approx(results_dict['soiling_loss'], abs=1e-5),\
+    assert 3.232171 == pytest.approx(results_dict['soiling_loss'], abs=1e-5), \
         'Soiling loss different from expected value'
-    assert 1.000108 == pytest.approx(results_dict['residual_shift'], abs=1e-5),\
+    assert 1.000108 == pytest.approx(results_dict['residual_shift'], abs=1e-5), \
         'Residual shift different from expected value'
-    assert 0.008184 == pytest.approx(results_dict['RMSE'], abs=1e-5),\
+    assert 0.008184 == pytest.approx(results_dict['RMSE'], abs=1e-5), \
         'RMSE different from expected value'
     assert not results_dict['small_soiling_signal'], \
         'Small soiling signal assertion different from expected value'
-    assert 1.230754e-8 == pytest.approx(results_dict['adf_res'][1], abs=1e-6),\
+    assert 1.230754e-8 == pytest.approx(results_dict['adf_res'][1], abs=1e-6), \
         'p-value of Augmented Dickey-Fuller test different from expected value'
 
     # Check result dataframe
@@ -93,13 +93,13 @@ def test_soiling_cods(cods_normalized_daily):
     reps = 16
     np.random.seed(1977)
     sr, sr_ci, deg, deg_ci, result_df = soiling.soiling_cods(cods_normalized_daily, reps=reps)
-    assert 0.962207 == pytest.approx(sr, abs=0.5),\
+    assert 0.962207 == pytest.approx(sr, abs=0.5), \
         'Soiling ratio different from expected value'
-    assert np.array([0.96662419, 0.95692131]) == pytest.approx(sr_ci, abs=0.5),\
+    assert np.array([0.96662419, 0.95692131]) == pytest.approx(sr_ci, abs=0.5), \
         'Confidence interval of SR different from expected value'
-    assert 0.09 == pytest.approx(deg, abs=0.5),\
+    assert 0.09 == pytest.approx(deg, abs=0.5), \
         'Degradation rate different from expected value'
-    assert np.array([-0.17143952,  0.39313724]) == pytest.approx(deg_ci, abs=0.5),\
+    assert np.array([-0.17143952,  0.39313724]) == pytest.approx(deg_ci, abs=0.5), \
         'Confidence interval of degradation rate different from expected value'
 
     # Check result dataframe
@@ -111,10 +111,10 @@ def test_soiling_cods(cods_normalized_daily):
          'model_high']
     actual_summary_columns = result_df.columns.values
     for x in actual_summary_columns:
-        assert x in expected_summary_columns,\
+        assert x in expected_summary_columns, \
             "'{}' not an expected column in result_df]".format(x)
     for x in expected_summary_columns:
-        assert x in actual_summary_columns,\
+        assert x in actual_summary_columns, \
             "'{}' was expected as a column, but not in result_df".format(x)
 
 
@@ -131,7 +131,7 @@ def test_Kalman_filter_for_SR(cods_normalized_daily):
                         'soiling_rates', 'cleaning_events', 'days_since_ce']
     actual_columns = dfk.columns.values
     for x in actual_columns:
-        assert x in expected_columns,\
+        assert x in expected_columns, \
             "'{}' not an expected column in Kalman Filter results]".format(x)
     for x in expected_columns:
         assert x in actual_columns,\
