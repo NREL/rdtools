@@ -1,0 +1,11 @@
+**************************
+v2.1.8 (November 17, 2023)
+**************************
+
+Bug fixes
+---------
+* Fix a bug in parallel computing environments (:issue:`388` :pull:`399`)
+
+Contributors
+------------
+* Martin Springer (:ghuser:`martin-springer`)
