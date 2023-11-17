@@ -48,7 +48,7 @@ def test_iterative_signal_decomposition(cods_normalized_daily):
         ['soiling_ratio', 'soiling_rates', 'cleaning_events',
          'seasonal_component', 'degradation_trend', 'total_model', 'residuals']]
     pd.testing.assert_series_equal(expected_means, df_out.mean(),
-                                   check_exact=False, check_less_precise=True)
+                                   check_exact=False, rtol=1e-3)
 
 
 def test_iterative_signal_decomposition_with_nan_interval(cods_normalized_daily):
@@ -85,7 +85,7 @@ def test_iterative_signal_decomposition_with_nan_interval(cods_normalized_daily)
         ['soiling_ratio', 'soiling_rates', 'cleaning_events',
          'seasonal_component', 'degradation_trend', 'total_model', 'residuals']]
     pd.testing.assert_series_equal(expected_means, df_out.mean(),
-                                   check_exact=False, check_less_precise=True)
+                                   check_exact=False, rtol=1e-3)
 
 
 def test_soiling_cods(cods_normalized_daily):
