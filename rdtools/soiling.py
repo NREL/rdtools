@@ -1766,7 +1766,7 @@ class CODSAnalysis():
                 'Iterative decomposition not possible.\n'
                 'Degradation found by RdTools YoY')
             print(self.errors)
-            return
+            return self.result_df, self.degradation, self.soiling_loss
         self.small_soiling_signal = False
 
         # Aggregate all bootstrap samples
