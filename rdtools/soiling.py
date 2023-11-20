@@ -2507,7 +2507,8 @@ def _make_seasonal_samples(list_of_SCs, sample_nr=10, min_multiplier=0.5,
     ''' Generate seasonal samples by perturbing the amplitude and the phase of
         a seasonal components found with the fitted CODS model '''
     samples = pd.DataFrame(index=list_of_SCs[0].index,
-                           columns=range(int(sample_nr*len(list_of_SCs))))
+                           columns=range(int(sample_nr*len(list_of_SCs))),
+                           dtype=float)
     # From each fitted signal, we will generate new seaonal components
     for i, signal in enumerate(list_of_SCs):
         # Remove beginning and end of signal
