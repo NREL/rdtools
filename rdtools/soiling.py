@@ -1762,10 +1762,10 @@ class CODSAnalysis():
             self.soiling_loss = [0, 0, (1 - result_df.soiling_ratio).mean()]
             self.small_soiling_signal = True
             self.errors = (
-                'Soiling signal is small relative to the noise.'
-                'Iterative decomposition not possible.\n'
-                'Degradation found by RdTools YoY')
-            print(self.errors)
+                'Soiling signal is small relative to the noise. '
+                'Iterative decomposition not possible. '
+                'Degradation found by RdTools YoY.')
+            warnings.warn(self.errors)
             return self.result_df, self.degradation, self.soiling_loss
         self.small_soiling_signal = False
 

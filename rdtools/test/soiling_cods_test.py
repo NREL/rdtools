@@ -118,6 +118,19 @@ def test_soiling_cods(cods_normalized_daily):
             "'{}' was expected as a column, but not in result_df".format(x)
 
 
+def test_soiling_cods_small_signal(cods_normalized_daily_small_soiling):
+    ''' Test the CODS algorithm with small soiling signal'''
+    reps = 16
+    np.random.seed(1977)
+    warn_small_signal = (
+                'Soiling signal is small relative to the noise. '
+                'Iterative decomposition not possible. '
+                'Degradation found by RdTools YoY.')
+
+    with pytest.warns(UserWarning, match=warn_small_signal):
+        soiling.soiling_cods(cods_normalized_daily_small_soiling, reps=reps)
+
+
 def test_Kalman_filter_for_SR(cods_normalized_daily):
     '''Test the Kalman Filter method in CODS'''
     cods = soiling.CODSAnalysis(cods_normalized_daily)
