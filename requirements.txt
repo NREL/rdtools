@@ -1,4 +1,4 @@
-arch==6.2
+arch==6.2.0
 cached-property==1.5.2
 certifi==2023.7.22
 chardet==4.0.0
