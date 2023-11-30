@@ -1,3 +1,4 @@
+arch==4.11
 cached-property==1.5.2
 certifi==2023.7.22
 chardet==4.0.0
@@ -18,7 +19,6 @@ pvlib==0.9.0
 pyparsing==2.4.7
 python-dateutil==2.8.1
 pytz==2019.3
-arch==4.11
 filterpy==1.4.5
 requests==2.31.0
 retrying==1.3.3
