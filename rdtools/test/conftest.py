@@ -126,6 +126,16 @@ def cods_normalized_daily(cods_normalized_daily_wo_noise):
     return cods_normalized_daily
 
 
+@pytest.fixture()
+def cods_normalized_daily_small_soiling(cods_normalized_daily_wo_noise):
+    N = len(cods_normalized_daily_wo_noise)
+    np.random.seed(1977)
+    noise = 1 + 0.02 * (np.random.rand(N) - 0.5)
+    cods_normalized_daily_small_soiling = cods_normalized_daily_wo_noise.apply(
+        lambda row: 1-(1-row)*0.1) * noise
+    return cods_normalized_daily_small_soiling
+
+
 # %% Availability fixtures
 
 ENERGY_PARAMETER_SPACE = list(itertools.product(
