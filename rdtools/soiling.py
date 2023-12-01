@@ -1762,11 +1762,11 @@ class CODSAnalysis():
             self.soiling_loss = [0, 0, (1 - result_df.soiling_ratio).mean()]
             self.small_soiling_signal = True
             self.errors = (
-                'Soiling signal is small relative to the noise.'
-                'Iterative decomposition not possible.\n'
-                'Degradation found by RdTools YoY')
-            print(self.errors)
-            return
+                'Soiling signal is small relative to the noise. '
+                'Iterative decomposition not possible. '
+                'Degradation found by RdTools YoY.')
+            warnings.warn(self.errors)
+            return self.result_df, self.degradation, self.soiling_loss
         self.small_soiling_signal = False
 
         # Aggregate all bootstrap samples
@@ -2507,7 +2507,8 @@ def _make_seasonal_samples(list_of_SCs, sample_nr=10, min_multiplier=0.5,
     ''' Generate seasonal samples by perturbing the amplitude and the phase of
         a seasonal components found with the fitted CODS model '''
     samples = pd.DataFrame(index=list_of_SCs[0].index,
-                           columns=range(int(sample_nr*len(list_of_SCs))))
+                           columns=range(int(sample_nr*len(list_of_SCs))),
+                           dtype=float)
     # From each fitted signal, we will generate new seaonal components
     for i, signal in enumerate(list_of_SCs):
         # Remove beginning and end of signal
