@@ -4,7 +4,9 @@ import numpy as np
 import pandas as pd
 import os
 import warnings
+import pvlib
 from numbers import Number
+from scipy.interpolate import interp1d
 import rdtools
 import xgboost as xgb
 
@@ -120,6 +122,107 @@ def csi_filter(poa_global_measured, poa_global_clearsky, threshold=0.15):
 
     csi = poa_global_measured / poa_global_clearsky
     return (csi >= 1.0 - threshold) & (csi <= 1.0 + threshold)
+
+
+def pvlib_clearsky_filter(poa_global_measured, poa_global_clearsky,
+                          window_length=90, mean_diff=75, max_diff=75,
+                          lower_line_length=-45, upper_line_length=80,
+                          var_diff=0.032, slope_dev=75,
+                          lookup_parameters=False, **kwargs):
+    '''
+    Filtering based on the Reno and Hansen method for clearsky filtering
+    as implimented in pvlib. Requires a regular time series with uniform
+    time steps.
+
+    Parameters
+    ----------
+    poa_global_measured : pandas.Series
+        Plane of array irradiance based on measurments
+    poa_global_clearsky : pandas.Series
+        Plane of array irradiance based on a clear sky model
+    window_length : int, default 10
+        Length of sliding time window in minutes. Must be greater than 2
+        periods.
+    mean_diff : float, default 75
+        Threshold value for agreement between mean values of measured
+        and clearsky in each interval, see Eq. 6 in [1]. [W/m2]
+    max_diff : float, default 75
+        Threshold value for agreement between maxima of measured and
+        clearsky values in each interval, see Eq. 7 in [1]. [W/m2]
+    lower_line_length : float, default -5
+        Lower limit of line length criterion from Eq. 8 in [1].
+        Criterion satisfied when lower_line_length < line length difference
+        < upper_line_length.
+    upper_line_length : float, default 10
+        Upper limit of line length criterion from Eq. 8 in [1].
+    var_diff : float, default 0.005
+        Threshold value in Hz for the agreement between normalized
+        standard deviations of rate of change in irradiance, see Eqs. 9
+        through 11 in [1].
+    slope_dev : float, default 8
+        Threshold value for agreement between the largest magnitude of
+        change in successive values, see Eqs. 12 through 14 in [1].
+    lookup_parameters : bool, default False
+        Look up the recomended parameters [2] based on the
+        frequency of poa_global_measured. If poa_global_measured has a defined
+        frequency, this overrides the values of window_length, max_diff,
+        var_diff, and slope_dev. For frequencies below 1 minute or greater than
+        30, the lookup uses the recomended parameters for 1 or 30 minutes
+        respectively. If poa_global_measured doesn't have a defined frequency,
+        the passed or default values of the parameters are used.
+    kwargs :
+        Additional arguments passed to pvlib.clearsky.detect_clearsky
+        return_components is set to False and not passed.
+
+    Returns
+    -------
+    pandas.Series
+        Boolean Series of whether or not the given time is clear.
+
+    References
+    ----------
+    [1] M.J. Reno and C.W. Hansen, Renewable Energy 90, pp. 520-531 (2016)
+    [2] D.C. Jordan and C.W. Hansen, Renewable Energy 209 pp. 393-400 (2023)
+
+
+    '''
+
+    if lookup_parameters and poa_global_measured.index.freq:
+        frequencies = np.array([1,5,15,30])
+        windows = np.array([50,60,90,120])
+        max_diffs = np.array([60,65,75,90])
+        var_diffs = np.array([0.005, 0.01, 0.032, 0.07])
+        slope_devs = np.array([50,60,75,96])
+
+        windows_interp = interp1d(frequencies, windows,
+            fill_value=(windows[0], windows[-1]),
+            bounds_error=False)
+        max_diffs_interp = interp1d(frequencies, max_diffs,
+            fill_value=(max_diffs[0], max_diffs[-1]),
+            bounds_error=False)
+        var_diffs_interp = interp1d(frequencies, var_diffs,
+            fill_value=(var_diffs[0], var_diffs[-1]),
+            bounds_error=False)
+        slope_devs_interp = interp1d(frequencies, slope_devs,
+            fill_value=(slope_devs[0], slope_devs[-1]),
+            bounds_error=False)
+
+        freq_minutes = poa_global_measured.index.freq.nanos/10**9/60
+        window_length = windows_interp(freq_minutes)
+        max_diff = max_diffs_interp(freq_minutes)
+        var_diff = var_diffs_interp(freq_minutes)
+        slope_dev = slope_devs_interp(freq_minutes)
+
+
+    df = pd.concat([poa_global_measured, poa_global_clearsky], axis=1, join='outer')
+    df.columns=['measured', 'clearsky']
+
+    kwargs['return_components'] = False
+    mask = pvlib.clearsky.detect_clearsky(df['measured'], df['clearsky'],
+                          window_length=window_length, mean_diff=mean_diff, max_diff=max_diff,
+                          lower_line_length=lower_line_length, upper_line_length=upper_line_length,
+                          var_diff=var_diff, slope_dev=slope_dev, **kwargs)
+    return mask
 
 
 def clip_filter(power_ac, model="quantile", **kwargs):
@@ -412,11 +515,11 @@ def logic_clip_filter(power_ac,
        detection techniques in AC power time series", 2021 IEEE 48th Photovoltaic
        Specialists Conference (PVSC). DOI: 10.1109/PVSC43889.2021.9518733.
     '''
-    # Throw a warning that this is still an experimental filter
-    warnings.warn("The logic-based filter is an experimental clipping filter "
-                  "that is still under development. The API, results, and "
-                  "default behaviors may change in future releases (including "
-                  "MINOR and PATCH). Use at your own risk!")
+    # Throw a warning that this is still an experimental filter. (Removed for 3.0.0)
+    #warnings.warn("The logic-based filter is an experimental clipping filter "
+    #              "that is still under development. The API, results, and "
+    #              "default behaviors may change in future releases (including "
+    #              "MINOR and PATCH). Use at your own risk!")
     # Format the time series
     power_ac, index_name = _format_clipping_time_series(power_ac,
                                                         mounting_type)
@@ -743,3 +846,120 @@ def xgboost_clip_filter(power_ac,
                       & (power_ac_df['scaled_value'] >= .1))
     final_clip = final_clip.reindex(index=power_ac.index, fill_value=False)
     return ~(final_clip.astype(bool))
+
+def two_way_window_filter(series, roll_period=pd.to_timedelta('7 Days'), outlier_threshold=0.03):
+    '''
+    Removes outliers based on forward and backward window of the rolling median. Points beyond
+    outlier_threshold from both the forward and backward-looking median are excluded by the filter.
+
+    Parameters
+    ----------
+    series: pandas.Series
+        Pandas time series to be filtered.
+    roll_period : int or timedelta, default 7 days
+        The window to use for backward and forward
+        rolling medians for detecting outliers.
+    outlier_threshold : default is 0.03 meaning 3%
+    '''
+
+    series = series/series.quantile(0.99)
+    backward_median = series.rolling(roll_period, min_periods=5, closed='both').median()
+    forward_median = series.loc[::-1].rolling(roll_period, min_periods=5, closed='both').median()
+
+    backward_dif = abs(series-backward_median)
+    forward_dif = abs(series-forward_median)
+
+    # This is a change from Matt's original logic, which can exclude
+    # points with a NaN median
+    backward_dif.fillna(0, inplace=True)
+    forward_dif.fillna(0, inplace=True)
+
+    dif_min=backward_dif.combine(forward_dif,min,0)
+
+    mask=dif_min<outlier_threshold
+    
+    return mask
+
+
+def insolation_filter(insolation, quantile=0.1):
+    '''
+    TODO: figure out if this should be more general
+
+    returns a filter that excludes everything below quantile from insolation
+    '''
+
+    limit = insolation.quantile(quantile)
+    mask = insolation >= limit
+    return mask
+
+def hampel_filter(vals, k='14d', t0=3):
+    '''
+    Hampel outlier filter primarily applied on daily normalized data but broadly
+    applicable.
+    Parameters
+    ----------
+    vals : pandas.Series
+        daily normalized time series
+    k : int or time offset string e.g. 'd', default 14d
+        size of window including the sample; 14d is equal to 7 days on either
+        side of value
+    t0 : int, default 3
+        Threshold value, defaults to 3 sigma Pearson's rule.
+    Returns
+    -------
+    pandas.Series
+        Boolean Series of whether the given measurement is within 3 sigma of the
+        median.  False points indicate outliers to be removed.
+    '''
+    # Hampel Filter
+    L = 1.4826
+    rolling_median = vals.rolling(k, center=True, min_periods=1).median()
+    difference = np.abs(rolling_median-vals)
+    median_abs_deviation = difference.rolling(k, center=True, min_periods=1).median()
+    threshold = t0 * L * median_abs_deviation
+    return difference <= threshold
+
+
+def _tukey_fence(series, k=1.5):
+    'Calculates the upper and lower tukey fences from a pandas series'
+    p25 = series.quantile(0.25)
+    p75 = series.quantile(0.75)
+    iqr = p75 - p25
+    upper_fence = k*iqr + p75
+    lower_fence = p25 - 1.5*iqr
+    return lower_fence, upper_fence
+
+
+def directional_tukey_filter(series, roll_period=pd.to_timedelta('7 Days'), k=1.5):
+    '''
+    Performs a forward and backward looking rolling tukey filter. Points must only
+    pass one of either the forward or backward looking filters to be kept
+    '''
+    backward_median = series.rolling(roll_period, min_periods=5, closed='both').median()
+    forward_median = series.loc[::-1].rolling(roll_period, min_periods=5, closed='both').median()
+    backward_dif = series - backward_median
+    forward_dif = series - forward_median
+
+    backward_dif_lower, backward_dif_upper = _tukey_fence(backward_dif, k)
+    forward_dif_lower, forward_dif_upper = _tukey_fence(forward_dif, k)
+
+    mask = (
+            ((forward_dif > forward_dif_lower) & (forward_dif < forward_dif_upper)) |
+            ((backward_dif > backward_dif_lower) & (backward_dif < backward_dif_upper))
+            )
+    return mask
+
+
+def hour_angle_filter(series, lat, lon, min_hour_angle=-30, max_hour_angle=30):
+    '''
+    Creates a filter based on the hour angle of the sun (15 degrees per hour)
+    '''
+
+    times = series.index
+    spa = pvlib.solarposition.get_solarposition(times, lat, lon)
+    eot = spa['equation_of_time']
+    hour_angle = pvlib.solarposition.hour_angle(times, lon, eot)
+    hour_angle = pd.Series(hour_angle, index=times)
+    mask = (hour_angle >= min_hour_angle) & (hour_angle <= max_hour_angle)
+
+    return mask

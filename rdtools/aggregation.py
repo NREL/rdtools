@@ -22,7 +22,7 @@ def aggregation_insol(energy_normalized, insolation, frequency='D'):
     aggregated : pandas.Series
         Insolation weighted average, aggregated at frequency
     '''
-    aggregated = (insolation * energy_normalized).resample(frequency).sum() / \
-        insolation.resample(frequency).sum()
+    aggregated = (insolation * energy_normalized).resample(frequency, origin='start_day').sum() / \
+        insolation.resample(frequency, origin='start_day').sum()
 
     return aggregated
