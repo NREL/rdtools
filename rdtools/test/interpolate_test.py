@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 from rdtools import interpolate
 import pytest
+import warnings
 
 
 @pytest.fixture
@@ -132,9 +133,9 @@ def test_interpolate_warning(test_df, df_target_index, df_expected_result):
         interpolate(test_df, df_target_index, pd.to_timedelta('15 minutes'),
                     warning_threshold=0.1)
 
-    with pytest.warns(None) as record:
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
         interpolate(test_df, df_target_index, pd.to_timedelta('15 minutes'),
                     warning_threshold=0.5)
-        if 'Fraction of excluded data' in ';'.join([str(x.message) for x in record.list]):
-            pytest.fail("normalize.interpolate raised a warning about "
-                        "excluded data even though the threshold was high")
+        warnings.filterwarnings("error", message='Fraction of excluded data')
+        # if this test fails, it means a warning was raised that was not expected
