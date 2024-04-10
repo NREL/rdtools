@@ -1,10 +1,13 @@
 <img src="./docs/sphinx/source/_images/logo_horizontal_highres.png" width="500" alt="RdTools logo"/>
 
-Master branch: 
-[![Build Status](https://github.com/NREL/rdtools/workflows/pytest/badge.svg?branch=master)](https://github.com/NREL/rdtools/actions?query=branch%3Amaster)  
+Master branch:
+[![Build Status](https://github.com/NREL/rdtools/workflows/pytest/badge.svg?branch=master)](https://github.com/NREL/rdtools/actions?query=branch%3Amaster)
 
-Development branch: 
+Development branch:
 [![Build Status](https://github.com/NREL/rdtools/workflows/pytest/badge.svg?branch=development)](https://github.com/NREL/rdtools/actions?query=branch%3Adevelopment)
+
+Code coverage:
+[![codecov](https://codecov.io/gh/NREL/rdtools/graph/badge.svg?token=K2HDjFkBws)](https://codecov.io/gh/NREL/rdtools)
 
 RdTools is an open-source library to support reproducible technical analysis of
 time series data from photovoltaic energy systems. The library aims to provide
@@ -57,11 +60,11 @@ appropriate:
    Detection Techniques in AC Power Time Series," 2021 IEEE 48th Photovoltaic
    Specialists Conference (PVSC), pp. 1638-1643 2021, DOI: [10.1109/PVSC43889.2021.9518733](https://doi.org/10.1109/PVSC43889.2021.9518733).
 
-  
+
 ## References
 The clear sky temperature calculation, `clearsky_temperature.get_clearsky_tamb()`, uses data
-from images created by Jesse Allen, NASA’s Earth Observatory using data courtesy of the MODIS Land Group.  
-https://neo.sci.gsfc.nasa.gov/view.php?datasetId=MOD_LSTD_CLIM_M  
+from images created by Jesse Allen, NASA’s Earth Observatory using data courtesy of the MODIS Land Group.
+https://neo.sci.gsfc.nasa.gov/view.php?datasetId=MOD_LSTD_CLIM_M
 https://neo.sci.gsfc.nasa.gov/view.php?datasetId=MOD_LSTN_CLIM_M
 
 Other useful references which may also be consulted for degradation rate methodology include:

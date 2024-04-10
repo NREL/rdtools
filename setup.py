@@ -33,6 +33,7 @@ SETUP_REQUIRES = [
 
 TESTS_REQUIRE = [
     'pytest >= 3.6.3',
+    'pytest-cov',
     'coverage',
     'flake8',
     'nbval==0.9.6',  # https://github.com/computationalmodelling/nbval/issues/194
