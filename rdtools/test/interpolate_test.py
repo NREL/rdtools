@@ -133,7 +133,7 @@ def test_interpolate_warning(test_df, df_target_index, df_expected_result):
         interpolate(test_df, df_target_index, pd.to_timedelta('15 minutes'),
                     warning_threshold=0.1)
 
-    with warnings.catch_warnings() as record:
+    with warnings.catch_warnings():
         warnings.simplefilter("error")
         interpolate(test_df, df_target_index, pd.to_timedelta('15 minutes'),
                     warning_threshold=0.5)
