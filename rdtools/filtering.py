@@ -103,6 +103,43 @@ def tcell_filter(temperature_cell, temperature_cell_low=-50, temperature_cell_hi
     )
 
 
+def clearsky_filter(poa_global_measured, poa_global_clearsky, filter='pvlib', **kwargs):
+    """
+    Wrapper function for running either the CSI or pvlib clearsky filter.
+
+    Parameters
+    ----------
+    poa_global_measured : pandas.Series
+        Plane of array irradiance based on measurments
+    poa_global_clearsky : pandas.Series
+        Plane of array irradiance based on a clear sky model
+    filter : str, default 'pvlib'
+        Clearsky filter to be applied. Can be 'pvlib' or 'csi'.
+    kwargs :
+        Additional clearsky filter args, specific to the filter being
+        used. Keyword must be passed with value.
+
+    Returns
+    -------
+    pandas.Series
+        Boolean Series of whether or not the given time is clear
+        based on the selected filter.
+
+    See Also
+    --------
+    csi_filter : Filtering based on clear-sky index (csi).
+    pvlib_clearsky_filter : Filtering based on pvlib's clearsky model.
+    """
+
+    if filter == "pvlib":
+        clearsky_mask = csi_filter(poa_global_measured, poa_global_clearsky, **kwargs)
+    elif filter == "csi":
+        clearsky_mask = pvlib_clearsky_filter(poa_global_measured, poa_global_clearsky, **kwargs)
+    else:
+        raise ValueError("Clearsky filter must be 'pvlib' or 'csi'.")
+    return clearsky_mask
+
+
 def csi_filter(poa_global_measured, poa_global_clearsky, threshold=0.15):
     """
     Filtering based on clear-sky index (csi)
