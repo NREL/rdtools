@@ -3,7 +3,8 @@
 import pytest
 import pandas as pd
 import numpy as np
-from rdtools import (csi_filter,
+from rdtools import (clearsky_filter,
+                     csi_filter,
                      poa_filter,
                      tcell_filter,
                      clip_filter,
@@ -13,6 +14,33 @@ from rdtools import (csi_filter,
                      xgboost_clip_filter)
 import warnings
 from conftest import assert_warnings
+
+
+def test_clearsky_filter(mocker):
+    ''' Unit tests for clearsky filter wrapper function.'''
+    measured_poa = pd.Series([1, 1, 0, 1.15, 0.85])
+    clearsky_poa = pd.Series([1, 2, 1, 1.00, 1.00])
+
+    # Check that a ValueError is thrown when a model is passed that
+    # is not in the acceptable list.
+    pytest.raises(ValueError, clearsky_filter,
+                  measured_poa,
+                  clearsky_poa,
+                  model='invalid')
+
+    # Check that the csi_filter function is called
+    mock_csi_filter = mocker.patch('rdtools.filtering.csi_filter')
+    clearsky_filter(measured_poa,
+                    clearsky_poa,
+                    model='csi')
+    mock_csi_filter.assert_called_once()
+
+    # Check that the pvlib_clearsky_filter function is called
+    mock_pvlib_filter = mocker.patch('rdtools.filtering.pvlib_clearsky_filter')
+    clearsky_filter(measured_poa,
+                    clearsky_poa,
+                    model='pvlib')
+    mock_pvlib_filter.assert_called_once()
 
 
 def test_csi_filter():
