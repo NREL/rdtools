@@ -277,7 +277,7 @@ def test_aggregated_filter_ad_hoc_warnings(workflow, sensor_parameters):
     rd_analysis.set_clearsky(pvlib_location=pvlib.location.Location(40, -80),
                              poa_global_clearsky=rd_analysis.poa_global)
     # disable all filters outside of CSI
-    rd_analysis.filter_params = {'csi_filter': {}}
+    rd_analysis.filter_params = {"clearsky_filter": {'model': 'csi'}}
     # warning for incomplete index
     daily_ad_hoc_filter = pd.Series(True,
                                     index=sensor_parameters['pv'].index[:-5])
@@ -300,7 +300,7 @@ def test_aggregated_filter_ad_hoc_warnings(workflow, sensor_parameters):
     rd_analysis_2.set_clearsky(pvlib_location=pvlib.location.Location(40, -80),
                                poa_global_clearsky=rd_analysis_2.poa_global)
     # disable all filters outside of CSI
-    rd_analysis_2.filter_params = {'csi_filter': {}}
+    rd_analysis_2.filter_params = {"clearsky_filter": {'model': 'csi'}}
     daily_ad_hoc_filter = pd.Series(True, index=sensor_parameters['pv'].index)
     daily_ad_hoc_filter = daily_ad_hoc_filter.resample(
         '1D').first().dropna(how='all')

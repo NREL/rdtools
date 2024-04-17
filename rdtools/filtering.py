@@ -131,9 +131,9 @@ def clearsky_filter(poa_global_measured, poa_global_clearsky, model='pvlib', **k
     pvlib_clearsky_filter : Filtering based on pvlib's clearsky model.
     """
 
-    if model == "pvlib":
+    if model == "csi":
         clearsky_mask = csi_filter(poa_global_measured, poa_global_clearsky, **kwargs)
-    elif model == "csi":
+    elif model == "pvlib":
         clearsky_mask = pvlib_clearsky_filter(poa_global_measured, poa_global_clearsky, **kwargs)
     else:
         raise ValueError("Clearsky filter must be 'pvlib' or 'csi'.")
