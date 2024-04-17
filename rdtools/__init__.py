@@ -9,7 +9,9 @@ from rdtools.degradation import degradation_classical_decomposition
 from rdtools.degradation import degradation_year_on_year
 from rdtools.aggregation import aggregation_insol
 from rdtools.clearsky_temperature import get_clearsky_tamb
+from rdtools.filtering import clearsky_filter
 from rdtools.filtering import csi_filter
+from rdtools.filtering import pvlib_clearsky_filter
 from rdtools.filtering import poa_filter
 from rdtools.filtering import tcell_filter
 from rdtools.filtering import clip_filter
