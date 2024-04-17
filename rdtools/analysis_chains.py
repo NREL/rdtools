@@ -153,7 +153,7 @@ class TrendAnalysis:
             "poa_filter": {},
             "tcell_filter": {},
             "clip_filter": {},
-            "clearsky_filter": {'model': 'pvlib'},
+            "clearsky_filter": {},
             "ad_hoc_filter": None,  # use this to include an explict filter
         }
         self.filter_params_aggregated = {"ad_hoc_filter": None}
