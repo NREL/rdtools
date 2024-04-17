@@ -188,8 +188,7 @@ def test_logic_clip_filter(generate_power_time_series_no_clipping,
     with warnings.catch_warnings(record=True) as record:
         logic_clip_filter(power_nc_tz_naive)
         # Warning thrown for it being an experimental filter + tz-naive
-        assert_warnings(['The logic-based filter is an experimental',
-                         'Function expects timestamps in local time'],
+        assert_warnings(['Function expects timestamps in local time'],
                         record)
     # Scramble the index and run through the filter. This should throw
     # an IndexError.
@@ -211,8 +210,7 @@ def test_logic_clip_filter(generate_power_time_series_no_clipping,
         logic_clip_filter(power_datetime_index_irregular)
         # Warning thrown for it being an experimental filter + irregular
         # sampling frequency.
-        assert_warnings(['The logic-based filter is an experimental',
-                         'Variable sampling frequency across time series'],
+        assert_warnings(['Variable sampling frequency across time series'],
                         record)
 
     # Check that the returned time series index for the logic filter is
