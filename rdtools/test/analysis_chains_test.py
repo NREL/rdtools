@@ -553,10 +553,13 @@ def test_errors(sensor_parameters, clearsky_analysis):
         rdtemp._sensor_preprocess()
 
     # clearsky analysis with no tilt/azm
+    del clearsky_analysis.pv_tilt
+    clearsky_analysis.poa_global_clearsky = None # just needs to exist to test these errors
     with pytest.raises(ValueError, match='pv_tilt and pv_azimuth must be provided'):
         clearsky_analysis._clearsky_preprocess()
 
     # clearsky analysis with no pvlib.loc
+    del clearsky_analysis.pvlib_location
     with pytest.raises(ValueError, match='pvlib location must be provided'):
         clearsky_analysis._clearsky_preprocess()
 
