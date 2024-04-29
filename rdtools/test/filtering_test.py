@@ -12,6 +12,7 @@ from rdtools import (clearsky_filter,
                      normalized_filter,
                      logic_clip_filter,
                      xgboost_clip_filter,
+                     two_way_window_filter,
                      insolation_filter,
                      hampel_filter,
                      directional_tukey_filter,
@@ -363,6 +364,27 @@ def test_normalized_filter_default():
     pd.testing.assert_series_equal(normalized_filter(
                         pd.Series([0.01 - eps, 0.01 + eps, 1e308])),
                         pd.Series([False, True, True]))
+
+
+def test_two_way_window_filter():
+    # Create a pandas Series with 10 entries and daily index
+    index = pd.date_range(start='1/1/2022', periods=10, freq='D')
+    series = pd.Series([1, 2, 3, 4, 20, 6, 7, 8, 9, 10], index=index)
+
+    # Call the function with the test data
+    result = two_way_window_filter(series)
+
+    # Check that the result is a pandas Series of the same length as the input
+    assert isinstance(result, pd.Series)
+    assert len(result) == len(series)
+
+    # Check that the result only contains boolean values
+    assert set(result.unique()).issubset({True, False})
+
+    # Check that the result is as expected
+    # Here we're checking that the outlier is marked as False
+    expected_result = pd.Series([True]*4 + [False]*2 + [True]*4, index=index)
+    pd.testing.assert_series_equal(result, expected_result)
 
 
 def test_insolation_filter():

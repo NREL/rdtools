@@ -19,6 +19,7 @@ from rdtools.filtering import quantile_clip_filter
 from rdtools.filtering import logic_clip_filter
 from rdtools.filtering import xgboost_clip_filter
 from rdtools.filtering import normalized_filter
+from rdtools.filtering import two_way_window_filter
 from rdtools.filtering import insolation_filter
 from rdtools.filtering import hampel_filter
 from rdtools.filtering import hour_angle_filter
