@@ -8,7 +8,9 @@ from rdtools.degradation import degradation_year_on_year
 
 
 @pytest.mark.parametrize("decomposition_type", ["multiplicative", "additive"])
-def test_bootstrap_module(cods_normalized_daily, cods_normalized_daily_wo_noise, decomposition_type):
+def test_bootstrap_module(
+    cods_normalized_daily, cods_normalized_daily_wo_noise, decomposition_type
+):
     ''' Test make time serie bootstrap samples and construct of confidence intervals. '''
     # Test make bootstrap samples
     bootstrap_samples = _make_time_series_bootstrap_samples(cods_normalized_daily,
