@@ -6,6 +6,7 @@ Breaking changes
 ------------
 These changes have the potential to change answers in existing scripts
 when compared with older versions of RdTools
+
 * Use the pvlib method for clear sky detection by default in
 :py:func:`~rdtools.analysis_chains.TrendAnalysis` (:pull:'412')
 
