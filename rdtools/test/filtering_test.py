@@ -12,6 +12,8 @@ from rdtools import (clearsky_filter,
                      normalized_filter,
                      logic_clip_filter,
                      xgboost_clip_filter,
+                     insolation_filter,
+                     hampel_filter,
                      directional_tukey_filter,
                      hour_angle_filter)
 import warnings
@@ -363,6 +365,46 @@ def test_normalized_filter_default():
                         pd.Series([False, True, True]))
 
 
+def test_insolation_filter():
+    # Create a pandas Series with 10 entries
+    series = pd.Series([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+
+    # Call the function with the test data
+    result = insolation_filter(series)
+
+    # Check that the result is a pandas Series of the same length as the input
+    assert isinstance(result, pd.Series)
+    assert len(result) == len(series)
+
+    # Check that the result only contains boolean values
+    assert set(result.unique()).issubset({True, False})
+
+    # Check that the result is as expected
+    # Here we're checking that the bottom 10% of values are marked as False
+    expected_result = pd.Series([False] + [True]*9)
+    pd.testing.assert_series_equal(result, expected_result)
+
+
+def test_hampel_filter():
+    # Create a pandas Series with 10 entries and daily index
+    index = pd.date_range(start='1/1/2022', periods=10, freq='D')
+    series = pd.Series([1, 2, 3, 4, 100, 6, 7, 8, 9, 10], index=index)
+
+    # Call the function with the test data
+    result = hampel_filter(series)
+
+    # Check that the result is a pandas Series of the same length as the input
+    assert isinstance(result, pd.Series)
+    assert len(result) == len(series)
+
+    # Check that the result only contains boolean values
+    assert set(result.unique()).issubset({True, False})
+
+    # Check that the result is as expected
+    expected_result = pd.Series([True]*3 + [True] + [False] + [True]*5, index=index)
+    pd.testing.assert_series_equal(result, expected_result)
+
+
 def test_directional_tukey_filter():
     # Create a pandas Series with 10 entries and daily index
     index = pd.date_range(start='1/1/2022', periods=7, freq='D')
@@ -386,7 +428,7 @@ def test_hour_angle_filter():
     series = pd.Series([1, 2, 3, 4, 5], index=index)
 
     # Define latitude and longitude
-    lat, lon = 39.7413, -105.1684 # NREL, Golden, CO
+    lat, lon = 39.7413, -105.1684  # NREL, Golden, CO
 
     # Call the function with the test data
     result = hour_angle_filter(series, lat, lon)
