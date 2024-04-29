@@ -12,6 +12,7 @@ from rdtools import (clearsky_filter,
                      normalized_filter,
                      logic_clip_filter,
                      xgboost_clip_filter,
+                     directional_tukey_filter,
                      hour_angle_filter)
 import warnings
 from conftest import assert_warnings
@@ -362,6 +363,23 @@ def test_normalized_filter_default():
                         pd.Series([False, True, True]))
 
 
+def test_directional_tukey_filter():
+    # Create a pandas Series with 10 entries and daily index
+    index = pd.date_range(start='1/1/2022', periods=7, freq='D')
+    series = pd.Series([1, 2, 3, 25, 4, 5, 6], index=index)
+
+    # Call the function with the test data
+    result = directional_tukey_filter(series)
+
+    # Check that the result is a pandas Series of the same length as the input
+    assert isinstance(result, pd.Series)
+    assert len(result) == len(series)
+
+    # Check that the result is as expected
+    expected_result = pd.Series([True, True, True, False, True, True, True], index=index)
+    pd.testing.assert_series_equal(result, expected_result)
+
+
 def test_hour_angle_filter():
     # Create a pandas Series with 5 entries and 15 min index
     index = pd.date_range(start='29/04/2022 15:00', periods=5, freq='H')
@@ -378,5 +396,5 @@ def test_hour_angle_filter():
     assert len(result) == len(series)
 
     # Check that the result is the correct boolean Series
-    expected_result = np.array([False, False, True, True, True])
-    assert (result == expected_result).all()
+    expected_result = pd.Series([False, False, True, True, True], index=index)
+    pd.testing.assert_series_equal(result, expected_result)
