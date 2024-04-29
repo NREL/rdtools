@@ -153,7 +153,7 @@ class TrendAnalysis:
             "poa_filter": {},
             "tcell_filter": {},
             "clip_filter": {},
-            "pvlib_clearsky_filter": {},
+            "clearsky_filter": {},
             "ad_hoc_filter": None,  # use this to include an explict filter
         }
         self.filter_params_aggregated = {"ad_hoc_filter": None}
@@ -461,7 +461,7 @@ class TrendAnalysis:
                     "Both poa_global and poa_global_clearsky must be available to "
                     f"do clearsky filtering with {filter_string}"
                 )
-            f = filtering.pvlib_clearsky_filter(
+            f = filtering.clearsky_filter(
                 self.poa_global,
                 self.poa_global_clearsky,
                 **self.filter_params[filter_string],
@@ -529,12 +529,12 @@ class TrendAnalysis:
             filter_components["hour_angle_filter"] = f
 
         if case == "clearsky":
-            filter_components["pvlib_clearsky_filter"] = _call_clearsky_filter(
-                "pvlib_clearsky_filter"
+            filter_components["clearsky_filter"] = _call_clearsky_filter(
+                "clearsky_filter"
             )
-        if "sensor_pvlib_clearsky_filter" in self.filter_params:
-            filter_components["sensor_pvlib_clearsky_filter"] = _call_clearsky_filter(
-                "sensor_pvlib_clearsky_filter"
+        if "sensor_clearsky_filter" in self.filter_params:
+            filter_components["sensor_clearsky_filter"] = _call_clearsky_filter(
+                "sensor_clearsky_filter"
             )
 
         # note: the previous implementation using the & operator treated NaN
@@ -803,14 +803,14 @@ class TrendAnalysis:
                 "poa_global must be available to perform _sensor_preprocess"
             )
 
-        if "sensor_pvlib_clearsky_filter" in self.filter_params:
+        if "sensor_clearsky_filter" in self.filter_params:
             try:
                 if self.poa_global_clearsky is None:
                     self._calc_clearsky_poa(model="isotropic")
             except AttributeError:
                 raise AttributeError(
                     "No poa_global_clearsky. 'set_clearsky' must be run "
-                    + "to allow filter_params['sensor_pvlib_clearsky_filter']. "
+                    + "to allow filter_params['sensor_clearsky_filter']. "
                 )
         if self.power_expected is None:
             # Thermal details required if power_expected is not manually set.
