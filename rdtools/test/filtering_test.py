@@ -11,7 +11,8 @@ from rdtools import (clearsky_filter,
                      quantile_clip_filter,
                      normalized_filter,
                      logic_clip_filter,
-                     xgboost_clip_filter)
+                     xgboost_clip_filter,
+                     hour_angle_filter)
 import warnings
 from conftest import assert_warnings
 
@@ -359,3 +360,23 @@ def test_normalized_filter_default():
     pd.testing.assert_series_equal(normalized_filter(
                         pd.Series([0.01 - eps, 0.01 + eps, 1e308])),
                         pd.Series([False, True, True]))
+
+
+def test_hour_angle_filter():
+    # Create a pandas Series with 5 entries and 15 min index
+    index = pd.date_range(start='29/04/2022 15:00', periods=5, freq='H')
+    series = pd.Series([1, 2, 3, 4, 5], index=index)
+
+    # Define latitude and longitude
+    lat, lon = 39.7413, -105.1684 # NREL, Golden, CO
+
+    # Call the function with the test data
+    result = hour_angle_filter(series, lat, lon)
+
+    # Check that the result is a pandas Series of the same length as the input
+    assert isinstance(result, pd.Series)
+    assert len(result) == len(series)
+
+    # Check that the result is the correct boolean Series
+    expected_result = np.array([False, False, True, True, True])
+    assert (result == expected_result).all()
