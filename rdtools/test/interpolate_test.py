@@ -145,7 +145,7 @@ def test_interpolate_warning(test_df, df_target_index, df_expected_result):
     N = len(test_df)
     all_idx = list(range(N))
     # drop every other value in the first third of the dataset
-    index_with_gaps = all_idx[: N // 3][::2] + all_idx[N // 3 :]
+    index_with_gaps = all_idx[: N // 3][::2] + all_idx[N // 3:]
     test_df = test_df.iloc[index_with_gaps, :]
     with pytest.warns(UserWarning):
         interpolate(
