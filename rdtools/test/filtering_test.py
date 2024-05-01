@@ -5,6 +5,7 @@ import pandas as pd
 import numpy as np
 from rdtools import (clearsky_filter,
                      csi_filter,
+                     pvlib_clearsky_filter,
                      poa_filter,
                      tcell_filter,
                      clip_filter,
@@ -59,6 +60,27 @@ def test_csi_filter():
     # Expect clearsky index is filtered with threshold of +/- 0.15.
     expected_result = np.array([True, False, False, True, True])
     assert filtered.tolist() == expected_result.tolist()
+
+
+@pytest.mark.parametrize("lookup_parameters", [True, False])
+def test_pvlib_clearsky_filter(lookup_parameters):
+    ''' Unit tests for pvlib clear sky filter.'''
+
+    index = pd.date_range(start='01/05/2024 15:00', periods=120, freq='min')
+    poa_global_clearsky = pd.Series(np.linspace(800, 919, 120), index=index)
+
+    # Add cloud event
+    poa_global_measured = poa_global_clearsky.copy()
+    poa_global_measured.iloc[60:70] = [500, 400, 300, 200, 100, 0, 100, 200, 300, 400]
+
+    filtered = pvlib_clearsky_filter(poa_global_measured,
+                                     poa_global_clearsky,
+                                     window_length=10,
+                                     lookup_parameters=lookup_parameters)
+
+    # Expect clearsky index is filtered.
+    expected_result = expected_result = poa_global_measured > 500
+    pd.testing.assert_series_equal(filtered, expected_result)
 
 
 def test_poa_filter():
