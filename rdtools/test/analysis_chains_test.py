@@ -222,6 +222,18 @@ def test_filter_components(sensor_parameters):
     assert (poa_filter == rd_analysis.sensor_filter_components["poa_filter"]).all()
 
 
+def test_filter_components_hour_angle(sensor_parameters, cs_input):
+    lat = cs_input["pvlib_location"].latitude
+    lon = cs_input["pvlib_location"].longitude
+    hour_angle_filter = filtering.hour_angle_filter(sensor_parameters["pv"], lat, lon)
+    rd_analysis = TrendAnalysis(**sensor_parameters, power_dc_rated=1.0)
+    rd_analysis.pvlib_location = cs_input['pvlib_location']
+    rd_analysis.filter_params = {'hour_angle_filter': {}}
+    rd_analysis.filter_params_aggregated = {}
+    rd_analysis.sensor_analysis(analyses=["yoy_degradation"])
+    assert (hour_angle_filter[1:] == rd_analysis.sensor_filter_components["hour_angle_filter"]).all()
+
+
 def test_aggregated_filter_components(sensor_parameters):
     daily_ad_hoc_filter = pd.Series(True, index=sensor_parameters["pv"].index)
     daily_ad_hoc_filter[:600] = False
