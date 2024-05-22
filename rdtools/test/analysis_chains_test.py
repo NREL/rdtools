@@ -266,6 +266,7 @@ def test_aggregated_filter_components_two_way_window_filter(sensor_analysis_aggr
         rd_analysis.sensor_filter_aggregated, daily_expected, check_names=False
     )
 
+
 def test_aggregated_filter_components_insolation_filter(sensor_analysis_aggregated_no_filter):
     rd_analysis = sensor_analysis_aggregated_no_filter
     aggregated_no_filter = rd_analysis.sensor_aggregated_performance
