@@ -231,7 +231,8 @@ def test_filter_components_hour_angle(sensor_parameters, cs_input):
     rd_analysis.filter_params = {'hour_angle_filter': {}}
     rd_analysis.filter_params_aggregated = {}
     rd_analysis.sensor_analysis(analyses=["yoy_degradation"])
-    assert (hour_angle_filter[1:] == rd_analysis.sensor_filter_components["hour_angle_filter"]).all()
+    assert (hour_angle_filter[1:] ==
+            rd_analysis.sensor_filter_components["hour_angle_filter"]).all()
 
 
 def test_aggregated_filter_components(sensor_parameters):
