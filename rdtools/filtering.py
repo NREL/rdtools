@@ -178,7 +178,7 @@ def pvlib_clearsky_filter(
     **kwargs,
 ):
     """
-    Filtering based on the Reno and Hansen method for clearsky filtering
+    Filtering based on the Reno and Hansen method for clear-sky filtering
     as implimented in pvlib. Requires a regular time series with uniform
     time steps.
 
@@ -794,9 +794,8 @@ def _calculate_xgboost_model_features(df, sampling_frequency):
 
 def xgboost_clip_filter(power_ac, mounting_type="fixed"):
     """
-    This function generates the features to run through the XGBoost
-    clipping model, runs the data through the model, and generates
-    model outputs.
+    This filter uses and XGBoost model to filter out
+    clipping periods in AC power or energy time series.
 
     Parameters
     ----------
@@ -948,7 +947,7 @@ def two_way_window_filter(
     series, roll_period=pd.to_timedelta("7 Days"), outlier_threshold=0.03
 ):
     """
-    Removes outliers based on forward and backward window of the rolling median. Points beyond
+    Removes anomalies based on forward and backward window of the rolling median. Points beyond
     outlier_threshold from both the forward and backward-looking median are excluded by the filter.
 
     Parameters
@@ -959,6 +958,11 @@ def two_way_window_filter(
         The window to use for backward and forward
         rolling medians for detecting outliers.
     outlier_threshold : default is 0.03 meaning 3%
+
+    Returns
+    -------
+    pandas.Series
+        Boolean Series excluding anomalies
     """
 
     series = series / series.quantile(0.99)
@@ -984,9 +988,20 @@ def two_way_window_filter(
 
 def insolation_filter(insolation, quantile=0.1):
     """
-    TODO: figure out if this should be more general
+    A simple quantile filter. Primary application in RdTools is to exclude low insolation
+    points after the aggregation step. 
 
-    returns a filter that excludes everything below quantile from insolation
+    Parameters
+    ----------
+    insolation: pandas.Series
+        Pandas time series to be filtered. Usually insolation.
+    quantile : float, default 0.1
+        the minimum quantile above which data is kept.
+
+    Returns
+    -------
+    pandas.Series
+        Boolean Series excluding points below the quantile threshold
     """
 
     limit = insolation.quantile(quantile)
@@ -994,13 +1009,14 @@ def insolation_filter(insolation, quantile=0.1):
     return mask
 
 
-def hampel_filter(vals, k="14d", t0=3):
+def hampel_filter(series, k="14d", t0=3):
     """
-    Hampel outlier filter primarily applied on daily normalized data but broadly
+    Hampel outlier filter primarily applied after aggregation step, but broadly
     applicable.
+
     Parameters
     ----------
-    vals : pandas.Series
+    series : pandas.Series
         daily normalized time series
     k : int or time offset string e.g. 'd', default 14d
         size of window including the sample; 14d is equal to 7 days on either
@@ -1010,8 +1026,8 @@ def hampel_filter(vals, k="14d", t0=3):
     Returns
     -------
     pandas.Series
-        Boolean Series of whether the given measurement is within 3 sigma of the
-        median.  False points indicate outliers to be removed.
+        Boolean Series of whether the given measurement is within t0 sigma of the
+        rolling median.  False points indicate outliers to be excluded.
     """
     # Hampel Filter
     L = 1.4826
@@ -1034,9 +1050,28 @@ def _tukey_fence(series, k=1.5):
 
 def directional_tukey_filter(series, roll_period=pd.to_timedelta("7 Days"), k=1.5):
     """
-    Performs a forward and backward looking rolling tukey filter. Points must only
-    pass one of either the forward or backward looking filters to be kept
+    Performs a forward and backward looking rolling Tukey filter. Points more than k*IQR
+    above the third quartile or below the first quartile are classified as outliers.Points
+    must only pass one of either the forward or backward looking filters to be kept.
+
+
+    Parameters
+    ----------
+    series: pandas.Series
+        Pandas time series to be filtered.
+    roll_period : int or timedelta, default 7 days
+        The window to use for backward and forward
+        rolling medians for detecting outliers.
+    k : float
+        The Tukey parameter. Points more than k*IQR above the third quartile
+        or below the first quartile are classified as outliers.
+
+    Returns
+    -------
+    pandas.Series
+        Boolean Series excluding anomalies
     """
+
     backward_median = series.rolling(roll_period, min_periods=5, closed="both").median()
     forward_median = (
         series.loc[::-1].rolling(roll_period, min_periods=5, closed="both").median()
@@ -1056,6 +1091,26 @@ def directional_tukey_filter(series, roll_period=pd.to_timedelta("7 Days"), k=1.
 def hour_angle_filter(series, lat, lon, min_hour_angle=-30, max_hour_angle=30):
     """
     Creates a filter based on the hour angle of the sun (15 degrees per hour)
+
+    Parameters
+    ----------
+    series: pandas.Series
+        Pandas time series to be filtered
+    lat: float
+        location latitude
+    lon: float
+        location longitude
+    min_hour_angle: float
+        minimum hour angle to include
+    max_hour_angle: float
+        maximum hour angle to include
+
+    Returns
+    -------
+    pandas.Series
+        Boolean Series excluding points outside the specified hour
+        angle range
+
     """
 
     times = series.index
