@@ -176,63 +176,6 @@ def normalize_with_pvwatts(energy, pvwatts_kws):
     return energy_normalized, insolation
 
 
-@deprecated(since='2.0.0', removal='3.0.0',
-            alternative='normalize_with_expected_power')
-def normalize_with_sapm(energy, sapm_kws):
-    '''
-    Normalize system AC energy output given measured met_data and
-    meteorological data. This method relies on the Sandia Array Performance
-    Model (SAPM) to compute the effective DC energy using measured irradiance,
-    ambient temperature, and wind speed.
-
-    Energy timeseries and met_data timeseries can be different granularities.
-
-    .. warning::
-        The ``pvlib_pvsystem`` argument must be a ``pvlib.pvsystem.LocalizedPVSystem``
-        object, which is no longer available as of pvlib 0.9.0.  To use this function
-        you'll need to use an older version of pvlib.
-
-    Parameters
-    ----------
-    energy : pandas.Series
-        Energy time series to be normalized  in watt hours.
-        Must be a right-labeled regular time series.
-    sapm_kws : dict
-        Dictionary of parameters required for sapm_dc_power function. See
-        Other Parameters.
-
-    Other Parameters
-    ---------------
-    pvlib_pvsystem : pvlib.pvsystem.LocalizedPVSystem object
-        Object contains orientation, geographic coordinates, equipment
-        constants (including DC rated power in watts).  The object must also
-        specify either the ``temperature_model_parameters`` attribute or both
-        ``racking_model`` and ``module_type`` to infer the model parameters.
-    met_data : pandas.DataFrame
-        Measured met_data, ambient temperature, and wind speed.  Expected
-        column names are ['DNI', 'GHI', 'DHI', 'Temperature', 'Wind Speed']
-
-    Note
-    ----
-    All series are assumed to be right-labeled, meaning that the recorded
-    value at a given timestamp refers to the previous time interval
-
-    Returns
-    -------
-    energy_normalized : pandas.Series
-        Energy divided by Sandia Model DC energy.
-    insolation : pandas.Series
-        Insolation associated with each normalized point
-    '''
-
-    power_dc, irrad = sapm_dc_power(**sapm_kws)
-
-    energy_normalized, insolation = normalize_with_expected_power(energy, power_dc, irrad,
-                                                                  pv_input='energy')
-
-    return energy_normalized, insolation
-
-
 def _delta_index(series):
     '''
     Takes a pandas series with a DatetimeIndex as input and
