@@ -82,14 +82,6 @@ class SapmNormalizationTestCase(unittest.TestCase):
     def tearDown(self):
         pass
 
-    @fail_on_rdtools_version('3.0.0')
-    def test_sapm_dc_power(self):
-        ''' Test SAPM DC power. '''
-
-        with pytest.warns(rdtoolsDeprecationWarning):
-            dc_power, poa = sapm_dc_power(self.pvsystem, self.irrad)
-        self.assertEqual(self.irrad.index.freq, dc_power.index.freq)
-        self.assertEqual(len(self.irrad), len(dc_power))
 
     @fail_on_rdtools_version('3.0.0')
     def test_normalization_with_sapm(self):
