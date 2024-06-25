@@ -1,4 +1,3 @@
-from rdtools.normalization import normalize_with_sapm
 from rdtools.normalization import normalize_with_pvwatts
 from rdtools.normalization import irradiance_rescale
 from rdtools.normalization import energy_from_power

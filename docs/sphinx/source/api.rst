@@ -127,7 +127,6 @@ Normalization
    irradiance_rescale
    normalize_with_expected_power
    normalize_with_pvwatts
-   normalize_with_sapm
    pvwatts_dc_power
    sapm_dc_power
    delta_index
