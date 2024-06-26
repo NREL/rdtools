@@ -17,7 +17,7 @@ Enhancements
 
 Bug fixes
 ---------
-* tbd
+* Fix typos in citation section of the readme file (:issue:`414`, :pull:`421`)
 
 Requirements
 ------------
