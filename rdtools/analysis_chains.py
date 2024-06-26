@@ -532,11 +532,11 @@ class TrendAnalysis:
             filter_components["clearsky_filter"] = _call_clearsky_filter(
                 "clearsky_filter"
             )
-        # TODO: Ask Mike about this section
-        # if "sensor_clearsky_filter" in self.filter_params:
-        #     filter_components["sensor_clearsky_filter"] = _call_clearsky_filter(
-        #         "sensor_clearsky_filter"
-        #     )
+
+        if "sensor_clearsky_filter" in self.filter_params:
+            filter_components["sensor_clearsky_filter"] = _call_clearsky_filter(
+                "sensor_clearsky_filter"
+            )
 
         # note: the previous implementation using the & operator treated NaN
         # filter values as False, so we do the same here for consistency:
@@ -804,16 +804,15 @@ class TrendAnalysis:
                 "poa_global must be available to perform _sensor_preprocess"
             )
 
-        # TODO: Ask Mike about this section
-        # if "sensor_clearsky_filter" in self.filter_params:
-        #     try:
-        #         if self.poa_global_clearsky is None:
-        #             self._calc_clearsky_poa(model="isotropic")
-        #     except AttributeError:
-        #         raise AttributeError(
-        #             "No poa_global_clearsky. 'set_clearsky' must be run "
-        #             + "to allow filter_params['sensor_clearsky_filter']. "
-        #         )
+        if "sensor_clearsky_filter" in self.filter_params:
+            try:
+                if self.poa_global_clearsky is None:
+                    self._calc_clearsky_poa(model="isotropic")
+            except AttributeError:
+                raise AttributeError(
+                    "No poa_global_clearsky. 'set_clearsky' must be run "
+                    + "to allow filter_params['sensor_clearsky_filter']. "
+                )
         if self.power_expected is None:
             # Thermal details required if power_expected is not manually set.
             if self.temperature_cell is None and self.temperature_ambient is None:
