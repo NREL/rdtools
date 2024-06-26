@@ -1,7 +1,6 @@
 '''Functions for normalizing, rescaling, and regularizing PV system data.'''
 
 import pandas as pd
-import pvlib
 import numpy as np
 from scipy.optimize import minimize
 import warnings
