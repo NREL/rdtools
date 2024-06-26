@@ -471,7 +471,7 @@ def clearsky_optional(cs_input, clearsky_analysis):
 def sensor_clearsky_analysis(cs_input, clearsky_parameters):
     rd_analysis = TrendAnalysis(**clearsky_parameters)
     rd_analysis.set_clearsky(**cs_input)
-    rd_analysis.filter_params = {} # disable all index-based filters
+    rd_analysis.filter_params = {}  # disable all index-based filters
     rd_analysis.filter_params["sensor_clearsky_filter"] = {"model": "csi"}
     rd_analysis.sensor_analysis(analyses=["yoy_degradation"])
     return rd_analysis
