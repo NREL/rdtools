@@ -52,7 +52,7 @@ INSTALL_REQUIRES = [
     'h5py >= 2.8.0',
     'plotly>=4.0.0',
     'xgboost >= 1.3.3',
-    'pvlib >= 0.7.0, <0.11.0',
+    'pvlib >= 0.7.0, <0.12.0',
     'scikit-learn >= 0.22.0',
 ]
 
