@@ -36,8 +36,8 @@ and the specific DOI coresponding to that version from [Zenodo](https://doi.org/
 
 -  Michael G. Deceglie, Ambarish Nag, Adam Shinn, Gregory Kimball,
    Daniel Ruth, Dirk Jordan, Jiyang Yan, Kevin Anderson, Kirsten Perry,
-   Mark Mikofski, Matthew Muller, Will Vining, and Chris Deline
-   RdTools, version {insert version}, Compuer Software,
+   Mark Mikofski, Matthew Muller, Will Vining, and Chris Deline,
+   RdTools, version {insert version}, Computer Software,
    https://github.com/NREL/rdtools. DOI:{insert DOI}
 
 The underlying workflow of RdTools has been published in several places.
