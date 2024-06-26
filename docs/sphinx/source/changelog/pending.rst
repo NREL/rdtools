@@ -23,8 +23,8 @@ Requirements
 
 Deprecations
 ------------
-* Removed  :py:func:`~rdtools.normalization.sapm_dc_power`
-* Removed  :py:func:`~rdtools.normalization.normalize_with_sapm`
+* Removed  :py:func:`~rdtools.normalization.sapm_dc_power` (:pull:`419`)
+* Removed  :py:func:`~rdtools.normalization.normalize_with_sapm` (:pull:`419`)
 
 Contributors
 ------------
