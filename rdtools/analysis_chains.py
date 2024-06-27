@@ -532,6 +532,7 @@ class TrendAnalysis:
             filter_components["clearsky_filter"] = _call_clearsky_filter(
                 "clearsky_filter"
             )
+
         if "sensor_clearsky_filter" in self.filter_params:
             filter_components["sensor_clearsky_filter"] = _call_clearsky_filter(
                 "sensor_clearsky_filter"

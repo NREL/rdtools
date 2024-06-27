@@ -31,7 +31,7 @@ nbformat==5.1.0
 nest-asyncio==1.5.5
 notebook==6.4.12
 numexpr==2.10.0
-pandocfilters==1.4.2
+pandocfilters==1.5.1
 parso==0.5.2
 pexpect==4.6.0
 pickleshare==0.7.5

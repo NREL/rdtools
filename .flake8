@@ -2,6 +2,9 @@
 # see https://flake8.pycqa.org/en/latest/user/options.html
 
 [flake8]
+# E203 is not PEP8 compliant https://black.readthedocs.io/en/stable/the_black_code_style/current_style.html#slices
+# Is excluded from flake8's own config https://flake8.pycqa.org/en/latest/user/configuration.html
+extend-ignore = E203
 max-line-length = 99
 max-doc-length = 99
 per-file-ignores =
@@ -9,7 +12,7 @@ per-file-ignores =
     __init__.py:F401
     # invalid escape sequence '\s'
     versioneer.py:W605
-exclude = 
+exclude =
     docs
     .eggs
     build
