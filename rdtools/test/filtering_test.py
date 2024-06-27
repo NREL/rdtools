@@ -79,7 +79,7 @@ def test_pvlib_clearsky_filter(lookup_parameters):
                                      lookup_parameters=lookup_parameters)
 
     # Expect clearsky index is filtered.
-    expected_result = expected_result = poa_global_measured > 500
+    expected_result = poa_global_measured > 500
     pd.testing.assert_series_equal(filtered, expected_result)
 
 
