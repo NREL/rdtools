@@ -15,13 +15,11 @@ def test_bootstrap_module(
 ):
 
     if decomposition_type == "error":
-        pytest.raises(
-            ValueError,
-            _make_time_series_bootstrap_samples,
-            cods_normalized_daily,
-            cods_normalized_daily_wo_noise,
-            decomposition_type=decomposition_type,
-        )
+        with pytest.raises(ValueError):
+            _make_time_series_bootstrap_samples(
+                cods_normalized_daily,
+                cods_normalized_daily_wo_noise,
+                decomposition_type=decomposition_type)
     else:
         # Rest make time serie bootstrap samples and construct of confidence intervals.
         # Test make bootstrap samples
