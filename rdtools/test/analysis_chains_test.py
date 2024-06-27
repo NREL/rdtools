@@ -1,4 +1,4 @@
-from rdtools import TrendAnalysis, normalization
+from rdtools import TrendAnalysis, normalization, filtering
 from conftest import assert_isinstance, assert_warnings
 import pytest
 import pvlib
@@ -74,6 +74,15 @@ def sensor_analysis_exp_power(sensor_parameters):
     )
     sensor_parameters["power_expected"] = power_expected
     rd_analysis = TrendAnalysis(**sensor_parameters)
+    rd_analysis.sensor_analysis(analyses=["yoy_degradation"])
+    return rd_analysis
+
+
+@pytest.fixture
+def sensor_analysis_aggregated_no_filter(sensor_parameters):
+    rd_analysis = TrendAnalysis(**sensor_parameters, power_dc_rated=1.0)
+    rd_analysis.filter_params = {}  # disable all index-based filters
+    rd_analysis.filter_params_aggregated = {}
     rd_analysis.sensor_analysis(analyses=["yoy_degradation"])
     return rd_analysis
 
@@ -213,6 +222,19 @@ def test_filter_components(sensor_parameters):
     assert (poa_filter == rd_analysis.sensor_filter_components["poa_filter"]).all()
 
 
+def test_filter_components_hour_angle(sensor_parameters, cs_input):
+    lat = cs_input["pvlib_location"].latitude
+    lon = cs_input["pvlib_location"].longitude
+    hour_angle_filter = filtering.hour_angle_filter(sensor_parameters["pv"], lat, lon)
+    rd_analysis = TrendAnalysis(**sensor_parameters, power_dc_rated=1.0)
+    rd_analysis.pvlib_location = cs_input['pvlib_location']
+    rd_analysis.filter_params = {'hour_angle_filter': {}}
+    rd_analysis.filter_params_aggregated = {}
+    rd_analysis.sensor_analysis(analyses=["yoy_degradation"])
+    assert (hour_angle_filter[1:] ==
+            rd_analysis.sensor_filter_components["hour_angle_filter"]).all()
+
+
 def test_aggregated_filter_components(sensor_parameters):
     daily_ad_hoc_filter = pd.Series(True, index=sensor_parameters["pv"].index)
     daily_ad_hoc_filter[:600] = False
@@ -245,6 +267,51 @@ def test_aggregated_filter_components_no_filters(sensor_parameters):
     daily_expected = expected.resample("1D").first().dropna(how="all")
     pd.testing.assert_series_equal(rd_analysis.sensor_filter_aggregated, daily_expected)
     assert rd_analysis.sensor_filter_components.empty
+
+
+def test_aggregated_filter_components_two_way_window_filter(sensor_analysis_aggregated_no_filter):
+    rd_analysis = sensor_analysis_aggregated_no_filter
+    aggregated_no_filter = rd_analysis.sensor_aggregated_performance
+    rd_analysis.filter_params_aggregated = {"two_way_window_filter": {}}
+    rd_analysis.sensor_analysis(analyses=["yoy_degradation"])
+    daily_expected = filtering.two_way_window_filter(aggregated_no_filter)
+    pd.testing.assert_series_equal(
+        rd_analysis.sensor_filter_aggregated, daily_expected, check_names=False
+    )
+
+
+def test_aggregated_filter_components_insolation_filter(sensor_analysis_aggregated_no_filter):
+    rd_analysis = sensor_analysis_aggregated_no_filter
+    aggregated_no_filter = rd_analysis.sensor_aggregated_performance
+    rd_analysis.filter_params_aggregated = {"insolation_filter": {}}
+    rd_analysis.sensor_analysis(analyses=["yoy_degradation"])
+    daily_expected = filtering.insolation_filter(aggregated_no_filter)
+    pd.testing.assert_series_equal(
+        rd_analysis.sensor_filter_aggregated, daily_expected, check_names=False
+    )
+
+
+def test_aggregated_filter_components_hampel_filter(sensor_analysis_aggregated_no_filter):
+    rd_analysis = sensor_analysis_aggregated_no_filter
+    aggregated_no_filter = rd_analysis.sensor_aggregated_performance
+    rd_analysis.filter_params_aggregated = {"hampel_filter": {}}
+    rd_analysis.sensor_analysis(analyses=["yoy_degradation"])
+    daily_expected = filtering.hampel_filter(aggregated_no_filter)
+    pd.testing.assert_series_equal(
+        rd_analysis.sensor_filter_aggregated, daily_expected, check_names=False
+    )
+
+
+def test_aggregated_filter_components_directional_tukey_filter(
+        sensor_analysis_aggregated_no_filter):
+    rd_analysis = sensor_analysis_aggregated_no_filter
+    aggregated_no_filter = rd_analysis.sensor_aggregated_performance
+    rd_analysis.filter_params_aggregated = {"directional_tukey_filter": {}}
+    rd_analysis.sensor_analysis(analyses=["yoy_degradation"])
+    daily_expected = filtering.directional_tukey_filter(aggregated_no_filter)
+    pd.testing.assert_series_equal(
+        rd_analysis.sensor_filter_aggregated, daily_expected, check_names=False
+    )
 
 
 @pytest.mark.parametrize("workflow", ["sensor", "clearsky"])
@@ -400,6 +467,16 @@ def clearsky_optional(cs_input, clearsky_analysis):
     return extras
 
 
+@pytest.fixture
+def sensor_clearsky_analysis(cs_input, clearsky_parameters):
+    rd_analysis = TrendAnalysis(**clearsky_parameters)
+    rd_analysis.set_clearsky(**cs_input)
+    rd_analysis.filter_params = {}  # disable all index-based filters
+    rd_analysis.filter_params["sensor_clearsky_filter"] = {"model": "csi"}
+    rd_analysis.sensor_analysis(analyses=["yoy_degradation"])
+    return rd_analysis
+
+
 def test_clearsky_analysis(clearsky_analysis):
     yoy_results = clearsky_analysis.results["clearsky"]["yoy_degradation"]
     ci = yoy_results["rd_confidence_interval"]
@@ -421,6 +498,15 @@ def test_clearsky_analysis_optional(
     print(f"ci:{ci}")
     assert -4.70 == pytest.approx(rd, abs=1e-2)
     assert [-4.71, -4.69] == pytest.approx(ci, abs=1e-2)
+
+
+def test_sensor_clearsky_analysis(sensor_clearsky_analysis):
+    yoy_results = sensor_clearsky_analysis.results["sensor"]["yoy_degradation"]
+    ci = yoy_results["rd_confidence_interval"]
+    rd = yoy_results["p50_rd"]
+    print(ci)
+    assert -5.18 == pytest.approx(rd, abs=1e-2)
+    assert [-5.18, -5.18] == pytest.approx(ci, abs=1e-2)
 
 
 @pytest.fixture

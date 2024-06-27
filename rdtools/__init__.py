@@ -22,8 +22,8 @@ from rdtools.filtering import normalized_filter
 from rdtools.filtering import two_way_window_filter
 from rdtools.filtering import insolation_filter
 from rdtools.filtering import hampel_filter
-from rdtools.filtering import directional_tukey_filter
 from rdtools.filtering import hour_angle_filter
+from rdtools.filtering import directional_tukey_filter
 # from rdtools.soiling import soiling_srr
 # from rdtools.soiling import soiling_cods
 # from rdtools.soiling import monthly_soiling_rates

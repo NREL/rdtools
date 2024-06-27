@@ -5,13 +5,19 @@ import pandas as pd
 import numpy as np
 from rdtools import (clearsky_filter,
                      csi_filter,
+                     pvlib_clearsky_filter,
                      poa_filter,
                      tcell_filter,
                      clip_filter,
                      quantile_clip_filter,
                      normalized_filter,
                      logic_clip_filter,
-                     xgboost_clip_filter)
+                     xgboost_clip_filter,
+                     two_way_window_filter,
+                     insolation_filter,
+                     hampel_filter,
+                     directional_tukey_filter,
+                     hour_angle_filter)
 import warnings
 from conftest import assert_warnings
 
@@ -23,10 +29,10 @@ def test_clearsky_filter(mocker):
 
     # Check that a ValueError is thrown when a model is passed that
     # is not in the acceptable list.
-    pytest.raises(ValueError, clearsky_filter,
-                  measured_poa,
-                  clearsky_poa,
-                  model='invalid')
+    with pytest.raises(ValueError):
+        clearsky_filter(measured_poa,
+                        clearsky_poa,
+                        model='invalid')
 
     # Check that the csi_filter function is called
     mock_csi_filter = mocker.patch('rdtools.filtering.csi_filter')
@@ -54,6 +60,27 @@ def test_csi_filter():
     # Expect clearsky index is filtered with threshold of +/- 0.15.
     expected_result = np.array([True, False, False, True, True])
     assert filtered.tolist() == expected_result.tolist()
+
+
+@pytest.mark.parametrize("lookup_parameters", [True, False])
+def test_pvlib_clearsky_filter(lookup_parameters):
+    ''' Unit tests for pvlib clear sky filter.'''
+
+    index = pd.date_range(start='01/05/2024 15:00', periods=120, freq='min')
+    poa_global_clearsky = pd.Series(np.linspace(800, 919, 120), index=index)
+
+    # Add cloud event
+    poa_global_measured = poa_global_clearsky.copy()
+    poa_global_measured.iloc[60:70] = [500, 400, 300, 200, 100, 0, 100, 200, 300, 400]
+
+    filtered = pvlib_clearsky_filter(poa_global_measured,
+                                     poa_global_clearsky,
+                                     window_length=10,
+                                     lookup_parameters=lookup_parameters)
+
+    # Expect clearsky index is filtered.
+    expected_result = poa_global_measured > 500
+    pd.testing.assert_series_equal(filtered, expected_result)
 
 
 def test_poa_filter():
@@ -173,16 +200,16 @@ def test_logic_clip_filter(generate_power_time_series_no_clipping,
         generate_power_time_series_no_clipping
     # Test that a Type Error is raised when a pandas series
     # without a datetime index is used.
-    pytest.raises(TypeError,  logic_clip_filter,
-                  power_no_datetime_index_nc)
+    with pytest.raises(TypeError):
+        logic_clip_filter(power_no_datetime_index_nc)
     # Test that an error is thrown when we don't include the correct
     # mounting configuration input
-    pytest.raises(ValueError,  logic_clip_filter,
-                  power_datetime_index_nc, 'not_fixed')
+    with pytest.raises(ValueError):
+        logic_clip_filter(power_datetime_index_nc, 'not_fixed')
     # Test that an error is thrown when there are 10 or fewer readings
     # in the time series
-    pytest.raises(Exception,  logic_clip_filter,
-                  power_datetime_index_nc[:9])
+    with pytest.raises(Exception):
+        logic_clip_filter(power_datetime_index_nc[:9])
     # Test that a warning is thrown when the time series is tz-naive
     warnings.simplefilter("always")
     with warnings.catch_warnings(record=True) as record:
@@ -193,8 +220,8 @@ def test_logic_clip_filter(generate_power_time_series_no_clipping,
     # Scramble the index and run through the filter. This should throw
     # an IndexError.
     power_datetime_index_nc_shuffled = power_datetime_index_nc.sample(frac=1)
-    pytest.raises(IndexError,  logic_clip_filter,
-                  power_datetime_index_nc_shuffled, 'fixed')
+    with pytest.raises(IndexError):
+        logic_clip_filter(power_datetime_index_nc_shuffled, 'fixed')
     # Generate 1-minute interval data, run it through the function, and
     # check that the associated data returned is 1-minute
     power_datetime_index_one_min_intervals = \
@@ -243,16 +270,16 @@ def test_xgboost_clip_filter(generate_power_time_series_no_clipping,
         generate_power_time_series_no_clipping
     # Test that a Type Error is raised when a pandas series
     # without a datetime index is used.
-    pytest.raises(TypeError,  xgboost_clip_filter,
-                  power_no_datetime_index_nc)
+    with pytest.raises(TypeError):
+        xgboost_clip_filter(power_no_datetime_index_nc)
     # Test that an error is thrown when we don't include the correct
     # mounting configuration input
-    pytest.raises(ValueError,  xgboost_clip_filter,
-                  power_datetime_index_nc, 'not_fixed')
+    with pytest.raises(ValueError):
+        xgboost_clip_filter(power_datetime_index_nc, 'not_fixed')
     # Test that an error is thrown when there are 10 or fewer readings
     # in the time series
-    pytest.raises(Exception,  xgboost_clip_filter,
-                  power_datetime_index_nc[:9])
+    with pytest.raises(Exception):
+        xgboost_clip_filter(power_datetime_index_nc[:9])
     # Test that a warning is thrown when the time series is tz-naive
     warnings.simplefilter("always")
     with warnings.catch_warnings(record=True) as record:
@@ -264,8 +291,8 @@ def test_xgboost_clip_filter(generate_power_time_series_no_clipping,
     # Scramble the index and run through the filter. This should throw
     # an IndexError.
     power_datetime_index_nc_shuffled = power_datetime_index_nc.sample(frac=1)
-    pytest.raises(IndexError,  xgboost_clip_filter,
-                  power_datetime_index_nc_shuffled, 'fixed')
+    with pytest.raises(IndexError):
+        xgboost_clip_filter(power_datetime_index_nc_shuffled, 'fixed')
     # Generate 1-minute interval data, run it through the function, and
     # check that the associated data returned is 1-minute
     power_datetime_index_one_min_intervals = \
@@ -315,9 +342,8 @@ def test_clip_filter(generate_power_time_series_no_clipping):
 
     # Check that a ValueError is thrown when a model is passed that
     # is not in the acceptable list.
-    pytest.raises(ValueError, clip_filter,
-                  power_datetime_index_nc,
-                  'random_forest')
+    with pytest.raises(ValueError):
+        clip_filter(power_datetime_index_nc, 'random_forest')
     # Check that the wrapper handles the xgboost clipping
     # function with kwargs.
     filtered_xgboost = clip_filter(power_datetime_index_nc,
@@ -331,9 +357,10 @@ def test_clip_filter(generate_power_time_series_no_clipping):
                                  rolling_range_max_cutoff=0.3)
     # Check that the function returns a Typr Error if a wrong keyword
     # arg is passed in the kwarg arguments.
-    pytest.raises(TypeError, clip_filter, power_datetime_index_nc,
-                  'xgboost',
-                  rolling_range_max_cutoff=0.3)
+    with pytest.raises(TypeError):
+        clip_filter(power_datetime_index_nc,
+                    'xgboost',
+                    rolling_range_max_cutoff=0.3)
     assert bool((expected_result_quantile == filtered_quantile)
                 .all(axis=None))
     assert bool(filtered_xgboost.all(axis=None))
@@ -359,3 +386,101 @@ def test_normalized_filter_default():
     pd.testing.assert_series_equal(normalized_filter(
                         pd.Series([0.01 - eps, 0.01 + eps, 1e308])),
                         pd.Series([False, True, True]))
+
+
+def test_two_way_window_filter():
+    # Create a pandas Series with 10 entries and daily index
+    index = pd.date_range(start='1/1/2022', periods=10, freq='D')
+    series = pd.Series([1, 2, 3, 4, 20, 6, 7, 8, 9, 10], index=index)
+
+    # Call the function with the test data
+    result = two_way_window_filter(series)
+
+    # Check that the result is a pandas Series of the same length as the input
+    assert isinstance(result, pd.Series)
+    assert len(result) == len(series)
+
+    # Check that the result only contains boolean values
+    assert set(result.unique()).issubset({True, False})
+
+    # Check that the result is as expected
+    # Here we're checking that the outlier is marked as False
+    expected_result = pd.Series([True]*4 + [False]*2 + [True]*4, index=index)
+    pd.testing.assert_series_equal(result, expected_result)
+
+
+def test_insolation_filter():
+    # Create a pandas Series with 10 entries
+    series = pd.Series([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+
+    # Call the function with the test data
+    result = insolation_filter(series)
+
+    # Check that the result is a pandas Series of the same length as the input
+    assert isinstance(result, pd.Series)
+    assert len(result) == len(series)
+
+    # Check that the result only contains boolean values
+    assert set(result.unique()).issubset({True, False})
+
+    # Check that the result is as expected
+    # Here we're checking that the bottom 10% of values are marked as False
+    expected_result = pd.Series([False] + [True]*9)
+    pd.testing.assert_series_equal(result, expected_result)
+
+
+def test_hampel_filter():
+    # Create a pandas Series with 10 entries and daily index
+    index = pd.date_range(start='1/1/2022', periods=10, freq='D')
+    series = pd.Series([1, 2, 3, 4, 100, 6, 7, 8, 9, 10], index=index)
+
+    # Call the function with the test data
+    result = hampel_filter(series)
+
+    # Check that the result is a pandas Series of the same length as the input
+    assert isinstance(result, pd.Series)
+    assert len(result) == len(series)
+
+    # Check that the result only contains boolean values
+    assert set(result.unique()).issubset({True, False})
+
+    # Check that the result is as expected
+    expected_result = pd.Series([True]*3 + [True] + [False] + [True]*5, index=index)
+    pd.testing.assert_series_equal(result, expected_result)
+
+
+def test_directional_tukey_filter():
+    # Create a pandas Series with 10 entries and daily index
+    index = pd.date_range(start='1/1/2022', periods=7, freq='D')
+    series = pd.Series([1, 2, 3, 25, 4, 5, 6], index=index)
+
+    # Call the function with the test data
+    result = directional_tukey_filter(series)
+
+    # Check that the result is a pandas Series of the same length as the input
+    assert isinstance(result, pd.Series)
+    assert len(result) == len(series)
+
+    # Check that the result is as expected
+    expected_result = pd.Series([True, True, True, False, True, True, True], index=index)
+    pd.testing.assert_series_equal(result, expected_result)
+
+
+def test_hour_angle_filter():
+    # Create a pandas Series with 5 entries and 15 min index
+    index = pd.date_range(start='29/04/2022 15:00', periods=5, freq='H')
+    series = pd.Series([1, 2, 3, 4, 5], index=index)
+
+    # Define latitude and longitude
+    lat, lon = 39.7413, -105.1684  # NREL, Golden, CO
+
+    # Call the function with the test data
+    result = hour_angle_filter(series, lat, lon)
+
+    # Check that the result is a pandas Series of the same length as the input
+    assert isinstance(result, pd.Series)
+    assert len(result) == len(series)
+
+    # Check that the result is the correct boolean Series
+    expected_result = pd.Series([False, False, True, True, True], index=index)
+    pd.testing.assert_series_equal(result, expected_result)

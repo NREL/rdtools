@@ -92,7 +92,9 @@ def test_soiling_cods(cods_normalized_daily):
     ''' Test the CODS algorithm with fixed test case and 16 repetitions'''
     reps = 16
     np.random.seed(1977)
-    sr, sr_ci, deg, deg_ci, result_df = soiling.soiling_cods(cods_normalized_daily, reps=reps)
+    sr, sr_ci, deg, deg_ci, result_df = soiling.soiling_cods(cods_normalized_daily,
+                                                             reps=reps,
+                                                             verbose=True)
     assert 0.962207 == pytest.approx(sr, abs=0.5), \
         'Soiling ratio different from expected value'
     assert np.array([0.96662419, 0.95692131]) == pytest.approx(sr_ci, abs=0.5), \
