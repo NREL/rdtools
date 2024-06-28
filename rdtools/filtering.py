@@ -988,8 +988,8 @@ def two_way_window_filter(
 
 def insolation_filter(insolation, quantile=0.1):
     """
-    A simple quantile filter. Primary application in RdTools is to exclude low insolation
-    points after the aggregation step. 
+    A simple quantile filter. Primary application in RdTools is to exclude
+    low insolation points after the aggregation step.
 
     Parameters
     ----------
