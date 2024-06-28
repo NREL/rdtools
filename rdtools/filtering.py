@@ -1031,8 +1031,8 @@ def hampel_filter(series, k="14d", t0=3):
     """
     # Hampel Filter
     L = 1.4826
-    rolling_median = vals.rolling(k, center=True, min_periods=1).median()
-    difference = np.abs(rolling_median - vals)
+    rolling_median = series.rolling(k, center=True, min_periods=1).median()
+    difference = np.abs(rolling_median - series)
     median_abs_deviation = difference.rolling(k, center=True, min_periods=1).median()
     threshold = t0 * L * median_abs_deviation
     return difference <= threshold
