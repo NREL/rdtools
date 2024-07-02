@@ -111,6 +111,11 @@ Filtering
    poa_filter
    tcell_filter
    normalized_filter
+   two_way_window_filter
+   insolation_filter
+   hampel_filter
+   directional_tukey_filter
+   hour_angle_filter
 
 
 Normalization

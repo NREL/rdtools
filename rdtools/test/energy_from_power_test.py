@@ -122,8 +122,6 @@ def test_energy_from_power_leading_nans():
 
 def test_energy_from_power_series_index():
     power = pd.Series([1, 2, 3, 4, 5])
-    pytest.raises(
-        ValueError,
-        energy_from_power,
-        power,
-    )
+    with pytest.raises(ValueError):
+        energy_from_power(power)
+

@@ -467,6 +467,16 @@ def clearsky_optional(cs_input, clearsky_analysis):
     return extras
 
 
+@pytest.fixture
+def sensor_clearsky_analysis(cs_input, clearsky_parameters):
+    rd_analysis = TrendAnalysis(**clearsky_parameters)
+    rd_analysis.set_clearsky(**cs_input)
+    rd_analysis.filter_params = {}  # disable all index-based filters
+    rd_analysis.filter_params["sensor_clearsky_filter"] = {"model": "csi"}
+    rd_analysis.sensor_analysis(analyses=["yoy_degradation"])
+    return rd_analysis
+
+
 def test_clearsky_analysis(clearsky_analysis):
     yoy_results = clearsky_analysis.results["clearsky"]["yoy_degradation"]
     ci = yoy_results["rd_confidence_interval"]
@@ -488,6 +498,15 @@ def test_clearsky_analysis_optional(
     print(f"ci:{ci}")
     assert -4.70 == pytest.approx(rd, abs=1e-2)
     assert [-4.71, -4.69] == pytest.approx(ci, abs=1e-2)
+
+
+def test_sensor_clearsky_analysis(sensor_clearsky_analysis):
+    yoy_results = sensor_clearsky_analysis.results["sensor"]["yoy_degradation"]
+    ci = yoy_results["rd_confidence_interval"]
+    rd = yoy_results["p50_rd"]
+    print(ci)
+    assert -5.18 == pytest.approx(rd, abs=1e-2)
+    assert [-5.18, -5.18] == pytest.approx(ci, abs=1e-2)
 
 
 @pytest.fixture
