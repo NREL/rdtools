@@ -9,7 +9,9 @@ from rdtools.degradation import degradation_classical_decomposition
 from rdtools.degradation import degradation_year_on_year
 from rdtools.aggregation import aggregation_insol
 from rdtools.clearsky_temperature import get_clearsky_tamb
+from rdtools.filtering import clearsky_filter
 from rdtools.filtering import csi_filter
+from rdtools.filtering import pvlib_clearsky_filter
 from rdtools.filtering import poa_filter
 from rdtools.filtering import tcell_filter
 from rdtools.filtering import clip_filter
@@ -17,6 +19,11 @@ from rdtools.filtering import quantile_clip_filter
 from rdtools.filtering import logic_clip_filter
 from rdtools.filtering import xgboost_clip_filter
 from rdtools.filtering import normalized_filter
+from rdtools.filtering import two_way_window_filter
+from rdtools.filtering import insolation_filter
+from rdtools.filtering import hampel_filter
+from rdtools.filtering import hour_angle_filter
+from rdtools.filtering import directional_tukey_filter
 # from rdtools.soiling import soiling_srr
 # from rdtools.soiling import soiling_cods
 # from rdtools.soiling import monthly_soiling_rates
