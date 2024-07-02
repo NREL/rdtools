@@ -539,6 +539,7 @@ class TrendAnalysis:
                 "sensor_clearsky_filter"
             )
 
+
         # note: the previous implementation using the & operator treated NaN
         # filter values as False, so we do the same here for consistency:
         filter_components = pd.DataFrame(filter_components).fillna(False)

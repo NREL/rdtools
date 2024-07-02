@@ -22,6 +22,11 @@ Requirements
 ------------
 * Specified versions in ``requirements.txt`` and ``docs/notebook_requirements.txt`` have been updated (:pull:`412`)
 
+Deprecations
+------------
+* Removed  :py:func:`~rdtools.normalization.sapm_dc_power` (:pull:`419`)
+* Removed  :py:func:`~rdtools.normalization.normalize_with_sapm` (:pull:`419`)
+
 Contributors
 ------------
 * Martin Springer (:ghuser:`martin-springer`)

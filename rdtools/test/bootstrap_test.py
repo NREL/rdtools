@@ -20,6 +20,7 @@ def test_bootstrap_module(
                 cods_normalized_daily,
                 cods_normalized_daily_wo_noise,
                 decomposition_type=decomposition_type)
+
     else:
         # Rest make time serie bootstrap samples and construct of confidence intervals.
         # Test make bootstrap samples
