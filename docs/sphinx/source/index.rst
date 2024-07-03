@@ -327,6 +327,5 @@ Indices and tables
 
 
 .. links and references
-
 .. _release: https://github.com/NREL/rdtools/releases
 .. _github: https://github.com/NREL/rdtools

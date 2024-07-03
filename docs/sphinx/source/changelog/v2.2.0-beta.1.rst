@@ -1,0 +1,7 @@
+********************************
+v2.2.0-beta.1 (December 7, 2022)
+********************************
+
+Enhancements
+------------
+* Added framework for running aggregated filters in ``analysis_chains.py`` (:pull:`348`)
