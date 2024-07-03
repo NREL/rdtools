@@ -79,7 +79,8 @@ class TrendAnalysis:
     filter_params_aggregated: dict
         parameters to be passed to rdtools.filtering functions that specifically handle
         aggregated data (dily filters, etc). Keys are the names of the rdtools.filtering functions.
-        Values are dicts of parameters to be passed to those functions. Also has a special key
+        Values are dicts of parameters to be passed to those functions. To invoke `clearsky_filter`
+        for a sensor analysis, use the special key `sensor_clearsky_filter`. Also has a special key
         `ad_hoc_filter`; this filter is a boolean mask joined with the rest of the filters.
         filter_params_aggregated defaults to empty dicts for each function in rdtools.filtering,
         in which case those functions use default parameter values,  `ad_hoc_filter`
@@ -532,11 +533,11 @@ class TrendAnalysis:
             filter_components["clearsky_filter"] = _call_clearsky_filter(
                 "clearsky_filter"
             )
-        # TODO: Ask Mike about this section
-        # if "sensor_clearsky_filter" in self.filter_params:
-        #     filter_components["sensor_clearsky_filter"] = _call_clearsky_filter(
-        #         "sensor_clearsky_filter"
-        #     )
+
+        if "sensor_clearsky_filter" in self.filter_params:
+            filter_components["sensor_clearsky_filter"] = _call_clearsky_filter(
+                "sensor_clearsky_filter"
+            )
 
         # note: the previous implementation using the & operator treated NaN
         # filter values as False, so we do the same here for consistency:
@@ -804,16 +805,15 @@ class TrendAnalysis:
                 "poa_global must be available to perform _sensor_preprocess"
             )
 
-        # TODO: Ask Mike about this section
-        # if "sensor_clearsky_filter" in self.filter_params:
-        #     try:
-        #         if self.poa_global_clearsky is None:
-        #             self._calc_clearsky_poa(model="isotropic")
-        #     except AttributeError:
-        #         raise AttributeError(
-        #             "No poa_global_clearsky. 'set_clearsky' must be run "
-        #             + "to allow filter_params['sensor_clearsky_filter']. "
-        #         )
+        if "sensor_clearsky_filter" in self.filter_params:
+            try:
+                if self.poa_global_clearsky is None:
+                    self._calc_clearsky_poa(model="isotropic")
+            except AttributeError:
+                raise AttributeError(
+                    "No poa_global_clearsky. 'set_clearsky' must be run "
+                    + "to allow filter_params['sensor_clearsky_filter']. "
+                )
         if self.power_expected is None:
             # Thermal details required if power_expected is not manually set.
             if self.temperature_cell is None and self.temperature_ambient is None:
