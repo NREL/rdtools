@@ -111,6 +111,11 @@ Filtering
    poa_filter
    tcell_filter
    normalized_filter
+   two_way_window_filter
+   insolation_filter
+   hampel_filter
+   directional_tukey_filter
+   hour_angle_filter
 
 
 Normalization
@@ -127,7 +132,6 @@ Normalization
    irradiance_rescale
    normalize_with_expected_power
    normalize_with_pvwatts
-   normalize_with_sapm
    pvwatts_dc_power
    sapm_dc_power
    delta_index
