@@ -18,6 +18,7 @@ def test_rescale(method, simple_irradiance):
     if method == "error":
         with pytest.raises(ValueError):
             irradiance_rescale(simple_irradiance, simple_irradiance * 1.05, method=method)
+
     else:
         modeled = simple_irradiance
         measured = 1.05 * simple_irradiance
