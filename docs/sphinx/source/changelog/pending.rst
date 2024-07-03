@@ -22,6 +22,7 @@ Bug fixes
 Requirements
 ------------
 * Specified versions in ``requirements.txt`` and ``docs/notebook_requirements.txt`` have been updated (:pull:`412`)
+* Increase maximum version of pvlib to 0.12 (:pull:`423`)
 
 Deprecations
 ------------
