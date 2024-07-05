@@ -23,6 +23,7 @@ Requirements
 ------------
 * Specified versions in ``requirements.txt`` and ``docs/notebook_requirements.txt`` have been updated (:pull:`412`)
 * Increase maximum version of pvlib to <0.12 (:pull:`423`)
+* Update fonttools version to 4.43.0 in ``requirements.txt`` (:pull:`404`)
 
 Deprecations
 ------------

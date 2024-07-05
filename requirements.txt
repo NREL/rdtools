@@ -2,7 +2,7 @@ cached-property==1.5.2
 certifi==2023.7.22
 chardet==4.0.0
 cycler==0.10.0
-fonttools==4.37.1
+fonttools==4.43.0
 h5py==3.11.0
 idna==2.10
 joblib==1.2.0
