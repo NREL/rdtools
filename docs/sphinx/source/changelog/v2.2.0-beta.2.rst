@@ -1,0 +1,23 @@
+********************************
+v2.2.0-beta.2 (December 1, 2023)
+********************************
+
+Enhancements
+------------
+* Return CODS results without bootstrapping when soiling signal
+  is small but raise warning ``soiling.py`` (:issue:`367` :pull:`400`)
+
+Bug fixes
+---------
+* Fix flake8 missing whitespaces ``bootstrap_test.py``, ``soiling_cods_test.py`` (:pull:`400`)
+* Specify dtype for seasonal samples ``soiling.py`` (:pull:`400`)
+* Update deprecated `check_less_precise` to `rtol` ``soiling_cods_test.py`` (:pull:`400`)
+
+Requirements
+------------
+* Bump arch to 5.6.0 in ``requirements.txt``
+
+Contributors
+------------
+* Martin Springer (:ghuser:`martin-springer`)
+* Michael Deceglie (:ghuser:`mdeceglie`)

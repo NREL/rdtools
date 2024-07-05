@@ -9,11 +9,14 @@ from rdtools.plotting import (
     soiling_interval_plot,
     soiling_rate_histogram,
     tune_filter_plot,
-    availability_summary_plots
+    availability_summary_plots,
+    degradation_timeseries_plot
 )
 import matplotlib.pyplot as plt
+import matplotlib
 import plotly
 import pytest
+import re
 
 from conftest import assert_isinstance
 
@@ -81,6 +84,12 @@ def test_degradation_summary_plots_kwargs(degradation_info):
     result = degradation_summary_plots(yoy_rd, yoy_ci, yoy_info, power,
                                        **kwargs)
     assert_isinstance(result, plt.Figure)
+
+    # ensure the number of points is included when detailed=True
+    ax = result.axes[1]
+    labels = [c for c in ax.get_children() if isinstance(c, matplotlib.text.Annotation)]
+    text = labels[0].get_text()
+    assert re.search(r'n = \d', text)
     plt.close('all')
 
 
@@ -237,5 +246,14 @@ def test_availability_summary_plots_empty(availability_analysis_object):
         aa.power_system, aa.power_subsystem, aa.loss_total,
         aa.energy_cumulative, aa.energy_expected_rescaled,
         empty)
+    assert_isinstance(result, plt.Figure)
+    plt.close('all')
+
+
+def test_degradation_timeseries_plot(degradation_info):
+    power, yoy_rd, yoy_ci, yoy_info = degradation_info
+
+    # test defaults
+    result = degradation_timeseries_plot(yoy_info)
     assert_isinstance(result, plt.Figure)
     plt.close('all')
