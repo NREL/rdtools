@@ -98,6 +98,44 @@ def soiling_insolation(soiling_times):
     return insolation
 
 
+@pytest.fixture()
+def cods_times():
+    tz = 'Etc/GMT+7'
+    cods_times = pd.date_range('2019/01/01', '2021/01/01', freq='D', tz=tz)
+    return cods_times
+
+
+@pytest.fixture()
+def cods_normalized_daily_wo_noise(cods_times):
+    N = len(cods_times)
+    interval_1 = 1 - 0.005 * np.arange(0, 25, 1)
+    interval_2 = 1 - 0.002 * np.arange(0, 25, 1)
+    interval_3 = 1 - 0.001 * np.arange(0, 25, 1)
+    profile = np.concatenate((interval_1, interval_2, interval_3))
+    repeated_profile = np.concatenate([profile for _ in range(int(np.ceil(N / 75)))])
+    cods_normalized_daily_wo_noise = pd.Series(data=repeated_profile[:N], index=cods_times)
+    return cods_normalized_daily_wo_noise
+
+
+@pytest.fixture()
+def cods_normalized_daily(cods_normalized_daily_wo_noise):
+    N = len(cods_normalized_daily_wo_noise)
+    np.random.seed(1977)
+    noise = 1 + 0.02 * (np.random.rand(N) - 0.5)
+    cods_normalized_daily = cods_normalized_daily_wo_noise * noise
+    return cods_normalized_daily
+
+
+@pytest.fixture()
+def cods_normalized_daily_small_soiling(cods_normalized_daily_wo_noise):
+    N = len(cods_normalized_daily_wo_noise)
+    np.random.seed(1977)
+    noise = 1 + 0.02 * (np.random.rand(N) - 0.5)
+    cods_normalized_daily_small_soiling = cods_normalized_daily_wo_noise.apply(
+        lambda row: 1-(1-row)*0.1) * noise
+    return cods_normalized_daily_small_soiling
+
+
 # %% Availability fixtures
 
 ENERGY_PARAMETER_SPACE = list(itertools.product(

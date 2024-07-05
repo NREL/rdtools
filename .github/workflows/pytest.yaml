@@ -43,4 +43,8 @@ jobs:
         pip install --timeout=300 ${{ matrix.env }}
     - name: Test with pytest ${{ matrix.env }}
       run: |
-        pytest
+        python -m pytest --cov=./ --cov-report=xml
+    - name: Upload coverage reports to Codecov
+      uses: codecov/codecov-action@v4
+      env:
+        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
