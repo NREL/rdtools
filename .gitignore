@@ -35,3 +35,6 @@ rdtools.egg-info*
 .\#*
 
 *.pickle
+
+# ignore vscode settings
+.vscode/
