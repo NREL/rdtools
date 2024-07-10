@@ -157,7 +157,10 @@ class TrendAnalysis:
             "clearsky_filter": {},
             "ad_hoc_filter": None,  # use this to include an explict filter
         }
-        self.filter_params_aggregated = {"ad_hoc_filter": None}
+        self.filter_params_aggregated = {
+            "two_way_window_filter": {},
+            "ad_hoc_filter": None
+        }
         # remove tcell_filter from list if power_expected is passed in
         if power_expected is not None and temperature_cell is None:
             del self.filter_params["tcell_filter"]
