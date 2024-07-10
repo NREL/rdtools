@@ -26,6 +26,7 @@ Requirements
 * Update fonttools version to 4.43.0 in ``requirements.txt`` (:pull:`404`)
 * Update jinja2 from 3.0.0 to 3.1.3 in ``notebook_requirements.txt`` (:pull:`405`)
 * Update pillow version to 10.3.0 in ``requirements.txt`` (:pull:`410`)
+* Update certifi version to 2024.7.4 in ``requirements.txt`` (:pull:`424`)
 
 Deprecations
 ------------
