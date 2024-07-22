@@ -90,7 +90,7 @@ class SRRAnalysis():
     #add neg_shift and piecewise into parameters/Matt
     def _calc_daily_df(self, day_scale=13, clean_threshold='infer',
                        recenter=True, clean_criterion='shift', precip_threshold=0.01,
-                       outlier_factor=1.5,neg_shift=True,piecewise=True):
+                       outlier_factor=1.5,neg_shift=False,piecewise=False):
         '''
         Calculates self.daily_df, a pandas dataframe prepared for SRR analysis,
         and self.renorm_factor, the renormalization factor for the daily
@@ -127,6 +127,18 @@ class SRRAnalysis():
             The factor used in the Tukey fence definition of outliers for flagging positive shifts
             in the rolling median used for cleaning detection. A smaller value will cause more and
             smaller shifts to be classified as cleaning events.
+        neg_shift : bool, default True
+            where True results in additional subdividing of soiling intervals 
+            when negative shifts are found in the rolling median of the performance 
+            metric. Inferred corrections in the soiling fit are made at these 
+            negative shifts. False results in no additional subdivides of the 
+            data where excessive negative shifts can invalidate a soiling interval.
+        piecewise : bool, default True 
+            where True results in each soiling interval of sufficient length 
+            being tested for significant fit improvement with 2 piecewise linear 
+            fits. If the criteria of significance is met the soiling interval is 
+            subdivided into the 2 separate intervals. False results in no 
+            piecewise fit being tested.
         '''
         if (day_scale % 2 == 0) and ('shift' in clean_criterion):
             warnings.warn('An even value of day_scale was passed. An odd value is '
@@ -200,9 +212,11 @@ class SRRAnalysis():
         
         ##########################################################################
         #Matt added these lines but the function "_collapse_cleaning_events" was written by Asmund, it reduces multiple days of cleaning events in a row to a single event
+        
         reduced_cleaning_events = \
             _collapse_cleaning_events(df.clean_event_detected, df.delta.values, 5)
         df['clean_event_detected']=reduced_cleaning_events           
+        
         ##########################################################################
         precip_event = (df['precip'] > precip_threshold)
 
@@ -281,7 +295,7 @@ class SRRAnalysis():
     ######################################################################
     #added neg_shift into parameters in the following def/Matt
     def _calc_result_df(self, trim=False, max_relative_slope_error=500.0,
-                        max_negative_step=0.05, min_interval_length=7,neg_shift=True):
+                        max_negative_step=0.05, min_interval_length=7,neg_shift=False):
         '''
         Calculates self.result_df, a pandas dataframe summarizing the soiling
         intervals identified and self.analyzed_daily_df, a version of
@@ -337,8 +351,8 @@ class SRRAnalysis():
                 'run_slope_high': 0,
                 'max_neg_step': min(run.delta),
                 'start_loss': 1,
-                'inferred_start_loss': run.pi_norm.median(),#changed from mean/Matt
-                'inferred_end_loss': run.pi_norm.median(),#changed from mean/Matt
+                'inferred_start_loss': run.pi_norm.mean(),#changed from mean/Matt
+                'inferred_end_loss': run.pi_norm.mean(),#changed from mean/Matt
                 'slope_err':10000,#added high dummy start value for later logic/Matt
                 'valid': False,
                 'clean_event':run.clean_event.iloc[0],#record of clean events to distiguisih from other breaks/Matt
@@ -362,7 +376,7 @@ class SRRAnalysis():
                 # for soiling inferrences when rejected fits occur
                 result_dict['slope_err'] = (result_dict['run_slope_high'] - result_dict['run_slope_low'])\
                     / abs(result_dict['run_slope'])
-                                
+                              
                 if (result_dict['slope_err'] <= (max_relative_slope_error / 100.0))&(result_dict['run_slope']<0):
                     result_dict['inferred_start_loss'] = fit_poly(start_day)
                     result_dict['inferred_end_loss'] = fit_poly(end_day)
@@ -371,7 +385,7 @@ class SRRAnalysis():
                     result_dict['run_loss_baseline']=result_dict['inferred_start_loss']-result_dict['inferred_end_loss']
 
                     ###############################################
-
+                
             result_list.append(result_dict)
 
         results = pd.DataFrame(result_list)
@@ -416,13 +430,13 @@ class SRRAnalysis():
                 (results.max_neg_step <= -1.0 * max_negative_step)
                 #remove line 389, want to store data for inferred values
                 #for calculations below
-                #|results.loc[filt, 'valid'] = False
+                # |results.loc[filt, 'valid'] = False
             )
         
             results.loc[filt, 'run_slope'] = 0
             results.loc[filt, 'run_slope_low'] = 0
             results.loc[filt, 'run_slope_high'] = 0
-            #results.loc[filt, 'valid'] = False
+            results.loc[filt, 'valid'] = False
         # Calculate the next inferred start loss from next valid interval
         results['next_inferred_start_loss'] = np.clip(
             results[results.valid].inferred_start_loss.shift(-1),
@@ -575,18 +589,31 @@ class SRRAnalysis():
         ----------
         monte : int
             number of Monte Carlo simulations to run
-        method : str, {'half_norm_clean', 'random_clean', 'perfect_clean'} \
-                default 'half_norm_clean'
+        method : str, {'half_norm_clean', 'random_clean', 'perfect_clean',
+             perfect_clean_complex,inferred_clean_complex} \
+            default 'half_norm_clean'
+            
             How to treat the recovery of each cleaning event
 
-            * 'random_clean' - a random recovery between 0-100%
+            * 'random_clean' - a random recovery between 0-100%, 
+               pair with piecewise=False and neg_shift=False
             * 'perfect_clean' - each cleaning event returns the performance
-              metric to 1
+              metric to 1, 
+              pair with piecewise=False and neg_shift=False
             * 'half_norm_clean' - The starting point of each interval is taken
-              randomly from a half normal distribution with its
-              mode (mu) at 1 and
-              its sigma equal to 1/3 * (1-b) where b is the intercept
-              of the fit to the interval.
+              randomly from a half normal distribution with its mode (mu) at 1 and
+              its sigma equal to 1/3 * (1-b) where b is the intercept of the fit to
+              the interval, 
+              pair with piecewise=False and neg_shift=False
+            *'perfect_clean_complex' - each detected clean event returns the 
+              performance metric to 1 while negative shifts in the data or 
+              piecewise linear fits result in no cleaning,
+              pair with piecewise=True and neg_shift=True
+            *'inferred_clean_complex' - at each detected clean event the 
+              performance metric increases based on fits to the data while 
+              negative shifts in the data or piecewise linear fits result in no 
+              cleaning,
+              pair with piecewise=True and neg_shift=True
         '''
 
         # Raise a warning if there is >20% invalid data
@@ -635,6 +662,9 @@ class SRRAnalysis():
             if (method == 'half_norm_clean') or (method == 'random_clean'):
                 # Randomize recovery of valid intervals only
                 valid_intervals = results_rand[results_rand.valid].copy()
+                valid_intervals['inferred_recovery'] = np.clip(
+                    valid_intervals.inferred_recovery,
+                    0, 1)
                 valid_intervals['inferred_recovery'] = \
                     valid_intervals.inferred_recovery.fillna(1.0)
 
@@ -759,10 +789,11 @@ class SRRAnalysis():
     #######################################################################
     #add neg_shift and piecewise to the following def/Matt
     def run(self, reps=1000, day_scale=13, clean_threshold='infer',
-            trim=False, method='perfect_clean_complex',
+            trim=False, method='half_norm_clean',
             clean_criterion='shift', precip_threshold=0.01, min_interval_length=7,
             exceedance_prob=95.0, confidence_level=68.2, recenter=True,
-            max_relative_slope_error=500.0, max_negative_step=0.05, outlier_factor=1.5,neg_shift=True,piecewise=True):
+            max_relative_slope_error=500.0, max_negative_step=0.05, 
+            outlier_factor=1.5,neg_shift=False,piecewise=False):
         '''
         Run the SRR method from beginning to end.  Perform the stochastic rate
         and recovery soiling loss calculation. Based on the methods presented
@@ -793,19 +824,22 @@ class SRRAnalysis():
             * 'random_clean' - a random recovery between 0-100%, 
                pair with piecewise=False and neg_shift=False
             * 'perfect_clean' - each cleaning event returns the performance
-              metric to 1, pair with piecewise=False and neg_shift=False
+              metric to 1, 
+              pair with piecewise=False and neg_shift=False
             * 'half_norm_clean' - The starting point of each interval is taken
               randomly from a half normal distribution with its mode (mu) at 1 and
               its sigma equal to 1/3 * (1-b) where b is the intercept of the fit to
-              the interval.pair with piecewise=False and neg_shift=False
-            *'perfect_clean_complex', pair with piecewise=True and neg_shift=True
-              each detected clean event returns the performance metric to 1 while 
-              negative shifts in the data or piecewise linear fits result in no
-              cleaning
-            *'inferred_clean_complex', pair with piecewise=True and neg_shift=True
-              at each detected clean event the performance metric increases based on
-              fits to the data while negative shifts in the data or piecewise
-              linear fits result in no cleaning              
+              the interval, 
+              pair with piecewise=False and neg_shift=False
+            *'perfect_clean_complex' - each detected clean event returns the 
+              performance metric to 1 while negative shifts in the data or 
+              piecewise linear fits result in no cleaning,
+              pair with piecewise=True and neg_shift=True
+            *'inferred_clean_complex' - at each detected clean event the 
+              performance metric increases based on fits to the data while 
+              negative shifts in the data or piecewise linear fits result in no 
+              cleaning,
+              pair with piecewise=True and neg_shift=True           
         clean_criterion : str, {'shift', 'precip_and_shift', 'precip_or_shift', 'precip'} \
             default 'shift'
             The method of partitioning the dataset into soiling intervals
@@ -842,17 +876,18 @@ class SRRAnalysis():
             The factor used in the Tukey fence definition of outliers for flagging positive shifts
             in the rolling median used for cleaning detection. A smaller value will cause more and
             smaller shifts to be classified as cleaning events.
-        neg_shift : boolean where True results in additional subdividing of 
-            soiling intervals when negative shifts are found in the rolling
-            median of the performance metric.  Inferred corrections in the 
-            soilign fit are made at these negative shifts.  False result in no 
-            additional subdivides of the data where excessive negative shifts
-            can invalidate a soiling interval
-        piecewise : boolean where True results in each soiling interval of 
-            sufficient length being tested for significant fit improvement with
-            2 piecewise linear fits. If the criteria of significance is met the 
-            soiling interval is subdivided into the 2 seperate intervals.  False
-            result in no piecewise fit being tested.
+        neg_shift : bool, default True
+            where True results in additional subdividing of soiling intervals 
+            when negative shifts are found in the rolling median of the performance 
+            metric. Inferred corrections in the soiling fit are made at these 
+            negative shifts. False results in no additional subdivides of the 
+            data where excessive negative shifts can invalidate a soiling interval.
+        piecewise : bool, default True 
+            where True results in each soiling interval of sufficient length 
+            being tested for significant fit improvement with 2 piecewise linear 
+            fits. If the criteria of significance is met the soiling interval is 
+            subdivided into the 2 separate intervals. False results in no 
+            piecewise fit being tested.
             
 
         Returns
@@ -981,11 +1016,11 @@ class SRRAnalysis():
 #that are in srr.run /Matt
 def soiling_srr(energy_normalized_daily, insolation_daily, reps=1000,
                 precipitation_daily=None, day_scale=13, clean_threshold='infer',
-                trim=False, method='perfect_clean_complex',
+                trim=False, method='half_norm_clean',
                 clean_criterion='shift', precip_threshold=0.01, min_interval_length=7,
                 exceedance_prob=95.0, confidence_level=68.2, recenter=True,
                 max_relative_slope_error=500.0, max_negative_step=0.05,
-                outlier_factor=1.5,neg_shift=True,piecewise=True):
+                outlier_factor=1.5,neg_shift=False,piecewise=False):
     '''
     Functional wrapper for :py:class:`~rdtools.soiling.SRRAnalysis`. Perform
     the stochastic rate and recovery soiling loss calculation. Based on the
@@ -1018,17 +1053,31 @@ def soiling_srr(energy_normalized_daily, insolation_daily, reps=1000,
     trim : bool, default False
         Whether to trim (remove) the first and last soiling intervals to avoid
         inclusion of partial intervals
-    method : str, {'half_norm_clean', 'random_clean', 'perfect_clean'} \
+    method : str, {'half_norm_clean', 'random_clean', 'perfect_clean',
+         perfect_clean_complex,inferred_clean_complex} \
         default 'half_norm_clean'
+        
         How to treat the recovery of each cleaning event
 
-        * 'random_clean' - a random recovery between 0-100%
+        * 'random_clean' - a random recovery between 0-100%, 
+           pair with piecewise=False and neg_shift=False
         * 'perfect_clean' - each cleaning event returns the performance
-          metric to 1
+          metric to 1, 
+          pair with piecewise=False and neg_shift=False
         * 'half_norm_clean' - The starting point of each interval is taken
           randomly from a half normal distribution with its mode (mu) at 1 and
           its sigma equal to 1/3 * (1-b) where b is the intercept of the fit to
-          the interval.
+          the interval, 
+          pair with piecewise=False and neg_shift=False
+        *'perfect_clean_complex' - each detected clean event returns the 
+          performance metric to 1 while negative shifts in the data or 
+          piecewise linear fits result in no cleaning,
+          pair with piecewise=True and neg_shift=True
+        *'inferred_clean_complex' - at each detected clean event the 
+          performance metric increases based on fits to the data while 
+          negative shifts in the data or piecewise linear fits result in no 
+          cleaning,
+          pair with piecewise=True and neg_shift=True
     clean_criterion : str, {'shift', 'precip_and_shift', 'precip_or_shift', 'precip'} \
         default 'shift'
         The method of partitioning the dataset into soiling intervals
@@ -1064,6 +1113,18 @@ def soiling_srr(energy_normalized_daily, insolation_daily, reps=1000,
         The factor used in the Tukey fence definition of outliers for flagging positive shifts
         in the rolling median used for cleaning detection. A smaller value will cause more and
         smaller shifts to be classified as cleaning events.
+    neg_shift : bool, default True
+        where True results in additional subdividing of soiling intervals 
+        when negative shifts are found in the rolling median of the performance 
+        metric. Inferred corrections in the soiling fit are made at these 
+        negative shifts. False results in no additional subdivides of the 
+        data where excessive negative shifts can invalidate a soiling interval.
+    piecewise : bool, default True 
+        where True results in each soiling interval of sufficient length 
+        being tested for significant fit improvement with 2 piecewise linear 
+        fits. If the criteria of significance is met the soiling interval is 
+        subdivided into the 2 separate intervals. False results in no 
+        piecewise fit being tested.
 
     Returns
     -------
@@ -2903,7 +2964,7 @@ def _find_numeric_outliers(x, multiplier=1.5, where='both', verbose=False):
 def _RMSE(y_true, y_pred):
     '''Calculates the Root Mean Squared Error for y_true and y_pred, where
         y_pred is the "prediction", and y_true is the truth.'''
-    mask = ~np.isnan(y_pred)
+    mask = ~pd.isnull(y_pred)
     return np.sqrt(np.mean((y_pred[mask]-y_true[mask])**2))
 
 
