@@ -214,7 +214,7 @@ def test_sensor_analysis_aggregated_ad_hoc_filter(sensor_parameters):
         rd_analysis.sensor_analysis(analyses=["yoy_degradation"])
 
 
-def test_filter_components(sensor_parameters):
+def test_filter_components_poa(sensor_parameters):
     poa = sensor_parameters["poa_global"]
     poa_filter = (poa > 200) & (poa < 1200)
     rd_analysis = TrendAnalysis(**sensor_parameters, power_dc_rated=1.0)
