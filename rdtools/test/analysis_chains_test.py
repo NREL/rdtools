@@ -155,6 +155,12 @@ def test_sensor_analysis(sensor_analysis):
     assert [-1, -1] == pytest.approx(ci, abs=1e-2)
 
 
+def test_sensor_analysis_filter_components(sensor_analysis):
+    yoy_results = sensor_analysis.results["sensor"]["yoy_degradation"]
+    assert {'two_way_window_filter'} == set(sensor_analysis.sensor_filter_components_aggregated.columns)
+    assert {'normalized_filter', 'poa_filter', 'tcell_filter', 'clip_filter'} == set(sensor_analysis.sensor_filter_components.columns)
+
+
 def test_sensor_analysis_energy(sensor_parameters, sensor_analysis):
     sensor_parameters["pv"] = sensor_analysis.pv_energy
     sensor_parameters["pv_input"] = "energy"
@@ -484,6 +490,10 @@ def test_clearsky_analysis(clearsky_analysis):
     print(ci)
     assert -4.70 == pytest.approx(rd, abs=1e-2)
     assert [-4.71, -4.69] == pytest.approx(ci, abs=1e-2)
+
+def test_clearsky_analysis_filter_components(clearsky_analysis):
+    assert {'two_way_window_filter'} == set(clearsky_analysis.clearsky_filter_components_aggregated.columns)
+    assert {'normalized_filter', 'poa_filter', 'tcell_filter', 'clip_filter', 'clearsky_filter'} == set(clearsky_analysis.clearsky_filter_components.columns)
 
 
 def test_clearsky_analysis_optional(
