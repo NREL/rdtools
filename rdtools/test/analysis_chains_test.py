@@ -502,7 +502,7 @@ def test_clearsky_analysis_filter_components(clearsky_analysis):
     expected_columns = {'normalized_filter', 'poa_filter', 'tcell_filter',
                         'clip_filter', 'clearsky_filter'}
     columns = clearsky_analysis.clearsky_filter_components.columns
-    assert expected_columns  == set(columns)
+    assert expected_columns == set(columns)
 
 
 def test_clearsky_analysis_optional(
