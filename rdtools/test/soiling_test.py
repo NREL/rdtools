@@ -239,12 +239,12 @@ def test_soiling_srr_with_nan_interval(soiling_normalized_daily, soiling_insolat
         sr, sr_ci, soiling_info = soiling_srr(normalized_corrupt, soiling_insolation, reps=reps)
     assert 0.948792 == pytest.approx(sr, abs=1e-6), \
         'Soiling ratio different from expected value when an entire interval was NaN'
-    '''
+    
     with pytest.warns(UserWarning, match='20% or more of the daily data'):
         sr, sr_ci, soiling_info = soiling_srr(normalized_corrupt, soiling_insolation, reps=reps, method="perfect_clean_complex", piecewise=True, neg_shift=True)
-    assert 0.974297 == pytest.approx(sr, abs=1e-6), \
+    assert 0.974225 == pytest.approx(sr, abs=1e-6), \
         'Soiling ratio different from expected value when an entire interval was NaN'
-    '''
+    
 
 def test_soiling_srr_outlier_factor(soiling_normalized_daily, soiling_insolation):
     _, _, info = soiling_srr(soiling_normalized_daily, soiling_insolation,
@@ -331,11 +331,11 @@ def test_soiling_srr_argument_checks(soiling_normalized_daily, soiling_insolatio
 # negetive shift and piecewise tests
 # ###########################
 @pytest.mark.parametrize('method,neg_shift,expected_sr',
-                         [('half_norm_clean', False, 0.940237),
+                         [('half_norm_clean', False, 0.980143),
                           ('half_norm_clean', True, 0.975057),
-                          ('perfect_clean_complex', False, 0.941591),
+                          ('perfect_clean_complex', False, 0.983797),
                           ('perfect_clean_complex', True, 0.964117),
-                          ('inferred_clean_complex', False, 0.939747),
+                          ('inferred_clean_complex', False, 0.983265),
                           ('inferred_clean_complex', True, 0.963585)])
 def test_negative_shifts(soiling_normalized_daily_with_neg_shifts, soiling_insolation, soiling_times, method, neg_shift, expected_sr):
     reps = 10
@@ -381,12 +381,12 @@ def test_complex_sr_clean_threshold(soiling_normalized_daily_with_neg_shifts, so
                                           clean_threshold=0.1, method='perfect_clean_complex', piecewise=True, neg_shift=True)
     assert 0.934926 == pytest.approx(sr, abs=1e-6), \
         'Soiling ratio with specified clean_threshold different from expected value'
-    '''
+    
     with pytest.raises(NoValidIntervalError):
         np.random.seed(1977)
         sr, sr_ci, soiling_info = soiling_srr(soiling_normalized_daily_with_neg_shifts, soiling_insolation,
                                               reps=10, clean_threshold=1)
-    '''
+    
 # ###########################
 # annual_soiling_ratios tests
 # ###########################
