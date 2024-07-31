@@ -292,7 +292,7 @@ def pvlib_clearsky_filter(
     return mask
 
 
-def clip_filter(power_ac, model="quantile", **kwargs):
+def clip_filter(power_ac, model="logic", **kwargs):
     """
     Master wrapper for running one of the desired clipping filters.
     The default filter run is the quantile clipping filter.
@@ -302,7 +302,7 @@ def clip_filter(power_ac, model="quantile", **kwargs):
     power_ac : pandas.Series
         Pandas time series, representing PV system power or energy.
         For best performance, timestamps should be in local time.
-    model : str, default 'quantile'
+    model : str, default 'logic'
         Clipping filter model to run. Can be 'quantile',
         'xgboost', or 'logic'. Note: using the xgboost model can
         result in errors on some systems. These can often be alleviated
