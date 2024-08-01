@@ -5,7 +5,6 @@ import pandas as pd
 import os
 import warnings
 import pvlib
-from numbers import Number
 from scipy.interpolate import interp1d
 import rdtools
 import xgboost as xgb
