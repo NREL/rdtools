@@ -320,18 +320,6 @@ def clip_filter(power_ac, model="logic", **kwargs):
         True values delineate non-clipping periods, and False values delineate
         clipping periods.
     """
-    if isinstance(model, Number):
-        quantile = model
-        warnings.warn(
-            "Function clip_filter is now a wrapper for different "
-            "clipping filters. To reproduce prior behavior, "
-            "parameters have been interpreted as model= "
-            f"'quantile_clip_filter', quantile={quantile}. "
-            "This syntax will be removed in a future version.",
-            rdtools._deprecation.rdtoolsDeprecationWarning,
-        )
-        kwargs["quantile"] = quantile
-        model = "quantile"
 
     if model == "quantile":
         clip_mask = quantile_clip_filter(power_ac, **kwargs)
