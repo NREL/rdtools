@@ -1,4 +1,3 @@
-from rdtools.normalization import normalize_with_sapm
 from rdtools.normalization import normalize_with_pvwatts
 from rdtools.normalization import irradiance_rescale
 from rdtools.normalization import energy_from_power
@@ -19,6 +18,11 @@ from rdtools.filtering import quantile_clip_filter
 from rdtools.filtering import logic_clip_filter
 from rdtools.filtering import xgboost_clip_filter
 from rdtools.filtering import normalized_filter
+from rdtools.filtering import two_way_window_filter
+from rdtools.filtering import insolation_filter
+from rdtools.filtering import hampel_filter
+from rdtools.filtering import hour_angle_filter
+from rdtools.filtering import directional_tukey_filter
 # from rdtools.soiling import soiling_srr
 # from rdtools.soiling import soiling_cods
 # from rdtools.soiling import monthly_soiling_rates
