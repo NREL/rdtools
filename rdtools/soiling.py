@@ -136,16 +136,16 @@ class SRRAnalysis:
             in the rolling median used for cleaning detection. A smaller value will cause more and
             smaller shifts to be classified as cleaning events.
         neg_shift : bool, default True
-            where True results in additional subdividing of soiling intervals 
-            when negative shifts are found in the rolling median of the performance 
-            metric. Inferred corrections in the soiling fit are made at these 
-            negative shifts. False results in no additional subdivides of the 
+            where True results in additional subdividing of soiling intervals
+            when negative shifts are found in the rolling median of the performance
+            metric. Inferred corrections in the soiling fit are made at these
+            negative shifts. False results in no additional subdivides of the
             data where excessive negative shifts can invalidate a soiling interval.
-        piecewise : bool, default True 
-            where True results in each soiling interval of sufficient length 
-            being tested for significant fit improvement with 2 piecewise linear 
-            fits. If the criteria of significance is met the soiling interval is 
-            subdivided into the 2 separate intervals. False results in no 
+        piecewise : bool, default True
+            where True results in each soiling interval of sufficient length
+            being tested for significant fit improvement with 2 piecewise linear
+            fits. If the criteria of significance is met the soiling interval is
+            subdivided into the 2 separate intervals. False results in no
             piecewise fit being tested.
         """
         if (day_scale % 2 == 0) and ("shift" in clean_criterion):
@@ -201,7 +201,8 @@ class SRRAnalysis:
 
         # Make a forward filled copy, just for use in
         # step, slope change detection
-        # 1/6/24 Note several errors in soiling fit due to ffill for rolling median change to day_scale/2 Matt
+        # 1/6/24 Note several errors in soiling fit due to ffill for rolling 
+        # median change to day_scale/2 Matt
         df_ffill = df.copy()
         df_ffill = df.ffill(limit=int(round((day_scale / 2), 0)))
 
@@ -219,7 +220,9 @@ class SRRAnalysis:
         df["clean_event_detected"] = df.delta > clean_threshold
 
         ##########################################################################
-        # Matt added these lines but the function "_collapse_cleaning_events" was written by Asmund, it reduces multiple days of cleaning events in a row to a single event
+        # Matt added these lines but the function "_collapse_cleaning_events" 
+        # was written by Asmund, it reduces multiple days of cleaning events 
+        # in a row to a single event
 
         reduced_cleaning_events = _collapse_cleaning_events(
             df.clean_event_detected, df.delta.values, 5
@@ -257,7 +260,7 @@ class SRRAnalysis:
         # add negative shifts which allows further segmentation of the soiling
         # intervals and handles correction for data outages/Matt
         df.delta = df.delta.fillna(0)  # to avoid NA corrupting calculation
-        if neg_shift == True:
+        if neg_shift is True:
             df["drop_event"] = df.delta < -2.5 * clean_threshold
             df["break_event"] = df.clean_event | df.drop_event
         else:
@@ -281,7 +284,7 @@ class SRRAnalysis:
         # if statistical criteria are met with the piecewise linear fit
         # compared to a single linear fit. Intervals <45 days reqire more
         # stringent statistical improvements/Matt
-        if piecewise == True:
+        if piecewise is True:
             warnings.warn(
                 "Piecewise = True was passed, for both Piecewise=True"
                 "and neg_shift=True cleaning_method choices should"
@@ -297,7 +300,7 @@ class SRRAnalysis:
                 pr = pr.bfill()  # catch first position nan
                 if len(run) > min_soil_length and run.pi_norm.sum() > 0:
                     sr, cp_date = segmented_soiling_period(pr, days_clean_vs_cp=13)
-                    if cp_date != None:
+                    if cp_date is not None:
                         cp_dates.append(pr.index[cp_date])
             # save changes to df, note I would like to rename "clean_event" from
             # original code to something like "break_event
@@ -433,7 +436,7 @@ class SRRAnalysis:
 
         """
         # Filter results for each interval,
-        # setting invalid interval to slope of 0        
+        # setting invalid interval to slope of 0
         #moved above to line 356/Matt
         results['slope_err'] = (
             results.run_slope_high - results.run_slope_low)\
@@ -442,7 +445,7 @@ class SRRAnalysis:
         ###############################################################
         # negative shifts are now used as breaks for soiling intervals/Matt
         # so new criteria for final filter to modify dataframe
-        if neg_shift == True:
+        if neg_shift is True:
             warnings.warn(
                 "neg_shift = True was passed, for both Piecewise=True"
                 "and neg_shift=True cleaning_method choices should"
@@ -463,7 +466,7 @@ class SRRAnalysis:
         ##################################################################
         # original code below setting soiling intervals with extreme negative
         # shift to zero slopes, /Matt
-        if neg_shift == False:
+        if neg_shift is False:
             filt = (
                 (results.run_slope > 0)
                 | (results.slope_err >= max_relative_slope_error / 100.0)
@@ -472,7 +475,6 @@ class SRRAnalysis:
                 # for calculations below
                 # |results.loc[filt, 'valid'] = False
             )
-            print(results.slope_err)
             results.loc[filt, "run_slope"] = 0
             results.loc[filt, "run_slope_low"] = 0
             results.loc[filt, "run_slope_high"] = 0
@@ -497,17 +499,18 @@ class SRRAnalysis:
         # if the current interval starts with a clean event, the previous end
         # is a nan, and the current interval is valid then set prev_end=1
         results.loc[
-            (results.clean_event == True)
-            & (np.isnan(results.prev_end) & (results.valid == True)),
+            (results.clean_event is True)
+            & (np.isnan(results.prev_end) & (results.valid is True)),
             "prev_end",
-        ] = 1  ##############################clean_event or clean_event_detected
+        ] = 1  # clean_event or clean_event_detected
         results["inferred_begin_shift"] = results.inferred_start_loss - results.prev_end
-        # if orginal shift detection was positive the shift should not be negative due to fitting results
+        # if orginal shift detection was positive the shift should not be 
+        # negative due to fitting results
         results.loc[results.clean_event == True, "inferred_begin_shift"] = np.clip(
             results.inferred_begin_shift, 0, 1
         )
         #######################################################################
-        if neg_shift == False:
+        if neg_shift is False:
             results.loc[filt, "valid"] = False
 
         if len(results[results.valid]) == 0:
@@ -601,8 +604,10 @@ class SRRAnalysis:
                         shift = 0
                         shift_perfect = 0
                         total_down = start_shift
-                # check that shifts results in being at or above the median of the next 10 days of data
-                # this catches places where start points of polyfits were skewed below where data start
+                # check that shifts results in being at or above the median of 
+                # the next 10 days of data
+                # this catches places where start points of polyfits were 
+                # skewed below where data start
                 if (soil_infer + shift) < forward_median:
                     shift = forward_median - soil_infer
                 if (soil_perfect + shift_perfect) < forward_median:
@@ -621,7 +626,7 @@ class SRRAnalysis:
                 soil_perfect = np.clip((soil_perfect + shift_perfect), soil_perfect, 1)
                 start_perfect = soil_perfect
                 soil_perfect_clean.append(soil_perfect)
-                if changepoint == False:
+                if changepoint is False:
                     prev_shift = start_shift  # assigned at new soil period
 
             elif new_soil > 0:  # within soiling period
@@ -662,24 +667,24 @@ class SRRAnalysis:
             
             How to treat the recovery of each cleaning event
 
-            * 'random_clean' - a random recovery between 0-100%, 
+            * 'random_clean' - a random recovery between 0-100%,
                pair with piecewise=False and neg_shift=False
             * 'perfect_clean' - each cleaning event returns the performance
-              metric to 1, 
+              metric to 1,
               pair with piecewise=False and neg_shift=False
             * 'half_norm_clean' - The starting point of each interval is taken
               randomly from a half normal distribution with its
               mode (mu) at 1 and
               its sigma equal to 1/3 * (1-b) where b is the intercept of the fit to
-              the interval, 
+              the interval,
               pair with piecewise=False and neg_shift=False
-            *'perfect_clean_complex' - each detected clean event returns the 
-              performance metric to 1 while negative shifts in the data or 
+            *'perfect_clean_complex' - each detected clean event returns the
+              performance metric to 1 while negative shifts in the data or
               piecewise linear fits result in no cleaning,
               pair with piecewise=True and neg_shift=True
-            *'inferred_clean_complex' - at each detected clean event the 
-              performance metric increases based on fits to the data while 
-              negative shifts in the data or piecewise linear fits result in no 
+            *'inferred_clean_complex' - at each detected clean event the
+              performance metric increases based on fits to the data while
+              negative shifts in the data or piecewise linear fits result in no
               cleaning,
               pair with piecewise=True and neg_shift=True
         """
@@ -935,28 +940,28 @@ class SRRAnalysis:
         method : str, {'half_norm_clean', 'random_clean', 'perfect_clean',
              perfect_clean_complex,inferred_clean_complex} \
             default 'perfect_clean_complex'
-            
+
             How to treat the recovery of each cleaning event
 
-            * 'random_clean' - a random recovery between 0-100%, 
+            * 'random_clean' - a random recovery between 0-100%,
                pair with piecewise=False and neg_shift=False
             * 'perfect_clean' - each cleaning event returns the performance
-              metric to 1, 
+              metric to 1,
               pair with piecewise=False and neg_shift=False
             * 'half_norm_clean' - The starting point of each interval is taken
               randomly from a half normal distribution with its mode (mu) at 1 and
               its sigma equal to 1/3 * (1-b) where b is the intercept of the fit to
-              the interval, 
+              the interval,
               pair with piecewise=False and neg_shift=False
-            * 'perfect_clean_complex' - each detected clean event returns the 
-              performance metric to 1 while negative shifts in the data or 
+            * 'perfect_clean_complex' - each detected clean event returns the
+              performance metric to 1 while negative shifts in the data or
               piecewise linear fits result in no cleaning,
               pair with piecewise=True and neg_shift=True
-            * 'inferred_clean_complex' - at each detected clean event the 
-              performance metric increases based on fits to the data while 
-              negative shifts in the data or piecewise linear fits result in no 
+            * 'inferred_clean_complex' - at each detected clean event the
+              performance metric increases based on fits to the data while
+              negative shifts in the data or piecewise linear fits result in no
               cleaning,
-              pair with piecewise=True and neg_shift=True           
+              pair with piecewise=True and neg_shift=True
         clean_criterion : str, {'shift', 'precip_and_shift', 'precip_or_shift', 'precip'} \
             default 'shift'
             The method of partitioning the dataset into soiling intervals
@@ -994,16 +999,16 @@ class SRRAnalysis:
             in the rolling median used for cleaning detection. A smaller value will cause more and
             smaller shifts to be classified as cleaning events.
         neg_shift : bool, default True
-            where True results in additional subdividing of soiling intervals 
-            when negative shifts are found in the rolling median of the performance 
-            metric. Inferred corrections in the soiling fit are made at these 
-            negative shifts. False results in no additional subdivides of the 
+            where True results in additional subdividing of soiling intervals
+            when negative shifts are found in the rolling median of the performance
+            metric. Inferred corrections in the soiling fit are made at these
+            negative shifts. False results in no additional subdivides of the
             data where excessive negative shifts can invalidate a soiling interval.
-        piecewise : bool, default True 
-            where True results in each soiling interval of sufficient length 
-            being tested for significant fit improvement with 2 piecewise linear 
-            fits. If the criteria of significance is met the soiling interval is 
-            subdivided into the 2 separate intervals. False results in no 
+        piecewise : bool, default True
+            where True results in each soiling interval of sufficient length
+            being tested for significant fit improvement with 2 piecewise linear
+            fits. If the criteria of significance is met the soiling interval is
+            subdivided into the 2 separate intervals. False results in no
             piecewise fit being tested.
 
         Returns
@@ -1187,26 +1192,26 @@ def soiling_srr(
     method : str, {'half_norm_clean', 'random_clean', 'perfect_clean',
          perfect_clean_complex,inferred_clean_complex} \
         default 'half_norm_clean'
-        
+
         How to treat the recovery of each cleaning event
 
-        * 'random_clean' - a random recovery between 0-100%, 
+        * 'random_clean' - a random recovery between 0-100%,
            pair with piecewise=False and neg_shift=False
         * 'perfect_clean' - each cleaning event returns the performance
-          metric to 1, 
+          metric to 1,
           pair with piecewise=False and neg_shift=False
         * 'half_norm_clean' - The starting point of each interval is taken
           randomly from a half normal distribution with its mode (mu) at 1 and
           its sigma equal to 1/3 * (1-b) where b is the intercept of the fit to
-          the interval, 
+          the interval,
           pair with piecewise=False and neg_shift=False
-        *'perfect_clean_complex' - each detected clean event returns the 
-          performance metric to 1 while negative shifts in the data or 
+        *'perfect_clean_complex' - each detected clean event returns the
+          performance metric to 1 while negative shifts in the data or
           piecewise linear fits result in no cleaning,
           pair with piecewise=True and neg_shift=True
-        *'inferred_clean_complex' - at each detected clean event the 
-          performance metric increases based on fits to the data while 
-          negative shifts in the data or piecewise linear fits result in no 
+        *'inferred_clean_complex' - at each detected clean event the
+          performance metric increases based on fits to the data while
+          negative shifts in the data or piecewise linear fits result in no
           cleaning,
           pair with piecewise=True and neg_shift=True
     clean_criterion : str, {'shift', 'precip_and_shift', 'precip_or_shift', 'precip'} \
@@ -1245,16 +1250,16 @@ def soiling_srr(
         in the rolling median used for cleaning detection. A smaller value will cause more and
         smaller shifts to be classified as cleaning events.
     neg_shift : bool, default True
-        where True results in additional subdividing of soiling intervals 
-        when negative shifts are found in the rolling median of the performance 
-        metric. Inferred corrections in the soiling fit are made at these 
-        negative shifts. False results in no additional subdivides of the 
+        where True results in additional subdividing of soiling intervals
+        when negative shifts are found in the rolling median of the performance
+        metric. Inferred corrections in the soiling fit are made at these
+        negative shifts. False results in no additional subdivides of the
         data where excessive negative shifts can invalidate a soiling interval.
-    piecewise : bool, default True 
-        where True results in each soiling interval of sufficient length 
-        being tested for significant fit improvement with 2 piecewise linear 
-        fits. If the criteria of significance is met the soiling interval is 
-        subdivided into the 2 separate intervals. False results in no 
+    piecewise : bool, default True
+        where True results in each soiling interval of sufficient length
+        being tested for significant fit improvement with 2 piecewise linear
+        fits. If the criteria of significance is met the soiling interval is
+        subdivided into the 2 separate intervals. False results in no
         piecewise fit being tested.
 
     Returns
@@ -2861,7 +2866,7 @@ class CODSAnalysis:
         # Enter forward pass of filtering algorithm
         for i, z in enumerate(zs):
             if 7 < i < N - 7 and (i in cleaning_events or i in soiling_events):
-                rolling_median_local = rolling_median_7.loc[i - 5 : i + 5].values
+                rolling_median_local = rolling_median_7.loc[i - 5: i + 5].values
                 u = self._set_control_input(f, rolling_median_local, i, cleaning_events)
                 f.predict(u=u)  # Predict wth control input u
             else:  # If no cleaning detection, predict without control input
@@ -3170,10 +3175,10 @@ def _collapse_cleaning_events(inferred_ce_in, metric, f=4):
         end_true_vals = collapsed_ce_dummy.loc[start_true_vals:].idxmin() - 1
         if end_true_vals >= start_true_vals:  # If the island ends
             # Find the day with mac probability of being a cleaning event
-            max_diff_day = metric.loc[start_true_vals - f : end_true_vals + f].idxmax()
+            max_diff_day = metric.loc[start_true_vals - f: end_true_vals + f].idxmax()
             # Set all days in this period as false
-            collapsed_ce.loc[start_true_vals - f : end_true_vals + f] = False
-            collapsed_ce_dummy.loc[start_true_vals - f : end_true_vals + f] = False
+            collapsed_ce.loc[start_true_vals - f: end_true_vals + f] = False
+            collapsed_ce_dummy.loc[start_true_vals - f: end_true_vals + f] = False
             # Set the max probability day as True (cleaning event)
             collapsed_ce.loc[max_diff_day] = True
             # Find the next island of true values
@@ -3359,8 +3364,10 @@ def segmented_soiling_period(
     min_r2=0.15,
 ):  # note min_r2 was 0.6 and it could be worth testing 10 day forward median as b guess
     """
-    Applies segmented regression to a single deposition period (data points in between two cleaning events).
-    Segmentation is neglected if change point occurs within a number of days (days_clean_vs_cp) of the cleanings.
+    Applies segmented regression to a single deposition period 
+    (data points in between two cleaning events).
+    Segmentation is neglected if change point occurs within a number of days 
+    (days_clean_vs_cp) of the cleanings.
 
     Parameters
     ----------
@@ -3371,7 +3378,8 @@ def segmented_soiling_period(
     days_clean_vs_cp : numeric (default=7)
         Minimum number of days accepted between cleanings and change points.
     bounds : numeric (default=None)
-        List of bounds for fitting function. If not specified, they are defined in the function.
+        List of bounds for fitting function. If not specified, they are 
+        defined in the function.
     initial_guesses : numeric (default=0.1)
         List of initial guesses for fitting function
     min_r2 : numeric (default=0.1)
@@ -3392,7 +3400,7 @@ def segmented_soiling_period(
         raise ValueError("The time series does not have DatetimeIndex")
 
     # Define bounds if not provided
-    if bounds == None:
+    if bounds is None:
         # bounds are neg in first 4 and pos in second 4
         # ordered as x0,b,k1,k2 where x0 is the breakpoint k1 and k2 are slopes
         bounds = [(13, -5, -np.inf, -np.inf), ((len(pr) - 13), 5, +np.inf, +np.inf)]
@@ -3404,7 +3412,8 @@ def segmented_soiling_period(
         p, e = curve_fit(piecewise_linear, x, y, p0=initial_guesses, bounds=bounds)
 
         # Ignore change point if too close to a cleaning
-        # Change point p[0] converted to integer to extract a date. None if no change point is found.
+        # Change point p[0] converted to integer to extract a date. 
+        # None if no change point is found.
         if p[0] > days_clean_vs_cp and p[0] < len(y) - days_clean_vs_cp:
             z = piecewise_linear(x, *p)
             cp_date = int(p[0])

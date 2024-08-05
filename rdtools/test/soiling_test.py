@@ -33,17 +33,6 @@ def test_soiling_srr(soiling_normalized_daily, soiling_insolation, soiling_times
     assert isinstance(
         soiling_info["stochastic_soiling_profiles"], list
     ), 'soiling_info["stochastic_soiling_profiles"] is not a list'
-    # wait to see which tests matt wants to keep
-    # assert len(soiling_info['change_points']) == len(soiling_normalized_daily), \
-    #   'length of soiling_info["change_points"] different than expected'
-    # assert isinstance(soiling_info['change_points'], pd.Series), \
-    #   'soiling_info["change_points"] not a pandas series'
-    # assert (soiling_info['change_points'] == False).all(), \
-    #   'not all values in soiling_inf["change_points"] are False'
-    # assert len(soiling_info['days_since_clean']) == len(soiling_normalized_daily), \
-    #   'length of soiling_info["days_since_clean"] different than expected'
-    # assert isinstance(soiling_info['days_since_clean'], pd.Series), \
-    #   'soiling_info["days_since_clean"] not a pandas series'
 
     # Check soiling_info['soiling_interval_summary']
     expected_summary_columns = [
@@ -68,7 +57,8 @@ def test_soiling_srr(soiling_normalized_daily, soiling_insolation, soiling_times
     for x in expected_summary_columns:
         assert (
             x in actual_summary_columns
-        ), f"'{x}' was expected as a column, but not in soiling_info['soiling_interval_summary']"
+        ), f"'{x}' was expected as a column, but not in \
+            soiling_info['soiling_interval_summary']"
     assert isinstance(
         soiling_info["soiling_interval_summary"], pd.DataFrame
     ), 'soiling_info["soiling_interval_summary"] not a dataframe'
