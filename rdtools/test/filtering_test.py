@@ -330,7 +330,7 @@ def test_clip_filter(generate_power_time_series_clipping, mocker):
     # Check the default behavior
     expected = logic_clip_filter(power)
     mock_logic_clip_filter = mocker.patch('rdtools.filtering.logic_clip_filter',
-        return_value=expected)
+                                          return_value=expected)
     filtered = clip_filter(power)
     mock_logic_clip_filter.assert_called_once()
     tm.assert_series_equal(filtered, expected)
@@ -340,10 +340,10 @@ def test_clip_filter(generate_power_time_series_clipping, mocker):
         'mounting_type': 'single_axis_tracking',
         'rolling_range_max_cutoff': 0.3,
         'roll_periods': 3
-        }
+    }
     expected = logic_clip_filter(power, **expected_kwargs)
     mock_logic_clip_filter = mocker.patch('rdtools.filtering.logic_clip_filter',
-        return_value=expected)
+                                          return_value=expected)
     filtered = clip_filter(power, model='logic', **expected_kwargs)
     mock_logic_clip_filter.assert_called_once()
     actual_kwargs = mock_logic_clip_filter.call_args.kwargs
@@ -352,10 +352,10 @@ def test_clip_filter(generate_power_time_series_clipping, mocker):
 
     expected_kwargs = {
         'quantile': 0.95
-        }
+    }
     expected = quantile_clip_filter(power, **expected_kwargs)
     mock_quantile_clip_filter = mocker.patch('rdtools.filtering.quantile_clip_filter',
-        return_value=expected)
+                                             return_value=expected)
     filtered = clip_filter(power, model='quantile', **expected_kwargs)
     mock_quantile_clip_filter.assert_called_once()
     actual_kwargs = mock_quantile_clip_filter.call_args.kwargs
@@ -364,10 +364,10 @@ def test_clip_filter(generate_power_time_series_clipping, mocker):
 
     expected_kwargs = {
         'mounting_type': 'single_axis_tracking'
-        }
+    }
     expected = xgboost_clip_filter(power, **expected_kwargs)
     mock_xgboost_clip_filter = mocker.patch('rdtools.filtering.xgboost_clip_filter',
-        return_value=expected)
+                                            return_value=expected)
     filtered = clip_filter(power, model='xgboost', **expected_kwargs)
     mock_xgboost_clip_filter.assert_called_once()
     actual_kwargs = mock_xgboost_clip_filter.call_args.kwargs
