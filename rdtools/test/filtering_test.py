@@ -349,7 +349,7 @@ def test_clip_filter(generate_power_time_series_clipping, mocker):
     call_args = mock_logic_clip_filter.call_args
 
     # Deal with change in call_args after python 3.7
-    if isinstance(call_args, tuple): # case for 3.7
+    if isinstance(call_args, tuple):  # case for 3.7
         actual_kwargs = call_args[1]
     else:
         actual_kwargs = call_args.kwargs
