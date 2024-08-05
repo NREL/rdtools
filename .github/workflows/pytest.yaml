@@ -30,7 +30,7 @@ jobs:
           # required numpy is not available on python 3.7, so exclude:
           - python-version: 3.7
             env: '-r requirements.txt .[test]'
-    fail-fast: false
+      fail-fast: false
 
     steps:
     - uses: actions/checkout@v2
