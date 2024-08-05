@@ -346,7 +346,14 @@ def test_clip_filter(generate_power_time_series_clipping, mocker):
                                           return_value=expected)
     filtered = clip_filter(power, model='logic', **expected_kwargs)
     mock_logic_clip_filter.assert_called_once()
-    actual_kwargs = mock_logic_clip_filter.call_args.kwargs
+    call_args = mock_logic_clip_filter.call_args
+
+    # Deal with change in call_args after python 3.7
+    if isinstance(call_args, tuple): # case for 3.7
+        actual_kwargs = call_args[1]
+    else:
+        actual_kwargs = call_args.kwargs
+
     assert actual_kwargs == expected_kwargs
     tm.assert_series_equal(filtered, expected)
 
@@ -358,7 +365,12 @@ def test_clip_filter(generate_power_time_series_clipping, mocker):
                                              return_value=expected)
     filtered = clip_filter(power, model='quantile', **expected_kwargs)
     mock_quantile_clip_filter.assert_called_once()
-    actual_kwargs = mock_quantile_clip_filter.call_args.kwargs
+    call_args = mock_quantile_clip_filter.call_args
+    if isinstance(call_args, tuple):
+        actual_kwargs = call_args[1]
+    else:
+        actual_kwargs = call_args.kwargs
+
     assert actual_kwargs == expected_kwargs
     tm.assert_series_equal(filtered, expected)
 
@@ -370,7 +382,11 @@ def test_clip_filter(generate_power_time_series_clipping, mocker):
                                             return_value=expected)
     filtered = clip_filter(power, model='xgboost', **expected_kwargs)
     mock_xgboost_clip_filter.assert_called_once()
-    actual_kwargs = mock_xgboost_clip_filter.call_args.kwargs
+    call_args = mock_xgboost_clip_filter.call_args
+    if isinstance(call_args, tuple):
+        actual_kwargs = call_args[1]
+    else:
+        actual_kwargs = call_args.kwargs
     assert actual_kwargs == expected_kwargs
     tm.assert_series_equal(filtered, expected)
 
