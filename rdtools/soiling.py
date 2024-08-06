@@ -6,27 +6,25 @@ and default behaviors may change in future releases (including MINOR
 and PATCH releases) as the code matures.
 """
 
-from rdtools import degradation as RdToolsDeg
-from rdtools.bootstrap import _make_time_series_bootstrap_samples
-
+import bisect
+import itertools
+import sys
+import time
 import warnings
 
-import pandas as pd
 import numpy as np
-from scipy.stats.mstats import theilslopes
-from filterpy.kalman import KalmanFilter
+import pandas as pd
+import scipy.stats as st
+import statsmodels.api as sm
 from filterpy.common import Q_discrete_white_noise
-import itertools
-import bisect
-import time
-import sys
+from filterpy.kalman import KalmanFilter
+from scipy.optimize import curve_fit
+from scipy.stats.mstats import theilslopes
 from statsmodels.tsa.seasonal import STL
 from statsmodels.tsa.stattools import adfuller
-import statsmodels.api as sm
 
-from scipy.optimize import curve_fit
-
-import scipy.stats as st
+from rdtools import degradation as RdToolsDeg
+from rdtools.bootstrap import _make_time_series_bootstrap_samples
 
 lowess = sm.nonparametric.lowess  # Used in CODSAnalysis/Matt
 
@@ -201,7 +199,7 @@ class SRRAnalysis:
 
         # Make a forward filled copy, just for use in
         # step, slope change detection
-        # 1/6/24 Note several errors in soiling fit due to ffill for rolling 
+        # 1/6/24 Note several errors in soiling fit due to ffill for rolling
         # median change to day_scale/2 Matt
         df_ffill = df.copy()
         df_ffill = df.ffill(limit=int(round((day_scale / 2), 0)))
@@ -220,8 +218,8 @@ class SRRAnalysis:
         df["clean_event_detected"] = df.delta > clean_threshold
 
         ##########################################################################
-        # Matt added these lines but the function "_collapse_cleaning_events" 
-        # was written by Asmund, it reduces multiple days of cleaning events 
+        # Matt added these lines but the function "_collapse_cleaning_events"
+        # was written by Asmund, it reduces multiple days of cleaning events
         # in a row to a single event
 
         reduced_cleaning_events = _collapse_cleaning_events(
@@ -504,7 +502,7 @@ class SRRAnalysis:
             "prev_end",
         ] = 1  # clean_event or clean_event_detected
         results["inferred_begin_shift"] = results.inferred_start_loss - results.prev_end
-        # if orginal shift detection was positive the shift should not be 
+        # if orginal shift detection was positive the shift should not be
         # negative due to fitting results
         results.loc[results.clean_event == True, "inferred_begin_shift"] = np.clip(
             results.inferred_begin_shift, 0, 1
@@ -604,9 +602,9 @@ class SRRAnalysis:
                         shift = 0
                         shift_perfect = 0
                         total_down = start_shift
-                # check that shifts results in being at or above the median of 
+                # check that shifts results in being at or above the median of
                 # the next 10 days of data
-                # this catches places where start points of polyfits were 
+                # this catches places where start points of polyfits were
                 # skewed below where data start
                 if (soil_infer + shift) < forward_median:
                     shift = forward_median - soil_infer
@@ -664,7 +662,7 @@ class SRRAnalysis:
         method : str, {'half_norm_clean', 'random_clean', 'perfect_clean',
              perfect_clean_complex,inferred_clean_complex} \
             default 'half_norm_clean'
-            
+
             How to treat the recovery of each cleaning event
 
             * 'random_clean' - a random recovery between 0-100%,
@@ -3364,9 +3362,9 @@ def segmented_soiling_period(
     min_r2=0.15,
 ):  # note min_r2 was 0.6 and it could be worth testing 10 day forward median as b guess
     """
-    Applies segmented regression to a single deposition period 
+    Applies segmented regression to a single deposition period
     (data points in between two cleaning events).
-    Segmentation is neglected if change point occurs within a number of days 
+    Segmentation is neglected if change point occurs within a number of days
     (days_clean_vs_cp) of the cleanings.
 
     Parameters
@@ -3378,7 +3376,7 @@ def segmented_soiling_period(
     days_clean_vs_cp : numeric (default=7)
         Minimum number of days accepted between cleanings and change points.
     bounds : numeric (default=None)
-        List of bounds for fitting function. If not specified, they are 
+        List of bounds for fitting function. If not specified, they are
         defined in the function.
     initial_guesses : numeric (default=0.1)
         List of initial guesses for fitting function
@@ -3412,7 +3410,7 @@ def segmented_soiling_period(
         p, e = curve_fit(piecewise_linear, x, y, p0=initial_guesses, bounds=bounds)
 
         # Ignore change point if too close to a cleaning
-        # Change point p[0] converted to integer to extract a date. 
+        # Change point p[0] converted to integer to extract a date.
         # None if no change point is found.
         if p[0] > days_clean_vs_cp and p[0] < len(y) - days_clean_vs_cp:
             z = piecewise_linear(x, *p)
