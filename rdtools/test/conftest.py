@@ -85,6 +85,39 @@ def soiling_normalized_daily(soiling_times):
 
     return normalized_daily
 
+@pytest.fixture()
+def soiling_normalized_daily_with_neg_shifts(soiling_times):
+    interval_1_v1 = 1 - 0.005 * np.arange(0, 15, 1)
+    interval_1_v2 = (0.9 - 0.005 * 15) - 0.005 * np.arange(0, 10, 1)
+    interval_2 = 1 - 0.002 * np.arange(0, 25, 1)
+    interval_3_v1 = 1 - 0.001 * np.arange(0, 10, 1)
+    interval_3_v2 = (0.95 - 0.001 * 10) - 0.001 * np.arange(0, 15, 1)
+    profile = np.concatenate(
+        (interval_1_v1, interval_1_v2, interval_2, interval_3_v1, interval_3_v2)
+    )
+    np.random.seed(1977)
+    noise = 0.01 * np.random.rand(75)
+    normalized_daily = pd.Series(data=profile, index=soiling_times)
+    normalized_daily = normalized_daily + noise
+
+    return normalized_daily
+
+
+@pytest.fixture()
+def soiling_normalized_daily_with_piecewise_slope(soiling_times):
+    interval_1_v1 = 1 - 0.002 * np.arange(0, 20, 1)
+    interval_1_v2 = (1 - 0.002 * 20) - 0.007 * np.arange(0, 20, 1)
+    interval_2_v1 = 1 - 0.01 * np.arange(0, 20, 1)
+    interval_2_v2 = (1 - 0.01 * 20) - 0.001 * np.arange(0, 15, 1)
+    profile = np.concatenate(
+        (interval_1_v1, interval_1_v2, interval_2_v1, interval_2_v2)
+    )
+    np.random.seed(1977)
+    noise = 0.01 * np.random.rand(75)
+    normalized_daily = pd.Series(data=profile, index=soiling_times)
+    normalized_daily = normalized_daily + noise
+
+    return normalized_daily
 
 @pytest.fixture()
 def soiling_insolation(soiling_times):
