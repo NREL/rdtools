@@ -494,7 +494,7 @@ class SRRAnalysis:
         results["inferred_begin_shift"] = results.inferred_start_loss - results.prev_end
         # if orginal shift detection was positive the shift should not be
         # negative due to fitting results
-        results.loc[results.clean_event == True, "inferred_begin_shift"] = np.clip(
+        results.loc[results.clean_event, "inferred_begin_shift"] = np.clip(
             results.inferred_begin_shift, 0, 1
         )
         #######################################################################
@@ -549,7 +549,7 @@ class SRRAnalysis:
             day_start = d
 
             if new_soil <= 0:  # begin new soil period
-                if (start_shift == prev_shift) | (changepoint == True):  # no shift at
+                if (start_shift == prev_shift) | (changepoint):  # no shift at
                     # a slope changepoint
                     shift = 0
                     shift_perfect = 0
@@ -676,15 +676,13 @@ class SRRAnalysis:
         ):
             valid_fraction = self.analyzed_daily_df["valid"].mean()
             if valid_fraction <= 0.8:
-                warnings.warn(
-                    "20% or more of the daily data is assigned to invalid soiling "
+                warnings.warn('20% or more of the daily data is assigned to invalid soiling '
                     'intervals. This can be problematic with the "half_norm_clean" '
                     'and "random_clean" cleaning assumptions. Consider more permissive '
                     'validity criteria such as increasing "max_relative_slope_error" '
                     'and/or "max_negative_step" and/or decreasing "min_interval_length".'
                     ' Alternatively, consider using method="perfect_clean". For more'
-                    " info see https://github.com/NREL/rdtools/issues/272"
-                )
+                    ' info see https://github.com/NREL/rdtools/issues/272')
         monte_losses = []
         random_profiles = []
         for _ in range(monte):
@@ -3330,7 +3328,7 @@ def segmented_soiling_period(
             if (R2_percent_improve < 0.01) | (R2_piecewise < 0.4):
                 z = [np.nan] * len(x)
                 cp_date = None
-    except:
+    except IndexError as x:
         z = [np.nan] * len(x)
         cp_date = None
     # Create Series from modelled profile

@@ -494,7 +494,8 @@ def test_negative_shifts(
     )
     assert expected_sr == pytest.approx(
         sr, abs=1e-6
-    ), f'Soiling ratio with method="{method}" and neg_shift="{neg_shift}" different from expected value'
+    ), f'Soiling ratio with method="{method}" and neg_shift="{neg_shift}" \
+        different from expected value'
 
 
 @pytest.mark.parametrize(
@@ -527,7 +528,8 @@ def test_piecewise(
     )
     assert expected_sr == pytest.approx(
         sr, abs=1e-6
-    ), f'Soiling ratio with method="{method}" and piecewise="{piecewise}" different from expected value'
+    ), f'Soiling ratio with method="{method}" and piecewise="{piecewise}" \
+        different from expected value'
 
 
 def test_piecewise_and_neg_shifts(

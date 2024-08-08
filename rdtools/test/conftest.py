@@ -85,6 +85,7 @@ def soiling_normalized_daily(soiling_times):
 
     return normalized_daily
 
+
 @pytest.fixture()
 def soiling_normalized_daily_with_neg_shifts(soiling_times):
     interval_1_v1 = 1 - 0.005 * np.arange(0, 15, 1)
@@ -118,6 +119,7 @@ def soiling_normalized_daily_with_piecewise_slope(soiling_times):
     normalized_daily = normalized_daily + noise
 
     return normalized_daily
+
 
 @pytest.fixture()
 def soiling_insolation(soiling_times):
