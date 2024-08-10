@@ -677,12 +677,13 @@ class SRRAnalysis:
             valid_fraction = self.analyzed_daily_df["valid"].mean()
             if valid_fraction <= 0.8:
                 warnings.warn('20% or more of the daily data is assigned to invalid soiling '
-                    'intervals. This can be problematic with the "half_norm_clean" '
-                    'and "random_clean" cleaning assumptions. Consider more permissive '
-                    'validity criteria such as increasing "max_relative_slope_error" '
-                    'and/or "max_negative_step" and/or decreasing "min_interval_length".'
-                    ' Alternatively, consider using method="perfect_clean". For more'
-                    ' info see https://github.com/NREL/rdtools/issues/272')
+                              'intervals. This can be problematic with the "half_norm_clean" '
+                              'and "random_clean" cleaning assumptions. Consider more permissive '
+                              'validity criteria such as increasing "max_relative_slope_error" '
+                              'and/or "max_negative_step" and/or decreasing '
+                              '"min_interval_length". Alternatively, consider using '
+                              'method="perfect_clean". For more info see '
+                              'https://github.com/NREL/rdtools/issues/272')
         monte_losses = []
         random_profiles = []
         for _ in range(monte):
