@@ -217,12 +217,12 @@ class SRRAnalysis:
         # Matt added these lines but the function "_collapse_cleaning_events"
         # was written by Asmund, it reduces multiple days of cleaning events
         # in a row to a single event
-        
+        '''
         reduced_cleaning_events = _collapse_cleaning_events(
             df.clean_event_detected, df.delta.values, 5
         )
         df["clean_event_detected"] = reduced_cleaning_events
-        
+        '''
         ##########################################################################
         precip_event = df["precip"] > precip_threshold
 
