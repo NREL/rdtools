@@ -402,6 +402,7 @@ class SRRAnalysis:
                 ####################################################
                 # the following is moved here so median values are retained/Matt
                 # for soiling inferrences when rejected fits occur
+                
                 result_dict["slope_err"] = (
                     result_dict["run_slope_high"] - result_dict["run_slope_low"]
                 ) / abs(result_dict["run_slope"])
@@ -416,7 +417,7 @@ class SRRAnalysis:
                     result_dict["run_loss_baseline"] = (
                         result_dict["inferred_start_loss"] - result_dict["inferred_end_loss"]
                     )
-
+                
                     ###############################################
 
             result_list.append(result_dict)
@@ -470,6 +471,7 @@ class SRRAnalysis:
             results.loc[filt, "run_slope"] = 0
             results.loc[filt, "run_slope_low"] = 0
             results.loc[filt, "run_slope_high"] = 0
+            results.loc[filt, "valid"] = False
 
         # Calculate the next inferred start loss from next valid interval
         results["next_inferred_start_loss"] = np.clip(
@@ -499,8 +501,8 @@ class SRRAnalysis:
             results.inferred_begin_shift, 0, 1
         )
         #######################################################################
-        if neg_shift is False:
-            results.loc[filt, "valid"] = False
+        #if neg_shift is False:
+         #   results.loc[filt, "valid"] = False
 
         if len(results[results.valid]) == 0:
             raise NoValidIntervalError("No valid soiling intervals were found")
