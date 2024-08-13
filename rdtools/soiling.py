@@ -199,7 +199,7 @@ class SRRAnalysis:
         # median change to day_scale/2 Matt
         df_ffill = df.copy()
         df_ffill = df.ffill(limit=int(round((day_scale / 2), 0)))
-
+        #df_ffill = df.ffill(limit=day_scale)
         # Calculate rolling median
         df["pi_roll_med"] = df_ffill.pi_norm.rolling(day_scale, center=True).median()
 
@@ -217,12 +217,12 @@ class SRRAnalysis:
         # Matt added these lines but the function "_collapse_cleaning_events"
         # was written by Asmund, it reduces multiple days of cleaning events
         # in a row to a single event
-
+        
         reduced_cleaning_events = _collapse_cleaning_events(
             df.clean_event_detected, df.delta.values, 5
         )
         df["clean_event_detected"] = reduced_cleaning_events
-
+        
         ##########################################################################
         precip_event = df["precip"] > precip_threshold
 
@@ -315,6 +315,7 @@ class SRRAnalysis:
         max_negative_step=0.05,
         min_interval_length=7,
         neg_shift=False,
+        piecewise=False
     ):
         """
         Calculates self.result_df, a pandas dataframe summarizing the soiling
@@ -518,112 +519,129 @@ class SRRAnalysis:
         # new code for perfect and inferred clean with handling of/Matt
         # negative shifts and changepoints within soiling intervals
         # goes to line 563
+        if (piecewise==True)|(neg_shift==True):
         #######################################################################
-        pm_frame_out.inferred_begin_shift.bfill(inplace=True)
-        pm_frame_out["forward_median"] = (
-            pm_frame_out.pi.iloc[::-1].rolling(10, min_periods=5).median()
-        )
-        prev_shift = 1
-        soil_inferred_clean = []
-        soil_perfect_clean = []
-        day_start = -1
-        start_infer = 1
-        start_perfect = 1
-        soil_infer = 1
-        soil_perfect = 1
-        total_down = 0
-        shift = 0
-        shift_perfect = 0
-        begin_perfect_shifts = [0]
-        begin_infer_shifts = [0]
-
-        for date, rs, d, start_shift, changepoint, forward_median in zip(
-            pm_frame_out.index,
-            pm_frame_out.run_slope,
-            pm_frame_out.days_since_clean,
-            pm_frame_out.inferred_begin_shift,
-            pm_frame_out.slope_change_event,
-            pm_frame_out.forward_median,
-        ):
-            new_soil = d - day_start
-            day_start = d
-
-            if new_soil <= 0:  # begin new soil period
-                if (start_shift == prev_shift) | (changepoint):  # no shift at
-                    # a slope changepoint
-                    shift = 0
-                    shift_perfect = 0
-                else:
-                    if (start_shift < 0) & (prev_shift < 0):  # (both negative) or
-                        # downward shifts to start last 2 intervals
+            pm_frame_out.inferred_begin_shift.bfill(inplace=True)
+            pm_frame_out["forward_median"] = (
+                pm_frame_out.pi.iloc[::-1].rolling(10, min_periods=5).median()
+            )
+            prev_shift = 1
+            soil_inferred_clean = []
+            soil_perfect_clean = []
+            day_start = -1
+            start_infer = 1
+            start_perfect = 1
+            soil_infer = 1
+            soil_perfect = 1
+            total_down = 0
+            shift = 0
+            shift_perfect = 0
+            begin_perfect_shifts = [0]
+            begin_infer_shifts = [0]
+    
+            for date, rs, d, start_shift, changepoint, forward_median in zip(
+                pm_frame_out.index,
+                pm_frame_out.run_slope,
+                pm_frame_out.days_since_clean,
+                pm_frame_out.inferred_begin_shift,
+                pm_frame_out.slope_change_event,
+                pm_frame_out.forward_median,
+            ):
+                new_soil = d - day_start
+                day_start = d
+    
+                if new_soil <= 0:  # begin new soil period
+                    if (start_shift == prev_shift) | (changepoint):  # no shift at
+                        # a slope changepoint
                         shift = 0
                         shift_perfect = 0
-                        total_down = total_down + start_shift  # adding total downshifts
-                        # to subtract from an eventual cleaning event
-                    elif (start_shift > 0) & (prev_shift >= 0):  # (both positive) or
-                        # cleanings start the last 2 intervals
-                        shift = start_shift
-                        shift_perfect = 1
-                        total_down = 0
-                    # add #####################3/27/24
-                    elif (start_shift == 0) & (prev_shift >= 0):  # (
-                        shift = start_shift
-                        shift_perfect = start_shift
-                        total_down = 0
-                    #############################################################
-                    elif (start_shift >= 0) & (prev_shift < 0):  # cleaning starts the current
-                        # interval but there was a previous downshift
-                        shift = start_shift + total_down  # correct for the negative shifts
-                        shift_perfect = shift  # dont set to one 1 if correcting for a
-                        # downshift (debateable alternative set to 1)
-                        total_down = 0
-                    elif (start_shift < 0) & (
-                        prev_shift >= 0
-                    ):  # negative shift starts the interval,
-                        # previous shift was cleaning
-                        shift = 0
-                        shift_perfect = 0
-                        total_down = start_shift
-                # check that shifts results in being at or above the median of
-                # the next 10 days of data
-                # this catches places where start points of polyfits were
-                # skewed below where data start
-                if (soil_infer + shift) < forward_median:
-                    shift = forward_median - soil_infer
-                if (soil_perfect + shift_perfect) < forward_median:
-                    shift_perfect = forward_median - soil_perfect
-
-                # append the daily soiling ratio to each modeled fit
-                begin_perfect_shifts.append(shift_perfect)
-                begin_infer_shifts.append(shift)
-                # clip to last value in case shift ends up negative
-                soil_infer = np.clip((soil_infer + shift), soil_infer, 1)
-                start_infer = soil_infer  # make next start value the last inferred value
-                soil_inferred_clean.append(soil_infer)
-                # clip to last value in case shift ends up negative
-                soil_perfect = np.clip((soil_perfect + shift_perfect), soil_perfect, 1)
-                start_perfect = soil_perfect
-                soil_perfect_clean.append(soil_perfect)
-                if changepoint is False:
-                    prev_shift = start_shift  # assigned at new soil period
-
-            elif new_soil > 0:  # within soiling period
-                # append the daily soiling ratio to each modeled fit
-                soil_infer = start_infer + rs * d
-                soil_inferred_clean.append(soil_infer)
-
-                soil_perfect = start_perfect + rs * d
-                soil_perfect_clean.append(soil_perfect)
-
-        pm_frame_out["loss_inferred_clean"] = pd.Series(
-            soil_inferred_clean, index=pm_frame_out.index
-        )
-        pm_frame_out["loss_perfect_clean"] = pd.Series(
-            soil_perfect_clean, index=pm_frame_out.index
-        )
-
-        results["begin_perfect_shift"] = pd.Series(begin_perfect_shifts)
-        results["begin_infer_shift"] = pd.Series(begin_infer_shifts)
+                    else:
+                        if (start_shift < 0) & (prev_shift < 0):  # (both negative) or
+                            # downward shifts to start last 2 intervals
+                            shift = 0
+                            shift_perfect = 0
+                            total_down = total_down + start_shift  # adding total downshifts
+                            # to subtract from an eventual cleaning event
+                        elif (start_shift > 0) & (prev_shift >= 0):  # (both positive) or
+                            # cleanings start the last 2 intervals
+                            shift = start_shift
+                            shift_perfect = 1
+                            total_down = 0
+                        # add #####################3/27/24
+                        elif (start_shift == 0) & (prev_shift >= 0):  # (
+                            shift = start_shift
+                            shift_perfect = start_shift
+                            total_down = 0
+                        #############################################################
+                        elif (start_shift >= 0) & (prev_shift < 0):  # cleaning starts the current
+                            # interval but there was a previous downshift
+                            shift = start_shift + total_down  # correct for the negative shifts
+                            shift_perfect = shift  # dont set to one 1 if correcting for a
+                            # downshift (debateable alternative set to 1)
+                            total_down = 0
+                        elif (start_shift < 0) & (
+                            prev_shift >= 0
+                        ):  # negative shift starts the interval,
+                            # previous shift was cleaning
+                            shift = 0
+                            shift_perfect = 0
+                            total_down = start_shift
+                    # check that shifts results in being at or above the median of
+                    # the next 10 days of data
+                    # this catches places where start points of polyfits were
+                    # skewed below where data start
+                    if (soil_infer + shift) < forward_median:
+                        shift = forward_median - soil_infer
+                    if (soil_perfect + shift_perfect) < forward_median:
+                        shift_perfect = forward_median - soil_perfect
+    
+                    # append the daily soiling ratio to each modeled fit
+                    begin_perfect_shifts.append(shift_perfect)
+                    begin_infer_shifts.append(shift)
+                    # clip to last value in case shift ends up negative
+                    soil_infer = np.clip((soil_infer + shift), soil_infer, 1)
+                    start_infer = soil_infer  # make next start value the last inferred value
+                    soil_inferred_clean.append(soil_infer)
+                    # clip to last value in case shift ends up negative
+                    soil_perfect = np.clip((soil_perfect + shift_perfect), soil_perfect, 1)
+                    start_perfect = soil_perfect
+                    soil_perfect_clean.append(soil_perfect)
+                    if changepoint is False:
+                        prev_shift = start_shift  # assigned at new soil period
+    
+                elif new_soil > 0:  # within soiling period
+                    # append the daily soiling ratio to each modeled fit
+                    soil_infer = start_infer + rs * d
+                    soil_inferred_clean.append(soil_infer)
+    
+                    soil_perfect = start_perfect + rs * d
+                    soil_perfect_clean.append(soil_perfect)
+    
+            pm_frame_out["loss_inferred_clean"] = pd.Series(
+                soil_inferred_clean, index=pm_frame_out.index
+            )
+            pm_frame_out["loss_perfect_clean"] = pd.Series(
+                soil_perfect_clean, index=pm_frame_out.index
+            )
+    
+            results["begin_perfect_shift"] = pd.Series(begin_perfect_shifts)
+            results["begin_infer_shift"] = pd.Series(begin_infer_shifts)
+        else:
+            pm_frame_out['loss_perfect_clean'] = \
+                pm_frame_out.start_loss + \
+                pm_frame_out.days_since_clean * pm_frame_out.run_slope
+            # filling the flat intervals may need to be recalculated
+            # for different assumptions
+            pm_frame_out.loss_perfect_clean = \
+                pm_frame_out.loss_perfect_clean.fillna(1)
+            #inferred_start_loss was set to the value from poly fit at the beginning of the soiling interval
+            pm_frame_out['loss_inferred_clean'] = \
+                pm_frame_out.inferred_start_loss + \
+                pm_frame_out.days_since_clean * pm_frame_out.run_slope
+            # filling the flat intervals may need to be recalculated
+            # for different assumptions
+            pm_frame_out.loss_inferred_clean = \
+                pm_frame_out.loss_inferred_clean.fillna(1)
         #######################################################################
         self.result_df = results
         self.analyzed_daily_df = pm_frame_out
@@ -1295,7 +1313,6 @@ def soiling_srr(
         neg_shift=neg_shift,
         piecewise=piecewise,
     )
-
     return sr, sr_ci, soiling_info
 
 
