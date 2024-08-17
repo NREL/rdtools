@@ -1056,6 +1056,7 @@ class SRRAnalysis:
             max_negative_step=max_negative_step,
             min_interval_length=min_interval_length,
             neg_shift=neg_shift,
+            piecewise=piecewise
         )
         self._calc_monte(reps, method=method)
 

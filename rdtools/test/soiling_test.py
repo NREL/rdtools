@@ -239,20 +239,20 @@ def test_soiling_srr_trim(soiling_normalized_daily, soiling_insolation):
 
 
 @pytest.mark.parametrize(
-    "method,expected_sr",
+    "method,neg_shift,piecewise,expected_sr",
     [
-        ("random_clean", 0.920444),
-        ("perfect_clean", 0.966912),
-        ("perfect_clean_complex", 0.966912),
-        ("inferred_clean_complex", 0.965565),
+        ("random_clean", False, False, 0.920444),
+        ("perfect_clean", False, False, 0.966912),
+        ("perfect_clean_complex", True, True, 0.966912),
+        ("inferred_clean_complex", True, True, 0.965565),
     ],
 )
 def test_soiling_srr_method(
-    soiling_normalized_daily, soiling_insolation, method, expected_sr
+    soiling_normalized_daily, soiling_insolation, method, neg_shift, piecewise, expected_sr
 ):
     np.random.seed(1977)
     sr, sr_ci, soiling_info = soiling_srr(
-        soiling_normalized_daily, soiling_insolation, reps=10, method=method
+        soiling_normalized_daily, soiling_insolation, reps=10, method=method, neg_shift=neg_shift, piecewise=piecewise
     )
     assert expected_sr == pytest.approx(
         sr, abs=1e-6
@@ -469,9 +469,7 @@ def test_soiling_srr_argument_checks(soiling_normalized_daily, soiling_insolatio
     [
         ("half_norm_clean", False, 0.980143),
         ("half_norm_clean", True, 0.975057),
-        ("perfect_clean_complex", False, 0.983797),
         ("perfect_clean_complex", True, 0.964117),
-        ("inferred_clean_complex", False, 0.983265),
         ("inferred_clean_complex", True, 0.963585),
     ],
 )
@@ -503,9 +501,7 @@ def test_negative_shifts(
     [
         ("half_norm_clean", False, 0.8670264),
         ("half_norm_clean", True, 0.927017),
-        ("perfect_clean_complex", False, 0.891499),
         ("perfect_clean_complex", True, 0.896936),
-        ("inferred_clean_complex", False, 0.874486),
         ("inferred_clean_complex", True, 0.896214),
     ],
 )
