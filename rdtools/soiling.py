@@ -28,11 +28,9 @@ from rdtools.bootstrap import _make_time_series_bootstrap_samples
 
 lowess = sm.nonparametric.lowess  # Used in CODSAnalysis/Matt
 
-warnings.warn(
-    "The soiling module is currently experimental. The API, results, "
-    "and default behaviors may change in future releases (including MINOR "
-    "and PATCH releases) as the code matures."
-)
+warnings.warn("The soiling module is currently experimental. The API, results, "
+              "and default behaviors may change in future releases (including MINOR "
+              "and PATCH releases) as the code matures.")
 
 
 # Custom exception
@@ -82,17 +80,9 @@ class SRRAnalysis:
 
     ###############################################################################
     # add neg_shift and piecewise into parameters/Matt
-    def _calc_daily_df(
-        self,
-        day_scale=13,
-        clean_threshold="infer",
-        recenter=True,
-        clean_criterion="shift",
-        precip_threshold=0.01,
-        outlier_factor=1.5,
-        neg_shift=False,
-        piecewise=False,
-    ):
+    def _calc_daily_df(self, day_scale=13, clean_threshold="infer", recenter=True,
+                       clean_criterion="shift", precip_threshold=0.01, outlier_factor=1.5,
+                       neg_shift=False, piecewise=False):
         """
         Calculates self.daily_df, a pandas dataframe prepared for SRR analysis,
         and self.renorm_factor, the renormalization factor for the daily
@@ -143,12 +133,10 @@ class SRRAnalysis:
             piecewise fit being tested.
         """
         if (day_scale % 2 == 0) and ("shift" in clean_criterion):
-            warnings.warn(
-                "An even value of day_scale was passed. An odd value is "
-                "recommended, otherwise, consecutive days may be erroneously "
-                "flagged as cleaning events. "
-                "See https://github.com/NREL/rdtools/issues/189"
-            )
+            warnings.warn("An even value of day_scale was passed. An odd value is "
+                          "recommended, otherwise, consecutive days may be erroneously "
+                          "flagged as cleaning events. "
+                          "See https://github.com/NREL/rdtools/issues/189")
 
         df = self.pm.to_frame()
         df.columns = ["pi"]
@@ -228,9 +216,8 @@ class SRRAnalysis:
         if clean_criterion == "precip_and_shift":
             # Detect which cleaning events are associated with rain
             # within a 3 day window
-            precip_event = (
-                precip_event.rolling(3, center=True, min_periods=1).apply(any).astype(bool)
-            )
+            precip_event = ( 
+                precip_event.rolling(3, center=True, min_periods=1).apply(any).astype(bool))
             df["clean_event"] = df["clean_event_detected"] & precip_event
         elif clean_criterion == "precip_or_shift":
             df["clean_event"] = df["clean_event_detected"] | precip_event
@@ -239,11 +226,8 @@ class SRRAnalysis:
         elif clean_criterion == "shift":
             df["clean_event"] = df["clean_event_detected"]
         else:
-            raise ValueError(
-                "clean_criterion must be one of "
-                '{"precip_and_shift", "precip_or_shift", '
-                '"precip", "shift"}'
-            )
+            raise ValueError("clean_criterion must be one of"
+                             '{"precip_and_shift", "precip_or_shift", "precip", "shift"}')
 
         df["clean_event"] = df.clean_event | out_start | out_end
 
@@ -276,11 +260,9 @@ class SRRAnalysis:
         # compared to a single linear fit. Intervals <45 days reqire more
         # stringent statistical improvements/Matt
         if piecewise is True:
-            warnings.warn(
-                "Piecewise = True was passed, for both Piecewise=True"
-                "and neg_shift=True cleaning_method choices should"
-                "be perfect_clean_complex or inferred_clean_complex"
-            )
+            warnings.warn("Piecewise = True was passed, for both Piecewise=True"
+                          "and neg_shift=True cleaning_method choices should"
+                          "be perfect_clean_complex or inferred_clean_complex")
             min_soil_length = 27  # min threshold of days necessary for piecewise fit
             piecewise_loop = sorted(list(set(df["run"])))
             cp_dates = []
@@ -307,15 +289,8 @@ class SRRAnalysis:
 
     ######################################################################
     # added neg_shift into parameters in the following def/Matt
-    def _calc_result_df(
-        self,
-        trim=False,
-        max_relative_slope_error=500.0,
-        max_negative_step=0.05,
-        min_interval_length=7,
-        neg_shift=False,
-        piecewise=False
-    ):
+    def _calc_result_df(self, trim=False, max_relative_slope_error=500.0, max_negative_step=0.05,
+                        min_interval_length=7, neg_shift=False, piecewise=False):
         """
         Calculates self.result_df, a pandas dataframe summarizing the soiling
         intervals identified and self.analyzed_daily_df, a version of
@@ -380,9 +355,8 @@ class SRRAnalysis:
                 "inferred_end_loss": run.pi_norm.median(),  # changed from mean/Matt
                 "slope_err": 10000,  # added high dummy start value for later logic/Matt
                 "valid": False,
-                "clean_event": run.clean_event.iloc[
-                    0
-                ],  # record of clean events to distiguisih from other breaks/Matt
+                "clean_event": run.clean_event.iloc[0],  # record of clean events to distiguisih 
+                                                         # from other breaks/Matt
                 "run_loss_baseline": 0.0,  # loss from the polyfit over the soiling intercal/Matt
                 ##############################################################
             }
@@ -407,15 +381,13 @@ class SRRAnalysis:
                 ) / abs(result_dict["run_slope"])
 
                 if (result_dict["slope_err"] <= (max_relative_slope_error / 100.0)) & (
-                    result_dict["run_slope"] < 0
-                ):
+                        result_dict["run_slope"] < 0):
                     result_dict["inferred_start_loss"] = fit_poly(start_day)
                     result_dict["inferred_end_loss"] = fit_poly(end_day)
                     #############################################
                     # calculate loss over soiling interval per polyfit/matt
                     result_dict["run_loss_baseline"] = (
-                        result_dict["inferred_start_loss"] - result_dict["inferred_end_loss"]
-                    )
+                        result_dict["inferred_start_loss"] - result_dict["inferred_end_loss"])
 
                     ###############################################
 
@@ -438,16 +410,13 @@ class SRRAnalysis:
         # negative shifts are now used as breaks for soiling intervals/Matt
         # so new criteria for final filter to modify dataframe
         if neg_shift is True:
-            warnings.warn(
-                "neg_shift = True was passed, for both Piecewise=True"
-                "and neg_shift=True cleaning_method choices should"
-                "be perfect_clean_complex or inferred_clean_complex"
-            )
-            filt = (
-                (results.run_slope > 0)
-                | (results.slope_err >= max_relative_slope_error / 100.0)
-                # |(results.max_neg_step <= -1.0 * max_negative_step)
-            )
+            warnings.warn("neg_shift = True was passed, for both Piecewise=True"
+                          "and neg_shift=True cleaning_method choices should"
+                          "be perfect_clean_complex or inferred_clean_complex")
+            filt = ((results.run_slope > 0)
+                    | (results.slope_err >= max_relative_slope_error / 100.0)
+                    # |(results.max_neg_step <= -1.0 * max_negative_step)
+                )
 
             results.loc[filt, "run_slope"] = 0
             results.loc[filt, "run_slope_low"] = 0
@@ -459,13 +428,12 @@ class SRRAnalysis:
         # original code below setting soiling intervals with extreme negative
         # shift to zero slopes, /Matt
         if neg_shift is False:
-            filt = (
-                (results.run_slope > 0)
-                | (results.slope_err >= max_relative_slope_error / 100.0)
-                | (results.max_neg_step <= -1.0 * max_negative_step)
-                # remove line 389, want to store data for inferred values
-                # for calculations below
-                # |results.loc[filt, 'valid'] = False
+            filt = ((results.run_slope > 0)
+                    | (results.slope_err >= max_relative_slope_error / 100.0)
+                    | (results.max_neg_step <= -1.0 * max_negative_step)
+                    # remove line 389, want to store data for inferred values
+                    # for calculations below
+                    # |results.loc[filt, 'valid'] = False
             )
             results.loc[filt, "run_slope"] = 0
             results.loc[filt, "run_slope_low"] = 0
@@ -474,8 +442,7 @@ class SRRAnalysis:
 
         # Calculate the next inferred start loss from next valid interval
         results["next_inferred_start_loss"] = np.clip(
-            results[results.valid].inferred_start_loss.shift(-1), 0, 1
-        )
+            results[results.valid].inferred_start_loss.shift(-1), 0, 1)
 
         # Calculate the inferred recovery at the end of each interval
         ########################################################################
@@ -491,14 +458,12 @@ class SRRAnalysis:
         # is a nan, and the current interval is valid then set prev_end=1
         results.loc[
             (results.clean_event is True) & (np.isnan(results.prev_end) & (results.valid is True)),
-            "prev_end",
-        ] = 1  # clean_event or clean_event_detected
+            "prev_end"] = 1  # clean_event or clean_event_detected
         results["inferred_begin_shift"] = results.inferred_start_loss - results.prev_end
         # if orginal shift detection was positive the shift should not be
         # negative due to fitting results
         results.loc[results.clean_event, "inferred_begin_shift"] = np.clip(
-            results.inferred_begin_shift, 0, 1
-        )
+            results.inferred_begin_shift, 0, 1)
         #######################################################################
         '''
         if neg_shift is False:
@@ -510,8 +475,7 @@ class SRRAnalysis:
         new_end = results.end.iloc[-1]
         pm_frame_out = daily_df[new_start:new_end]
         pm_frame_out = (
-            pm_frame_out.reset_index().merge(results, how="left", on="run").set_index("date")
-        )
+            pm_frame_out.reset_index().merge(results, how="left", on="run").set_index("date"))
 
         pm_frame_out["loss_perfect_clean"] = np.nan
         pm_frame_out["loss_inferred_clean"] = np.nan
@@ -525,8 +489,7 @@ class SRRAnalysis:
             ###################################################################
             pm_frame_out.inferred_begin_shift.bfill(inplace=True)
             pm_frame_out["forward_median"] = (
-                pm_frame_out.pi.iloc[::-1].rolling(10, min_periods=5).median()
-            )
+                pm_frame_out.pi.iloc[::-1].rolling(10, min_periods=5).median())
             prev_shift = 1
             soil_inferred_clean = []
             soil_perfect_clean = []
@@ -542,13 +505,9 @@ class SRRAnalysis:
             begin_infer_shifts = [0]
 
             for date, rs, d, start_shift, changepoint, forward_median in zip(
-                pm_frame_out.index,
-                pm_frame_out.run_slope,
-                pm_frame_out.days_since_clean,
-                pm_frame_out.inferred_begin_shift,
-                pm_frame_out.slope_change_event,
-                pm_frame_out.forward_median,
-            ):
+                pm_frame_out.index, pm_frame_out.run_slope, pm_frame_out.days_since_clean,
+                pm_frame_out.inferred_begin_shift, pm_frame_out.slope_change_event,
+                pm_frame_out.forward_median):
                 new_soil = d - day_start
                 day_start = d
 
@@ -570,7 +529,7 @@ class SRRAnalysis:
                             shift_perfect = 1
                             total_down = 0
                         # add #####################3/27/24
-                        elif (start_shift == 0) & (prev_shift >= 0):  # (
+                        elif (start_shift == 0) & (prev_shift >= 0):
                             shift = start_shift
                             shift_perfect = start_shift
                             total_down = 0
@@ -581,10 +540,8 @@ class SRRAnalysis:
                             shift_perfect = shift  # dont set to one 1 if correcting for a
                             # downshift (debateable alternative set to 1)
                             total_down = 0
-                        elif (start_shift < 0) & (
-                            prev_shift >= 0
-                        ):  # negative shift starts the interval,
-                            # previous shift was cleaning
+                        elif (start_shift < 0) & (prev_shift >= 0):  
+                            # negative shift starts the interval, previous shift was cleaning
                             shift = 0
                             shift_perfect = 0
                             total_down = start_shift
@@ -620,31 +577,25 @@ class SRRAnalysis:
                     soil_perfect_clean.append(soil_perfect)
 
             pm_frame_out["loss_inferred_clean"] = pd.Series(
-                soil_inferred_clean, index=pm_frame_out.index
-            )
+                soil_inferred_clean, index=pm_frame_out.index)
             pm_frame_out["loss_perfect_clean"] = pd.Series(
-                soil_perfect_clean, index=pm_frame_out.index
-            )
+                soil_perfect_clean, index=pm_frame_out.index)
 
             results["begin_perfect_shift"] = pd.Series(begin_perfect_shifts)
             results["begin_infer_shift"] = pd.Series(begin_infer_shifts)
         else:
-            pm_frame_out['loss_perfect_clean'] = \
-                pm_frame_out.start_loss + \
+            pm_frame_out['loss_perfect_clean'] = pm_frame_out.start_loss + \
                 pm_frame_out.days_since_clean * pm_frame_out.run_slope
             # filling the flat intervals may need to be recalculated
             # for different assumptions
-            pm_frame_out.loss_perfect_clean = \
-                pm_frame_out.loss_perfect_clean.fillna(1)
+            pm_frame_out.loss_perfect_clean = pm_frame_out.loss_perfect_clean.fillna(1)
             # inferred_start_loss was set to the value from poly fit at the beginning of the 
             # soiling interval
-            pm_frame_out['loss_inferred_clean'] = \
-                pm_frame_out.inferred_start_loss + \
+            pm_frame_out['loss_inferred_clean'] = pm_frame_out.inferred_start_loss + \
                 pm_frame_out.days_since_clean * pm_frame_out.run_slope
             # filling the flat intervals may need to be recalculated
             # for different assumptions
-            pm_frame_out.loss_inferred_clean = \
-                pm_frame_out.loss_inferred_clean.fillna(1)
+            pm_frame_out.loss_inferred_clean = pm_frame_out.loss_inferred_clean.fillna(1)
         #######################################################################
         self.result_df = results
         self.analyzed_daily_df = pm_frame_out
@@ -689,12 +640,8 @@ class SRRAnalysis:
         """
 
         # Raise a warning if there is >20% invalid data
-        if (
-            (method == "half_norm_clean")
-            or (method == "random_clean")
-            or (method == "perfect_clean_complex")
-            or (method == "inferred_clean_complex")
-        ):
+        if ((method == "half_norm_clean") or (method == "random_clean")
+            or (method == "perfect_clean_complex") or (method == "inferred_clean_complex")):
             valid_fraction = self.analyzed_daily_df["valid"].mean()
             if valid_fraction <= 0.8:
                 warnings.warn('20% or more of the daily data is assigned to invalid soiling '
@@ -713,8 +660,7 @@ class SRRAnalysis:
             # only really need this column from the original frame:
             df_rand = df_rand[["insol", "run"]]
             results_rand["run_slope"] = np.random.uniform(
-                results_rand.run_slope_low, results_rand.run_slope_high
-            )
+                results_rand.run_slope_low, results_rand.run_slope_high)
             results_rand["run_loss"] = results_rand.run_slope * results_rand.length
 
             results_rand["end_loss"] = np.nan
@@ -739,11 +685,9 @@ class SRRAnalysis:
                 # Randomize recovery of valid intervals only
                 valid_intervals = results_rand[results_rand.valid].copy()
                 valid_intervals["inferred_recovery"] = np.clip(
-                    valid_intervals.inferred_recovery, 0, 1
-                )
+                    valid_intervals.inferred_recovery, 0, 1)
                 valid_intervals["inferred_recovery"] = valid_intervals.inferred_recovery.fillna(
-                    1.0
-                )
+                    1.0)
 
                 end_list = []
                 for i, row in valid_intervals.iterrows():
@@ -810,14 +754,11 @@ class SRRAnalysis:
                     if row.begin_perfect_shift > 0:
                         inter_start = np.clip(
                             (inter_start + row.begin_perfect_shift + delta_previous_run_loss),
-                            end,
-                            1,
-                        )
+                            end, 1)
                         delta_previous_run_loss = -1 * row.run_loss - row.run_loss_baseline
                     else:
                         delta_previous_run_loss = (
-                            delta_previous_run_loss - 1 * row.run_loss - row.run_loss_baseline
-                        )
+                            delta_previous_run_loss - 1 * row.run_loss - row.run_loss_baseline)
                         # inter_start=np.clip((inter_start+row.begin_shift+delta_previous_run_loss),0,1)
                     start_list.append(inter_start)
                     end = inter_start + row.run_loss
@@ -830,31 +771,24 @@ class SRRAnalysis:
                     if row.begin_infer_shift > 0:
                         inter_start = np.clip(
                             (inter_start + row.begin_infer_shift + delta_previous_run_loss),
-                            end,
-                            1,
-                        )
+                            end, 1)
                         delta_previous_run_loss = -1 * row.run_loss - row.run_loss_baseline
                     else:
                         delta_previous_run_loss = (
-                            delta_previous_run_loss - 1 * row.run_loss - row.run_loss_baseline
-                        )
+                            delta_previous_run_loss - 1 * row.run_loss - row.run_loss_baseline)
                         # inter_start=np.clip((inter_start+row.begin_shift+delta_previous_run_loss),0,1)
                     start_list.append(inter_start)
                     end = inter_start + row.run_loss
 
                     inter_start = end
                 results_rand["start_loss"] = start_list
-                """
-
-                """
             ###############################################
 
             else:
                 raise ValueError("Invalid method specification")
 
             df_rand = (
-                df_rand.reset_index().merge(results_rand, how="left", on="run").set_index("date")
-            )
+                df_rand.reset_index().merge(results_rand, how="left", on="run").set_index("date"))
             df_rand["loss"] = np.nan
             df_rand["days_since_clean"] = (df_rand.index - df_rand.start).dt.days
             df_rand["loss"] = df_rand.start_loss + df_rand.days_since_clean * df_rand.run_slope
@@ -862,8 +796,7 @@ class SRRAnalysis:
             df_rand["soil_insol"] = df_rand.loss * df_rand.insol
 
             soiling_ratio = (
-                df_rand.soil_insol.sum() / df_rand.insol[~df_rand.soil_insol.isnull()].sum()
-            )
+                df_rand.soil_insol.sum() / df_rand.insol[~df_rand.soil_insol.isnull()].sum())
             monte_losses.append(soiling_ratio)
             random_profile = df_rand["loss"].copy()
             random_profile.name = "stochastic_soiling_profile"
@@ -874,25 +807,11 @@ class SRRAnalysis:
 
     #######################################################################
     # add neg_shift and piecewise to the following def/Matt
-    def run(
-        self,
-        reps=1000,
-        day_scale=13,
-        clean_threshold="infer",
-        trim=False,
-        method="half_norm_clean",
-        clean_criterion="shift",
-        precip_threshold=0.01,
-        min_interval_length=7,
-        exceedance_prob=95.0,
-        confidence_level=68.2,
-        recenter=True,
-        max_relative_slope_error=500.0,
-        max_negative_step=0.05,
-        outlier_factor=1.5,
-        neg_shift=False,
-        piecewise=False,
-    ):
+    def run(self, reps=1000, day_scale=13, clean_threshold="infer", trim=False,
+            method="half_norm_clean", clean_criterion="shift", precip_threshold=0.01,
+            min_interval_length=7, exceedance_prob=95.0, confidence_level=68.2, recenter=True,
+            max_relative_slope_error=500.0, max_negative_step=0.05, outlier_factor=1.5, 
+            neg_shift=False, piecewise=False):
         """
         Run the SRR method from beginning to end.  Perform the stochastic rate
         and recovery soiling loss calculation. Based on the methods presented
@@ -1041,32 +960,22 @@ class SRRAnalysis:
               +------------------------+----------------------------------------------+
 
         """
-        self._calc_daily_df(
-            day_scale=day_scale,
-            clean_threshold=clean_threshold,
-            recenter=recenter,
-            clean_criterion=clean_criterion,
-            precip_threshold=precip_threshold,
-            outlier_factor=outlier_factor,
-            neg_shift=neg_shift,
-            piecewise=piecewise,
-        )
-        self._calc_result_df(
-            trim=trim,
-            max_relative_slope_error=max_relative_slope_error,
-            max_negative_step=max_negative_step,
-            min_interval_length=min_interval_length,
-            neg_shift=neg_shift,
-            piecewise=piecewise
-        )
+        self._calc_daily_df(day_scale=day_scale, clean_threshold=clean_threshold, 
+                            recenter=recenter, clean_criterion=clean_criterion, 
+                            precip_threshold=precip_threshold, outlier_factor=outlier_factor,
+                            neg_shift=neg_shift, piecewise=piecewise)
+
+        self._calc_result_df(trim=trim, max_relative_slope_error=max_relative_slope_error,
+                             max_negative_step=max_negative_step, 
+                             min_interval_length=min_interval_length, neg_shift=neg_shift,
+                             piecewise=piecewise)
+
         self._calc_monte(reps, method=method)
 
         # Calculate the P50 and confidence interval
         half_ci = confidence_level / 2.0
-        result = np.percentile(
-            self.monte_losses,
-            [50, 50.0 - half_ci, 50.0 + half_ci, 100 - exceedance_prob],
-        )
+        result = np.percentile(self.monte_losses, 
+                               [50, 50.0 - half_ci, 50.0 + half_ci, 100 - exceedance_prob])
         P_level = result[3]
 
         # Construct calc_info output
@@ -1074,67 +983,33 @@ class SRRAnalysis:
         # add inferred_recovery, inferred_begin_shift /Matt
         ###############################################
         intervals_out = self.result_df[
-            [
-                "start",
-                "end",
-                "run_slope",
-                "run_slope_low",
-                "run_slope_high",
-                "inferred_start_loss",
-                "inferred_end_loss",
-                "inferred_recovery",
-                "inferred_begin_shift",
-                "length",
-                "valid",
-            ]
+            ["start", "end", "run_slope", "run_slope_low", "run_slope_high", "inferred_start_loss",
+             "inferred_end_loss", "inferred_recovery", "inferred_begin_shift", "length", "valid"]
         ].copy()
-        intervals_out.rename(
-            columns={
-                "run_slope": "soiling_rate",
-                "run_slope_high": "soiling_rate_high",
-                "run_slope_low": "soiling_rate_low",
-            },
-            inplace=True,
-        )
+        intervals_out.rename(columns={"run_slope": "soiling_rate", 
+                                      "run_slope_high": "soiling_rate_high",
+                                      "run_slope_low": "soiling_rate_low"}, inplace=True)
 
         df_d = self.analyzed_daily_df
         # sr_perfect = df_d[df_d['valid']]['loss_perfect_clean']
         sr_perfect = df_d.loss_perfect_clean
 
-        calc_info = {
-            "exceedance_level": P_level,
-            "renormalizing_factor": self.renorm_factor,
-            "stochastic_soiling_profiles": self.random_profiles,
-            "soiling_interval_summary": intervals_out,
-            "soiling_ratio_perfect_clean": sr_perfect,
-        }
+        calc_info = {"exceedance_level": P_level, "renormalizing_factor": self.renorm_factor,
+                     "stochastic_soiling_profiles": self.random_profiles,
+                     "soiling_interval_summary": intervals_out,
+                     "soiling_ratio_perfect_clean": sr_perfect}
 
         return (result[0], result[1:3], calc_info)
 
 
 # more updates are needed for documentation but added additional inputs
 # that are in srr.run /Matt
-def soiling_srr(
-    energy_normalized_daily,
-    insolation_daily,
-    reps=1000,
-    precipitation_daily=None,
-    day_scale=13,
-    clean_threshold="infer",
-    trim=False,
-    method="half_norm_clean",
-    clean_criterion="shift",
-    precip_threshold=0.01,
-    min_interval_length=7,
-    exceedance_prob=95.0,
-    confidence_level=68.2,
-    recenter=True,
-    max_relative_slope_error=500.0,
-    max_negative_step=0.05,
-    outlier_factor=1.5,
-    neg_shift=False,
-    piecewise=False,
-):
+def soiling_srr(energy_normalized_daily, insolation_daily, reps=1000, precipitation_daily=None,
+                day_scale=13, clean_threshold="infer", trim=False, method="half_norm_clean",
+                clean_criterion="shift", precip_threshold=0.01, min_interval_length=7,
+                exceedance_prob=95.0, confidence_level=68.2, recenter=True,
+                max_relative_slope_error=500.0, max_negative_step=0.05, outlier_factor=1.5,
+                neg_shift=False, piecewise=False):
     """
     Functional wrapper for :py:class:`~rdtools.soiling.SRRAnalysis`. Perform
     the stochastic rate and recovery soiling loss calculation. Based on the
@@ -1293,30 +1168,16 @@ def soiling_srr(
           +------------------------+----------------------------------------------+
     """
 
-    srr = SRRAnalysis(
-        energy_normalized_daily,
-        insolation_daily,
-        precipitation_daily=precipitation_daily,
-    )
+    srr = SRRAnalysis(energy_normalized_daily, insolation_daily,
+                      precipitation_daily=precipitation_daily)
 
     sr, sr_ci, soiling_info = srr.run(
-        reps=reps,
-        day_scale=day_scale,
-        clean_threshold=clean_threshold,
-        trim=trim,
-        method=method,
-        clean_criterion=clean_criterion,
-        precip_threshold=precip_threshold,
-        min_interval_length=min_interval_length,
-        exceedance_prob=exceedance_prob,
-        confidence_level=confidence_level,
-        recenter=recenter,
-        max_relative_slope_error=max_relative_slope_error,
-        max_negative_step=max_negative_step,
-        outlier_factor=outlier_factor,
-        neg_shift=neg_shift,
-        piecewise=piecewise,
-    )
+        reps=reps, day_scale=day_scale, clean_threshold=clean_threshold, trim=trim,
+        method=method, clean_criterion=clean_criterion, precip_threshold=precip_threshold,
+        min_interval_length=min_interval_length, exceedance_prob=exceedance_prob,
+        confidence_level=confidence_level, recenter=recenter, 
+        max_relative_slope_error=max_relative_slope_error, max_negative_step=max_negative_step,
+        outlier_factor=outlier_factor, neg_shift=neg_shift, piecewise=piecewise)
     return sr, sr_ci, soiling_info
 
 
@@ -1380,12 +1241,10 @@ def annual_soiling_ratios(stochastic_soiling_profiles, insolation_daily, confide
     all_profiles = all_profiles.dropna()
 
     if not all_profiles.index.isin(insolation_daily.index).all():
-        warnings.warn(
-            "The indexes of stochastic_soiling_profiles are not entirely "
-            "contained within the index of insolation_daily. Every day in "
-            "stochastic_soiling_profiles should be represented in "
-            "insolation_daily. This may cause erroneous results."
-        )
+        warnings.warn("The indexes of stochastic_soiling_profiles are not entirely "
+                      "contained within the index of insolation_daily. Every day in "
+                      "stochastic_soiling_profiles should be represented in "
+                      "insolation_daily. This may cause erroneous results.")
 
     insolation_daily = insolation_daily.reindex(all_profiles.index)
 
@@ -1400,29 +1259,18 @@ def annual_soiling_ratios(stochastic_soiling_profiles, insolation_daily, confide
     all_annual_iwsr = all_annual_weighted_sums.multiply(1 / annual_insolation, axis=0)
 
     annual_soiling = pd.DataFrame(
-        {
-            "soiling_ratio_median": all_annual_iwsr.quantile(0.5, axis=1),
-            "soiling_ratio_low": all_annual_iwsr.quantile(
-                0.5 - confidence_level / 2 / 100, axis=1
-            ),
-            "soiling_ratio_high": all_annual_iwsr.quantile(
-                0.5 + confidence_level / 2 / 100, axis=1
-            ),
-        }
-    )
+        {"soiling_ratio_median": all_annual_iwsr.quantile(0.5, axis=1),
+         "soiling_ratio_low": all_annual_iwsr.quantile(0.5 - confidence_level / 2 / 100, axis=1),
+         "soiling_ratio_high": all_annual_iwsr.quantile(0.5 + confidence_level / 2 / 100, axis=1),
+        })
     annual_soiling.index.name = "year"
     annual_soiling = annual_soiling.reset_index()
 
     return annual_soiling
 
 
-def monthly_soiling_rates(
-    soiling_interval_summary,
-    min_interval_length=14,
-    max_relative_slope_error=500.0,
-    reps=100000,
-    confidence_level=68.2,
-):
+def monthly_soiling_rates(soiling_interval_summary, min_interval_length=14, 
+                          max_relative_slope_error=500.0, reps=100000, confidence_level=68.2):
     """
     Use Monte Carlo to calculate typical monthly soiling rates.
     Samples possible soiling rates from soiling rate confidence
@@ -1497,9 +1345,7 @@ def monthly_soiling_rates(
     rel_error = 100 * abs((high - low) / rate)
     intervals = soiling_interval_summary[
         (soiling_interval_summary["length"] >= min_interval_length)
-        & (soiling_interval_summary["valid"])
-        & (rel_error <= max_relative_slope_error)
-    ].copy()
+        & (soiling_interval_summary["valid"]) & (rel_error <= max_relative_slope_error)].copy()
 
     # count the overlap of each interval with each month
     month_counts = []
@@ -1526,11 +1372,8 @@ def monthly_soiling_rates(
 
         relevant_intervals = intervals[intervals[sample_col] > 0]
         for _, row in relevant_intervals.iterrows():
-            rates.append(
-                np.random.uniform(
-                    row["soiling_rate_low"], row["soiling_rate_high"], row[sample_col]
-                )
-            )
+            rates.append(np.random.uniform(
+                    row["soiling_rate_low"], row["soiling_rate_high"], row[sample_col]))
 
         rates = [x for sublist in rates for x in sublist]
 
@@ -1545,8 +1388,7 @@ def monthly_soiling_rates(
     # make a dataframe out of the results
     monthly_soiling_df = pd.DataFrame(
         data=monthly_rate_data,
-        columns=["soiling_rate_median", "soiling_rate_low", "soiling_rate_high"],
-    )
+        columns=["soiling_rate_median", "soiling_rate_low", "soiling_rate_high"])
     monthly_soiling_df.insert(0, "month", range(1, 13))
     monthly_soiling_df["interval_count"] = relevant_interval_count
 
@@ -1660,28 +1502,15 @@ class CODSAnalysis:
             self.pm = self.pm.loc[first_keeper:]
 
         if self.pm.index.freq != "D":
-            raise ValueError(
-                "Daily performance metric series must have "
-                "daily frequency (missing dates should be "
-                "represented by NaNs)"
-            )
+            raise ValueError("Daily performance metric series must have "
+                             "daily frequency (missing dates should be "
+                             "represented by NaNs)")
 
     def iterative_signal_decomposition(
-        self,
-        order=("SR", "SC", "Rd"),
-        degradation_method="YoY",
-        max_iterations=18,
-        cleaning_sensitivity=0.5,
-        convergence_criterion=5e-3,
-        pruning_iterations=1,
-        clean_pruning_sensitivity=0.6,
-        soiling_significance=0.75,
-        process_noise=1e-4,
-        renormalize_SR=None,
-        ffill=True,
-        clip_soiling=True,
-        verbose=False,
-    ):
+        self, order=("SR", "SC", "Rd"), degradation_method="YoY", max_iterations=18,
+        cleaning_sensitivity=0.5, convergence_criterion=5e-3, pruning_iterations=1,
+        clean_pruning_sensitivity=0.6, soiling_significance=0.75, process_noise=1e-4,
+        renormalize_SR=None, ffill=True, clip_soiling=True, verbose=False):
         """
         Estimates the soiling losses and the degradation rate of a PV system
         based on its daily normalized energy, or daily Performance Index (PI).
@@ -1828,8 +1657,7 @@ class CODSAnalysis:
 
         if "SR" not in order:
             raise ValueError(
-                "'SR' must be in argument 'order' " + "(e.g. order=['SR', 'SC', 'Rd']"
-            )
+                "'SR' must be in argument 'order' " + "(e.g. order=['SR', 'SC', 'Rd']")
         n_steps = len(order)
         day = np.arange(len(pi))
         degradation_trend = [1]
@@ -1843,8 +1671,7 @@ class CODSAnalysis:
 
         # Find possible cleaning events based on the performance index
         ce, rm9 = _rolling_median_ce_detection(
-            pi.index, pi, ffill=ffill, tuner=cleaning_sensitivity
-        )
+            pi.index, pi, ffill=ffill, tuner=cleaning_sensitivity)
         pce = _collapse_cleaning_events(ce, rm9.diff().values, 5)
 
         small_soiling_signal, perfect_cleaning = False, True
@@ -1865,28 +1692,22 @@ class CODSAnalysis:
                     pce = soiling_dfs[-1].cleaning_events.copy()
                     cleaning_sensitivity *= 1.2  # decrease sensitivity
                     ce, rm9 = _rolling_median_ce_detection(
-                        pi.index, residuals, ffill=ffill, tuner=cleaning_sensitivity
-                    )
+                        pi.index, residuals, ffill=ffill, tuner=cleaning_sensitivity)
                     ce = _collapse_cleaning_events(ce, rm9.diff().values, 5)
                     pce[ce] = True
                     clean_pruning_sensitivity /= 1.1  # increase pruning sensitivity
 
                 # Decompose input signal
                 soiling_dummy = (
-                    pi / degradation_trend[-1] / seasonal_component[-1] / residual_shift
-                )
+                    pi / degradation_trend[-1] / seasonal_component[-1] / residual_shift)
 
                 # Run Kalman Filter for obtaining soiling component
                 kdf, Ps = self._Kalman_filter_for_SR(
-                    zs_series=soiling_dummy,
-                    clip_soiling=clip_soiling,
-                    prescient_cleaning_events=pce,
-                    pruning_iterations=pruning_iterations,
-                    clean_pruning_sensitivity=clean_pruning_sensitivity,
-                    perfect_cleaning=perfect_cleaning,
-                    process_noise=process_noise,
-                    renormalize_SR=renormalize_SR,
-                )
+                    zs_series=soiling_dummy, clip_soiling=clip_soiling, 
+                    prescient_cleaning_events=pce, pruning_iterations=pruning_iterations,
+                    clean_pruning_sensitivity=clean_pruning_sensitivity, 
+                    perfect_cleaning=perfect_cleaning, process_noise=process_noise,
+                    renormalize_SR=renormalize_SR)
                 soiling_ratio.append(kdf.soiling_ratio)
                 soiling_dfs.append(kdf)
 
@@ -1898,36 +1719,20 @@ class CODSAnalysis:
                 season_dummy = season_dummy.apply(np.log)  # Log transform
                 # Run STL model
                 STL_res = STL(
-                    season_dummy,
-                    period=365,
-                    seasonal=999999,
-                    seasonal_deg=0,
-                    trend_deg=0,
-                    robust=True,
-                    low_pass_jump=30,
-                    seasonal_jump=30,
-                    trend_jump=365,
-                ).fit()
+                    season_dummy, period=365, seasonal=999999, seasonal_deg=0, trend_deg=0,
+                    robust=True, low_pass_jump=30, seasonal_jump=30, trend_jump=365).fit()
                 # Smooth result
                 smooth_season = lowess(
-                    STL_res.seasonal.apply(np.exp),
-                    pi.index,
-                    is_sorted=True,
-                    delta=30,
-                    frac=180 / len(pi),
-                    return_sorted=False,
-                )
+                    STL_res.seasonal.apply(np.exp), pi.index, is_sorted=True, delta=30,
+                    frac=180 / len(pi), return_sorted=False)
                 # Ensure periodic seaonal component
                 seasonal_comp = _force_periodicity(smooth_season, season_dummy.index, pi.index)
                 seasonal_component.append(seasonal_comp)
                 if degradation_method == "STL":  # If not YoY
                     deg_trend = pd.Series(index=pi.index, data=STL_res.trend.apply(np.exp))
                     degradation_trend.append(deg_trend / deg_trend.iloc[0])
-                    yoy_save.append(
-                        RdToolsDeg.degradation_year_on_year(
-                            degradation_trend[-1], uncertainty_method=None
-                        )
-                    )
+                    yoy_save.append(RdToolsDeg.degradation_year_on_year(
+                            degradation_trend[-1], uncertainty_method=None))
 
             # Find degradation component
             if order[(ic - 1) % n_steps] == "Rd":
@@ -1937,8 +1742,7 @@ class CODSAnalysis:
                 yoy = RdToolsDeg.degradation_year_on_year(trend_dummy, uncertainty_method=None)
                 # Convert degradation rate to trend
                 degradation_trend.append(
-                    pd.Series(index=pi.index, data=(1 + day * yoy / 100 / 365.0))
-                )
+                    pd.Series(index=pi.index, data=(1 + day * yoy / 100 / 365.0)))
                 yoy_save.append(yoy)
 
             # Combine and calculate residual flatness
@@ -1949,43 +1753,29 @@ class CODSAnalysis:
             convergence_metric.append(_RMSE(pi, total_model))
 
             if verbose:
-                print(
-                    "{:}\t{:}\t{:.5f}\t\t\t{:.1f} s".format(
-                        ic,
-                        order[(ic - 1) % n_steps],
-                        convergence_metric[-1],
-                        time.time() - t0,
-                    )
-                )
+                print("{:}\t{:}\t{:.5f}\t\t\t{:.1f} s".format(
+                    ic, order[(ic - 1) % n_steps], convergence_metric[-1], time.time() - t0))
 
             # Convergence happens if there is no improvement in RMSE from one
             # step to the next
             if ic >= n_steps:
-                relative_improvement = (
-                    convergence_metric[-n_steps - 1] - convergence_metric[-1]
+                relative_improvement = (convergence_metric[-n_steps - 1] - convergence_metric[-1]
                 ) / convergence_metric[-n_steps - 1]
                 if perfect_cleaning and (
-                    ic >= max_iterations / 2 or relative_improvement < convergence_criterion
-                ):
+                    ic >= max_iterations / 2 or relative_improvement < convergence_criterion):
                     # From now on, do not assume perfect cleaning
                     perfect_cleaning = False
                     # Reorder to ensure SR first
                     order = tuple(
-                        [
-                            order[(i + n_steps - 1 - (ic - 1) % n_steps) % n_steps]
-                            for i in range(n_steps)
-                        ]
-                    )
+                        [order[(i + n_steps - 1 - (ic - 1) % n_steps) % n_steps]
+                         for i in range(n_steps)])
                     change_point = ic
                     if verbose:
                         print("Now not assuming perfect cleaning")
                 elif not perfect_cleaning and (
                     ic >= max_iterations
-                    or (
-                        ic >= change_point + n_steps
-                        and relative_improvement < convergence_criterion
-                    )
-                ):
+                    or (ic >= change_point + n_steps 
+                        and relative_improvement < convergence_criterion)):
                     if verbose:
                         if relative_improvement < convergence_criterion:
                             print("Convergence reached.")
@@ -1997,15 +1787,8 @@ class CODSAnalysis:
         df_out = pd.DataFrame(
             index=pi.index,
             columns=[
-                "soiling_ratio",
-                "soiling_rates",
-                "cleaning_events",
-                "seasonal_component",
-                "degradation_trend",
-                "total_model",
-                "residuals",
-            ],
-        )
+                "soiling_ratio", "soiling_rates", "cleaning_events", "seasonal_component",
+                "degradation_trend", "total_model", "residuals"])
 
         # Save values
         df_out.seasonal_component = seasonal_component[-1]
@@ -2021,19 +1804,16 @@ class CODSAnalysis:
 
         # Total model
         df_out.total_model = (
-            df_out.soiling_ratio * df_out.seasonal_component * df_out.degradation_trend
-        )
+            df_out.soiling_ratio * df_out.seasonal_component * df_out.degradation_trend)
         df_out.residuals = pi / df_out.total_model
         residual_shift = df_out.residuals.mean()
         df_out.total_model *= residual_shift
         RMSE = _RMSE(pi, df_out.total_model)
         adf_res = adfuller(df_out.residuals.dropna(), regression="ctt", autolag=None)
         if verbose:
-            print(
-                "p-value for the H0 that there is a unit root in the"
-                + "residuals (using the Augmented Dickey-fuller test):"
-                + "{:.3e}".format(adf_res[1])
-            )
+            print("p-value for the H0 that there is a unit root in the"
+                  + "residuals (using the Augmented Dickey-fuller test):"
+                  + "{:.3e}".format(adf_res[1]))
 
         # Check size of soiling signal vs residuals
         SR_amp = float(np.diff(df_out.soiling_ratio.quantile([0.1, 0.9])))
@@ -2047,30 +1827,18 @@ class CODSAnalysis:
             df_out.SR_low = 1.0 - SR_amp
 
         # Set up results dictionary
-        results_dict = dict(
-            degradation=degradation,
-            soiling_loss=soiling_loss,
-            residual_shift=residual_shift,
-            RMSE=RMSE,
-            small_soiling_signal=small_soiling_signal,
-            adf_res=adf_res,
-        )
+        results_dict = dict(degradation=degradation, soiling_loss=soiling_loss,
+                            residual_shift=residual_shift, RMSE=RMSE,
+                            small_soiling_signal=small_soiling_signal, adf_res=adf_res)
 
         return df_out, results_dict
 
     def run_bootstrap(
-        self,
-        reps=512,
-        confidence_level=68.2,
-        degradation_method="YoY",
-        process_noise=1e-4,
+        self, reps=512, confidence_level=68.2, degradation_method="YoY", process_noise=1e-4,
         order_alternatives=(("SR", "SC", "Rd"), ("SC", "SR", "Rd")),
         cleaning_sensitivity_alternatives=(0.25, 0.75),
         clean_pruning_sensitivity_alternatives=(1 / 1.5, 1.5),
-        forward_fill_alternatives=(True, False),
-        verbose=False,
-        **kwargs,
-    ):
+        forward_fill_alternatives=(True, False), verbose=False, **kwargs):
         """
         Bootstrapping of CODS algorithm for uncertainty analysis, inherently accounting
         for model and parameter choices.
@@ -2199,16 +1967,12 @@ class CODSAnalysis:
 
         # Generate combinations of model parameter alternatives
         parameter_alternatives = [
-            order_alternatives,
-            cleaning_sensitivity_alternatives,
-            clean_pruning_sensitivity_alternatives,
-            forward_fill_alternatives,
-        ]
+            order_alternatives, cleaning_sensitivity_alternatives,
+            clean_pruning_sensitivity_alternatives, forward_fill_alternatives]
         index_list = list(itertools.product([0, 1], repeat=len(parameter_alternatives)))
         combination_of_parameters = [
             [parameter_alternatives[j][indexes[j]] for j in range(len(parameter_alternatives))]
-            for indexes in index_list
-        ]
+            for indexes in index_list]
         nr_models = len(index_list)
         bootstrap_samples_list, list_of_df_out, results = [], [], []
 
@@ -2223,17 +1987,10 @@ class CODSAnalysis:
         for c, (order, dt, pt, ff) in enumerate(combination_of_parameters):
             try:
                 df_out, result_dict = self.iterative_signal_decomposition(
-                    max_iterations=18,
-                    order=order,
-                    clip_soiling=True,
-                    cleaning_sensitivity=dt,
-                    pruning_iterations=1,
-                    clean_pruning_sensitivity=pt,
-                    process_noise=process_noise,
-                    ffill=ff,
-                    degradation_method=degradation_method,
-                    **kwargs,
-                )
+                    max_iterations=18, order=order, clip_soiling=True, cleaning_sensitivity=dt,
+                    pruning_iterations=1, clean_pruning_sensitivity=pt, 
+                    process_noise=process_noise, ffill=ff, degradation_method=degradation_method,
+                    **kwargs)
 
                 # Save results
                 list_of_df_out.append(df_out)
@@ -2245,9 +2002,7 @@ class CODSAnalysis:
                     # ... generate bootstrap samples based on the fit:
                     bootstrap_samples_list.append(
                         _make_time_series_bootstrap_samples(
-                            pi, df_out.total_model, sample_nr=int(reps / nr_models)
-                        )
-                    )
+                            pi, df_out.total_model, sample_nr=int(reps / nr_models)))
 
                 # Print progress
                 if verbose:
@@ -2267,28 +2022,13 @@ class CODSAnalysis:
 
         # Save sensitivities and weights for initial model fits
         _parameters_n_weights = pd.concat(
-            [
-                pd.DataFrame(combination_of_parameters),
-                pd.Series(RMSEs),
-                pd.Series(SR_is_one_fraction),
-                pd.Series(weights),
-                pd.Series(small_soiling_signal),
-            ],
-            axis=1,
-            ignore_index=True,
-        )
+            [pd.DataFrame(combination_of_parameters), pd.Series(RMSEs), 
+             pd.Series(SR_is_one_fraction), pd.Series(weights), pd.Series(small_soiling_signal)],
+            axis=1, ignore_index=True)
 
         if verbose:  # Print summary
             _parameters_n_weights.columns = [
-                "order",
-                "dt",
-                "pt",
-                "ff",
-                "RMSE",
-                "SR==1",
-                "weights",
-                "small_soiling_signal",
-            ]
+                "order", "dt", "pt", "ff", "RMSE", "SR==1", "weights", "small_soiling_signal"]
             if verbose:
                 print("\n", _parameters_n_weights)
 
@@ -2297,8 +2037,7 @@ class CODSAnalysis:
             raise RuntimeError(
                 "Test for stationary residuals (Augmented Dickey-Fuller"
                 + " test) not passed in half  of the instances:\nData not"
-                + " decomposable."
-            )
+                + " decomposable.")
 
         # Save best model
         self.initial_fits = [df for df in list_of_df_out]
@@ -2330,38 +2069,22 @@ class CODSAnalysis:
         # Number of samples per fit:
         sample_nr = int(reps / nr_models)
         list_of_SCs = [
-            list_of_df_out[m].seasonal_component for m in range(nr_models) if weights[m] > 0
-        ]
+            list_of_df_out[m].seasonal_component for m in range(nr_models) if weights[m] > 0]
         seasonal_samples = _make_seasonal_samples(
-            list_of_SCs,
-            sample_nr=sample_nr,
-            min_multiplier=0.8,
-            max_multiplier=1.75,
-            max_shift=30,
-        )
+            list_of_SCs, sample_nr=sample_nr, min_multiplier=0.8, max_multiplier=1.75, 
+            max_shift=30)
 
         # ###################### #
         # ###### STAGE 2 ####### #
         # ###################### #
 
         if verbose and reps > 0:
-            print(
-                "\nBootstrapping for uncertainty analysis",
-                "({:} realizations):".format(reps),
-            )
+            print("\nBootstrapping for uncertainty analysis",
+                  "({:} realizations):".format(reps))
         order = ("SR", "SC" if degradation_method == "STL" else "Rd")
         t0 = time.time()
         bt_kdfs, bt_SL, bt_deg, parameters, adfs, RMSEs, SR_is_1, rss, errors = (
-            [],
-            [],
-            [],
-            [],
-            [],
-            [],
-            [],
-            [],
-            ["Bootstrapping errors"],
-        )
+            [], [], [], [], [], [], [], [], ["Bootstrapping errors"])
         for b in range(reps):
             try:
                 # randomly choose model sensitivities
@@ -2380,18 +2103,10 @@ class CODSAnalysis:
 
                 # Do Signal decomposition for soiling and degradation component
                 kdf, results_dict = temporary_cods_instance.iterative_signal_decomposition(
-                    max_iterations=4,
-                    order=order,
-                    clip_soiling=True,
-                    cleaning_sensitivity=dt,
-                    pruning_iterations=1,
-                    clean_pruning_sensitivity=pt,
-                    process_noise=pn,
-                    renormalize_SR=renormalize_SR,
-                    ffill=ffill,
-                    degradation_method=degradation_method,
-                    **kwargs,
-                )
+                    max_iterations=4, order=order, clip_soiling=True, cleaning_sensitivity=dt,
+                    pruning_iterations=1, clean_pruning_sensitivity=pt, process_noise=pn,
+                    renormalize_SR=renormalize_SR, ffill=ffill, 
+                    degradation_method=degradation_method, **kwargs)
 
                 # If we can reject the null-hypothesis that there is a unit
                 # root in the residuals:
@@ -2418,27 +2133,10 @@ class CODSAnalysis:
         weights = 1 / np.array(RMSEs) / (1 + np.array(SR_is_1))
         weights /= np.sum(weights)
         self._parameters_n_weights = pd.concat(
-            [
-                pd.DataFrame(parameters),
-                pd.Series(RMSEs),
-                pd.Series(adfs),
-                pd.Series(SR_is_1),
-                pd.Series(weights),
-            ],
-            axis=1,
-            ignore_index=True,
-        )
+            [pd.DataFrame(parameters), pd.Series(RMSEs), pd.Series(adfs),
+             pd.Series(SR_is_1), pd.Series(weights)], axis=1, ignore_index=True)
         self._parameters_n_weights.columns = [
-            "dt",
-            "pt",
-            "pn",
-            "RSR",
-            "ffill",
-            "RMSE",
-            "ADF",
-            "SR==1",
-            "weights",
-        ]
+            "dt", "pt", "pn", "RSR", "ffill", "RMSE", "ADF", "SR==1", "weights"]
 
         # ###################### #
         # ###### STAGE 3 ####### #
@@ -2471,18 +2169,14 @@ class CODSAnalysis:
 
         # Find degradation rates
         self.degradation = [
-            np.dot(bt_deg, weights),
-            np.quantile(bt_deg, ci_low_edge),
-            np.quantile(bt_deg, ci_high_edge),
-        ]
+            np.dot(bt_deg, weights), np.quantile(bt_deg, ci_low_edge),
+            np.quantile(bt_deg, ci_high_edge)]
         df_out.degradation_trend = 1 + np.arange(len(pi)) * self.degradation[0] / 100 / 365.0
 
         # Soiling losses
         self.soiling_loss = [
-            np.dot(bt_SL, weights),
-            np.quantile(bt_SL, ci_low_edge),
-            np.quantile(bt_SL, ci_high_edge),
-        ]
+            np.dot(bt_SL, weights), np.quantile(bt_SL, ci_low_edge),
+            np.quantile(bt_SL, ci_high_edge)]
 
         # Save "confidence intervals" for seasonal component
         df_out.seasonal_component = (seasonal_samples * weights).sum(1)
@@ -2491,8 +2185,7 @@ class CODSAnalysis:
 
         # Total model with confidence intervals
         df_out.total_model = (
-            df_out.degradation_trend * df_out.seasonal_component * df_out.soiling_ratio
-        )
+            df_out.degradation_trend * df_out.seasonal_component * df_out.soiling_ratio)
         df_out["model_low"] = concat_tot_mod.quantile(ci_low_edge, 1)
         df_out["model_high"] = concat_tot_mod.quantile(ci_high_edge, 1)
 
@@ -2513,20 +2206,9 @@ class CODSAnalysis:
         return self.result_df, self.degradation, self.soiling_loss
 
     def _Kalman_filter_for_SR(
-        self,
-        zs_series,
-        process_noise=1e-4,
-        zs_std=0.05,
-        rate_std=0.005,
-        max_soiling_rates=0.0005,
-        pruning_iterations=1,
-        clean_pruning_sensitivity=0.6,
-        renormalize_SR=None,
-        perfect_cleaning=False,
-        prescient_cleaning_events=None,
-        clip_soiling=True,
-        ffill=True,
-    ):
+        self, zs_series, process_noise=1e-4, zs_std=0.05, rate_std=0.005, max_soiling_rates=0.0005,
+        pruning_iterations=1, clean_pruning_sensitivity=0.6, renormalize_SR=None,
+        perfect_cleaning=False, prescient_cleaning_events=None, clip_soiling=True, ffill=True):
         """
         A function for estimating the underlying Soiling Ratio (SR) and the
         rate of change of the SR (the soiling rate), based on a noisy time series
@@ -2611,16 +2293,14 @@ class CODSAnalysis:
             cleaning_events = prescient_cleaning_events
         else:
             if isinstance(prescient_cleaning_events, type(zs_series)) and (
-                prescient_cleaning_events.sum() > 4
-            ):
+                prescient_cleaning_events.sum() > 4):
                 if len(prescient_cleaning_events) == len(zs_series):
                     prescient_cleaning_events = prescient_cleaning_events.copy()
                     prescient_cleaning_events.index = zs_series.index
                 else:
                     raise ValueError(
                         "The indices of prescient_cleaning_events must correspond to the"
-                        + " indices of zs_series; they must be of the same length"
-                    )
+                        + " indices of zs_series; they must be of the same length")
             else:  # If no prescient cleaning events, detect cleaning events
                 ce, rm9 = _rolling_median_ce_detection(zs_series.index, zs_series, tuner=0.5)
                 prescient_cleaning_events = _collapse_cleaning_events(ce, rm9.diff().values, 5)
@@ -2646,43 +2326,26 @@ class CODSAnalysis:
 
         # Initialize Kalman filter
         f = self._initialize_univariate_model(
-            zs_series,
-            dt,
-            process_noise,
-            measurement_noise,
-            rate_std,
-            zs_std,
-            initial_slope,
-        )
+            zs_series, dt, process_noise, measurement_noise, rate_std, zs_std, initial_slope)
 
         # Initialize miscallenous variables
         dfk = pd.DataFrame(
             index=zs_series.index,
             dtype=float,
             columns=[
-                "raw_pi",
-                "raw_rates",
-                "smooth_pi",
-                "smooth_rates",
-                "soiling_ratio",
-                "soiling_rates",
-                "cleaning_events",
-                "days_since_ce",
-            ],
-        )
+                "raw_pi", "raw_rates", "smooth_pi", "smooth_rates", "soiling_ratio", 
+                "soiling_rates", "cleaning_events", "days_since_ce"])
         dfk["cleaning_events"] = False
 
         # Kalman Filter part:
         #######################################################################
         # Call the forward pass function (the actual KF procedure)
         Xs, Ps, rate_std, zs_std = self._forward_pass(
-            f, zs_series, rolling_median_7, cleaning_events, soiling_events
-        )
+            f, zs_series, rolling_median_7, cleaning_events, soiling_events)
 
         # Save results and smooth with rts smoother
         dfk, Xs, Ps = self._smooth_results(
-            dfk, f, Xs, Ps, zs_series, cleaning_events, soiling_events, perfect_cleaning
-        )
+            dfk, f, Xs, Ps, zs_series, cleaning_events, soiling_events, perfect_cleaning)
         #######################################################################
 
         # Some steps to clean up the soiling data:
@@ -2696,16 +2359,14 @@ class CODSAnalysis:
                 pi_after_cleaning = rm_smooth_pi.loc[cleaning_events]
                 # Detect outiers/false positives
                 false_positives = _find_numeric_outliers(
-                    pi_after_cleaning, clean_pruning_sensitivity, "lower"
-                )
+                    pi_after_cleaning, clean_pruning_sensitivity, "lower")
                 cleaning_events = false_positives[~false_positives].index.tolist()
 
             # 2: Remove longer periods with positive (soiling) rates
             if (dfk.smooth_rates > max_soiling_rates).sum() > 1:
                 exceeding_rates = dfk.smooth_rates > max_soiling_rates
                 new_cleaning_events = _collapse_cleaning_events(
-                    exceeding_rates, dfk.smooth_rates, 4
-                )
+                    exceeding_rates, dfk.smooth_rates, 4)
                 cleaning_events.extend(new_cleaning_events[new_cleaning_events].index)
                 cleaning_events.sort()
 
@@ -2713,27 +2374,12 @@ class CODSAnalysis:
             #    Filter and smoother again
             if not ce_0 == cleaning_events:
                 f = self._initialize_univariate_model(
-                    zs_series,
-                    dt,
-                    process_noise,
-                    measurement_noise,
-                    rate_std,
-                    zs_std,
-                    initial_slope,
-                )
+                    zs_series, dt, process_noise, measurement_noise, rate_std, zs_std, 
+                    initial_slope)
                 Xs, Ps, rate_std, zs_std = self._forward_pass(
-                    f, zs_series, rolling_median_7, cleaning_events, soiling_events
-                )
+                    f, zs_series, rolling_median_7, cleaning_events, soiling_events)
                 dfk, Xs, Ps = self._smooth_results(
-                    dfk,
-                    f,
-                    Xs,
-                    Ps,
-                    zs_series,
-                    cleaning_events,
-                    soiling_events,
-                    perfect_cleaning,
-                )
+                    dfk, f, Xs, Ps, zs_series, cleaning_events, soiling_events, perfect_cleaning)
 
             else:
                 counter = 100  # Make sure the while loop stops
@@ -2748,8 +2394,7 @@ class CODSAnalysis:
                     # ratio of the Kalman estimate (smooth_pi) and the SR
                     dfk.loc[: cleaning_events[0], "soiling_ratio"] = (
                         dfk.loc[: cleaning_events[0], "smooth_pi"]
-                        * (dfk.soiling_ratio / dfk.smooth_pi).mean()
-                    )
+                        * (dfk.soiling_ratio / dfk.smooth_pi).mean())
                 else:  # If no cleaning events
                     dfk.soiling_ratio = 1
             else:  # Otherwise, if the inut signal has been decomposed, and
@@ -2758,8 +2403,7 @@ class CODSAnalysis:
             # 5: Renormalize Soiling Ratio
             if renormalize_SR is not None:
                 dfk.soiling_ratio /= dfk.loc[cleaning_events, "soiling_ratio"].quantile(
-                    renormalize_SR
-                )
+                    renormalize_SR)
 
             # 6: Force soiling ratio to not exceed 1:
             if clip_soiling:
@@ -2824,8 +2468,7 @@ class CODSAnalysis:
             if np.abs(u[0]) > np.sqrt(f.R) / 2:
                 index_dummy = [n + 3 for n in range(window_size - HW - 1) if n + 3 != HW]
                 cleaning_events = [
-                    ce for ce in cleaning_events if ce - index + HW not in index_dummy
-                ]
+                    ce for ce in cleaning_events if ce - index + HW not in index_dummy]
             else:  # If the cleaning event is insignificant
                 u[0] = 0
                 if index in cleaning_events:
@@ -2834,23 +2477,13 @@ class CODSAnalysis:
             cleaning_events.remove(index)  # ...remove today from the list
             if (
                 moving_diff[max_diff_index] > 0
-                and index + max_diff_index - HW + 1 not in cleaning_events
-            ):
+                and index + max_diff_index - HW + 1 not in cleaning_events):
                 # ...and add the missing day
                 bisect.insort(cleaning_events, index + max_diff_index - HW + 1)
         return u
 
     def _smooth_results(
-        self,
-        dfk,
-        f,
-        Xs,
-        Ps,
-        zs_series,
-        cleaning_events,
-        soiling_events,
-        perfect_cleaning,
-    ):
+        self, dfk, f, Xs, Ps, zs_series, cleaning_events, soiling_events, perfect_cleaning):
         """Smoother for Kalman Filter estimates. Smooths the Kalaman estimate
         between given cleaning events and saves all in DataFrame dfk"""
         # Save unsmoothed estimates
@@ -2876,15 +2509,7 @@ class CODSAnalysis:
         return dfk, Xs, Ps
 
     def _initialize_univariate_model(
-        self,
-        zs_series,
-        dt,
-        process_noise,
-        measurement_noise,
-        rate_std,
-        zs_std,
-        initial_slope,
-    ):
+        self, zs_series, dt, process_noise, measurement_noise, rate_std, zs_std, initial_slope):
         """Initializes the univariate Kalman Filter model, using the filterpy
         package"""
         f = KalmanFilter(dim_x=2, dim_z=1)
@@ -2900,18 +2525,11 @@ class CODSAnalysis:
 
 
 def soiling_cods(
-    energy_normalized_daily,
-    reps=512,
-    confidence_level=68.2,
-    degradation_method="YoY",
-    process_noise=1e-4,
-    order_alternatives=(("SR", "SC", "Rd"), ("SC", "SR", "Rd")),
-    cleaning_sensitivity_alternatives=(0.25, 0.75),
-    clean_pruning_sensitivity_alternatives=(1 / 1.5, 1.5),
-    forward_fill_alternatives=(True, False),
-    verbose=False,
-    **kwargs,
-):
+    energy_normalized_daily, reps=512, confidence_level=68.2, degradation_method="YoY",
+    process_noise=1e-4, order_alternatives=(("SR", "SC", "Rd"), ("SC", "SR", "Rd")),
+    cleaning_sensitivity_alternatives=(0.25, 0.75), 
+    clean_pruning_sensitivity_alternatives=(1 / 1.5, 1.5), forward_fill_alternatives=(True, False),
+    verbose=False, **kwargs):
     """
     Functional wrapper for :py:class:`~rdtools.soiling.CODSAnalysis` and its
     subroutine :py:func:`~rdtools.soiling.CODSAnalysis.run_bootstrap`. Runs
@@ -3029,29 +2647,17 @@ def soiling_cods(
 
     CODS = CODSAnalysis(energy_normalized_daily)
 
-    CODS.run_bootstrap(
-        reps=reps,
-        confidence_level=confidence_level,
-        verbose=verbose,
-        degradation_method=degradation_method,
-        process_noise=process_noise,
+    CODS.run_bootstrap(reps=reps, confidence_level=confidence_level, verbose=verbose,
+        degradation_method=degradation_method, process_noise=process_noise,
         order_alternatives=order_alternatives,
         cleaning_sensitivity_alternatives=cleaning_sensitivity_alternatives,
         clean_pruning_sensitivity_alternatives=clean_pruning_sensitivity_alternatives,
-        forward_fill_alternatives=forward_fill_alternatives,
-        **kwargs,
-    )
+        forward_fill_alternatives=forward_fill_alternatives, **kwargs)
 
     sr = 1 - CODS.soiling_loss[0] / 100
     sr_ci = 1 - np.array(CODS.soiling_loss[1:3]) / 100
 
-    return (
-        sr,
-        sr_ci,
-        CODS.degradation[0],
-        np.array(CODS.degradation[1:3]),
-        CODS.result_df,
-    )
+    return (sr, sr_ci, CODS.degradation[0], np.array(CODS.degradation[1:3]), CODS.result_df)
 
 
 def _collapse_cleaning_events(inferred_ce_in, metric, f=4):
@@ -3139,26 +2745,22 @@ def _soiling_event_detection(x, y, ffill=True, tuner=5):
 
 
 def _make_seasonal_samples(
-    list_of_SCs, sample_nr=10, min_multiplier=0.5, max_multiplier=2, max_shift=20
-):
+    list_of_SCs, sample_nr=10, min_multiplier=0.5, max_multiplier=2, max_shift=20):
     """Generate seasonal samples by perturbing the amplitude and the phase of
     a seasonal components found with the fitted CODS model"""
     samples = pd.DataFrame(
         index=list_of_SCs[0].index,
         columns=range(int(sample_nr * len(list_of_SCs))),
-        dtype=float,
-    )
+        dtype=float)
     # From each fitted signal, we will generate new seaonal components
     for i, signal in enumerate(list_of_SCs):
         # Remove beginning and end of signal
         signal_mean = signal.mean()
         # Make a signal matrix where each column is a year and each row a date
         year_matrix = (
-            signal.rename("values")
-            .to_frame()
+            signal.rename("values").to_frame()
             .assign(doy=signal.index.dayofyear, year=signal.index.year)
-            .pivot(index="doy", columns="year", values="values")
-        )
+            .pivot(index="doy", columns="year", values="values"))
         # We will use the median signal through all the years...
         median_signal = year_matrix.median(1)
         for j in range(sample_nr):
@@ -3167,10 +2769,8 @@ def _make_seasonal_samples(
             shift = np.random.randint(-max_shift, max_shift)
             # Set up the signal by shifting the orginal signal index, and
             # constructing the new signal based on median_signal
-            shifted_signal = pd.Series(
-                index=signal.index,
-                data=median_signal.reindex((signal.index.dayofyear - shift) % 365 + 1).values,
-            )
+            shifted_signal = pd.Series(index=signal.index,
+                data=median_signal.reindex((signal.index.dayofyear - shift) % 365 + 1).values)
             # Perturb amplitude by recentering to 0 multiplying by multiplier
             samples.loc[:, i * sample_nr + j] = multiplier * (shifted_signal - signal_mean) + 1
     return samples
@@ -3252,8 +2852,7 @@ def _progressBarWithETA(value, endvalue, time, bar_length=20):
     left = used / percent * (100 - percent)  # Estimated time left
     sys.stdout.write(
         "\r# {:} | Used: {:.1f} min | Left: {:.1f}".format(value, used, left)
-        + " min | Progress: [{:}] {:.0f} %".format(arrow + spaces, percent)
-    )
+        + " min | Progress: [{:}] {:.0f} %".format(arrow + spaces, percent))
     sys.stdout.flush()
 
 
@@ -3267,13 +2866,8 @@ def piecewise_linear(x, x0, b, k1, k2):
 
 
 def segmented_soiling_period(
-    pr,
-    fill_method="bfill",
-    days_clean_vs_cp=7,
-    initial_guesses=[13, 1, 0, 0],
-    bounds=None,
-    min_r2=0.15,
-):  # note min_r2 was 0.6 and it could be worth testing 10 day forward median as b guess
+    pr, fill_method="bfill", days_clean_vs_cp=7, initial_guesses=[13, 1, 0, 0],
+    bounds=None, min_r2=0.15):  # note min_r2 was 0.6 and it could be worth testing 10 day forward median as b guess
     """
     Applies segmented regression to a single deposition period
     (data points in between two cleaning events).
@@ -3335,14 +2929,12 @@ def segmented_soiling_period(
 
         R2_improve = R2_piecewise - R2_original
         R2_percent_improve = (R2_piecewise / R2_original) - 1
-        R2_percent_of_possible_improve = R2_improve / (
-            1 - R2_original
-        )  # improvement relative to possible improvement
+        R2_percent_of_possible_improve = R2_improve / (1 - R2_original)  
+        # improvement relative to possible improvement
 
         if len(y) < 45:  # tighter requirements for shorter soiling periods
             if (R2_piecewise < min_r2) | (
-                (R2_percent_of_possible_improve < 0.5) & (R2_percent_improve < 0.5)
-            ):
+                (R2_percent_of_possible_improve < 0.5) & (R2_percent_improve < 0.5)):
                 z = [np.nan] * len(x)
                 cp_date = None
         else:
