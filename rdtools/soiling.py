@@ -199,7 +199,6 @@ class SRRAnalysis:
         # median change to day_scale/2 Matt
         df_ffill = df.copy()
         df_ffill = df.ffill(limit=int(round((day_scale / 2), 0)))
-        #df_ffill = df.ffill(limit=day_scale)
         # Calculate rolling median
         df["pi_roll_med"] = df_ffill.pi_norm.rolling(day_scale, center=True).median()
 
@@ -402,7 +401,7 @@ class SRRAnalysis:
                 ####################################################
                 # the following is moved here so median values are retained/Matt
                 # for soiling inferrences when rejected fits occur
-                
+
                 result_dict["slope_err"] = (
                     result_dict["run_slope_high"] - result_dict["run_slope_low"]
                 ) / abs(result_dict["run_slope"])
@@ -417,7 +416,7 @@ class SRRAnalysis:
                     result_dict["run_loss_baseline"] = (
                         result_dict["inferred_start_loss"] - result_dict["inferred_end_loss"]
                     )
-                
+
                     ###############################################
 
             result_list.append(result_dict)
@@ -501,9 +500,10 @@ class SRRAnalysis:
             results.inferred_begin_shift, 0, 1
         )
         #######################################################################
-        #if neg_shift is False:
-         #   results.loc[filt, "valid"] = False
-
+        '''
+        if neg_shift is False:
+            results.loc[filt, "valid"] = False
+        '''
         if len(results[results.valid]) == 0:
             raise NoValidIntervalError("No valid soiling intervals were found")
         new_start = results.start.iloc[0]
@@ -521,8 +521,8 @@ class SRRAnalysis:
         # new code for perfect and inferred clean with handling of/Matt
         # negative shifts and changepoints within soiling intervals
         # goes to line 563
-        if (piecewise==True)|(neg_shift==True):
-        #######################################################################
+        if (piecewise) | (neg_shift):
+            ###################################################################
             pm_frame_out.inferred_begin_shift.bfill(inplace=True)
             pm_frame_out["forward_median"] = (
                 pm_frame_out.pi.iloc[::-1].rolling(10, min_periods=5).median()
@@ -540,7 +540,7 @@ class SRRAnalysis:
             shift_perfect = 0
             begin_perfect_shifts = [0]
             begin_infer_shifts = [0]
-    
+
             for date, rs, d, start_shift, changepoint, forward_median in zip(
                 pm_frame_out.index,
                 pm_frame_out.run_slope,
@@ -551,7 +551,7 @@ class SRRAnalysis:
             ):
                 new_soil = d - day_start
                 day_start = d
-    
+
                 if new_soil <= 0:  # begin new soil period
                     if (start_shift == prev_shift) | (changepoint):  # no shift at
                         # a slope changepoint
@@ -596,7 +596,7 @@ class SRRAnalysis:
                         shift = forward_median - soil_infer
                     if (soil_perfect + shift_perfect) < forward_median:
                         shift_perfect = forward_median - soil_perfect
-    
+
                     # append the daily soiling ratio to each modeled fit
                     begin_perfect_shifts.append(shift_perfect)
                     begin_infer_shifts.append(shift)
@@ -610,22 +610,22 @@ class SRRAnalysis:
                     soil_perfect_clean.append(soil_perfect)
                     if changepoint is False:
                         prev_shift = start_shift  # assigned at new soil period
-    
+
                 elif new_soil > 0:  # within soiling period
                     # append the daily soiling ratio to each modeled fit
                     soil_infer = start_infer + rs * d
                     soil_inferred_clean.append(soil_infer)
-    
+
                     soil_perfect = start_perfect + rs * d
                     soil_perfect_clean.append(soil_perfect)
-    
+
             pm_frame_out["loss_inferred_clean"] = pd.Series(
                 soil_inferred_clean, index=pm_frame_out.index
             )
             pm_frame_out["loss_perfect_clean"] = pd.Series(
                 soil_perfect_clean, index=pm_frame_out.index
             )
-    
+
             results["begin_perfect_shift"] = pd.Series(begin_perfect_shifts)
             results["begin_infer_shift"] = pd.Series(begin_infer_shifts)
         else:
@@ -636,7 +636,8 @@ class SRRAnalysis:
             # for different assumptions
             pm_frame_out.loss_perfect_clean = \
                 pm_frame_out.loss_perfect_clean.fillna(1)
-            #inferred_start_loss was set to the value from poly fit at the beginning of the soiling interval
+            # inferred_start_loss was set to the value from poly fit at the beginning of the 
+            # soiling interval
             pm_frame_out['loss_inferred_clean'] = \
                 pm_frame_out.inferred_start_loss + \
                 pm_frame_out.days_since_clean * pm_frame_out.run_slope
@@ -3304,7 +3305,6 @@ def segmented_soiling_period(
         Datetime in which continuous change points occurred.
         None if segmentation was not possible.
     """
-
     # Check if PR dataframe has datetime index
     if not isinstance(pr.index, pd.DatetimeIndex):
         raise ValueError("The time series does not have DatetimeIndex")
@@ -3349,7 +3349,7 @@ def segmented_soiling_period(
             if (R2_percent_improve < 0.01) | (R2_piecewise < 0.4):
                 z = [np.nan] * len(x)
                 cp_date = None
-    except IndexError as x:
+    except:
         z = [np.nan] * len(x)
         cp_date = None
     # Create Series from modelled profile

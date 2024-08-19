@@ -36,18 +36,9 @@ def test_soiling_srr(soiling_normalized_daily, soiling_insolation, soiling_times
 
     # Check soiling_info['soiling_interval_summary']
     expected_summary_columns = [
-        "start",
-        "end",
-        "soiling_rate",
-        "soiling_rate_low",
-        "soiling_rate_high",
-        "inferred_start_loss",
-        "inferred_end_loss",
-        "inferred_recovery",
-        "inferred_begin_shift",
-        "length",
-        "valid",
-    ]
+        "start", "end", "soiling_rate", "soiling_rate_low", "soiling_rate_high",
+        "inferred_start_loss", "inferred_end_loss", "inferred_recovery",
+        "inferred_begin_shift", "length", "valid"]
     actual_summary_columns = soiling_info["soiling_interval_summary"].columns.values
 
     for x in actual_summary_columns:
@@ -63,18 +54,11 @@ def test_soiling_srr(soiling_normalized_daily, soiling_insolation, soiling_times
         soiling_info["soiling_interval_summary"], pd.DataFrame
     ), 'soiling_info["soiling_interval_summary"] not a dataframe'
     expected_means = pd.Series(
-        {
-            "soiling_rate": -0.002644544,
-            "soiling_rate_low": -0.002847504,
-            "soiling_rate_high": -0.002455915,
-            "inferred_start_loss": 1.020124,
-            "inferred_end_loss": 0.9566552,
-            "inferred_recovery": 0.065416,  # Matt might not keep
-            "inferred_begin_shift": 0.084814,  # Matt might not keep
-            "length": 24.0,
-            "valid": 1.0,
-        }
-    )
+        { 
+            "soiling_rate": -0.002644544, "soiling_rate_low": -0.002847504,
+            "soiling_rate_high": -0.002455915, "inferred_start_loss": 1.020124,
+            "inferred_end_loss": 0.9566552, "inferred_recovery": 0.065416,
+            "inferred_begin_shift": 0.084814, "length": 24.0, "valid": 1.0})
     expected_means = expected_means[
         [
             "soiling_rate",
@@ -252,7 +236,8 @@ def test_soiling_srr_method(
 ):
     np.random.seed(1977)
     sr, sr_ci, soiling_info = soiling_srr(
-        soiling_normalized_daily, soiling_insolation, reps=10, method=method, neg_shift=neg_shift, piecewise=piecewise
+        soiling_normalized_daily, soiling_insolation, reps=10, method=method, 
+        neg_shift=neg_shift, piecewise=piecewise
     )
     assert expected_sr == pytest.approx(
         sr, abs=1e-6
