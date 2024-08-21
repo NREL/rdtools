@@ -1761,7 +1761,7 @@ class CODSAnalysis:
             if ic >= n_steps:
                 relative_improvement = (convergence_metric[-n_steps - 1] - convergence_metric[-1]
                                         ) / convergence_metric[-n_steps - 1]
-                if perfect_cleaning and (ic >= max_iterations / 2 or 
+                if perfect_cleaning and (ic >= max_iterations / 2 or
                                          relative_improvement < convergence_criterion):
                     # From now on, do not assume perfect cleaning
                     perfect_cleaning = False
@@ -2206,9 +2206,9 @@ class CODSAnalysis:
         return self.result_df, self.degradation, self.soiling_loss
 
     def _Kalman_filter_for_SR(
-            self, zs_series, process_noise=1e-4, zs_std=0.05, rate_std=0.005, 
-            max_soiling_rates=0.0005, pruning_iterations=1, clean_pruning_sensitivity=0.6, 
-            renormalize_SR=None, perfect_cleaning=False, prescient_cleaning_events=None, 
+            self, zs_series, process_noise=1e-4, zs_std=0.05, rate_std=0.005,
+            max_soiling_rates=0.0005, pruning_iterations=1, clean_pruning_sensitivity=0.6,
+            renormalize_SR=None, perfect_cleaning=False, prescient_cleaning_events=None,
             clip_soiling=True, ffill=True):
         """
         A function for estimating the underlying Soiling Ratio (SR) and the
@@ -2476,7 +2476,7 @@ class CODSAnalysis:
                     cleaning_events.remove(index)
         else:  # If the index with the maximum difference is not today...
             cleaning_events.remove(index)  # ...remove today from the list
-            if (moving_diff[max_diff_index] > 0 
+            if (moving_diff[max_diff_index] > 0
                     and index + max_diff_index - HW + 1 not in cleaning_events):
                 # ...and add the missing day
                 bisect.insort(cleaning_events, index + max_diff_index - HW + 1)
@@ -2509,7 +2509,8 @@ class CODSAnalysis:
         return dfk, Xs, Ps
 
     def _initialize_univariate_model(
-            self, zs_series, dt, process_noise, measurement_noise, rate_std, zs_std, initial_slope):
+            self, zs_series, dt, process_noise, measurement_noise,
+            rate_std, zs_std, initial_slope):
         """Initializes the univariate Kalman Filter model, using the filterpy
         package"""
         f = KalmanFilter(dim_x=2, dim_z=1)
@@ -2529,7 +2530,7 @@ def soiling_cods(
     process_noise=1e-4, order_alternatives=(
         ("SR", "SC", "Rd"), ("SC", "SR", "Rd")),
         cleaning_sensitivity_alternatives=(0.25, 0.75),
-        clean_pruning_sensitivity_alternatives=(1 / 1.5, 1.5), 
+        clean_pruning_sensitivity_alternatives=(1 / 1.5, 1.5),
         forward_fill_alternatives=(True, False), verbose=False, **kwargs):
     """
     Functional wrapper for :py:class:`~rdtools.soiling.CODSAnalysis` and its
@@ -2772,7 +2773,7 @@ def _make_seasonal_samples(
             # Set up the signal by shifting the orginal signal index, and
             # constructing the new signal based on median_signal
             shifted_signal = pd.Series(
-                index=signal.index, 
+                index=signal.index,
                 data=median_signal.reindex((signal.index.dayofyear - shift) % 365 + 1).values)
             # Perturb amplitude by recentering to 0 multiplying by multiplier
             samples.loc[:, i * sample_nr + j] = multiplier * (shifted_signal - signal_mean) + 1
@@ -2870,7 +2871,7 @@ def piecewise_linear(x, x0, b, k1, k2):
 
 def segmented_soiling_period(
         pr, fill_method="bfill", days_clean_vs_cp=7, initial_guesses=[13, 1, 0, 0],
-        bounds=None, min_r2=0.15):  
+        bounds=None, min_r2=0.15):
     # note min_r2 was 0.6 and it could be worth testing 10 day forward median as b guess
     """
     Applies segmented regression to a single deposition period
