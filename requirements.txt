@@ -23,7 +23,7 @@ filterpy==1.4.5
 requests==2.32.3
 retrying==1.3.4
 scikit-learn==1.5.1
-scipy==1.14.1
+scipy==1.13.1
 setuptools-scm==8.1.0
 six==1.16.0
 statsmodels==0.14.1
