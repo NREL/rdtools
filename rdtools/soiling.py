@@ -438,7 +438,7 @@ class SRRAnalysis:
             results.loc[filt, "run_slope"] = 0
             results.loc[filt, "run_slope_low"] = 0
             results.loc[filt, "run_slope_high"] = 0
-            results.loc[filt, "valid"] = False
+            # results.loc[filt, "valid"] = False
 
         # Calculate the next inferred start loss from next valid interval
         results["next_inferred_start_loss"] = np.clip(
@@ -465,10 +465,10 @@ class SRRAnalysis:
         results.loc[results.clean_event, "inferred_begin_shift"] = np.clip(
             results.inferred_begin_shift, 0, 1)
         #######################################################################
-        '''
+        
         if neg_shift is False:
             results.loc[filt, "valid"] = False
-        '''
+        
         if len(results[results.valid]) == 0:
             raise NoValidIntervalError("No valid soiling intervals were found")
         new_start = results.start.iloc[0]
