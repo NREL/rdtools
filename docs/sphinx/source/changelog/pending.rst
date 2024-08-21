@@ -23,6 +23,7 @@ Enhancements
 Bug fixes
 ---------
 * Fix typos in citation section of the readme file (:issue:`414`, :pull:`421`)
+* Fix deploy workflow to pypi (:issue:`416`, :pull:`427`)
 
 Requirements
 ------------
