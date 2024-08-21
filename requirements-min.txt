@@ -1,4 +1,5 @@
 h5py==3.11.0
+joblib==1.4.2
 matplotlib==3.9.2
 numpy==1.26.4
 pandas==2.0.3
@@ -11,3 +12,4 @@ filterpy==1.4.5
 plotly==5.23.0
 xgboost==2.1.1
 scikit-learn==1.5.1
+threadpoolctl==3.5.0
