@@ -9,6 +9,11 @@ when compared with older versions of RdTools
 
 * Use the pvlib method for clear sky detection by default in :py:func:`~rdtools.analysis_chains.TrendAnalysis` (:pull:`412`)
 
+* Change default clipping filter `model` to `logic` (:pull:`425`)
+
+* Turn on the `two_way_window_filter` by default in `TrendAnalysis`
+(:pull:`425`)
+
 Enhancements
 ------------
 * Added a new wrapper function for clearsky filters (:pull:`412`)

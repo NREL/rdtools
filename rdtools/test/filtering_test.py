@@ -20,6 +20,7 @@ from rdtools import (clearsky_filter,
                      hour_angle_filter)
 import warnings
 from conftest import assert_warnings
+from pandas import testing as tm
 
 
 def test_clearsky_filter(mocker):
@@ -321,50 +322,87 @@ def test_xgboost_clip_filter(generate_power_time_series_no_clipping,
                 .all(axis=None))
 
 
-def test_clip_filter(generate_power_time_series_no_clipping):
+def test_clip_filter(generate_power_time_series_clipping, mocker):
     ''' Unit tests for inverter clipping filter.'''
     # Create a time series to test
-    power_no_datetime_index_nc, power_datetime_index_nc, power_nc_tz_naive = \
-        generate_power_time_series_no_clipping
-    # Check that the master wrapper defaults to the
-    # quantile_clip_filter_function.
-    # Note: Power is expected to be Series object because clip_filter makes
-    #       use of the Series.quantile() method.
-    filtered_quantile = clip_filter(power_no_datetime_index_nc, quantile=0.98)
-    # Expect 99% of the 98th quantile to be filtered
-    expected_result_quantile = power_no_datetime_index_nc < (98 * 0.99)
-    # Check that the clip filter defaults to quantile clip filter when
-    # deprecated params are passed
-    warnings.simplefilter("always")
-    with warnings.catch_warnings(record=True) as record:
-        clip_filter(power_datetime_index_nc, 0.98)
-        assert_warnings(['Function clip_filter is now a wrapper'], record)
+    _, power = generate_power_time_series_clipping
+
+    # Check the default behavior
+    expected = logic_clip_filter(power)
+    mock_logic_clip_filter = mocker.patch('rdtools.filtering.logic_clip_filter',
+                                          return_value=expected)
+    filtered = clip_filter(power)
+    mock_logic_clip_filter.assert_called_once()
+    tm.assert_series_equal(filtered, expected)
+
+    # Check each of the models
+    expected_kwargs = {
+        'mounting_type': 'single_axis_tracking',
+        'rolling_range_max_cutoff': 0.3,
+        'roll_periods': 3
+    }
+    expected = logic_clip_filter(power, **expected_kwargs)
+    mock_logic_clip_filter = mocker.patch('rdtools.filtering.logic_clip_filter',
+                                          return_value=expected)
+    filtered = clip_filter(power, model='logic', **expected_kwargs)
+    mock_logic_clip_filter.assert_called_once()
+    call_args = mock_logic_clip_filter.call_args
+
+    # Deal with change in call_args after python 3.7
+    if isinstance(call_args, tuple):  # case for 3.7
+        actual_kwargs = call_args[1]
+    else:
+        actual_kwargs = call_args.kwargs
+
+    assert actual_kwargs == expected_kwargs
+    tm.assert_series_equal(filtered, expected)
+
+    expected_kwargs = {
+        'quantile': 0.95
+    }
+    expected = quantile_clip_filter(power, **expected_kwargs)
+    mock_quantile_clip_filter = mocker.patch('rdtools.filtering.quantile_clip_filter',
+                                             return_value=expected)
+    filtered = clip_filter(power, model='quantile', **expected_kwargs)
+    mock_quantile_clip_filter.assert_called_once()
+    call_args = mock_quantile_clip_filter.call_args
+    if isinstance(call_args, tuple):
+        actual_kwargs = call_args[1]
+    else:
+        actual_kwargs = call_args.kwargs
+
+    assert actual_kwargs == expected_kwargs
+    tm.assert_series_equal(filtered, expected)
+
+    expected_kwargs = {
+        'mounting_type': 'single_axis_tracking'
+    }
+    expected = xgboost_clip_filter(power, **expected_kwargs)
+    mock_xgboost_clip_filter = mocker.patch('rdtools.filtering.xgboost_clip_filter',
+                                            return_value=expected)
+    filtered = clip_filter(power, model='xgboost', **expected_kwargs)
+    mock_xgboost_clip_filter.assert_called_once()
+    call_args = mock_xgboost_clip_filter.call_args
+    if isinstance(call_args, tuple):
+        actual_kwargs = call_args[1]
+    else:
+        actual_kwargs = call_args.kwargs
+    assert actual_kwargs == expected_kwargs
+    tm.assert_series_equal(filtered, expected)
+
+    mocker.stopall()
 
     # Check that a ValueError is thrown when a model is passed that
     # is not in the acceptable list.
     with pytest.raises(ValueError):
-        clip_filter(power_datetime_index_nc, 'random_forest')
-    # Check that the wrapper handles the xgboost clipping
-    # function with kwargs.
-    filtered_xgboost = clip_filter(power_datetime_index_nc,
-                                   'xgboost',
-                                   mounting_type="fixed")
-    # Check that the wrapper handles the logic clipping
-    # function with kwargs.
-    filtered_logic = clip_filter(power_datetime_index_nc,
-                                 'logic',
-                                 mounting_type="fixed",
-                                 rolling_range_max_cutoff=0.3)
-    # Check that the function returns a Typr Error if a wrong keyword
+        clip_filter(power, 'random_forest')
+
+    # Check that the function returns a Type Error if a wrong keyword
     # arg is passed in the kwarg arguments.
     with pytest.raises(TypeError):
-        clip_filter(power_datetime_index_nc,
+        clip_filter(power,
                     'xgboost',
                     rolling_range_max_cutoff=0.3)
-    assert bool((expected_result_quantile == filtered_quantile)
-                .all(axis=None))
-    assert bool(filtered_xgboost.all(axis=None))
-    assert bool(filtered_logic.all(axis=None))
 
 
 def test_normalized_filter_default():
