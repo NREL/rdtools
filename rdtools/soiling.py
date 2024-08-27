@@ -185,9 +185,8 @@ class SRRAnalysis:
         # step, slope change detection
         # 1/6/24 Note several errors in soiling fit due to ffill for rolling
         # median change to day_scale/2 Matt
-        #df_ffill = df.copy()
-        #df_ffill = df.ffill(limit=int(round((day_scale / 2), 0)))
-        df_ffill = df.fillna(method='ffill', limit=day_scale).copy()
+        df_ffill = df.copy()
+        df_ffill = df.ffill(limit=int(round((day_scale / 2), 0)))
         # Calculate rolling median
         df["pi_roll_med"] = df_ffill.pi_norm.rolling(day_scale, center=True).median()
 
