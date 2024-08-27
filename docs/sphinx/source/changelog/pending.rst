@@ -14,6 +14,7 @@ Enhancements
 * Added a new wrapper function for clearsky filters (:pull:`412`)
 * Improve test coverage, especially for the newly added filter capabilities (:pull:`413`)
 * Added codecov.yml configuration file (:pull:`420`)
+* Added new methods perfect_clean_complex and inferred_clean_complex which detects negative shifts and piecewise changes in the slope for soiling detection in :py:func:`~rdtools.soiling.soiling_srr`(:pull:`426`)
 
 Bug fixes
 ---------

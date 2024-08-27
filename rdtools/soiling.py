@@ -185,8 +185,9 @@ class SRRAnalysis:
         # step, slope change detection
         # 1/6/24 Note several errors in soiling fit due to ffill for rolling
         # median change to day_scale/2 Matt
-        df_ffill = df.copy()
-        df_ffill = df.ffill(limit=int(round((day_scale / 2), 0)))
+        #df_ffill = df.copy()
+        #df_ffill = df.ffill(limit=int(round((day_scale / 2), 0)))
+        df_ffill = df.fillna(method='ffill', limit=day_scale).copy()
         # Calculate rolling median
         df["pi_roll_med"] = df_ffill.pi_norm.rolling(day_scale, center=True).median()
 
@@ -204,12 +205,12 @@ class SRRAnalysis:
         # Matt added these lines but the function "_collapse_cleaning_events"
         # was written by Asmund, it reduces multiple days of cleaning events
         # in a row to a single event
-        '''
-        reduced_cleaning_events = _collapse_cleaning_events(
-            df.clean_event_detected, df.delta.values, 5
-        )
-        df["clean_event_detected"] = reduced_cleaning_events
-        '''
+        if piecewise is True:
+            reduced_cleaning_events = _collapse_cleaning_events(
+                df.clean_event_detected, df.delta.values, 5
+            )
+            df["clean_event_detected"] = reduced_cleaning_events
+
         ##########################################################################
         precip_event = df["precip"] > precip_threshold
 
@@ -438,7 +439,7 @@ class SRRAnalysis:
             results.loc[filt, "run_slope"] = 0
             results.loc[filt, "run_slope_low"] = 0
             results.loc[filt, "run_slope_high"] = 0
-            results.loc[filt, "valid"] = False
+            # results.loc[filt, "valid"] = False
 
         # Calculate the next inferred start loss from next valid interval
         results["next_inferred_start_loss"] = np.clip(
@@ -465,10 +466,10 @@ class SRRAnalysis:
         results.loc[results.clean_event, "inferred_begin_shift"] = np.clip(
             results.inferred_begin_shift, 0, 1)
         #######################################################################
-        '''
+
         if neg_shift is False:
             results.loc[filt, "valid"] = False
-        '''
+
         if len(results[results.valid]) == 0:
             raise NoValidIntervalError("No valid soiling intervals were found")
         new_start = results.start.iloc[0]
