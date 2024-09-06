@@ -52,6 +52,8 @@ def get_clearsky_tamb(times, latitude, longitude, window_size=40,
     if times.freq is None:
         freq_actual = pd.infer_freq(times)
         if freq_actual is None:
+            times._engine.clear_mapping()
+            # workaround from https://github.com/pandas-dev/pandas/issues/55794
             freq_actual = pd.infer_freq(times[:10])
             warnings.warn("Input 'times' has no frequency attribute. "
                           "Inferring frequency from first 10 timestamps.")
