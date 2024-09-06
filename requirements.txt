@@ -8,9 +8,9 @@ idna==3.7
 joblib==1.4.2
 kiwisolver==1.4.5
 matplotlib==3.9.2
-numpy==1.26.4
+numpy==2.1.1
 packaging==24.1
-pandas==2.0.3
+pandas==2.2.2
 patsy==0.5.6
 Pillow==10.4.0
 plotly==5.23.0
@@ -26,7 +26,7 @@ scikit-learn==1.5.1
 scipy==1.13.1
 setuptools-scm==8.1.0
 six==1.16.0
-statsmodels==0.14.1
+statsmodels==0.14.2
 threadpoolctl==3.5.0
 tomli==2.0.1
 typing_extensions==4.12.2
