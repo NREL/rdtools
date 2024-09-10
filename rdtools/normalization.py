@@ -409,15 +409,14 @@ def energy_from_power(power, target_frequency=None, max_timedelta=None,
     median_step_ns = t_steps.median()
 
     if target_frequency is None:
-        # 'N' is the Pandas offset alias for ns
-        target_frequency = str(int(median_step_ns)) + 'N'
+        target_frequency = str(int(median_step_ns)) + 'ns'
 
     if max_timedelta is None:
         max_interval_nanoseconds = median_step_ns
     else:
         max_interval_nanoseconds = max_timedelta.total_seconds() * 10.0**9
     # set max_timedelta for use in interpolate and _aggregate
-    max_timedelta = pd.to_timedelta(f'{max_interval_nanoseconds} nanos')
+    max_timedelta = pd.to_timedelta(f'{max_interval_nanoseconds} ns')
     try:
         freq_interval_size_ns = \
             pd.tseries.frequencies.to_offset(target_frequency).nanos
