@@ -611,7 +611,7 @@ def logic_clip_filter(
     if time_series_sampling_frequency >= 10:
         power_ac = rdtools.normalization.interpolate(power_ac, freq_string)
     else:
-        power_ac = power_ac.resample("15T").median()
+        power_ac = power_ac.resample("15min").median()
         time_series_sampling_frequency = 15
     # If a value for roll_periods is not designated, the function uses
     # the current default logic to set the roll_periods value.
