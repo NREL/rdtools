@@ -882,7 +882,7 @@ def xgboost_clip_filter(power_ac, mounting_type="fixed"):
     # Reindex with the original data index. Re-adjusts to original
     # data frequency.
     xgb_predictions = xgb_predictions.reindex(index=power_ac.index, method="ffill")
-    xgb_predictions = xgb_predictions.astype(bool).fillna(False)
+    xgb_predictions.loc[xgb_predictions.isnull()] = False
     # Regenerate the features with the original sampling frequency
     # (pre-resampling or interpolation).
     power_ac_df = power_ac.to_frame()

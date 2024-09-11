@@ -278,8 +278,11 @@ class AvailabilityAnalysis:
             .replace(False, np.nan)
             .multiply(subsystem_fraction)
             .min(axis=1)
+            .astype(float)
+            .fillna(1.0)
         )  # use safe value of 100%
-        smallest_delta.loc[smallest_delta.isnull] = 1
+        print(smallest_delta)
+        # smallest_delta.loc[smallest_delta.isnull()] = 1
         is_downtime = system_delta > (0.75 * smallest_delta)
         is_downtime[looks_online.all(axis=1)] = False
 
@@ -417,7 +420,11 @@ class AvailabilityAnalysis:
         all_times = self.power_system.index
         masked = looks_offline[self.power_expected > 0].reindex(all_times)
         # Note: in Series, (nan | True) is False, but (True | nan) is True
-        full_outage = masked.ffill() | masked.bfill()
+        ffill = masked.ffill()
+        ffill.loc[ffill.isnull()] = False
+        bfill = masked.bfill()
+        bfill.loc[bfill.isnull()] = False
+        full_outage = ffill | bfill
         # Find expected production and associated uncertainty for each outage
         diff = full_outage.astype(int).diff()
         starts = all_times[diff == 1].tolist()
@@ -518,7 +525,7 @@ class AvailabilityAnalysis:
         self.energy_cumulative_corrected = corrected_cumulative_energy
         self.loss_system = lost_power_full
 
-    def _combine_losses(self, rollup_period='M'):
+    def _combine_losses(self, rollup_period="ME"):
         """
         Combine subsystem and system losses.
 
@@ -556,9 +563,14 @@ class AvailabilityAnalysis:
         df['availability'] = 1 - df['lost_production'] / loss_plus_actual
         self.results = df
 
-    def run(self, low_threshold=None, relative_sizes=None,
-            power_system_limit=None, quantiles=(0.01, 0.99),
-            rollup_period='M'):
+    def run(
+        self,
+        low_threshold=None,
+        relative_sizes=None,
+        power_system_limit=None,
+        quantiles=(0.01, 0.99),
+        rollup_period="ME",
+    ):
         """
         Run the availability analysis.
 
