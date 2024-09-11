@@ -544,7 +544,9 @@ class TrendAnalysis:
 
         # note: the previous implementation using the & operator treated NaN
         # filter values as False, so we do the same here for consistency:
-        filter_components = pd.DataFrame(filter_components).fillna(False)
+        filter_components = \
+            pd.DataFrame(filter_components)\
+            .astype(bool).fillna(False)
 
         # apply special checks to ad_hoc_filter, as it is likely more prone to user error
         if self.filter_params.get("ad_hoc_filter", None) is not None:
