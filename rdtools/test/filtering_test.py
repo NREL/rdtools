@@ -114,8 +114,7 @@ def generate_power_time_series_no_clipping():
     power_no_datetime_index = pd.Series(np.arange(1, 101))
     power_datetime_index = pd.Series(np.arange(1, 101))
     # Add datetime index to second series
-    time_range = pd.date_range('2016-12-02T11:00:00.000Z',
-                               '2017-06-06T07:00:00.000Z', freq='H')
+    time_range = pd.date_range("2016-12-02T11:00:00.000Z", "2017-06-06T07:00:00.000Z", freq="h")
     power_datetime_index.index = pd.to_datetime(time_range[:100])
     # Create a series that is tz-naive to test on
     power_datetime_index_tz_naive = power_datetime_index.copy()
@@ -174,8 +173,7 @@ def generate_power_time_series_clipping():
     power_no_datetime_index = power_no_datetime_index.reset_index(drop=True)
     power_datetime_index = power_no_datetime_index.copy()
     # Add datetime index to second series
-    time_range = pd.date_range('2016-12-02T11:00:00.000Z',
-                               '2017-06-06T07:00:00.000Z', freq='H')
+    time_range = pd.date_range("2016-12-02T11:00:00.000Z", "2017-06-06T07:00:00.000Z", freq="h")
     power_datetime_index.index = pd.to_datetime(time_range[:100])
     # Note: Power is expected to be Series object with a datetime index.
     return power_no_datetime_index, power_datetime_index
@@ -506,7 +504,7 @@ def test_directional_tukey_filter():
 
 def test_hour_angle_filter():
     # Create a pandas Series with 5 entries and 15 min index
-    index = pd.date_range(start='29/04/2022 15:00', periods=5, freq='H')
+    index = pd.date_range(start="29/04/2022 15:00", periods=5, freq="h")
     series = pd.Series([1, 2, 3, 4, 5], index=index)
 
     # Define latitude and longitude

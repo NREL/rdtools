@@ -7,7 +7,7 @@ import pytest
 
 @pytest.fixture
 def simple_irradiance():
-    times = pd.date_range("2019-06-01 12:00", freq="15T", periods=5)
+    times = pd.date_range("2019-06-01 12:00", freq="15min", periods=5)
     time_series = pd.Series([1, 2, 3, 4, 5], index=times, dtype=float)
     return time_series
 

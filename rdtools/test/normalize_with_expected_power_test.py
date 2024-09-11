@@ -5,12 +5,12 @@ from rdtools.normalization import normalize_with_expected_power
 
 @pytest.fixture()
 def times_15():
-    return pd.date_range(start='20200101 12:00', end='20200101 13:00', freq='15T')
+    return pd.date_range(start="20200101 12:00", end="20200101 13:00", freq="15min")
 
 
 @pytest.fixture()
 def times_30():
-    return pd.date_range(start='20200101 12:00', end='20200101 13:00', freq='30T')
+    return pd.date_range(start="20200101 12:00", end="20200101 13:00", freq="30min")
 
 
 @pytest.fixture()
