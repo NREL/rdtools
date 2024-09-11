@@ -936,6 +936,7 @@ def two_way_window_filter(
     """
     Removes anomalies based on forward and backward window of the rolling median. Points beyond
     outlier_threshold from both the forward and backward-looking median are excluded by the filter.
+    Designed for use after the aggregation step in the RdTools trend analysis workflows.
 
     Parameters
     ----------
@@ -976,7 +977,8 @@ def two_way_window_filter(
 def insolation_filter(insolation, quantile=0.1):
     """
     A simple quantile filter. Primary application in RdTools is to exclude
-    low insolation points after the aggregation step.
+    low insolation points after the aggregation step in the trend analysis
+    workflows.
 
     Parameters
     ----------
@@ -998,7 +1000,8 @@ def insolation_filter(insolation, quantile=0.1):
 
 def hampel_filter(series, k="14d", t0=3):
     """
-    Hampel outlier filter primarily applied after aggregation step, but broadly
+    Hampel outlier designed for use after the aggregation step
+    in the RdTools trend analysis workflows, but broadly
     applicable.
 
     Parameters
@@ -1038,8 +1041,9 @@ def _tukey_fence(series, k=1.5):
 def directional_tukey_filter(series, roll_period=pd.to_timedelta("7 Days"), k=1.5):
     """
     Performs a forward and backward looking rolling Tukey filter. Points more than k*IQR
-    above the third quartile or below the first quartile are classified as outliers.Points
-    must only pass one of either the forward or backward looking filters to be kept.
+    above the third quartile or below the first quartile are classified as outliers. Points
+    must only pass one of either the forward or backward looking filters to be kept. Designed
+    for use after the aggregation step in the RdTools trend analysis workflows
 
 
     Parameters
