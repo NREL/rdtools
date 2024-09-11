@@ -69,21 +69,28 @@ class TrendAnalysis:
     ----------
     (not all attributes documented here)
     filter_params: dict
-        parameters to be passed to rdtools.filtering functions. Keys are the
+        Parameters to be passed to rdtools.filtering functions. Keys are the
         names of the rdtools.filtering functions. Values are dicts of parameters
-        to be passed to those functions. To invoke `clearsky_filter` for a sensor
+        to be passed to those functions. Allowed keys are `normalized_filter`*,
+        `poa_filter`*, `tcell_filter`*, `clip_filter`*, `hour_angle_filter`,
+        `clearsky_filter`* (only used in a clear sky analysis), and
+        `sensor_clearsky_filter` (only used in a sensor analysis). (* indicates a
+        filter included by default). To invoke `clearsky_filter` for a sensor
         analysis, use the special key `sensor_clearsky_filter`. Also has a special
-        key `ad_hoc_filter` the associated value is a boolean mask joined with the
-        rest of the filters. filter_params defaults to empty dicts for each function
-        in rdtools.filtering, in which case those functions use default parameter
-        values,  `ad_hoc_filter` defaults to None. See examples for more information.
+        key `ad_hoc_filter`, the associated value is a boolean mask joined with the
+        rest of the filters. Defaults to empty dicts for each function as described
+        above, in which case those functions use default parameter values,
+        `ad_hoc_filter` defaults to None. See examples for more information.
     filter_params_aggregated: dict
         parameters to be passed to rdtools.filtering functions that specifically handle
-        aggregated data (dily filters, etc). Keys are the names of the rdtools.filtering functions.
-        Values are dicts of parameters to be passed to those functions. Also has a special key
+        aggregated data (daily filters, etc). Keys are the names of rdtools.filtering
+        functions. Allowed keys are `two_way_window_filter`*, `insolation_filter`,
+        `hampel_filter`, and `directional_tukey_filter` (* indicates filters included by
+        default). Values are dicts of parameters to be passed to those functions (empty
+        dict calls the funtion with its default parameters). Also has a special key
         `ad_hoc_filter`; this filter is a boolean mask joined with the rest of the filters.
-        filter_params_aggregated defaults to empty dicts for each function in rdtools.filtering,
-        in which case those functions use default parameter values,  `ad_hoc_filter`
+        filter_params_aggregated defaults to an empty dict for two_way_window_filter,
+        in which case the filter is run with its default parameter values. `ad_hoc_filter`
         defaults to None. See examples for more information.
     results : dict
         Nested dict used to store the results of methods ending with `_analysis`
