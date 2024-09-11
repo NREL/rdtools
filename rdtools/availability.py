@@ -281,7 +281,6 @@ class AvailabilityAnalysis:
             .astype(float)
             .fillna(1.0)
         )  # use safe value of 100%
-        print(smallest_delta)
         # smallest_delta.loc[smallest_delta.isnull()] = 1
         is_downtime = system_delta > (0.75 * smallest_delta)
         is_downtime[looks_online.all(axis=1)] = False
