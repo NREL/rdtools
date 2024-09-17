@@ -2042,16 +2042,18 @@ class CODSAnalysis():
         soiling_events = soiling_events[soiling_events].index.tolist()
 
         # Initialize various parameters
-        if ffill:
-            rolling_median_13 = zs_series.ffill().rolling(13, center=True).median().ffill().bfill()
-            rolling_median_7 = zs_series.ffill().rolling(7, center=True).median().ffill().bfill()
-        else:
-            rolling_median_13 = zs_series.bfill().rolling(13, center=True).median().ffill().bfill()
-            rolling_median_7 = zs_series.bfill().rolling(7, center=True).median().ffill().bfill()
+        with pd.option_context('future.no_silent_downcasting', True):
+            if ffill:
+                rolling_median_13 = zs_series.ffill().rolling(13, center=True).median().ffill().bfill()
+                rolling_median_7 = zs_series.ffill().rolling(7, center=True).median().ffill().bfill()
+            else:
+                rolling_median_13 = zs_series.bfill().rolling(13, center=True).median().ffill().bfill()
+                rolling_median_7 = zs_series.bfill().rolling(7, center=True).median().ffill().bfill()
         # A rough estimate of the measurement noise
         measurement_noise = (rolling_median_13 - zs_series).var()
         # An initial guess of the slope
-        initial_slope = np.array(theilslopes(zs_series.bfill().iloc[:14]))
+        with pd.option_context('future.no_silent_downcasting', True):
+            initial_slope = np.array(theilslopes(zs_series.bfill().iloc[:14]))
         dt = 1  # All time stemps are one day
 
         # Initialize Kalman filter
@@ -2145,7 +2147,7 @@ class CODSAnalysis():
 
             # 6: Force soiling ratio to not exceed 1:
             if clip_soiling:
-                dfk.soiling_ratio.clip(upper=1, inplace=True)
+                dfk['soiling_ratio'] = dfk['soiling_ratio'].clip(upper=1)
                 dfk.soiling_rates = dfk.smooth_rates
                 dfk.loc[dfk.soiling_ratio.diff() == 0, 'soiling_rates'] = 0
 
@@ -2480,9 +2482,11 @@ def _rolling_median_ce_detection(x, y, ffill=True, rolling_window=9, tuner=1.5):
     ''' Finds cleaning events in a time series of performance index (y) '''
     y = pd.Series(index=x, data=y)
     if ffill:  # forward fill NaNs in y before running mean
-        rm = y.ffill().rolling(rolling_window, center=True).median()
+        with pd.option_context('future.no_silent_downcasting', True):
+            rm = y.ffill().rolling(rolling_window, center=True).median()
     else:  # ... or backfill instead
-        rm = y.bfill().rolling(rolling_window, center=True).median()
+        with pd.option_context('future.no_silent_downcasting', True):
+            rm = y.bfill().rolling(rolling_window, center=True).median()
     Q3 = rm.diff().abs().quantile(.75)
     Q1 = rm.diff().abs().quantile(.25)
     limit = Q3 + tuner * (Q3 - Q1)
@@ -2493,10 +2497,11 @@ def _rolling_median_ce_detection(x, y, ffill=True, rolling_window=9, tuner=1.5):
 def _soiling_event_detection(x, y, ffill=True, tuner=5):
     ''' Finds cleaning events in a time series of performance index (y) '''
     y = pd.Series(index=x, data=y)
-    if ffill:  # forward fill NaNs in y before running mean
-        rm = y.ffill().rolling(9, center=True).median()
-    else:  # ... or backfill instead
-        rm = y.bfill().rolling(9, center=True).median()
+    with pd.option_context('future.no_silent_downcasting', True):
+        if ffill:  # forward fill NaNs in y before running mean
+            rm = y.ffill().rolling(9, center=True).median()
+        else:  # ... or backfill instead
+            rm = y.bfill().rolling(9, center=True).median()
     Q3 = rm.diff().abs().quantile(.99)
     Q1 = rm.diff().abs().quantile(.01)
     limit = Q1 - tuner * (Q3 - Q1)
