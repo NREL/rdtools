@@ -41,18 +41,18 @@ TESTS_REQUIRE = [
 ]
 
 INSTALL_REQUIRES = [
-    "matplotlib >= 3.0.0",
-    "numpy >= 1.17.3",
+    "matplotlib >= 3.9.2",
+    "numpy >= 1.26.4",
     "pandas >= 2.2.0",
-    "statsmodels >= 0.13.5",
-    "scipy >= 1.2.0",
-    "h5py >= 2.8.0",
-    "plotly>=4.0.0",
-    "xgboost >= 1.3.3",
-    "pvlib >= 0.7.0, <0.12.0",
-    "scikit-learn >= 0.22.0",
-    "arch >= 4.11",
-    "filterpy >= 1.4.2",
+    "statsmodels >= 0.14.1",
+    "scipy >= 1.13.0",
+    "h5py >= 3.11.0",
+    "plotly>=5.23.0",
+    "xgboost >= 2.1.1",
+    "pvlib >= 0.11.0, <0.12.0",
+    "scikit-learn >= 1.5.1",
+    "arch >= 7.0.0",
+    "filterpy >= 1.4.5",
 ]
 
 EXTRAS_REQUIRE = {
