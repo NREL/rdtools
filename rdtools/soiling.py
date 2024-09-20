@@ -2047,7 +2047,7 @@ class CODSAnalysis():
                 rolling_median_13 = \
                     zs_series.ffill().rolling(13, center=True).median().ffill().bfill()
                 rolling_median_7 = \
-                    s_series.ffill().rolling(7, center=True).median().ffill().bfill()
+                    zs_series.ffill().rolling(7, center=True).median().ffill().bfill()
             else:
                 rolling_median_13 = \
                     zs_series.bfill().rolling(13, center=True).median().ffill().bfill()
