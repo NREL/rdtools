@@ -2044,11 +2044,15 @@ class CODSAnalysis():
         # Initialize various parameters
         with pd.option_context('future.no_silent_downcasting', True):
             if ffill:
-                rolling_median_13 = zs_series.ffill().rolling(13, center=True).median().ffill().bfill()
-                rolling_median_7 = zs_series.ffill().rolling(7, center=True).median().ffill().bfill()
+                rolling_median_13 = \
+                    zs_series.ffill().rolling(13, center=True).median().ffill().bfill()
+                rolling_median_7 = \
+                    s_series.ffill().rolling(7, center=True).median().ffill().bfill()
             else:
-                rolling_median_13 = zs_series.bfill().rolling(13, center=True).median().ffill().bfill()
-                rolling_median_7 = zs_series.bfill().rolling(7, center=True).median().ffill().bfill()
+                rolling_median_13 = \
+                    zs_series.bfill().rolling(13, center=True).median().ffill().bfill()
+                rolling_median_7 = \
+                    zs_series.bfill().rolling(7, center=True).median().ffill().bfill()
         # A rough estimate of the measurement noise
         measurement_noise = (rolling_median_13 - zs_series).var()
         # An initial guess of the slope
