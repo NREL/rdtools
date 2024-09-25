@@ -536,6 +536,11 @@ class AvailabilityAnalysis:
             The period on which to roll up losses and calculate availability.
         """
 
+        # Allow pandas < 2.0 to use 'M' as an alias for MonthEnd
+        # https://pandas.pydata.org/docs/whatsnew/v2.2.0.html#deprecate-aliases-m-q-y-etc-in-favour-of-me-qe-ye-etc-for-offsets
+        if rollup_period == "ME":
+            rollup_period = pd.tseries.offsets.MonthEnd()
+
         if ((self.loss_system > 0) & (self.loss_subsystem > 0)).any():
             msg = (
                 'Loss detected simultaneously at both system and subsystem '
