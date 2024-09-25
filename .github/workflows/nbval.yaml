@@ -11,7 +11,7 @@ jobs:
       matrix:
         notebook-file: [
           'TrendAnalysis_example.ipynb',
-          'TrendAnalysis_example_NSRDB.ipynb'
+          'TrendAnalysis_example_NSRDB.ipynb',
           'degradation_and_soiling_example.ipynb',
           'system_availability_example.ipynb'
         ]
