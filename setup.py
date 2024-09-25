@@ -42,7 +42,7 @@ TESTS_REQUIRE = [
 
 INSTALL_REQUIRES = [
     "matplotlib >= 3.5.3",
-    "numpy >= 1.17.3",
+    "numpy >= 1.22.4",
     "pandas >= 1.3.0",
     "statsmodels >= 0.12.2",
     "scipy >= 1.2.0",
