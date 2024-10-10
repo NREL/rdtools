@@ -6,7 +6,7 @@ scipy==1.8.1
 h5py==3.7.0
 plotly==4.0.0
 xgboost==1.3.3
-pvlib==0.9.0
+pvlib==0.11.0
 scikit-learn==1.1.3
 arch==4.11
 filterpy==1.4.5
