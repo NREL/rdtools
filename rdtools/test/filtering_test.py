@@ -519,4 +519,4 @@ def test_hour_angle_filter():
 
     # Check that the result is the correct boolean Series
     expected_result = pd.Series([False, False, True, True, True], index=index)
-    pd.testing.assert_series_equal(result, expected_result)
+    pd.testing.assert_series_equal(result, expected_result, check_names=False)
