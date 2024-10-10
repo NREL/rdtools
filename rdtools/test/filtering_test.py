@@ -504,7 +504,7 @@ def test_directional_tukey_filter():
 
 def test_hour_angle_filter():
     # Create a pandas Series with 5 entries and 15 min index
-    index = pd.date_range(start="29/04/2022 15:00", periods=5, freq="h")
+    index = pd.date_range(start="29/04/2022 15:00", periods=5, freq="h", tz="UTC")
     series = pd.Series([1, 2, 3, 4, 5], index=index)
 
     # Define latitude and longitude
