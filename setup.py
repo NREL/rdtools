@@ -58,17 +58,17 @@ INSTALL_REQUIRES = [
 ]
 
 EXTRAS_REQUIRE = {
-    'doc': [
-        'sphinx==4.5.0',
-        'nbsphinx==0.8.8',
-        'nbsphinx-link==1.3.0',
-        'sphinx_rtd_theme==0.5.2',
-        'ipython',
+    "doc": [
+        "sphinx==8.0.2",
+        "nbsphinx==0.9.5",
+        "nbsphinx-link==1.3.1",
+        "sphinx_rtd_theme==3.0.1",
+        "ipython",
         # sphinx-gallery used indirectly for nbsphinx thumbnail galleries; see:
         # https://nbsphinx.readthedocs.io/en/0.6.0/subdir/gallery.html#Creating-Thumbnail-Galleries
-        'sphinx-gallery==0.8.1',
+        "sphinx-gallery==0.18.0",
     ],
-    'test': TESTS_REQUIRE,
+    "test": TESTS_REQUIRE,
 }
 EXTRAS_REQUIRE['all'] = sorted(set(sum(EXTRAS_REQUIRE.values(), [])))
 
