@@ -273,11 +273,15 @@ class AvailabilityAnalysis:
         system_delta = 1 - power_system / virtual_full_power
 
         subsystem_fraction = relative_sizes / relative_sizes.sum()
-        smallest_delta = power_subsystem.le(low_threshold) \
-                                        .replace(False, np.nan) \
-                                        .multiply(subsystem_fraction) \
-                                        .min(axis=1) \
-                                        .fillna(1)  # use safe value of 100%
+        smallest_delta = (
+            power_subsystem.le(low_threshold)
+            .replace(False, np.nan)
+            .multiply(subsystem_fraction)
+            .min(axis=1)
+            .astype(float)
+            .fillna(1.0)
+        )  # use safe value of 100%
+        # smallest_delta.loc[smallest_delta.isnull()] = 1
         is_downtime = system_delta > (0.75 * smallest_delta)
         is_downtime[looks_online.all(axis=1)] = False
 
@@ -415,20 +419,21 @@ class AvailabilityAnalysis:
         all_times = self.power_system.index
         masked = looks_offline[self.power_expected > 0].reindex(all_times)
         # Note: in Series, (nan | True) is False, but (True | nan) is True
-        full_outage = (
-            masked.ffill().fillna(False) | masked.bfill().fillna(False)
-        )
-
+        ffill = masked.ffill()
+        ffill.loc[ffill.isnull()] = False
+        bfill = masked.bfill()
+        bfill.loc[bfill.isnull()] = False
+        full_outage = ffill | bfill
         # Find expected production and associated uncertainty for each outage
         diff = full_outage.astype(int).diff()
         starts = all_times[diff == 1].tolist()
         ends = all_times[diff.shift(-1) == -1].tolist()
         steps = diff[~diff.isnull() & (diff != 0)]
         if not steps.empty:
-            if steps[0] == -1:
+            if steps.iloc[0] == -1:
                 # data starts in an outage
                 starts.insert(0, all_times[0])
-            if steps[-1] == 1:
+            if steps.iloc[-1] == 1:
                 # data ends in an outage
                 ends.append(all_times[-1])
 
@@ -497,7 +502,7 @@ class AvailabilityAnalysis:
 
         # generate a best-guess timeseries loss for the full outages by
         # scaling the expected power signal to match the actual
-        lost_power_full = pd.Series(0, index=self.loss_subsystem.index)
+        lost_power_full = pd.Series(0, index=self.loss_subsystem.index, dtype=float)
         expected_power = self.power_expected
         corrected_cumulative_energy = self.energy_cumulative.copy()
         for i, row in self.outage_info.iterrows():
@@ -519,7 +524,7 @@ class AvailabilityAnalysis:
         self.energy_cumulative_corrected = corrected_cumulative_energy
         self.loss_system = lost_power_full
 
-    def _combine_losses(self, rollup_period='M'):
+    def _combine_losses(self, rollup_period="ME"):
         """
         Combine subsystem and system losses.
 
@@ -527,9 +532,16 @@ class AvailabilityAnalysis:
 
         Parameters
         ----------
-        rollup_period : pandas offset string, default 'M'
+        rollup_period : pandas offset string, default 'ME'
             The period on which to roll up losses and calculate availability.
+            The default value "ME" triggers a monthly rollup period. For other aliases,
+            be sure they are compatible with your version of Pandas"
         """
+
+        # Allow pandas < 2.0 to use 'M' as an alias for MonthEnd
+        # https://pandas.pydata.org/docs/whatsnew/v2.2.0.html#deprecate-aliases-m-q-y-etc-in-favour-of-me-qe-ye-etc-for-offsets
+        if rollup_period == "ME":
+            rollup_period = pd.tseries.offsets.MonthEnd()
 
         if ((self.loss_system > 0) & (self.loss_subsystem > 0)).any():
             msg = (
@@ -557,9 +569,14 @@ class AvailabilityAnalysis:
         df['availability'] = 1 - df['lost_production'] / loss_plus_actual
         self.results = df
 
-    def run(self, low_threshold=None, relative_sizes=None,
-            power_system_limit=None, quantiles=(0.01, 0.99),
-            rollup_period='M'):
+    def run(
+        self,
+        low_threshold=None,
+        relative_sizes=None,
+        power_system_limit=None,
+        quantiles=(0.01, 0.99),
+        rollup_period="ME",
+    ):
         """
         Run the availability analysis.
 
@@ -595,8 +612,10 @@ class AvailabilityAnalysis:
             no production loss or (2) a power outage with an associated
             production loss estimate.
 
-        rollup_period : pandas.tseries.offsets.DateOffset or alias, default 'M'
+        rollup_period : pandas.tseries.offsets.DateOffset or alias, default 'ME'
             The period on which to roll up losses and calculate availability.
+            The default value "ME" triggers a monthly rollup period. For other aliases,
+            be sure they are compatible with your version of Pandas"
         """
         self._calc_loss_subsystem(low_threshold, relative_sizes,
                                   power_system_limit)

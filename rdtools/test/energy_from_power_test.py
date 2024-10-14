@@ -6,7 +6,7 @@ import pytest
 
 @pytest.fixture
 def times():
-    return pd.date_range(start="20200101 12:00", end="20200101 13:00", freq="15T")
+    return pd.date_range(start="20200101 12:00", end="20200101 13:00", freq="15min")
 
 
 @pytest.fixture
@@ -48,34 +48,32 @@ def test_energy_from_power_max_timedelta(power):
 
 
 def test_energy_from_power_upsample(power):
-    expected = power.resample("10T").asfreq().interpolate() / 6
+    expected = power.resample("10min").asfreq().interpolate() / 6
     expected = expected.iloc[1:]
     expected.name = "energy_Wh"
-    result = energy_from_power(power, target_frequency="10T")
+    result = energy_from_power(power, target_frequency="10min")
     pd.testing.assert_series_equal(result, expected)
 
 
 def test_energy_from_power_downsample(power):
-    expected = power.resample("20T").asfreq()
+    expected = power.resample("20min").asfreq()
     expected = expected.iloc[1:]
     expected = pd.Series([0.75, 0.833333333, 0.416666667], index=expected.index)
     expected.name = "energy_Wh"
-    result = energy_from_power(power, target_frequency="20T")
+    result = energy_from_power(power, target_frequency="20min")
     pd.testing.assert_series_equal(result, expected)
 
 
 def test_energy_from_power_max_timedelta_edge_case():
-    times = pd.date_range("2020-01-01 12:00", periods=4, freq="15T")
+    times = pd.date_range("2020-01-01 12:00", periods=4, freq="15min")
     power = pd.Series(1, index=times)
     power = power.drop(power.index[2])
-    result = energy_from_power(
-        power, "30T", max_timedelta=pd.to_timedelta("20 minutes")
-    )
+    result = energy_from_power(power, "30min", max_timedelta=pd.to_timedelta("20 minutes"))
     assert result.isnull().all()
 
 
 def test_energy_from_power_single_value_input():
-    times = pd.date_range("2019-01-01", freq="15T", periods=1)
+    times = pd.date_range("2019-01-01", freq="15min", periods=1)
     power = pd.Series([100.0], index=times)
     expected_result = pd.Series([25.0], index=times, name="energy_Wh")
     result = energy_from_power(power)
@@ -83,7 +81,7 @@ def test_energy_from_power_single_value_input():
 
 
 def test_energy_from_power_single_value_input_no_freq():
-    power = pd.Series([1], pd.date_range("2019-01-01", periods=1, freq="15T"))
+    power = pd.Series([1], pd.date_range("2019-01-01", periods=1, freq="15min"))
     power.index.freq = None
     match = "Could not determine period of input power"
     with pytest.raises(ValueError, match=match):
@@ -91,7 +89,7 @@ def test_energy_from_power_single_value_input_no_freq():
 
 
 def test_energy_from_power_single_value_instantaneous():
-    power = pd.Series([1], pd.date_range("2019-01-01", periods=1, freq="15T"))
+    power = pd.Series([1], pd.date_range("2019-01-01", periods=1, freq="15min"))
     power.index.freq = None
     match = (
         "power_type='instantaneous' is incompatible with single element power. "
@@ -102,7 +100,7 @@ def test_energy_from_power_single_value_instantaneous():
 
 
 def test_energy_from_power_single_value_with_target():
-    times = pd.date_range("2019-01-01", freq="15T", periods=1)
+    times = pd.date_range("2019-01-01", freq="15min", periods=1)
     power = pd.Series([100.0], index=times)
     expected_result = pd.Series([100.0], index=times, name="energy_Wh")
     result = energy_from_power(power, target_frequency="H")

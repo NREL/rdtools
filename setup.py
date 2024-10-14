@@ -36,37 +36,39 @@ TESTS_REQUIRE = [
     "pytest-cov",
     "coverage",
     "flake8",
-    "nbval>=0.11.0",
+    # nbval greater than 0.9.6 has a bug with semicolon
+    # https://github.com/computationalmodelling/nbval/issues/194
+    "nbval<=0.9.6",
     "pytest-mock",
 ]
 
 INSTALL_REQUIRES = [
-    "matplotlib >= 3.9.2",
-    "numpy >= 1.26.4",
-    "pandas >= 2.2.0",
-    "statsmodels >= 0.14.1",
-    "scipy >= 1.13.0",
-    "h5py >= 3.11.0",
-    "plotly>=5.23.0",
-    "xgboost >= 2.1.1",
+    "matplotlib >= 3.5.3",
+    "numpy >= 1.22.4",
+    "pandas >= 1.4.4",
+    "statsmodels >= 0.13.5",
+    "scipy >= 1.8.1",
+    "h5py >= 3.7.0",
+    "plotly>=4.0.0",
+    "xgboost >= 1.3.3",
     "pvlib >= 0.11.0, <0.12.0",
-    "scikit-learn >= 1.5.1",
-    "arch >= 7.0.0",
-    "filterpy >= 1.4.5",
+    "scikit-learn >= 1.1.3",
+    "arch >= 4.11",
+    "filterpy >= 1.4.2"
 ]
 
 EXTRAS_REQUIRE = {
-    'doc': [
-        'sphinx==4.5.0',
-        'nbsphinx==0.8.8',
-        'nbsphinx-link==1.3.0',
-        'sphinx_rtd_theme==0.5.2',
-        'ipython',
+    "doc": [
+        "sphinx==8.0.2",
+        "nbsphinx==0.9.5",
+        "nbsphinx-link==1.3.1",
+        "sphinx_rtd_theme==3.0.1",
+        "ipython",
         # sphinx-gallery used indirectly for nbsphinx thumbnail galleries; see:
         # https://nbsphinx.readthedocs.io/en/0.6.0/subdir/gallery.html#Creating-Thumbnail-Galleries
-        'sphinx-gallery==0.8.1',
+        "sphinx-gallery==0.18.0",
     ],
-    'test': TESTS_REQUIRE,
+    "test": TESTS_REQUIRE,
 }
 EXTRAS_REQUIRE['all'] = sorted(set(sum(EXTRAS_REQUIRE.values(), [])))
 

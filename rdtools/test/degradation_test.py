@@ -23,7 +23,7 @@ class DegradationTestCase(unittest.TestCase):
         daily_rd = rd / 365.0
 
         start = '2012-01-01'
-        if input_freq == 'S':
+        if input_freq == "s":
             end = '2012-03-01'
         else:
             end = '2015-01-01'
@@ -53,12 +53,10 @@ class DegradationTestCase(unittest.TestCase):
         # define module constants and parameters
 
         # All frequencies
-        cls.list_all_input_freq = ['MS', 'M', 'W',
-                                   'D', 'H', 'T', 'S', 'Irregular_D']
+        cls.list_all_input_freq = ["MS", "M", "W", "D", "h", "min", "s", "Irregular_D"]
 
         # Allowed frequencies for degradation_ols
-        cls.list_ols_input_freq = ['MS', 'M', 'W',
-                                   'D', 'H', 'T', 'S', 'Irregular_D']
+        cls.list_ols_input_freq = ["MS", "M", "W", "D", "h", "min", "s", "Irregular_D"]
 
         '''
         Allowed frequencies for degradation_classical_decomposition

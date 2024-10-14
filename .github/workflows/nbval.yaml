@@ -17,9 +17,9 @@ jobs:
         ]
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
     - name: Set up Python
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v5
       with:
         python-version: "3.12"
     - name: Install notebook environment
@@ -38,5 +38,5 @@ jobs:
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: executed_notebooks
+        name: executed_notebook_${{ matrix.notebook-file }}
         path: docs/artifacts

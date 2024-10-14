@@ -746,7 +746,8 @@ def _calculate_xgboost_model_features(df, sampling_frequency):
     )
     # Get the max value for the day and see how each value compares
     df["date"] = list(pd.to_datetime(pd.Series(df.index)).dt.date)
-    df["daily_max"] = df.groupby(["date"])["scaled_value"].transform('max')
+    df["daily_max"] = df.groupby(["date"])["scaled_value"].transform("max")
+
     # Get percentage of daily max
     df["percent_daily_max"] = df["scaled_value"] / (df["daily_max"] + 0.00001)
     # Get the standard deviation, median and mean of the first order
@@ -882,7 +883,8 @@ def xgboost_clip_filter(power_ac, mounting_type="fixed"):
     # Reindex with the original data index. Re-adjusts to original
     # data frequency.
     xgb_predictions = xgb_predictions.reindex(index=power_ac.index, method="ffill")
-    xgb_predictions = xgb_predictions.astype(bool).fillna(False)
+    xgb_predictions.loc[xgb_predictions.isnull()] = False
+
     # Regenerate the features with the original sampling frequency
     # (pre-resampling or interpolation).
     power_ac_df = power_ac.to_frame()
