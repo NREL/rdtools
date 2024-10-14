@@ -596,7 +596,7 @@ def logic_clip_filter(
         .drop_duplicates(subset=power_ac.index.name, keep="first")
         .set_index(power_ac.index.name)
     )
-    freq_string = str(time_series_sampling_frequency) + "T"
+    freq_string = str(time_series_sampling_frequency) + "min"
     # Set days with the majority of frozen data to null.
     daily_std = power_ac.resample("D").std() / power_ac.resample("D").mean()
     power_ac["daily_std"] = daily_std.reindex(index=power_ac.index, method="ffill")
@@ -611,7 +611,7 @@ def logic_clip_filter(
     if time_series_sampling_frequency >= 10:
         power_ac = rdtools.normalization.interpolate(power_ac, freq_string)
     else:
-        power_ac = power_ac.resample("15T").median()
+        power_ac = power_ac.resample("15min").median()
         time_series_sampling_frequency = 15
     # If a value for roll_periods is not designated, the function uses
     # the current default logic to set the roll_periods value.
@@ -746,7 +746,7 @@ def _calculate_xgboost_model_features(df, sampling_frequency):
     )
     # Get the max value for the day and see how each value compares
     df["date"] = list(pd.to_datetime(pd.Series(df.index)).dt.date)
-    df["daily_max"] = df.groupby(["date"])["scaled_value"].transform(max)
+    df["daily_max"] = df.groupby(["date"])["scaled_value"].transform("max")
     # Get percentage of daily max
     df["percent_daily_max"] = df["scaled_value"] / (df["daily_max"] + 0.00001)
     # Get the standard deviation, median and mean of the first order
@@ -826,7 +826,7 @@ def xgboost_clip_filter(power_ac, mounting_type="fixed"):
     sampling_frequency = int(
         (power_ac.index.to_series().diff() / pd.Timedelta("60s")).mode()[0]
     )
-    freq_string = str(sampling_frequency) + "T"
+    freq_string = str(sampling_frequency) + "min"
     # Min-max normalize
     # Resample the series based on the most common sampling frequency
     power_ac_interpolated = rdtools.normalization.interpolate(power_ac, freq_string)
@@ -838,7 +838,7 @@ def xgboost_clip_filter(power_ac, mounting_type="fixed"):
     # once every five minute, resample at 5-minute intervals before
     # plugging into the model
     if sampling_frequency < 5:
-        power_ac_df = power_ac_df.resample("5T").mean()
+        power_ac_df = power_ac_df.resample("5min").mean()
         power_ac_df["sampling_frequency"] = 5
     # Add mounting type as a column
     power_ac_df["mounting_config"] = mounting_type
@@ -882,7 +882,7 @@ def xgboost_clip_filter(power_ac, mounting_type="fixed"):
     # Reindex with the original data index. Re-adjusts to original
     # data frequency.
     xgb_predictions = xgb_predictions.reindex(index=power_ac.index, method="ffill")
-    xgb_predictions = xgb_predictions.fillna(False)
+    xgb_predictions.loc[xgb_predictions.isnull()] = False
     # Regenerate the features with the original sampling frequency
     # (pre-resampling or interpolation).
     power_ac_df = power_ac.to_frame()

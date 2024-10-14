@@ -182,8 +182,7 @@ def test_soiling_rate_histogram_kwargs(soiling_info):
 def clipping_power_degradation_signal():
     clipping_power_series = pd.Series(np.arange(1, 101))
     # Add datetime index to second series
-    time_range = pd.date_range('2016-12-02T11:00:00.000Z',
-                               '2017-06-06T07:00:00.000Z', freq='H')
+    time_range = pd.date_range("2016-12-02T11:00:00.000Z", "2017-06-06T07:00:00.000Z", freq="h")
     clipping_power_series.index = pd.to_datetime(time_range[:100])
     return clipping_power_series
 

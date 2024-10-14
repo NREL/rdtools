@@ -7,7 +7,7 @@ import warnings
 
 @pytest.fixture
 def time_series():
-    times = pd.date_range("2018-04-01 12:00", "2018-04-01 13:15", freq="15T")
+    times = pd.date_range("2018-04-01 12:00", "2018-04-01 13:15", freq="15min")
     time_series = pd.Series(data=[9, 6, 3, 3, 6, 9], index=times, name="foo")
     time_series = time_series.drop(times[4])
     return time_series
@@ -15,7 +15,7 @@ def time_series():
 
 @pytest.fixture
 def target_index(time_series):
-    return pd.date_range(time_series.index.min(), time_series.index.max(), freq="20T")
+    return pd.date_range(time_series.index.min(), time_series.index.max(), freq="20min")
 
 
 @pytest.fixture

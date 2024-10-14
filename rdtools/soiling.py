@@ -157,8 +157,8 @@ class SRRAnalysis():
         df['pi_norm'] = df['pi'] / renorm
 
         # Find the beginning and ends of outages longer than dayscale
-        bfill = df['pi_norm'].fillna(method='bfill', limit=day_scale)
-        ffill = df['pi_norm'].fillna(method='ffill', limit=day_scale)
+        bfill = df['pi_norm'].bfill(limit=day_scale)
+        ffill = df['pi_norm'].ffill(limit=day_scale)
         out_start = (~df['pi_norm'].isnull() & bfill.shift(-1).isnull())
         out_end = (~df['pi_norm'].isnull() & ffill.shift(1).isnull())
 
@@ -168,7 +168,7 @@ class SRRAnalysis():
 
         # Make a forward filled copy, just for use in
         # step, slope change detection
-        df_ffill = df.fillna(method='ffill', limit=day_scale).copy()
+        df_ffill = df.ffill(limit=day_scale).copy()
 
         # Calculate rolling median
         df['pi_roll_med'] = \
@@ -246,9 +246,9 @@ class SRRAnalysis():
 
         for r in res_loop:
             run = daily_df[daily_df['run'] == r]
-            length = (run.day[-1] - run.day[0])
-            start_day = run.day[0]
-            end_day = run.day[-1]
+            length = (run['day'].iloc[-1] - run['day'].iloc[0])
+            start_day = run['day'].iloc[0]
+            end_day = run['day'].iloc[-1]
             start = run.index[0]
             end = run.index[-1]
             run_filtered = run[run.pi_norm > 0]
@@ -444,16 +444,18 @@ class SRRAnalysis():
                 # forward and back fill to note the limits of random constant
                 # derate for invalid intervals
                 results_rand['previous_end'] = \
-                    results_rand.end_loss.fillna(method='ffill')
+                    results_rand.end_loss.ffill()
                 results_rand['next_start'] = \
-                    results_rand.start_loss.fillna(method='bfill')
+                    results_rand.start_loss.bfill()
 
                 # Randomly select random constant derate for invalid intervals
                 # based on previous end and next beginning
                 invalid_intervals = results_rand[~results_rand.valid].copy()
                 # fill NaNs at beggining and end
-                invalid_intervals.previous_end.fillna(1.0, inplace=True)
-                invalid_intervals.next_start.fillna(1.0, inplace=True)
+                invalid_intervals['previous_end'] = \
+                    invalid_intervals['previous_end'].fillna(1.0)
+                invalid_intervals['next_start'] = \
+                    invalid_intervals['next_start'].fillna(1.0)
                 groups = set(invalid_intervals.group)
                 replace_levels = []
 
