@@ -532,8 +532,10 @@ class AvailabilityAnalysis:
 
         Parameters
         ----------
-        rollup_period : pandas offset string, default 'M'
+        rollup_period : pandas offset string, default 'ME'
             The period on which to roll up losses and calculate availability.
+            The default value "ME" triggers a monthly rollup period. For other aliases,
+            be sure they are compatible with your version of Pandas"
         """
 
         # Allow pandas < 2.0 to use 'M' as an alias for MonthEnd
@@ -610,8 +612,10 @@ class AvailabilityAnalysis:
             no production loss or (2) a power outage with an associated
             production loss estimate.
 
-        rollup_period : pandas.tseries.offsets.DateOffset or alias, default 'M'
+        rollup_period : pandas.tseries.offsets.DateOffset or alias, default 'ME'
             The period on which to roll up losses and calculate availability.
+            The default value "ME" triggers a monthly rollup period. For other aliases,
+            be sure they are compatible with your version of Pandas"
         """
         self._calc_loss_subsystem(low_threshold, relative_sizes,
                                   power_system_limit)
