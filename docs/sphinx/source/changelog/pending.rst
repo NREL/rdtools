@@ -20,6 +20,7 @@ Enhancements
 * Added a new wrapper function for clearsky filters (:pull:`412`)
 * Improve test coverage, especially for the newly added filter capabilities (:pull:`413`)
 * Added codecov.yml configuration file (:pull:`420`)
+* Availability module no longer considered experimental (:pull:`429`)
 
 Bug fixes
 ---------
