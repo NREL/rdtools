@@ -553,7 +553,6 @@ class TrendAnalysis:
         # filter values as False, so we do the same here for consistency:
         filter_components = pd.DataFrame(filter_components).fillna(0).astype("bool")
 
-
         # apply special checks to ad_hoc_filter, as it is likely more prone to user error
         if self.filter_params.get("ad_hoc_filter", None) is not None:
             ad_hoc_filter = self.filter_params["ad_hoc_filter"]
