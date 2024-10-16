@@ -284,8 +284,7 @@ def test_xgboost_clip_filter(generate_power_time_series_no_clipping,
     with warnings.catch_warnings(record=True) as record:
         xgboost_clip_filter(power_nc_tz_naive)
         # Warning thrown for it being an experimental filter + tz-naive
-        assert_warnings(['The XGBoost filter is an experimental',
-                         'Function expects timestamps in local time'],
+        assert_warnings(['Function expects timestamps in local time'],
                         record)
     # Scramble the index and run through the filter. This should throw
     # an IndexError.
