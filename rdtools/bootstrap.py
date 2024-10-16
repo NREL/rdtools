@@ -15,7 +15,8 @@ from arch.bootstrap import CircularBlockBootstrap
 
 
 def _make_time_series_bootstrap_samples(
-    signal, model_fit, sample_nr=1000, block_length=90, decomposition_type='multiplicative'
+    signal, model_fit, sample_nr=1000, block_length=90,
+    decomposition_type='multiplicative', bootstrap_seed=None
 ):
     '''
     Generate bootstrap samples based a time series signal and its model fit
@@ -34,6 +35,10 @@ def _make_time_series_bootstrap_samples(
     decomposition_type : string, default 'multiplicative'
         The type of decomposition to use with the model,
         either 'multiplicative' or 'additive'
+    bootstrap_seed: {Generator, RandomState, int}, default None
+        Seed passed to CircularBlockBootstrap use to ensure reproducable results.
+        If an int, passes the value to value to ``np.random.default_rng``.
+        If None (default), a fresh Generator is constructed with system-provided entropy.
 
     Returns
     -------
@@ -54,7 +59,7 @@ def _make_time_series_bootstrap_samples(
         index=signal.index, columns=range(sample_nr))
 
     # Create circular blocks of boostrap samples
-    bs = CircularBlockBootstrap(block_length, residuals)
+    bs = CircularBlockBootstrap(block_length, residuals, seed=bootstrap_seed)
     for b, bootstrapped_residuals in enumerate(bs.bootstrap(sample_nr)):
         if decomposition_type == 'multiplicative':
             bootstrap_samples.loc[:, b] = \

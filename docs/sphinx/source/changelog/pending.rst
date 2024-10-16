@@ -21,6 +21,7 @@ Enhancements
 * Improve test coverage, especially for the newly added filter capabilities (:pull:`413`)
 * Added codecov.yml configuration file (:pull:`420`)
 * Availability module no longer considered experimental (:pull:`429`)
+* Add capability to seed the CircularBlockBootstrap (:pull:`429`)
 
 Bug fixes
 ---------

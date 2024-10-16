@@ -1543,6 +1543,7 @@ class CODSAnalysis():
                       clean_pruning_sensitivity_alternatives=(1/1.5, 1.5),
                       forward_fill_alternatives=(True, False),
                       verbose=False,
+                      bootstrap_seed=None
                       **kwargs):
         '''
         Bootstrapping of CODS algorithm for uncertainty analysis, inherently accounting
@@ -1592,6 +1593,10 @@ class CODSAnalysis():
             Forward fill values that will be tested during initial fitting.
         verbose : bool, default False
             Wheter or not to print information about progress
+        bootstrap_seed: {Generator, RandomState, int}, default None
+            Seed passed to CircularBlockBootstrap use to ensure reproducable results.
+            If an int, passes the value to value to ``np.random.default_rng``.
+            If None (default), a fresh Generator is constructed with system-provided entropy.
         **kwargs
             Keyword arguments that are passed on to
             :py:func:`iterative_signal_decomposition`
@@ -1709,7 +1714,8 @@ class CODSAnalysis():
                     bootstrap_samples_list.append(
                         _make_time_series_bootstrap_samples(
                             pi, df_out.total_model,
-                            sample_nr=int(reps / nr_models)))
+                            sample_nr=int(reps / nr_models),
+                            bootstrap_seed=bootstrap_seed))
 
                 # Print progress
                 if verbose:
