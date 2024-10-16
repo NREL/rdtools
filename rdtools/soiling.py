@@ -1543,7 +1543,7 @@ class CODSAnalysis():
                       clean_pruning_sensitivity_alternatives=(1/1.5, 1.5),
                       forward_fill_alternatives=(True, False),
                       verbose=False,
-                      bootstrap_seed=None
+                      bootstrap_seed=None,
                       **kwargs):
         '''
         Bootstrapping of CODS algorithm for uncertainty analysis, inherently accounting
