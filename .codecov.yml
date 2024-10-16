@@ -1,0 +1,6 @@
+# Ignoring Paths
+# --------------
+# which folders/files to ignore
+ignore:
+  - setup.py
+  - versioneer.py

@@ -23,7 +23,7 @@ class DegradationTestCase(unittest.TestCase):
         daily_rd = rd / 365.0
 
         start = '2012-01-01'
-        if input_freq == 'S':
+        if input_freq == "s":
             end = '2012-03-01'
         else:
             end = '2015-01-01'
@@ -34,7 +34,7 @@ class DegradationTestCase(unittest.TestCase):
             freq = input_freq
 
         x = pd.date_range(start=start, end=end, freq=freq)
-        day_deltas = (x - x[0]).astype('timedelta64[s]') / (60.0 * 60.0 * 24)
+        day_deltas = (x - x[0]) / pd.Timedelta('1d')
         noise = (np.random.rand(len(day_deltas)) - 0.5) / 1e3
 
         y = 1 + daily_rd * day_deltas + noise
@@ -53,12 +53,10 @@ class DegradationTestCase(unittest.TestCase):
         # define module constants and parameters
 
         # All frequencies
-        cls.list_all_input_freq = ['MS', 'M', 'W',
-                                   'D', 'H', 'T', 'S', 'Irregular_D']
+        cls.list_all_input_freq = ["MS", "M", "W", "D", "h", "min", "s", "Irregular_D"]
 
         # Allowed frequencies for degradation_ols
-        cls.list_ols_input_freq = ['MS', 'M', 'W',
-                                   'D', 'H', 'T', 'S', 'Irregular_D']
+        cls.list_ols_input_freq = ["MS", "M", "W", "D", "h", "min", "s", "Irregular_D"]
 
         '''
         Allowed frequencies for degradation_classical_decomposition
@@ -118,11 +116,32 @@ class DegradationTestCase(unittest.TestCase):
         # test YOY degradation calc
         for input_freq in self.list_YOY_input_freq:
             logging.debug('Frequency: {}'.format(input_freq))
+            print(self.test_corr_energy[input_freq])
             rd_result = degradation_year_on_year(
                 self.test_corr_energy[input_freq])
             self.assertAlmostEqual(rd_result[0], 100 * self.rd, places=1)
             logging.debug('Actual: {}'.format(100 * self.rd))
             logging.debug('Estimated: {}'.format(rd_result[0]))
+
+    def test_degradation_year_on_year_circular_block_bootstrap(self):
+        ''' Test degradation with year on year approach with circular block bootstrapping. '''
+
+        funcName = sys._getframe().f_code.co_name
+        logging.debug('Running {}'.format(funcName))
+
+        # test YOY degradation calc
+        for input_freq in self.list_YOY_input_freq:
+            if input_freq != 'Irregular_D':
+                logging.debug('Frequency: {}'.format(input_freq))
+                length_of_series = len(self.test_corr_energy[input_freq])
+                block_length = 30 if length_of_series > 100 else int(length_of_series / 5)
+                rd_result = degradation_year_on_year(
+                    self.test_corr_energy[input_freq],
+                    uncertainty_method='circular_block',
+                    block_length=block_length)
+                self.assertAlmostEqual(rd_result[0], 100 * self.rd, places=1)
+                logging.debug('Actual: {}'.format(100 * self.rd))
+                logging.debug('Estimated: {}'.format(rd_result[0]))
 
     def test_confidence_intervals(self):
 

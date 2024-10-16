@@ -53,7 +53,7 @@ def power_data(request):
     # a few days of clearsky irradiance for creating a plausible power signal
     times = pd.date_range('2019-01-01', '2019-01-05 23:59', freq='15min',
                           tz='US/Eastern')
-    location = pvlib.location.Location(40, -80)
+    location = pvlib.location.Location(40, -80, altitude=0)
     # use haurwitz to avoid dependency on `tables`
     clearsky = location.get_clearsky(times, model='haurwitz')
 
@@ -162,7 +162,7 @@ def difficult_data():
 
     # generate a plausible clear-sky power signal
     times = pd.date_range('2019-01-01', '2019-01-06', freq='15min',
-                          tz='US/Eastern', closed='left')
+                          tz='US/Eastern')
     location = pvlib.location.Location(40, -80)
     clearsky = location.get_clearsky(times, model='haurwitz')
     # just scale GHI to power for simplicity
