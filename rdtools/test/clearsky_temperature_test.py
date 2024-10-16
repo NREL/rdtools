@@ -1,5 +1,7 @@
 import pytest
+import datetime
 import pandas as pd
+
 
 from rdtools.clearsky_temperature import get_clearsky_tamb
 
@@ -35,3 +37,21 @@ def test_not_on_land():
     with pytest.warns(UserWarning, match='possibly invalid Lat/Lon coordinates'):
         ocean_cs_tamb = get_clearsky_tamb(dt, 40, -60)
     assert ocean_cs_tamb.isnull().all()
+
+
+def test_with_tricky_timezones():
+    # Some timezones have DST shifts at midnight, which
+    # can lead to NonExistentTimeError. This tests for the
+    # problem in issue #372
+
+    tz = 'America/Santiago'
+    start_date = datetime.datetime(2018, 8, 10, 0, 0, 0)
+    end_date = datetime.datetime(2018, 8, 14, 23, 0, 0)
+    freq = "h"
+    lat = -24
+    lon = -70
+
+    times = pd.date_range(start=start_date, end=end_date, freq=freq)
+    times = times.tz_localize(tz=tz, ambiguous='infer',
+                              nonexistent='shift_forward')
+    get_clearsky_tamb(times, lat, lon)

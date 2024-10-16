@@ -17,15 +17,15 @@ jobs:
         ]
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
     - name: Set up Python
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v5
       with:
-        python-version: "3.10"
+        python-version: "3.12"
     - name: Install notebook environment
       run: |
         python -m pip install --upgrade pip wheel
-        pip install -r requirements.txt -r docs/notebook_requirements.txt .[test]
+        pip install --timeout=300 -r requirements.txt -r docs/notebook_requirements.txt .[test]
     - name: Run notebook and check output
       run: |
         # --sanitize-with:  pre-process text to remove irrelevant differences (e.g. warning filepaths)
@@ -36,7 +36,7 @@ jobs:
         mkdir docs/artifacts
         jupyter nbconvert --to html --execute --ExecutePreprocessor.timeout=600 --allow-errors --output artifacts/${{ matrix.notebook-file }}.html docs/${{ matrix.notebook-file }}
     - name: Upload artifacts
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
-        name: executed_notebooks
+        name: executed_notebook_${{ matrix.notebook-file }}
         path: docs/artifacts
