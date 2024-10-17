@@ -65,7 +65,7 @@ Drift of weather sensors over time (particularly irradiance) can bias the result
 of this workflow. The preferred way to check for this is to also run the workflow using
 satellite-derived weather data such as the National Solar Radiation Database (NSRDB) and
 compare results to the sensor-based analysis. If satellite data is not available,
-a 'clear-sky' workflow is also available in RdTools. THis workflow is based on modeled
+a 'clear-sky' workflow is also available in RdTools. This workflow is based on modeled
 temperature and irradiance. Note that site irradiance data is still required to identify
 clear-sky conditions to be analyzed.
 
@@ -147,7 +147,7 @@ installing requirements. If this occurs, the requirements specified in
 
 For more detailed instructions, see the :ref:`developer_notes` page.
 
-RdTools currently is tested on Python 3.7+.
+RdTools currently is tested on Python 3.9+.
 
 Usage and examples
 ------------------
