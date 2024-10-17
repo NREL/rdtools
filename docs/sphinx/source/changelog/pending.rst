@@ -20,6 +20,8 @@ Enhancements
 * Added a new wrapper function for clearsky filters (:pull:`412`)
 * Improve test coverage, especially for the newly added filter capabilities (:pull:`413`)
 * Added codecov.yml configuration file (:pull:`420`)
+* Availability module no longer considered experimental (:pull:`429`)
+* Add capability to seed the CircularBlockBootstrap (:pull:`429`)
 
 Bug fixes
 ---------
@@ -43,7 +45,7 @@ Documentation
 Requirements
 ------------
 * Specified versions in ``requirements.txt``, ``requirements_min.txt`` and ``docs/notebook_requirements.txt``
-have been updated (:pull:`412`, :pull:`428`)
+have been updated (:pull:`412`, :pull:`428`, :pull:`429`)
 
     * Updated certifi==2024.7.4 in ``requirements.txt`` (:pull:`428`)
     * Updated chardet==5.2.0 in ``requirements.txt`` (:pull:`428`)
@@ -86,7 +88,7 @@ have been updated (:pull:`412`, :pull:`428`)
     * Updated h5py==3.7.0 in ``requirements_min.txt`` (:pull:`428`)
     * Updated pvlib==0.11.0 in ``requirements_min.txt`` (:pull:`428`)
     * Updated scikit-learn==1.1.3 in ``requirements_min.txt`` (:pull:`428`)
-    * Updated arch==4.11 in ``requirements_min.txt`` (:pull:`428`)
+    * Updated arch==5.0 in ``requirements_min.txt`` (:pull:`429`)
     * Updated filterpy==1.4.5 in ``requirements_min.txt`` (:pull:`428`)
     * Updated xgboost==1.6.0 in ``requirements_min.txt`` (:pull:`431`)
 
@@ -143,7 +145,7 @@ have been updated (:pull:`412`, :pull:`428`)
     * Increase maximum version of pvlib to <0.12 (:pull:`423`)
     * Updated classifiers to accomodate new python versions (:pull:`428`)
     * Add pytest-cov to TESTS_REQUIRE (:pull:`420`)
-    * Add arch >= 4.11 to INSTALL_REQUIRES (:pull:`428`)
+    * Add arch >= 5.0 to INSTALL_REQUIRES (:pull:`429`)
     * Add filterpy >= 1.4.2 to INSTALL_REQUIRES (:pull:`428`)
     * Updated matplotlib >= 3.5.3 in INSTALL_REQUIRES (:pull:`428`)
     * Updated numpy >= 1.22.4 in INSTALL_REQUIRES (:pull:`428`)

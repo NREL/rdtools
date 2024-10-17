@@ -10,10 +10,10 @@ jobs:
       fail-fast: false  # don't cancel other matrix jobs when one fails
       matrix:
         notebook-file: [
-          'TrendAnalysis_example_pvdaq4.ipynb',
-          'degradation_and_soiling_example_pvdaq_4.ipynb',
+          'TrendAnalysis_example.ipynb',
+          'TrendAnalysis_example_NSRDB.ipynb',
+          'degradation_and_soiling_example.ipynb',
           'system_availability_example.ipynb'
-          # can't run the DKASC notebook here because it requires pre-downloaded data
         ]
 
     steps:

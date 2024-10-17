@@ -14,12 +14,6 @@ import numpy as np
 from scipy.interpolate import interp1d
 import warnings
 
-warnings.warn(
-    'The availability module is currently experimental. The API, results, '
-    'and default behaviors may change in future releases (including MINOR '
-    'and PATCH releases) as the code matures.'
-)
-
 
 class AvailabilityAnalysis:
     """

@@ -53,8 +53,8 @@ INSTALL_REQUIRES = [
     "xgboost >= 1.6.0",
     "pvlib >= 0.11.0, <0.12.0",
     "scikit-learn >= 1.1.3",
-    "arch >= 4.11",
-    "filterpy >= 1.4.2",
+    "arch >= 5.0",
+    "filterpy >= 1.4.2"
 ]
 
 EXTRAS_REQUIRE = {

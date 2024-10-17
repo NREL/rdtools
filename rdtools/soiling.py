@@ -1543,6 +1543,7 @@ class CODSAnalysis():
                       clean_pruning_sensitivity_alternatives=(1/1.5, 1.5),
                       forward_fill_alternatives=(True, False),
                       verbose=False,
+                      bootstrap_seed=None,
                       **kwargs):
         '''
         Bootstrapping of CODS algorithm for uncertainty analysis, inherently accounting
@@ -1592,6 +1593,10 @@ class CODSAnalysis():
             Forward fill values that will be tested during initial fitting.
         verbose : bool, default False
             Wheter or not to print information about progress
+        bootstrap_seed: {Generator, RandomState, int}, default None
+            Seed passed to CircularBlockBootstrap use to ensure reproducable results.
+            If an int, passes the value to value to ``np.random.default_rng``.
+            If None (default), a fresh Generator is constructed with system-provided entropy.
         **kwargs
             Keyword arguments that are passed on to
             :py:func:`iterative_signal_decomposition`
@@ -1709,7 +1714,8 @@ class CODSAnalysis():
                     bootstrap_samples_list.append(
                         _make_time_series_bootstrap_samples(
                             pi, df_out.total_model,
-                            sample_nr=int(reps / nr_models)))
+                            sample_nr=int(reps / nr_models),
+                            bootstrap_seed=bootstrap_seed))
 
                 # Print progress
                 if verbose:
@@ -2011,6 +2017,7 @@ class CODSAnalysis():
 
         # Ensure numeric index
         zs_series = zs_series.copy()  # Make copy, so as not to change input
+        zs_series = zs_series.astype(float)
         original_index = zs_series.index.copy()
         if (original_index.dtype not in [int, 'int64']):
             zs_series.index = range(len(zs_series))
@@ -2043,11 +2050,15 @@ class CODSAnalysis():
 
         # Initialize various parameters
         if ffill:
-            rolling_median_13 = zs_series.ffill().rolling(13, center=True).median().ffill().bfill()
-            rolling_median_7 = zs_series.ffill().rolling(7, center=True).median().ffill().bfill()
+            rolling_median_13 = \
+                zs_series.ffill().rolling(13, center=True).median().ffill().bfill()
+            rolling_median_7 = \
+                zs_series.ffill().rolling(7, center=True).median().ffill().bfill()
         else:
-            rolling_median_13 = zs_series.bfill().rolling(13, center=True).median().ffill().bfill()
-            rolling_median_7 = zs_series.bfill().rolling(7, center=True).median().ffill().bfill()
+            rolling_median_13 = \
+                zs_series.bfill().rolling(13, center=True).median().ffill().bfill()
+            rolling_median_7 = \
+                zs_series.bfill().rolling(7, center=True).median().ffill().bfill()
         # A rough estimate of the measurement noise
         measurement_noise = (rolling_median_13 - zs_series).var()
         # An initial guess of the slope
@@ -2145,7 +2156,7 @@ class CODSAnalysis():
 
             # 6: Force soiling ratio to not exceed 1:
             if clip_soiling:
-                dfk.soiling_ratio.clip(upper=1, inplace=True)
+                dfk['soiling_ratio'] = dfk['soiling_ratio'].clip(upper=1)
                 dfk.soiling_rates = dfk.smooth_rates
                 dfk.loc[dfk.soiling_ratio.diff() == 0, 'soiling_rates'] = 0
 
@@ -2479,6 +2490,7 @@ def _collapse_cleaning_events(inferred_ce_in, metric, f=4):
 def _rolling_median_ce_detection(x, y, ffill=True, rolling_window=9, tuner=1.5):
     ''' Finds cleaning events in a time series of performance index (y) '''
     y = pd.Series(index=x, data=y)
+    y = y.astype(float)
     if ffill:  # forward fill NaNs in y before running mean
         rm = y.ffill().rolling(rolling_window, center=True).median()
     else:  # ... or backfill instead
@@ -2493,6 +2505,7 @@ def _rolling_median_ce_detection(x, y, ffill=True, rolling_window=9, tuner=1.5):
 def _soiling_event_detection(x, y, ffill=True, tuner=5):
     ''' Finds cleaning events in a time series of performance index (y) '''
     y = pd.Series(index=x, data=y)
+    y = y.astype(float)
     if ffill:  # forward fill NaNs in y before running mean
         rm = y.ffill().rolling(9, center=True).median()
     else:  # ... or backfill instead
