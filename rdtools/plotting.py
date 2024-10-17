@@ -347,11 +347,6 @@ def availability_summary_plots(power_system, power_subsystem, loss_total,
     :py:meth:`.availability.AvailabilityAnalysis.plot` instead of running
     this function manually.
 
-    .. warning::
-        The availability module is currently experimental. The API, results,
-        and default behaviors may change in future releases (including MINOR
-        and PATCH releases) as the code matures.
-
     Parameters
     ----------
     power_system : pandas.Series
@@ -389,11 +384,6 @@ def availability_summary_plots(power_system, power_subsystem, loss_total,
     ...     aa.power_subsystem, aa.loss_total, aa.energy_cumulative,
     ...     aa.energy_expected_rescaled, aa.outage_info)
     """
-    warnings.warn(
-        'The availability module is currently experimental. The API, results, '
-        'and default behaviors may change in future releases (including MINOR '
-        'and PATCH releases) as the code matures.'
-    )
 
     fig = plt.figure(figsize=(16, 8))
     gs = fig.add_gridspec(3, 2)

@@ -157,8 +157,8 @@ class SRRAnalysis():
         df['pi_norm'] = df['pi'] / renorm
 
         # Find the beginning and ends of outages longer than dayscale
-        bfill = df['pi_norm'].fillna(method='bfill', limit=day_scale)
-        ffill = df['pi_norm'].fillna(method='ffill', limit=day_scale)
+        bfill = df['pi_norm'].bfill(limit=day_scale)
+        ffill = df['pi_norm'].ffill(limit=day_scale)
         out_start = (~df['pi_norm'].isnull() & bfill.shift(-1).isnull())
         out_end = (~df['pi_norm'].isnull() & ffill.shift(1).isnull())
 
@@ -168,7 +168,7 @@ class SRRAnalysis():
 
         # Make a forward filled copy, just for use in
         # step, slope change detection
-        df_ffill = df.fillna(method='ffill', limit=day_scale).copy()
+        df_ffill = df.ffill(limit=day_scale).copy()
 
         # Calculate rolling median
         df['pi_roll_med'] = \
@@ -246,9 +246,9 @@ class SRRAnalysis():
 
         for r in res_loop:
             run = daily_df[daily_df['run'] == r]
-            length = (run.day[-1] - run.day[0])
-            start_day = run.day[0]
-            end_day = run.day[-1]
+            length = (run['day'].iloc[-1] - run['day'].iloc[0])
+            start_day = run['day'].iloc[0]
+            end_day = run['day'].iloc[-1]
             start = run.index[0]
             end = run.index[-1]
             run_filtered = run[run.pi_norm > 0]
@@ -444,16 +444,18 @@ class SRRAnalysis():
                 # forward and back fill to note the limits of random constant
                 # derate for invalid intervals
                 results_rand['previous_end'] = \
-                    results_rand.end_loss.fillna(method='ffill')
+                    results_rand.end_loss.ffill()
                 results_rand['next_start'] = \
-                    results_rand.start_loss.fillna(method='bfill')
+                    results_rand.start_loss.bfill()
 
                 # Randomly select random constant derate for invalid intervals
                 # based on previous end and next beginning
                 invalid_intervals = results_rand[~results_rand.valid].copy()
                 # fill NaNs at beggining and end
-                invalid_intervals.previous_end.fillna(1.0, inplace=True)
-                invalid_intervals.next_start.fillna(1.0, inplace=True)
+                invalid_intervals['previous_end'] = \
+                    invalid_intervals['previous_end'].fillna(1.0)
+                invalid_intervals['next_start'] = \
+                    invalid_intervals['next_start'].fillna(1.0)
                 groups = set(invalid_intervals.group)
                 replace_levels = []
 
@@ -1541,6 +1543,7 @@ class CODSAnalysis():
                       clean_pruning_sensitivity_alternatives=(1/1.5, 1.5),
                       forward_fill_alternatives=(True, False),
                       verbose=False,
+                      bootstrap_seed=None,
                       **kwargs):
         '''
         Bootstrapping of CODS algorithm for uncertainty analysis, inherently accounting
@@ -1590,6 +1593,10 @@ class CODSAnalysis():
             Forward fill values that will be tested during initial fitting.
         verbose : bool, default False
             Wheter or not to print information about progress
+        bootstrap_seed: {Generator, RandomState, int}, default None
+            Seed passed to CircularBlockBootstrap use to ensure reproducable results.
+            If an int, passes the value to value to ``np.random.default_rng``.
+            If None (default), a fresh Generator is constructed with system-provided entropy.
         **kwargs
             Keyword arguments that are passed on to
             :py:func:`iterative_signal_decomposition`
@@ -1707,7 +1714,8 @@ class CODSAnalysis():
                     bootstrap_samples_list.append(
                         _make_time_series_bootstrap_samples(
                             pi, df_out.total_model,
-                            sample_nr=int(reps / nr_models)))
+                            sample_nr=int(reps / nr_models),
+                            bootstrap_seed=bootstrap_seed))
 
                 # Print progress
                 if verbose:
@@ -2009,6 +2017,7 @@ class CODSAnalysis():
 
         # Ensure numeric index
         zs_series = zs_series.copy()  # Make copy, so as not to change input
+        zs_series = zs_series.astype(float)
         original_index = zs_series.index.copy()
         if (original_index.dtype not in [int, 'int64']):
             zs_series.index = range(len(zs_series))
@@ -2041,11 +2050,15 @@ class CODSAnalysis():
 
         # Initialize various parameters
         if ffill:
-            rolling_median_13 = zs_series.ffill().rolling(13, center=True).median().ffill().bfill()
-            rolling_median_7 = zs_series.ffill().rolling(7, center=True).median().ffill().bfill()
+            rolling_median_13 = \
+                zs_series.ffill().rolling(13, center=True).median().ffill().bfill()
+            rolling_median_7 = \
+                zs_series.ffill().rolling(7, center=True).median().ffill().bfill()
         else:
-            rolling_median_13 = zs_series.bfill().rolling(13, center=True).median().ffill().bfill()
-            rolling_median_7 = zs_series.bfill().rolling(7, center=True).median().ffill().bfill()
+            rolling_median_13 = \
+                zs_series.bfill().rolling(13, center=True).median().ffill().bfill()
+            rolling_median_7 = \
+                zs_series.bfill().rolling(7, center=True).median().ffill().bfill()
         # A rough estimate of the measurement noise
         measurement_noise = (rolling_median_13 - zs_series).var()
         # An initial guess of the slope
@@ -2143,7 +2156,7 @@ class CODSAnalysis():
 
             # 6: Force soiling ratio to not exceed 1:
             if clip_soiling:
-                dfk.soiling_ratio.clip(upper=1, inplace=True)
+                dfk['soiling_ratio'] = dfk['soiling_ratio'].clip(upper=1)
                 dfk.soiling_rates = dfk.smooth_rates
                 dfk.loc[dfk.soiling_ratio.diff() == 0, 'soiling_rates'] = 0
 
@@ -2477,6 +2490,7 @@ def _collapse_cleaning_events(inferred_ce_in, metric, f=4):
 def _rolling_median_ce_detection(x, y, ffill=True, rolling_window=9, tuner=1.5):
     ''' Finds cleaning events in a time series of performance index (y) '''
     y = pd.Series(index=x, data=y)
+    y = y.astype(float)
     if ffill:  # forward fill NaNs in y before running mean
         rm = y.ffill().rolling(rolling_window, center=True).median()
     else:  # ... or backfill instead
@@ -2491,6 +2505,7 @@ def _rolling_median_ce_detection(x, y, ffill=True, rolling_window=9, tuner=1.5):
 def _soiling_event_detection(x, y, ffill=True, tuner=5):
     ''' Finds cleaning events in a time series of performance index (y) '''
     y = pd.Series(index=x, data=y)
+    y = y.astype(float)
     if ffill:  # forward fill NaNs in y before running mean
         rm = y.ffill().rolling(9, center=True).median()
     else:  # ... or backfill instead

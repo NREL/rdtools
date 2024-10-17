@@ -230,12 +230,6 @@ def degradation_year_on_year(energy_normalized, recenter=True,
     energy_normalized.name = 'energy'
     energy_normalized.index.name = 'dt'
 
-    # Detect sub-daily data:
-    if min(np.diff(energy_normalized.index.values, n=1)) < \
-            np.timedelta64(23, 'h'):
-        raise ValueError('energy_normalized must not be '
-                         'more frequent than daily')
-
     # Detect less than 2 years of data. This is complicated by two things:
     #   - leap days muddle the precise meaning of "two years of data".
     #   - can't just check the number of days between the first and last
@@ -276,7 +270,8 @@ def degradation_year_on_year(energy_normalized, recenter=True,
 
     # Merge with what happened one year ago, use tolerance of 8 days to allow
     # for weekly aggregated data
-    df = pd.merge_asof(energy_normalized[['dt', 'energy']], energy_normalized,
+    df = pd.merge_asof(energy_normalized[['dt', 'energy']],
+                       energy_normalized.sort_values('dt_shifted'),
                        left_on='dt', right_on='dt_shifted',
                        suffixes=['', '_right'],
                        tolerance=pd.Timedelta('8D')

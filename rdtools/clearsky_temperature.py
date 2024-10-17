@@ -4,9 +4,10 @@ import h5py
 from numpy import arange
 from datetime import timedelta
 import pandas as pd
-import pkg_resources
+from contextlib import ExitStack
 import numpy as np
 import warnings
+import importlib.resources as importlib_resources
 
 
 def get_clearsky_tamb(times, latitude, longitude, window_size=40,
@@ -42,14 +43,17 @@ def get_clearsky_tamb(times, latitude, longitude, window_size=40,
     * https://neo.sci.gsfc.nasa.gov/view.php?datasetId=MOD_LSTN_CLIM_M
     '''
 
-    filepath = pkg_resources.resource_filename('rdtools',
-                                               'data/temperature.hdf5')
+    file_manager = ExitStack()
+    ref = importlib_resources.files("rdtools") / "data/temperature.hdf5"
+    filepath = file_manager.enter_context(importlib_resources.as_file(ref))
 
     buffer = timedelta(days=window_size)
 
     if times.freq is None:
         freq_actual = pd.infer_freq(times)
         if freq_actual is None:
+            times._engine.clear_mapping()
+            # workaround from https://github.com/pandas-dev/pandas/issues/55794
             freq_actual = pd.infer_freq(times[:10])
             warnings.warn("Input 'times' has no frequency attribute. "
                           "Inferring frequency from first 10 timestamps.")
