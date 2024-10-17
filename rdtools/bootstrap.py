@@ -37,7 +37,7 @@ def _make_time_series_bootstrap_samples(
         either 'multiplicative' or 'additive'
     bootstrap_seed: {Generator, RandomState, int}, default None
         Seed passed to CircularBlockBootstrap use to ensure reproducable results.
-        If an int, passes the value to value to ``np.random.default_rng``.
+        If an int, passes the value to ``np.random.default_rng``.
         If None (default), a fresh Generator is constructed with system-provided entropy.
 
     Returns

@@ -79,7 +79,7 @@ Soiling
 
 RdTools provides two methods for soiling analysis. The first is the
 stochastic rate and recovery (SRR) method (Deceglie 2018). This method works
-well when soiling patternsfollow a "sawtooth" pattern, a linear decline followed
+well when soiling patterns follow a "sawtooth" pattern, a linear decline followed
 by a sharp recovery associated with natural or manual cleaning.
 :py:func:`.soiling.soiling_srr` performs the calculation and returns the P50
 insolation-weighted soiling ratio, confidence interval, and additional
