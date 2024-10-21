@@ -59,7 +59,7 @@ INSTALL_REQUIRES = [
 
 EXTRAS_REQUIRE = {
     "doc": [
-        "sphinx==8.0.2",
+        "sphinx==7.4.7",
         "nbsphinx==0.9.5",
         "nbsphinx-link==1.3.1",
         "sphinx_rtd_theme==3.0.1",

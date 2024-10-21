@@ -157,7 +157,7 @@ Requirements
     * Updated xgboost >= 1.6.0 in INSTALL_REQUIRES (:pull:`431`)
     * Updated pvlib >= 0.9.0, <0.12.0 in INSTALL_REQUIRES (:pull:`428`)
     * Updated scikit-learn >= 1.1.3 in INSTALL_REQUIRES (:pull:`428`)
-    * Updated sphinx==8.0.2 in EXTRAS_REQUIRE (:pull:`428`)
+    * Updated sphinx==7.4.7 in EXTRAS_REQUIRE (:pull:`390`)
     * Updated nbsphinx==0.9.5 in EXTRAS_REQUIRE (:pull:`428`)
     * Updated nbsphinx-link==1.3.1 in EXTRAS_REQUIRE (:pull:`428`)
     * Updated sphinx_rtd_theme==3.0.1 in EXTRAS_REQUIRE (:pull:`428`)
