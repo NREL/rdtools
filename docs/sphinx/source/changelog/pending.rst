@@ -3,7 +3,7 @@ pending
 *******
 
 Breaking changes
-------------
+----------------
 These changes have the potential to change answers in existing scripts
 when compared with older versions of RdTools
 
@@ -45,8 +45,7 @@ Documentation
 
 Requirements
 ------------
-* Specified versions in ``requirements.txt``, ``requirements_min.txt`` and ``docs/notebook_requirements.txt``
-have been updated (:pull:`412`, :pull:`428`, :pull:`429`)
+* Specified versions in ``requirements.txt``, ``requirements_min.txt`` and ``docs/notebook_requirements.txt`` have been updated (:pull:`412`, :pull:`428`, :pull:`429`)
 
     * Updated certifi==2024.7.4 in ``requirements.txt`` (:pull:`428`)
     * Updated chardet==5.2.0 in ``requirements.txt`` (:pull:`428`)
