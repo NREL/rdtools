@@ -22,7 +22,7 @@ Enhancements
 * Added codecov.yml configuration file (:pull:`420`)
 * Availability module no longer considered experimental (:pull:`429`)
 * Add capability to seed the CircularBlockBootstrap (:pull:`429`)
-* Allow sub-daily aggregation in :py:func:`~rdtools.degradation.degradation_year_on_year (:pull:`390`) 
+* Allow sub-daily aggregation in :py:func:`~rdtools.degradation.degradation_year_on_year` (:pull:`390`) 
 
 Bug fixes
 ---------
