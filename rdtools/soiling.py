@@ -2946,7 +2946,8 @@ def segmented_soiling_period(
             if (R2_percent_improve < 0.01) | (R2_piecewise < 0.4):
                 z = [np.nan] * len(x)
                 cp_date = None
-    except:
+    except ValueError as ex:
+        print(f"Segmentation was not possible. Error: {ex}")
         z = [np.nan] * len(x)
         cp_date = None
     # Create Series from modelled profile

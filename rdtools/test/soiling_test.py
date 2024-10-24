@@ -5,6 +5,7 @@ from rdtools.soiling import SRRAnalysis
 from rdtools.soiling import annual_soiling_ratios
 from rdtools.soiling import monthly_soiling_rates
 from rdtools.soiling import NoValidIntervalError
+from rdtools.soiling import segmented_soiling_period
 import pytest
 
 
@@ -582,3 +583,86 @@ def test_monthly_soiling_rates_reps(soiling_interval_summary):
     expected = _build_monthly_summary(expected)
 
     pd.testing.assert_frame_equal(result, expected, check_dtype=False)
+
+
+# ######################################
+# invalid segmented_soiling_period tests
+# ######################################
+
+
+@pytest.fixture
+def pr_series():
+    """
+    Panda series of daily performance ratios measured during the given deposition period
+    with datetime index and is length 10.
+    """
+    pr_idx = pd.date_range(start="2022-01-01", periods=10, freq="D")
+    pr_series = pd.Series(np.random.rand(10), index=pr_idx)
+    return pr_series
+
+
+def test_no_datetime_index_pr(pr_series):
+    """
+    Tests if ValueError is raised when pr_series does not have datetime index.
+    """
+    pr = pr_series.reset_index()
+    with pytest.raises(ValueError, match = "The time series does not have DatetimeIndex"):
+        _ = segmented_soiling_period(pr)
+
+
+def test_no_change_point(pr_series):
+    """
+    Tests if no change point was found when fitting soiling profile with segmentation.
+    """
+    days_clean_vs_cp = 7
+    result_sr, result_cp_date = segmented_soiling_period(pr_series,
+                                                         days_clean_vs_cp=days_clean_vs_cp)
+    expected_sr = pd.Series([np.nan]*len(pr_series), index=pr_series.index)
+    expected_cp_date = None
+
+    pd.testing.assert_series_equal(result_sr, expected_sr)
+    assert result_cp_date == expected_cp_date
+
+
+def test_except_block():
+    """
+    Tests except block for when all segementation methods did not work.
+    """
+    pr_idx = pd.date_range(start="2022-01-01", periods=5, freq="D")
+    pr_series = pd.Series(np.array([1,2,3,4,5]), index=pr_idx)
+    result_sr, result_cp_date = segmented_soiling_period(pr_series)
+
+    expected_sr = pd.Series([np.nan]*len(pr_series), index=pr_series.index)
+    expected_cp_date = None
+
+    pd.testing.assert_series_equal(result_sr, expected_sr)
+    assert result_cp_date == expected_cp_date
+
+
+def test_short_segmentation_periods():
+    """
+    Tests if segmentation fails for short soiling periods.
+    """
+    pr_idx = pd.date_range(start="2022-01-01", periods=35, freq="D")
+    pr_series = pd.Series(np.random.normal(loc=5, scale=2, size=35), index=pr_idx)
+    result_sr, result_cp_date = segmented_soiling_period(pr_series)
+
+    expected_sr = pd.Series([np.nan]*len(pr_series), index=pr_series.index)
+    expected_cp_date = None
+
+    pd.testing.assert_series_equal(result_sr, expected_sr)
+    assert result_cp_date == expected_cp_date
+
+
+def test_long_segmentation_periods():
+    "Tests if segmentation fails for longer soiling periods."
+    pr_idx = pd.date_range(start="2022-01-01", periods=47, freq="D")
+    testing_list = list(np.arange(46)) + [50]
+    pr_series = pd.Series(testing_list, index=pr_idx)
+    result_sr, result_cp_date = segmented_soiling_period(pr_series)
+
+    expected_sr = pd.Series([np.nan]*len(pr_series), index=pr_series.index)
+    expected_cp_date = None
+
+    pd.testing.assert_series_equal(result_sr, expected_sr)
+    assert result_cp_date == expected_cp_date
