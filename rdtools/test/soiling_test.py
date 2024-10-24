@@ -606,7 +606,7 @@ def test_no_datetime_index_pr(pr_series):
     Tests if ValueError is raised when pr_series does not have datetime index.
     """
     pr = pr_series.reset_index()
-    with pytest.raises(ValueError, match = "The time series does not have DatetimeIndex"):
+    with pytest.raises(ValueError, match="The time series does not have DatetimeIndex"):
         _ = segmented_soiling_period(pr)
 
 
@@ -629,7 +629,7 @@ def test_except_block():
     Tests except block for when all segementation methods did not work.
     """
     pr_idx = pd.date_range(start="2022-01-01", periods=5, freq="D")
-    pr_series = pd.Series(np.array([1,2,3,4,5]), index=pr_idx)
+    pr_series = pd.Series(np.array([1, 2, 3, 4, 5]), index=pr_idx)
     result_sr, result_cp_date = segmented_soiling_period(pr_series)
 
     expected_sr = pd.Series([np.nan]*len(pr_series), index=pr_series.index)
