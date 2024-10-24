@@ -32,60 +32,59 @@ SETUP_REQUIRES = [
 ]
 
 TESTS_REQUIRE = [
-    'pytest >= 3.6.3',
-    'pytest-cov',
-    'coverage',
-    'flake8',
-    'nbval==0.9.6',  # https://github.com/computationalmodelling/nbval/issues/194
-    'pytest-mock',
+    "pytest >= 3.6.3",
+    "pytest-cov",
+    "coverage",
+    "flake8",
+    # nbval greater than 0.9.6 has a bug with semicolon
+    # https://github.com/computationalmodelling/nbval/issues/194
+    "nbval<=0.9.6",
+    "pytest-mock",
 ]
 
 INSTALL_REQUIRES = [
-    'matplotlib >= 3.0.0',
-    'numpy >= 1.17.3, <2.0',
-    # pandas restricted to <2.1 until
-    # https://github.com/pandas-dev/pandas/issues/55794
-    # is resolved
-    'pandas >= 1.3.0, <2.1',
-    'statsmodels >= 0.11.1',
-    'scipy >= 1.2.0',
-    'h5py >= 2.8.0',
-    'plotly>=4.0.0',
-    'xgboost >= 1.3.3',
-    'pvlib >= 0.7.0, <0.12.0',
-    'scikit-learn >= 0.22.0',
-    'arch >= 4.11',
-    'filterpy >= 1.4.2'
+    "matplotlib >= 3.5.3",
+    "numpy >= 1.22.4",
+    "pandas >= 1.4.4",
+    "statsmodels >= 0.13.5",
+    "scipy >= 1.8.1",
+    "h5py >= 3.7.0",
+    "plotly>=4.0.0",
+    "xgboost >= 1.6.0",
+    "pvlib >= 0.11.0, <0.12.0",
+    "scikit-learn >= 1.1.3",
+    "arch >= 5.0",
+    "filterpy >= 1.4.2"
 ]
 
 EXTRAS_REQUIRE = {
-    'doc': [
-        'sphinx==4.5.0',
-        'nbsphinx==0.8.8',
-        'nbsphinx-link==1.3.0',
-        'sphinx_rtd_theme==0.5.2',
-        'ipython',
+    "doc": [
+        "sphinx==7.4.7",
+        "nbsphinx==0.9.5",
+        "nbsphinx-link==1.3.1",
+        "sphinx_rtd_theme==3.0.1",
+        "ipython",
         # sphinx-gallery used indirectly for nbsphinx thumbnail galleries; see:
         # https://nbsphinx.readthedocs.io/en/0.6.0/subdir/gallery.html#Creating-Thumbnail-Galleries
-        'sphinx-gallery==0.8.1',
+        "sphinx-gallery==0.18.0",
     ],
-    'test': TESTS_REQUIRE,
+    "test": TESTS_REQUIRE,
 }
 EXTRAS_REQUIRE['all'] = sorted(set(sum(EXTRAS_REQUIRE.values(), [])))
 
 
 CLASSIFIERS = [
-    'Development Status :: 5 - Production/Stable',
-    'License :: OSI Approved :: MIT License',
-    'Operating System :: OS Independent',
-    'Intended Audience :: Science/Research',
-    'Programming Language :: Python',
-    'Programming Language :: Python :: 3',
-    'Programming Language :: Python :: 3.7',
-    'Programming Language :: Python :: 3.8',
-    'Programming Language :: Python :: 3.9',
-    'Programming Language :: Python :: 3.10',
-    'Topic :: Scientific/Engineering',
+    "Development Status :: 5 - Production/Stable",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Intended Audience :: Science/Research",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering",
 ]
 
 KEYWORDS = [

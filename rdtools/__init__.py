@@ -37,6 +37,5 @@ from rdtools.plotting import degradation_timeseries_plot
 # from rdtools.plotting import availability_summary_plots
 # from rdtools.availability import AvailabilityAnalysis
 
-from ._version import get_versions
-__version__ = get_versions()['version']
-del get_versions
+from . import _version
+__version__ = _version.get_versions()['version']

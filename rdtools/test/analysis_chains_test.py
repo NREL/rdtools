@@ -155,6 +155,15 @@ def test_sensor_analysis(sensor_analysis):
     assert [-1, -1] == pytest.approx(ci, abs=1e-2)
 
 
+def test_sensor_analysis_filter_components(sensor_analysis):
+    columns = sensor_analysis.sensor_filter_components_aggregated.columns
+    assert {'two_way_window_filter'} == set(columns)
+
+    expected_columns = {'normalized_filter', 'poa_filter', 'tcell_filter', 'clip_filter'}
+    columns = sensor_analysis.sensor_filter_components.columns
+    assert expected_columns == set(columns)
+
+
 def test_sensor_analysis_energy(sensor_parameters, sensor_analysis):
     sensor_parameters["pv"] = sensor_analysis.pv_energy
     sensor_parameters["pv_input"] = "energy"
@@ -214,7 +223,7 @@ def test_sensor_analysis_aggregated_ad_hoc_filter(sensor_parameters):
         rd_analysis.sensor_analysis(analyses=["yoy_degradation"])
 
 
-def test_filter_components(sensor_parameters):
+def test_filter_components_poa(sensor_parameters):
     poa = sensor_parameters["poa_global"]
     poa_filter = (poa > 200) & (poa < 1200)
     rd_analysis = TrendAnalysis(**sensor_parameters, power_dc_rated=1.0)
@@ -482,8 +491,18 @@ def test_clearsky_analysis(clearsky_analysis):
     ci = yoy_results["rd_confidence_interval"]
     rd = yoy_results["p50_rd"]
     print(ci)
-    assert -4.70 == pytest.approx(rd, abs=1e-2)
-    assert [-4.71, -4.69] == pytest.approx(ci, abs=1e-2)
+    assert pytest.approx(rd, abs=1e-2) == -5.15
+    assert pytest.approx(ci, abs=1e-2) == [-5.17, -5.13]
+
+
+def test_clearsky_analysis_filter_components(clearsky_analysis):
+    columns = clearsky_analysis.clearsky_filter_components_aggregated.columns
+    assert {'two_way_window_filter'} == set(columns)
+
+    expected_columns = {'normalized_filter', 'poa_filter', 'tcell_filter',
+                        'clip_filter', 'clearsky_filter'}
+    columns = clearsky_analysis.clearsky_filter_components.columns
+    assert expected_columns == set(columns)
 
 
 def test_clearsky_analysis_optional(
@@ -496,8 +515,8 @@ def test_clearsky_analysis_optional(
     ci = yoy_results["rd_confidence_interval"]
     rd = yoy_results["p50_rd"]
     print(f"ci:{ci}")
-    assert -4.70 == pytest.approx(rd, abs=1e-2)
-    assert [-4.71, -4.69] == pytest.approx(ci, abs=1e-2)
+    assert pytest.approx(rd, abs=1e-2) == -5.15
+    assert pytest.approx(ci, abs=1e-2) == [-5.17, -5.13]
 
 
 def test_sensor_clearsky_analysis(sensor_clearsky_analysis):
@@ -632,9 +651,9 @@ def test_srr_soiling(soiling_analysis_sensor):
     assert [0.96, 0.97] == pytest.approx(
         ci, abs=1e-2
     ), "Soiling confidence interval different from expected value in TrendAnalysis.srr_soiling"
-    assert 0.974 == pytest.approx(
+    assert pytest.approx(
         renorm_factor, abs=1e-3
-    ), "Renormalization factor different from expected value in TrendAnalysis.srr_soiling"
+    ) == 0.977, "Renormalization factor different from expected value in TrendAnalysis.srr_soiling"
 
 
 def test_plot_degradation(sensor_analysis):

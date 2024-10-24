@@ -5,7 +5,6 @@ import pandas as pd
 import os
 import warnings
 import pvlib
-from numbers import Number
 from scipy.interpolate import interp1d
 import rdtools
 import xgboost as xgb
@@ -292,7 +291,7 @@ def pvlib_clearsky_filter(
     return mask
 
 
-def clip_filter(power_ac, model="quantile", **kwargs):
+def clip_filter(power_ac, model="logic", **kwargs):
     """
     Master wrapper for running one of the desired clipping filters.
     The default filter run is the quantile clipping filter.
@@ -302,7 +301,7 @@ def clip_filter(power_ac, model="quantile", **kwargs):
     power_ac : pandas.Series
         Pandas time series, representing PV system power or energy.
         For best performance, timestamps should be in local time.
-    model : str, default 'quantile'
+    model : str, default 'logic'
         Clipping filter model to run. Can be 'quantile',
         'xgboost', or 'logic'. Note: using the xgboost model can
         result in errors on some systems. These can often be alleviated
@@ -320,18 +319,6 @@ def clip_filter(power_ac, model="quantile", **kwargs):
         True values delineate non-clipping periods, and False values delineate
         clipping periods.
     """
-    if isinstance(model, Number):
-        quantile = model
-        warnings.warn(
-            "Function clip_filter is now a wrapper for different "
-            "clipping filters. To reproduce prior behavior, "
-            "parameters have been interpreted as model= "
-            f"'quantile_clip_filter', quantile={quantile}. "
-            "This syntax will be removed in a future version.",
-            rdtools._deprecation.rdtoolsDeprecationWarning,
-        )
-        kwargs["quantile"] = quantile
-        model = "quantile"
 
     if model == "quantile":
         clip_mask = quantile_clip_filter(power_ac, **kwargs)
@@ -585,11 +572,6 @@ def logic_clip_filter(
        detection techniques in AC power time series", 2021 IEEE 48th Photovoltaic
        Specialists Conference (PVSC). DOI: 10.1109/PVSC43889.2021.9518733.
     """
-    # Throw a warning that this is still an experimental filter. (Removed for 3.0.0)
-    # warnings.warn("The logic-based filter is an experimental clipping filter "
-    #              "that is still under development. The API, results, and "
-    #              "default behaviors may change in future releases (including "
-    #              "MINOR and PATCH). Use at your own risk!")
     # Format the time series
     power_ac, index_name = _format_clipping_time_series(power_ac, mounting_type)
     # Test if the data sampling frequency is variable, and flag it if the time
@@ -609,7 +591,7 @@ def logic_clip_filter(
         .drop_duplicates(subset=power_ac.index.name, keep="first")
         .set_index(power_ac.index.name)
     )
-    freq_string = str(time_series_sampling_frequency) + "T"
+    freq_string = str(time_series_sampling_frequency) + "min"
     # Set days with the majority of frozen data to null.
     daily_std = power_ac.resample("D").std() / power_ac.resample("D").mean()
     power_ac["daily_std"] = daily_std.reindex(index=power_ac.index, method="ffill")
@@ -624,7 +606,7 @@ def logic_clip_filter(
     if time_series_sampling_frequency >= 10:
         power_ac = rdtools.normalization.interpolate(power_ac, freq_string)
     else:
-        power_ac = power_ac.resample("15T").median()
+        power_ac = power_ac.resample("15min").median()
         time_series_sampling_frequency = 15
     # If a value for roll_periods is not designated, the function uses
     # the current default logic to set the roll_periods value.
@@ -759,7 +741,8 @@ def _calculate_xgboost_model_features(df, sampling_frequency):
     )
     # Get the max value for the day and see how each value compares
     df["date"] = list(pd.to_datetime(pd.Series(df.index)).dt.date)
-    df["daily_max"] = df.groupby(["date"])["scaled_value"].transform(max)
+    df["daily_max"] = df.groupby(["date"])["scaled_value"].transform("max")
+
     # Get percentage of daily max
     df["percent_daily_max"] = df["scaled_value"] / (df["daily_max"] + 0.00001)
     # Get the standard deviation, median and mean of the first order
@@ -821,13 +804,6 @@ def xgboost_clip_filter(power_ac, mounting_type="fixed"):
        detection techniques in AC power time series", 2021 IEEE 48th Photovoltaic
        Specialists Conference (PVSC). DOI: 10.1109/PVSC43889.2021.9518733.
     """
-    # Throw a warning that this is still an experimental filter
-    warnings.warn(
-        "The XGBoost filter is an experimental clipping filter "
-        "that is still under development. The API, results, and "
-        "default behaviors may change in future releases (including "
-        "MINOR and PATCH). Use at your own risk!"
-    )
     # Load in the XGBoost model
     xgboost_clipping_model = _load_xgboost_clipping_model()
     # Format the power or energy time series
@@ -839,7 +815,7 @@ def xgboost_clip_filter(power_ac, mounting_type="fixed"):
     sampling_frequency = int(
         (power_ac.index.to_series().diff() / pd.Timedelta("60s")).mode()[0]
     )
-    freq_string = str(sampling_frequency) + "T"
+    freq_string = str(sampling_frequency) + "min"
     # Min-max normalize
     # Resample the series based on the most common sampling frequency
     power_ac_interpolated = rdtools.normalization.interpolate(power_ac, freq_string)
@@ -851,7 +827,7 @@ def xgboost_clip_filter(power_ac, mounting_type="fixed"):
     # once every five minute, resample at 5-minute intervals before
     # plugging into the model
     if sampling_frequency < 5:
-        power_ac_df = power_ac_df.resample("5T").mean()
+        power_ac_df = power_ac_df.resample("5min").mean()
         power_ac_df["sampling_frequency"] = 5
     # Add mounting type as a column
     power_ac_df["mounting_config"] = mounting_type
@@ -895,7 +871,8 @@ def xgboost_clip_filter(power_ac, mounting_type="fixed"):
     # Reindex with the original data index. Re-adjusts to original
     # data frequency.
     xgb_predictions = xgb_predictions.reindex(index=power_ac.index, method="ffill")
-    xgb_predictions = xgb_predictions.fillna(False)
+    xgb_predictions.loc[xgb_predictions.isnull()] = False
+
     # Regenerate the features with the original sampling frequency
     # (pre-resampling or interpolation).
     power_ac_df = power_ac.to_frame()
@@ -949,6 +926,7 @@ def two_way_window_filter(
     """
     Removes anomalies based on forward and backward window of the rolling median. Points beyond
     outlier_threshold from both the forward and backward-looking median are excluded by the filter.
+    Designed for use after the aggregation step in the RdTools trend analysis workflows.
 
     Parameters
     ----------
@@ -989,7 +967,8 @@ def two_way_window_filter(
 def insolation_filter(insolation, quantile=0.1):
     """
     A simple quantile filter. Primary application in RdTools is to exclude
-    low insolation points after the aggregation step.
+    low insolation points after the aggregation step in the trend analysis
+    workflows.
 
     Parameters
     ----------
@@ -1011,7 +990,8 @@ def insolation_filter(insolation, quantile=0.1):
 
 def hampel_filter(series, k="14d", t0=3):
     """
-    Hampel outlier filter primarily applied after aggregation step, but broadly
+    Hampel outlier designed for use after the aggregation step
+    in the RdTools trend analysis workflows, but broadly
     applicable.
 
     Parameters
@@ -1051,8 +1031,9 @@ def _tukey_fence(series, k=1.5):
 def directional_tukey_filter(series, roll_period=pd.to_timedelta("7 Days"), k=1.5):
     """
     Performs a forward and backward looking rolling Tukey filter. Points more than k*IQR
-    above the third quartile or below the first quartile are classified as outliers.Points
-    must only pass one of either the forward or backward looking filters to be kept.
+    above the third quartile or below the first quartile are classified as outliers. Points
+    must only pass one of either the forward or backward looking filters to be kept. Designed
+    for use after the aggregation step in the RdTools trend analysis workflows
 
 
     Parameters

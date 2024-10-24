@@ -230,13 +230,6 @@ def degradation_year_on_year(energy_normalized, recenter=True,
     energy_normalized.name = 'energy'
     energy_normalized.index.name = 'dt'
 
-    # Detect sub-daily data:
-    # disabling this check while we experiment with morning/evening agregation
-    # if min(np.diff(energy_normalized.index.values, n=1)) < \
-    #         np.timedelta64(23, 'h'):
-    #     raise ValueError('energy_normalized must not be '
-    #                      'more frequent than daily')
-
     # Detect less than 2 years of data. This is complicated by two things:
     #   - leap days muddle the precise meaning of "two years of data".
     #   - can't just check the number of days between the first and last
