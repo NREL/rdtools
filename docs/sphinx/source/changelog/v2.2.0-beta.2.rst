@@ -12,13 +12,6 @@ Bug fixes
 * Fix flake8 missing whitespaces ``bootstrap_test.py``, ``soiling_cods_test.py`` (:pull:`400`)
 * Specify dtype for seasonal samples ``soiling.py`` (:pull:`400`)
 * Update deprecated `check_less_precise` to `rtol` ``soiling_cods_test.py`` (:pull:`400`)
-* Fixed pylint bare except error for :py:func:`~rdtools.soiling.segmented_soiling_period`
-in ``soiling.py`` (:pull:`432`)
-
-Testing
--------
-* Added pytests to cover invalid segementations for
-:py:func:`~rdtools.soiling.segmented_soiling_period` in ``soiling_cods_test.py`` (:pull:`432`)
 
 Requirements
 ------------
@@ -28,4 +21,3 @@ Contributors
 ------------
 * Martin Springer (:ghuser:`martin-springer`)
 * Michael Deceglie (:ghuser:`mdeceglie`)
-* Quyen Nguyen (:ghuser:`qnguyen345`)
