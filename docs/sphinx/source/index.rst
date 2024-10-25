@@ -55,7 +55,7 @@ The YOY calculation yields in a distribution of degradation rates, the
 central tendency of which is the most representative of the true
 degradation. We note that the workflow described above and implimented in 
 :py:class:`.analysis_chains.TrendAnalysis` provides an estimate of degradation rate,
-not "performance loss rate" (PLR). PLR includes losses that are explicitly filtered
+not performance loss rate (PLR). PLR includes losses that are explicitly filtered
 out by the primary workflow (Deceglie 2023).
 
 The width of the distribution provides information about
