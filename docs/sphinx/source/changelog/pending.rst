@@ -184,3 +184,5 @@ Contributors
 * Martin Springer (:ghuser:`martin-springer`)
 * Michael Deceglie (:ghuser:`mdeceglie`)
 * Kirsten Perry (:ghuser:`kperrynrel`)
+* Dirk Jordan (:ghuser:`dirkjordan`)
+* Chris Deline (:ghuser:`cdeline`)
