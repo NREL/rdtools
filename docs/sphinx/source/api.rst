@@ -9,14 +9,14 @@ Submodules
 ==========
 
 RdTools is organized into submodules focused on different parts of the data
-analysis workflow.  
+analysis workflow.
 
 .. autosummary::
    :toctree: generated/
 
    analysis_chains
    degradation
-   soiling   
+   soiling
    availability
    filtering
    normalization
@@ -42,8 +42,8 @@ Object-oriented end-to-end analysis
    analysis_chains.TrendAnalysis.plot_soiling_monte_carlo
    analysis_chains.TrendAnalysis.plot_pv_vs_irradiance
    analysis_chains.TrendAnalysis.plot_degradation_timeseries
-   
-   
+
+
 Degradation
 ===========
 
@@ -86,7 +86,7 @@ System Availability
 
 .. autosummary::
    :toctree: generated/
-   
+
    AvailabilityAnalysis
    AvailabilityAnalysis.run
    AvailabilityAnalysis.plot
@@ -100,15 +100,22 @@ Filtering
 
 .. autosummary::
    :toctree: generated/
-    
+
    clip_filter
    quantile_clip_filter
    logic_clip_filter
    xgboost_clip_filter
+   clearsky_filter
    csi_filter
+   pvlib_clearsky_filter
    poa_filter
    tcell_filter
    normalized_filter
+   two_way_window_filter
+   insolation_filter
+   hampel_filter
+   directional_tukey_filter
+   hour_angle_filter
 
 
 Normalization
@@ -125,9 +132,7 @@ Normalization
    irradiance_rescale
    normalize_with_expected_power
    normalize_with_pvwatts
-   normalize_with_sapm
    pvwatts_dc_power
-   sapm_dc_power
    delta_index
    check_series_frequency
 
