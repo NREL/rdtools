@@ -22,7 +22,7 @@ Enhancements
 * Added codecov.yml configuration file (:pull:`420`)
 * Availability module no longer considered experimental (:pull:`429`)
 * Add capability to seed the CircularBlockBootstrap (:pull:`429`)
-* Allow sub-daily aggregation in :py:func:`~rdtools.degradation.degradation_year_on_year` (:pull:`390`) 
+* Allow sub-daily aggregation in :py:func:`~rdtools.degradation.degradation_year_on_year` (:pull:`390`)
 
 Bug fixes
 ---------
@@ -31,6 +31,7 @@ Bug fixes
 * Deploy workflow was replaced with trusted publisher workflow for pypi (:pull:`427`)
 * Fix pandas 2.0.0 deprications and update syntax changes (:pull:`428`)
 * Fix numpy 2.0.0 deprications and update syntax changes (:pull:`428`)
+* Set marker linewidth to zero in `rdtools.plotting.degradation_summary_plots` (:pull:`433`)
 
 Tests
 -----
