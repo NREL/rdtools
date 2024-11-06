@@ -478,9 +478,9 @@ def _aggregate(time_series, target_frequency, max_timedelta, series_type):
     '''
 
     # series that has same index as desired output
-    output_dummy = time_series.resample(target_frequency,
-                                        closed='right',
-                                        label='right').sum()
+    output_dummy = time_series.resample(
+        target_frequency, closed="right", label="right", origin="start"
+    ).sum()
 
     union_index = time_series.index.union(output_dummy.index)
     time_series = time_series.dropna()
@@ -523,9 +523,9 @@ def _aggregate(time_series, target_frequency, max_timedelta, series_type):
 
     series_sum = pd.Series(data=series_sum, index=time_series.index[1:])
 
-    aggregated = series_sum.resample(target_frequency,
-                                     closed='right',
-                                     label='right').sum(min_count=1)
+    aggregated = series_sum.resample(
+        target_frequency, closed="right", label="right", origin="start"
+    ).sum(min_count=1)
 
     return aggregated
 
