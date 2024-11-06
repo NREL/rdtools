@@ -53,7 +53,12 @@ The preferred method for degradation rate estimation is the year-on-year
 (YOY) approach (Jordan 2018), available in :py:func:`.degradation.degradation_year_on_year`.
 The YOY calculation yields in a distribution of degradation rates, the
 central tendency of which is the most representative of the true
-degradation. The width of the distribution provides information about
+degradation. We note that the workflow described above and implimented in 
+:py:class:`.analysis_chains.TrendAnalysis` provides an estimate of degradation rate,
+not performance loss rate (PLR). PLR includes losses that are explicitly filtered
+out by the primary workflow (Deceglie 2023).
+
+The width of the distribution provides information about
 the uncertainty in the estimate via a bootstrap calculation. The
 :ref:`examples` use the output of
 :py:func:`.degradation.degradation_year_on_year` to visualize the calculation.
@@ -160,70 +165,6 @@ environment by first installing RdTools as described above, then running
 ``pip install -r docs/notebook_requirements.txt`` from the base
 directory.
 
-The following functions are used for degradation and soiling analysis:
-
-.. code:: python
-
-   import rdtools
-
-The most frequently used functions are:
-
-.. code:: python
-
-   normalization.normalize_with_expected_power(pv, power_expected, poa_global,
-                                               pv_input='power')
-     '''
-     Inputs: Pandas time series of raw power or energy, expected power, and
-        plane of array irradiance.
-     Outputs: Pandas time series of normalized energy and POA insolation
-     '''
-
-.. code:: python
-
-   filtering.poa_filter(poa_global); filtering.tcell_filter(temperature_cell); 
-   filtering.clip_filter(power_ac); filtering.logic_clip_filter(power_ac);
-   filtering.xgboost_clip_filter(power_ac); filtering.normalized_filter(energy_normalized);
-   filtering.csi_filter(poa_global_measured, poa_global_clearsky); 
-     '''
-     Inputs: Pandas time series of raw data to be filtered.
-     Output: Boolean mask where `True` indicates acceptable data
-     '''
-
-.. code:: python
-
-   aggregation.aggregation_insol(energy_normalized, insolation, frequency='D')
-     '''
-     Inputs: Normalized energy and insolation
-     Output: Aggregated data, weighted by the insolation.
-     '''
-
-.. code:: python
-
-   degradation.degradation_year_on_year(energy_normalized)
-     '''
-     Inputs: Aggregated, normalized, filtered time series data
-     Outputs: Tuple: `yoy_rd`: Degradation rate 
-       `yoy_ci`: Confidence interval `yoy_info`: associated analysis data
-     '''
-
-.. code:: python
-
-   soiling.soiling_srr(energy_normalized_daily, insolation_daily)
-     '''
-     Inputs: Daily aggregated, normalized, filtered time series data for normalized performance and insolation
-     Outputs: Tuple: `sr`: Insolation-weighted soiling ratio 
-       `sr_ci`: Confidence interval `soiling_info`: associated analysis data
-     '''
-
-.. code:: python
-
-   availability.AvailabilityAnalysis(power_system, power_subsystem,
-                                     energy_cumulative, power_expected)
-     '''
-     Inputs: Pandas time series system and subsystem power and energy data
-     Outputs: DataFrame of production loss and availability metrics
-     '''
-
 Documentation
 -------------
 
@@ -236,7 +177,6 @@ take one of several types, we document them using the type alises listed below:
 
    ``numeric``
       scalar or ``pandas.Series``. Typically int or float dtype.
-
 
 Citing RdTools
 --------------
@@ -273,7 +213,6 @@ appropriate:
    Detection Techniques in AC Power Time Series," 2021 IEEE 48th Photovoltaic
    Specialists Conference (PVSC), 2021, pp. 1638-1643, DOI: `10.1109/PVSC43889.2021.9518733 <https://doi.org/10.1109/PVSC43889.2021.9518733>`_
 
-
 References
 ----------
 
@@ -292,6 +231,9 @@ methodology include:
    methodology comparison — A basis for a standard", in 43rd IEEE
    Photovoltaic Specialists Conference, Portland, OR, USA, 2016, DOI:
    10.1109/PVSC.2016.7749593.
+-  M. G. Deceglie, K. Anderson, D. Fregosi, W.B. Hobbs, M.A. Mikofski,
+   M. Theristis, and B. E. Meyers, "Perspective: Performance Loss Rate in
+   Photovoltaic Systems", Sol. RRL, 7: 2300196. DOI: 10.1002/solr.202300196
 -  Jordan DC, Kurtz SR, VanSant KT, Newmiller J, Compendium of
    Photovoltaic Degradation Rates, Progress in Photovoltaics: Research
    and Application, 2016, 24(7), 978 - 989.

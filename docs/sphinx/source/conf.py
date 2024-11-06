@@ -22,7 +22,7 @@ sys.path.insert(0, os.path.abspath('../../..'))
 # -- Project information -----------------------------------------------------
 
 project = 'RdTools'
-copyright = '2016–2021 kWh Analytics, Alliance for Sustainable Energy, LLC, SunPower, and DNV'
+copyright = '2016–2024 kWh Analytics, Alliance for Sustainable Energy, LLC, SunPower, and DNV'
 author = 'kWh Analytics, Alliance for Sustainable Energy, LLC, SunPower, and DNV'
 
 # The full version, including alpha/beta/rc tags
