@@ -1,10 +1,7 @@
-'''
+"""
 Functions for calculating soiling metrics from photovoltaic system data.
+"""
 
-The soiling module is currently experimental. The API, results,
-and default behaviors may change in future releases (including MINOR
-and PATCH releases) as the code matures.
-'''
 from rdtools import degradation as RdToolsDeg
 from rdtools.bootstrap import _make_time_series_bootstrap_samples
 
@@ -23,12 +20,6 @@ from statsmodels.tsa.seasonal import STL
 from statsmodels.tsa.stattools import adfuller
 import statsmodels.api as sm
 lowess = sm.nonparametric.lowess
-
-warnings.warn(
-    'The soiling module is currently experimental. The API, results, '
-    'and default behaviors may change in future releases (including MINOR '
-    'and PATCH releases) as the code matures.'
-)
 
 
 # Custom exception
