@@ -15,6 +15,8 @@ when compared with older versions of RdTools
 
 * Upgrade pvlib 0.9.0 to 0.11.0 (:pull:`428`)
 
+* Upgrade soiling algorithms SRR and CODS. Remove experimental warning label. (:pull:`426`)
+
 Enhancements
 ------------
 * Added a new wrapper function for clearsky filters (:pull:`412`)
@@ -22,7 +24,7 @@ Enhancements
 * Added codecov.yml configuration file (:pull:`420`)
 * Availability module no longer considered experimental (:pull:`429`)
 * Add capability to seed the CircularBlockBootstrap (:pull:`429`)
-* Allow sub-daily aggregation in :py:func:`~rdtools.degradation.degradation_year_on_year` (:pull:`390`) 
+* Allow sub-daily aggregation in :py:func:`~rdtools.degradation.degradation_year_on_year` (:pull:`390`)
 
 Bug fixes
 ---------
@@ -184,5 +186,8 @@ Contributors
 * Martin Springer (:ghuser:`martin-springer`)
 * Michael Deceglie (:ghuser:`mdeceglie`)
 * Kirsten Perry (:ghuser:`kperrynrel`)
+* Matthew Muller (:ghuser:`mmuller`)
+* Noah Moyer (:ghuser:`noromo01`)
+* Quyen Nguyen (:ghuser:`qnguyen345`)
 * Dirk Jordan (:ghuser:`dirkjordan`)
 * Chris Deline (:ghuser:`cdeline`)
