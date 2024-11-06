@@ -183,7 +183,6 @@ class TrendAnalysis:
             "clip_filter": {},
             "clearsky_filter": {},
             "ad_hoc_filter": None,  # use this to include an explict filter
-            "hour_angle_filter": {},
         }
 
         self.default_filter_params_aggregated = {
