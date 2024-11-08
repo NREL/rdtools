@@ -341,12 +341,16 @@ class SRRAnalysis:
                 "run_slope_high": 0,
                 "max_neg_step": min(run.delta),
                 "start_loss": 1,
-                "inferred_start_loss": np.nan if run.pi_norm.isna().any() else run.pi_norm.median(),  # changed from mean/Matt
-                "inferred_end_loss": np.nan if run.pi_norm.isna().any() else run.pi_norm.median(),  # changed from mean/Matt
+                "inferred_start_loss": (
+                    np.nan if run.pi_norm.isna().any() else run.pi_norm.median()
+                ),
+                "inferred_end_loss": (
+                    np.nan if run.pi_norm.isna().any() else run.pi_norm.median()
+                ),
                 "slope_err": 10000,  # added high dummy start value for later logic/Matt
                 "valid": False,
                 "clean_event": run.clean_event.iloc[0],  # record of clean events to distiguisih
-                                                         # from other breaks/Matt
+                # from other breaks/Matt
                 "run_loss_baseline": 0.0,  # loss from the polyfit over the soiling intercal/Matt
                 ##############################################################
             }
