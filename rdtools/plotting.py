@@ -4,7 +4,6 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import plotly.express as px
 import numpy as np
-import warnings
 
 
 def degradation_summary_plots(yoy_rd, yoy_ci, yoy_info, normalized_yield,
