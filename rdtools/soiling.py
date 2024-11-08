@@ -22,9 +22,6 @@ from scipy.stats.mstats import theilslopes
 from statsmodels.tsa.seasonal import STL
 from statsmodels.tsa.stattools import adfuller
 
-from rdtools import degradation as RdToolsDeg
-from rdtools.bootstrap import _make_time_series_bootstrap_samples
-
 lowess = sm.nonparametric.lowess  # Used in CODSAnalysis/Matt
 
 
