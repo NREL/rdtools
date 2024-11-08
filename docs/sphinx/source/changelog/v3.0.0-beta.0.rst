@@ -22,6 +22,7 @@ Enhancements
 * Added a new wrapper function for clearsky filters (:pull:`412`)
 * Improve test coverage, especially for the newly added filter capabilities (:pull:`413`)
 * Added codecov.yml configuration file (:pull:`420`)
+* Added new methods perfect_clean_complex and inferred_clean_complex which detects negative shifts and piecewise changes in the slope for soiling detection in :py:func:`~rdtools.soiling.soiling_srr`(:pull:`426`)
 * Availability module no longer considered experimental (:pull:`429`)
 * Add capability to seed the CircularBlockBootstrap (:pull:`429`)
 * Allow sub-daily aggregation in :py:func:`~rdtools.degradation.degradation_year_on_year` (:pull:`390`)
@@ -33,11 +34,15 @@ Bug fixes
 * Deploy workflow was replaced with trusted publisher workflow for pypi (:pull:`427`)
 * Fix pandas 2.0.0 deprications and update syntax changes (:pull:`428`)
 * Fix numpy 2.0.0 deprications and update syntax changes (:pull:`428`)
+* Fixed pylint bare except error for :py:func:`~rdtools.soiling.segmented_soiling_period`
+in ``soiling.py`` (:pull:`432`)
 
 Tests
 -----
 * Testing matrix was updated to include python = [3.9, 3.10, 3.11, 3.12] (:pull:`428`)
 * nbval sanitization rules were added for date and time stamp (:pull:`428`)
+* Added pytests to cover invalid segementations for
+:py:func:`~rdtools.soiling.segmented_soiling_period` in ``soiling_cods_test.py`` (:pull:`432`)
 
 Documentation
 -------------
