@@ -1,5 +1,4 @@
 """
-"""
 Functions for calculating soiling metrics from photovoltaic system data.
 """
 
