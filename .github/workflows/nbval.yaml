@@ -29,7 +29,7 @@ jobs:
     - name: Run notebook and check output
       run: |
         # --sanitize-with:  pre-process text to remove irrelevant differences (e.g. warning filepaths)
-        pytest --nbval --sanitize-with docs/nbval_sanitization_rules.cfg docs/${{ matrix.notebook-file }}
+        pytest --nbval --nbval-sanitize-with docs/nbval_sanitization_rules.cfg docs/${{ matrix.notebook-file }}
     - name: Run notebooks again, save files
       run: |
         pip install nbconvert[webpdf]
