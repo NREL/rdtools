@@ -521,13 +521,13 @@ def _aggregate(time_series, target_frequency, max_timedelta, series_type):
         raise ValueError("series_type must be either 'instantaneous' or 'right_labeled', "
                          "not '{}'".format(series_type))
 
-    series_sum = pd.Series(data=series_sum, index=time_series.index[1:])
+    series_sum = pd.Series(data=np.insert(series_sum, 0, np.nan), index=time_series.index)
 
     aggregated = series_sum.resample(
         target_frequency, closed="right", label="right", origin="start"
     ).sum(min_count=1)
 
-    return aggregated
+    return aggregated[1:]
 
 
 def _interpolate_series(time_series, target_index, max_timedelta=None,
