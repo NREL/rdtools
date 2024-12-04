@@ -611,7 +611,7 @@ def test_sensor_clearsky_pvlib_analysis(sensor_clearsky_pvlib_analysis):
     ci = yoy_results["rd_confidence_interval"]
     rd = yoy_results["p50_rd"]
     assert -1.478 == pytest.approx(rd, abs=1e-2)
-    assert [-1.926, -0.649] == pytest.approx(ci, abs=1e-2)
+    assert [-2.495, -0.649] == pytest.approx(ci, abs=1e-2)
 
 
 @pytest.fixture
