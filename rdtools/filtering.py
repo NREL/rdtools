@@ -658,13 +658,13 @@ def logic_clip_filter(
         # for high frequency data sets.
 
         # Ensure that time series with zeros and nan's return same result
-        # lower = clip_pwr.fillna(0).quantile(0.99) / 1000
-        # clip_pwr_no_nan = clip_pwr[clip_pwr > lower]
+        lower = clip_pwr.fillna(0).quantile(0.99) / 1000
+        clip_pwr_no_nan = clip_pwr[clip_pwr > lower]
 
-        daily_mean = clip_pwr.resample("D").mean()
+        daily_mean = clip_pwr_no_nan.resample("D").mean()
         df_daily = daily_mean.to_frame(name="mean")
-        df_daily["clipping_max"] = clip_pwr.groupby(pd.Grouper(freq="D")).quantile(0.99)
-        df_daily["clipping_min"] = clip_pwr.groupby(pd.Grouper(freq="D")).quantile(0.075)
+        df_daily["clipping_max"] = clip_pwr_no_nan.groupby(pd.Grouper(freq="D")).quantile(0.99)
+        df_daily["clipping_min"] = clip_pwr_no_nan.groupby(pd.Grouper(freq="D")).quantile(0.075)
         daily_clipping_max = df_daily["clipping_max"].reindex(
             index=power_ac_copy.index, method="ffill"
         )
