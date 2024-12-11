@@ -436,7 +436,9 @@ class TrendAnalysis:
         if renorm:
             # Normalize to the 95th percentile for convenience, this is renormalized out
             # in the calculations but is relevant to normalized_filter()
-            x = energy_normalized[np.isfinite(energy_normalized)]
+            lower = energy_normalized.fillna(0).quantile(0.95) / 1000
+            x = energy_normalized[energy_normalized > lower]
+            # x = energy_normalized[np.isfinite(energy_normalized)]
             energy_normalized = energy_normalized / x.quantile(0.95)
 
         return energy_normalized, insolation
@@ -949,7 +951,6 @@ class TrendAnalysis:
         -------
         None
         """
-
         self._sensor_preprocess()
         sensor_results = {}
 

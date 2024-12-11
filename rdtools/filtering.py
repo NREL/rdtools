@@ -294,7 +294,7 @@ def pvlib_clearsky_filter(
 def clip_filter(power_ac, model="logic", **kwargs):
     """
     Master wrapper for running one of the desired clipping filters.
-    The default filter run is the quantile clipping filter.
+    The default filter run is the logic clipping filter.
 
     Parameters
     ----------
@@ -335,7 +335,8 @@ def quantile_clip_filter(power_ac, quantile=0.98):
     """
     Filter data points likely to be affected by clipping
     with power or energy greater than or equal to 99% of the `quant`
-    quantile.
+    quantile. NaN's and small values (power_ac(quantile) / 1000) are
+    removed before calculating clipping threshold.
 
     Parameters
     ----------
@@ -350,8 +351,16 @@ def quantile_clip_filter(power_ac, quantile=0.98):
         Boolean Series of whether the given measurement is below 99% of the
         quantile filter.
     """
-    v = power_ac.quantile(quantile)
-    return power_ac < v * 0.99
+    # Replace NaN's and small values for quantile calculation
+    # This ensures that power series with NaN's instead of zero values
+    # provide the same result.
+    lower = power_ac.fillna(0).quantile(quantile) / 1000
+
+    # Calculate the quantile and upper clipping threshold
+    q = power_ac[power_ac > lower].quantile(quantile)
+    upper = q * 0.99
+
+    return power_ac < upper
 
 
 def _format_clipping_time_series(power_ac, mounting_type):
@@ -510,13 +519,18 @@ def _apply_overall_clipping_threshold(power_ac, clipping_mask, clipped_power_ac)
         periods are labeled as True and non-clipping periods are
         labeled as False. Has a pandas datetime index.
     """
+
+    # Ensure that series with NaN's return same results as series with 0's
+    lower = power_ac.fillna(0).quantile(0.99) / 1000
+    power_ac_quant = power_ac[power_ac > lower].quantile(0.99)
+
     upper_bound_pdiff = abs(
-        (power_ac.quantile(0.99) - clipped_power_ac.quantile(0.99))
-        / ((power_ac.quantile(0.99) + clipped_power_ac.quantile(0.99)) / 2)
+        (power_ac_quant - clipped_power_ac.quantile(0.99))
+        / ((power_ac_quant + clipped_power_ac.quantile(0.99)) / 2)
     )
     percent_clipped = len(clipped_power_ac) / len(power_ac) * 100
     if (upper_bound_pdiff < 0.005) & (percent_clipped > 4):
-        max_clip = power_ac >= power_ac.quantile(0.99)
+        max_clip = power_ac >= power_ac_quant
         clipping_mask = clipping_mask | max_clip
     return clipping_mask
 
@@ -642,12 +656,15 @@ def logic_clip_filter(
         # Set any values within the clipping max + clipping min threshold
         # as clipping. This is done specifically for capturing the noise
         # for high frequency data sets.
+
+        # Ensure that time series with zeros and nan's return same result
+        # lower = clip_pwr.fillna(0).quantile(0.99) / 1000
+        # clip_pwr_no_nan = clip_pwr[clip_pwr > lower]
+
         daily_mean = clip_pwr.resample("D").mean()
         df_daily = daily_mean.to_frame(name="mean")
         df_daily["clipping_max"] = clip_pwr.groupby(pd.Grouper(freq="D")).quantile(0.99)
-        df_daily["clipping_min"] = clip_pwr.groupby(pd.Grouper(freq="D")).quantile(
-            0.075
-        )
+        df_daily["clipping_min"] = clip_pwr.groupby(pd.Grouper(freq="D")).quantile(0.075)
         daily_clipping_max = df_daily["clipping_max"].reindex(
             index=power_ac_copy.index, method="ffill"
         )
