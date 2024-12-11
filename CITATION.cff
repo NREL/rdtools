@@ -29,6 +29,8 @@ authors:
   orcid: "https://orcid.org/0000-0003-1075-1417"
 - family-names: "Ruth"
   given-names: "Daniel"
+- family-names: "Nguyen"
+  given-names: "Quyen"
 - family-names: "Jordan"
   given-names: "Dirk"
   orcid: "https://orcid.org/0000-0002-2183-7489"
@@ -38,7 +40,5 @@ authors:
   given-names: "Chris"
   orcid: "https://orcid.org/0000-0002-9867-8930"
 title: "RdTools"
-version: 3.0.0
 doi: 10.5281/zenodo.1210316
-date-released: 2024-11-XX
 url: "https://github.com/NREL/rdtools"
