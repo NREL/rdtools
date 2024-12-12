@@ -21,7 +21,7 @@ def robust_quantile(x, q):
         The q-th quantile of x, ignoring small values and NaN's.
     """
 
-    small = x.fillna(0).quantile(q) / 1000
+    small = x.astype(float).fillna(0).quantile(q) / 1000
     q = x[x > small].quantile(q)
 
     return q
@@ -47,7 +47,7 @@ def robust_median(x, q=0.99):
         The q-th quantile of x, ignoring small values and NaN's.
     """
 
-    small = x.fillna(0).quantile(q) / 1000
+    small = x.astype(float).fillna(0).quantile(q) / 1000
     mdn = x[x > small].median()
 
     return mdn
@@ -73,7 +73,7 @@ def robust_mean(x, q=0.99):
         The q-th quantile of x, ignoring small values and NaN's.
     """
 
-    small = x.fillna(0).quantile(q) / 1000
+    small = x.astype(float).fillna(0).quantile(q) / 1000
     m = x[x > small].mean()
 
     return m
