@@ -36,6 +36,9 @@ from rdtools.plotting import degradation_timeseries_plot
 # from rdtools.plotting import soiling_rate_histogram
 # from rdtools.plotting import availability_summary_plots
 # from rdtools.availability import AvailabilityAnalysis
+from rdtools.utilities import robust_quantile
+from rdtools.utilities import robust_median
+from rdtools.utilities import robust_mean
 
 from . import _version
 __version__ = _version.get_versions()['version']
