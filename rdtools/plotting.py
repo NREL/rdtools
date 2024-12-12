@@ -94,9 +94,9 @@ def degradation_summary_plots(yoy_rd, yoy_ci, yoy_info, normalized_yield,
     ax2.set_xlim(hist_xmin, hist_xmax)
 
     label = (
-        ' $R_{d}$ = %.2f%%/yr \n'
-        'confidence interval: \n'
-        '%.2f to %.2f %%/yr' % (yoy_rd, yoy_ci[0], yoy_ci[1])
+        f" $R_{{d}}$ = {yoy_rd:.2f}%/yr \n"
+        f"confidence interval: \n"
+        f"{yoy_ci[0]:.2f} to {yoy_ci[1]:.2f} %/yr"
     )
     if detailed:
         n = yoy_values.notnull().sum()
