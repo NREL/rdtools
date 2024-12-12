@@ -36,9 +36,7 @@ TESTS_REQUIRE = [
     "pytest-cov",
     "coverage",
     "flake8",
-    # nbval greater than 0.9.6 has a bug with semicolon
-    # https://github.com/computationalmodelling/nbval/issues/194
-    "nbval<=0.9.6",
+    "nbval",
     "pytest-mock",
 ]
 
