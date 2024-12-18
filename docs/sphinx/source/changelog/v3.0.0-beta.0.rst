@@ -36,7 +36,6 @@ Tests
 -----
 * Testing matrix was updated to include python = [3.9, 3.10, 3.11, 3.12] (:pull:`428`)
 * nbval sanitization rules were added for date and time stamp (:pull:`428`)
-* add tests for pvlib clearsky fiter in analysis chain (:pull:`441`)
 
 Documentation
 -------------

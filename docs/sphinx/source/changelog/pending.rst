@@ -19,3 +19,8 @@ Requirements
 ------------
 * Updated tornado==6.4.2 in ``notebook_requirements.txt`` (:pull:`438`)
 
+
+Tests
+-----
+* Add tests for pvlib clearsky fiter in analysis chain (:pull:`441`)
+
