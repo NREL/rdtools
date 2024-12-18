@@ -8,7 +8,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from rdtools import normalization, filtering, aggregation, degradation
-from rdtools import clearsky_temperature, plotting
+from rdtools import clearsky_temperature, plotting, utilities
 import warnings
 
 
@@ -436,10 +436,9 @@ class TrendAnalysis:
         if renorm:
             # Normalize to the 95th percentile for convenience, this is renormalized out
             # in the calculations but is relevant to normalized_filter()
-            lower = energy_normalized.fillna(0).quantile(0.95) / 1000
-            x = energy_normalized[energy_normalized > lower]
-            # x = energy_normalized[np.isfinite(energy_normalized)]
-            energy_normalized = energy_normalized / x.quantile(0.95)
+            q = utilities.robust_quantile(energy_normalized[np.isfinite(energy_normalized)], 0.95)
+
+            energy_normalized = energy_normalized / q
 
         return energy_normalized, insolation
 
