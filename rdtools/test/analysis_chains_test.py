@@ -1,5 +1,6 @@
 from rdtools import TrendAnalysis, normalization, filtering
 from conftest import assert_isinstance, assert_warnings
+from rdtools.analysis_chains import ValidatedFilterDict
 import pytest
 import pvlib
 import pandas as pd
@@ -740,3 +741,45 @@ def test_plot_degradation_timeseries(sensor_analysis, clearsky_analysis):
     assert_isinstance(
         clearsky_analysis.plot_degradation_timeseries("clearsky"), plt.Figure
     )
+
+
+def test_validated_filter_dict_initialization():
+    valid_keys = ["key1", "key2"]
+    filter_dict = ValidatedFilterDict(valid_keys, key1="value1", key2="value2")
+    assert filter_dict["key1"] == "value1"
+    assert filter_dict["key2"] == "value2"
+
+
+def test_validated_filter_dict_invalid_key_initialization():
+    valid_keys = ["key1", "key2"]
+    with pytest.raises(KeyError, match="Key 'key3' is not a valid filter parameters."):
+        ValidatedFilterDict(valid_keys, key1="value1", key3="value3")
+
+
+def test_validated_filter_dict_setitem():
+    valid_keys = ["key1", "key2"]
+    filter_dict = ValidatedFilterDict(valid_keys)
+    filter_dict["key1"] = "value1"
+    assert filter_dict["key1"] == "value1"
+
+
+def test_validated_filter_dict_setitem_invalid_key():
+    valid_keys = ["key1", "key2"]
+    filter_dict = ValidatedFilterDict(valid_keys)
+    with pytest.raises(KeyError, match="Key 'key3' is not a valid filter parameters."):
+        filter_dict["key3"] = "value3"
+
+
+def test_validated_filter_dict_update():
+    valid_keys = ["key1", "key2"]
+    filter_dict = ValidatedFilterDict(valid_keys)
+    filter_dict.update({"key1": "value1", "key2": "value2"})
+    assert filter_dict["key1"] == "value1"
+    assert filter_dict["key2"] == "value2"
+
+
+def test_validated_filter_dict_update_invalid_key():
+    valid_keys = ["key1", "key2"]
+    filter_dict = ValidatedFilterDict(valid_keys)
+    with pytest.raises(KeyError, match="Key 'key3' is not a valid filter parameters."):
+        filter_dict.update({"key1": "value1", "key3": "value3"})
