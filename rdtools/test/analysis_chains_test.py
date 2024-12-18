@@ -752,7 +752,7 @@ def test_validated_filter_dict_initialization():
 
 def test_validated_filter_dict_invalid_key_initialization():
     valid_keys = ["key1", "key2"]
-    with pytest.raises(KeyError, match="Key 'key3' is not a valid filter parameters."):
+    with pytest.raises(KeyError, match="Key 'key3' is not a valid filter parameter."):
         ValidatedFilterDict(valid_keys, key1="value1", key3="value3")
 
 
@@ -766,7 +766,7 @@ def test_validated_filter_dict_setitem():
 def test_validated_filter_dict_setitem_invalid_key():
     valid_keys = ["key1", "key2"]
     filter_dict = ValidatedFilterDict(valid_keys)
-    with pytest.raises(KeyError, match="Key 'key3' is not a valid filter parameters."):
+    with pytest.raises(KeyError, match="Key 'key3' is not a valid filter parameter."):
         filter_dict["key3"] = "value3"
 
 
@@ -781,5 +781,52 @@ def test_validated_filter_dict_update():
 def test_validated_filter_dict_update_invalid_key():
     valid_keys = ["key1", "key2"]
     filter_dict = ValidatedFilterDict(valid_keys)
-    with pytest.raises(KeyError, match="Key 'key3' is not a valid filter parameters."):
+    with pytest.raises(KeyError, match="Key 'key3' is not a valid filter parameter."):
         filter_dict.update({"key1": "value1", "key3": "value3"})
+
+
+@pytest.mark.parametrize(
+    "filter_param",
+    [
+        "normalized_filter",
+        "poa_filter",
+        "tcell_filter",
+        "clip_filter",
+        "hour_angle_filter",
+        "clearsky_filter",
+        "sensor_clearsky_filter",
+        "ad_hoc_filter",
+    ],
+)
+def test_valid_filter_params(sensor_analysis, filter_param):
+    sensor_analysis.filter_params[filter_param] = {}
+    assert filter_param in sensor_analysis.filter_params
+
+
+def test_invalid_filter_params(sensor_analysis, filter_param="invalid_filter"):
+    with pytest.raises(KeyError, match=f"Key '{filter_param}' is not a valid filter parameter."):
+        sensor_analysis.filter_params[filter_param] = {}
+
+
+@pytest.mark.parametrize(
+    "filter_param_aggregated",
+    [
+        "two_way_window_filter",
+        "insolation_filter",
+        "hampel_filter",
+        "directional_tukey_filter",
+        "ad_hoc_filter",
+    ],
+)
+def test_valid_filter_params_aggregated(sensor_analysis, filter_param_aggregated):
+    sensor_analysis.filter_params_aggregated[filter_param_aggregated] = {}
+    assert filter_param_aggregated in sensor_analysis.filter_params_aggregated
+
+
+def test_invalid_filter_params_aggregated(
+    sensor_analysis, filter_param_aggregated="invalid_filter"
+):
+    with pytest.raises(
+        KeyError, match=f"Key '{filter_param_aggregated}' is not a valid filter parameter."
+    ):
+        sensor_analysis.filter_params_aggregated[filter_param_aggregated] = {}

@@ -1267,7 +1267,7 @@ class TrendAnalysis:
 class ValidatedFilterDict(dict):
     def __init__(self, valid_keys, *args, **kwargs):
         self.valid_keys = valid_keys
-        self._err_msg = "Key '{0}' is not a valid filter parameters."
+        self._err_msg = "Key '{0}' is not a valid filter parameter."
         super(ValidatedFilterDict, self).__init__(*args, **kwargs)
         self._validate_keys()
 
