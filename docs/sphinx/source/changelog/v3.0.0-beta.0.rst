@@ -136,7 +136,7 @@ Requirements
     * Updated terminado==0.18.1 in ``notebook_requirements.txt`` (:pull:`428`)
     * Updated testpath==0.6.0 in ``notebook_requirements.txt`` (:pull:`428`)
     * Updated tinycss2==1.3.0 in ``notebook_requirements.txt`` (:pull:`428`)
-    * Updated tornado==6.4.2 in ``notebook_requirements.txt`` (:pull:`438`)
+    * Updated tornado==6.4.1 in ``notebook_requirements.txt`` (:pull:`428`)
     * Updated traitlets==5.14.3 in ``notebook_requirements.txt`` (:pull:`428`)
     * Updated wcwidth==0.2.13 in ``notebook_requirements.txt`` (:pull:`428`)
     * Updated widgetsnbextension==4.0.11 in ``notebook_requirements.txt`` (:pull:`428`)
