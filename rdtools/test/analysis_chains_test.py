@@ -403,7 +403,7 @@ def test_filter_ad_hoc_warnings(workflow, sensor_parameters):
     assert components["ad_hoc_filter"].all()
 
     # warning about NaNs
-    ad_hoc_filter = pd.Series(True, index=sensor_parameters["pv"].index)
+    ad_hoc_filter = pd.Series(True, index=sensor_parameters["pv"].index, dtype="boolean")
     ad_hoc_filter.iloc[10] = pd.NA
     rd_analysis.filter_params["ad_hoc_filter"] = ad_hoc_filter
     with pytest.warns(
@@ -454,7 +454,9 @@ def test_aggregated_filter_ad_hoc_warnings(workflow, sensor_parameters):
     # disable all filters outside of CSI
     rd_analysis_2.filter_params = {"clearsky_filter": {"model": "csi"}}
     daily_ad_hoc_filter = pd.Series(True, index=sensor_parameters["pv"].index)
-    daily_ad_hoc_filter = daily_ad_hoc_filter.resample("1D").first().dropna(how="all")
+    daily_ad_hoc_filter = (
+        daily_ad_hoc_filter.resample("1D").first().dropna(how="all").astype("boolean")
+    )
     daily_ad_hoc_filter.iloc[10] = pd.NA
     rd_analysis_2.filter_params_aggregated["ad_hoc_filter"] = daily_ad_hoc_filter
     with pytest.warns(
