@@ -11,4 +11,5 @@ Enhancements
 Bug fixes
 ---------
 * Set marker linewidth to zero in `rdtools.plotting.degradation_summary_plots` (:pull:`433`)
+* Fix `energy_from_power`` returns incorrect index for shifted hourly data (:issue:`370`, :pull:`437`)
 
