@@ -68,6 +68,25 @@ class DegradationTestCase(unittest.TestCase):
         # Allowed frequencies for degradation_year_on_year
         cls.list_YOY_input_freq = ["MS", "ME", "W", "D", "Irregular_D"]
 
+        # ------------------------------------------------------------------------------------------------
+        # Allow pandas < 2.2.0 to use 'M' as an alias for MonthEnd
+        # https://pandas.pydata.org/docs/whatsnew/v2.2.0.html#deprecate-aliases-m-q-y-etc-in-favour-of-me-qe-ye-etc-for-offsets
+        # Check pandas version and set frequency alias
+        pandas_version = pd.__version__.split(".")
+        if int(pandas_version[0]) < 2 or (
+            int(pandas_version[0]) == 2 and int(pandas_version[1]) < 2
+        ):
+            for list in [
+                cls.list_all_input_freq,
+                cls.list_ols_input_freq,
+                cls.list_CD_input_freq,
+                cls.list_YOY_input_freq,
+            ]:
+                if "ME" in list:
+                    list.remove("ME")
+                    list.append(pd.tseries.offsets.MonthEnd())
+        # ------------------------------------------------------------------------------------------------
+
         cls.rd = -0.005
 
         test_corr_energy = {}
@@ -198,7 +217,13 @@ class DegradationTestCase(unittest.TestCase):
     ],
 )
 def test_yoy_two_years_error(start, end, freq):
-    # GH 339
+    # ----------------------------------------------------------------
+    # Allow pandas < 2.2.0 to use 'M' as an alias for MonthEnd
+    # https://pandas.pydata.org/docs/whatsnew/v2.2.0.html#deprecate-aliases-m-q-y-etc-in-favour-of-me-qe-ye-etc-for-offsets
+    if freq == "ME":
+        freq = pd.tseries.offsets.MonthEnd()
+    # ----------------------------------------------------------------
+
     times = pd.date_range(start, end, freq=freq)
     series = pd.Series(1, index=times)
     # introduce NaN at the end to ensure that the 2 year requirement applies to
