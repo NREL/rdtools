@@ -740,3 +740,21 @@ def test_plot_degradation_timeseries(sensor_analysis, clearsky_analysis):
     assert_isinstance(
         clearsky_analysis.plot_degradation_timeseries("clearsky"), plt.Figure
     )
+
+
+def test_energy_from_power_hourly_data():
+
+    times = pd.date_range("2019-01-01 00:00:00", periods=3, freq="H")
+    pv = pd.Series([1.2, 2.8, 2.0], index=times)
+
+    energy = normalization.energy_from_power(pv)
+    pd.testing.assert_series_equal(energy, pv[1:], check_names=False)
+
+
+def test_energy_from_power_shifted_hourly_data():
+
+    times = pd.date_range("2019-01-01 00:30:00", periods=3, freq="H")
+    pv = pd.Series([1.2, 2.8, 2.0], index=times)
+
+    energy = normalization.energy_from_power(pv)
+    pd.testing.assert_series_equal(energy, pv[1:], check_names=False)
