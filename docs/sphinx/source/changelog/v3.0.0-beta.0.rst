@@ -31,7 +31,6 @@ Bug fixes
 * Deploy workflow was replaced with trusted publisher workflow for pypi (:pull:`427`)
 * Fix pandas 2.0.0 deprications and update syntax changes (:pull:`428`)
 * Fix numpy 2.0.0 deprications and update syntax changes (:pull:`428`)
-* Set marker linewidth to zero in `rdtools.plotting.degradation_summary_plots` (:pull:`433`)
 
 Tests
 -----
