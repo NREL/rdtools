@@ -41,7 +41,7 @@ def degradation_trend(basic_parameters, cs_input):
     from degradation_test import DegradationTestCase
 
     rd = -0.05
-    input_freq = "H"
+    input_freq = "h"
     degradation_trend = DegradationTestCase.get_corr_energy(rd, input_freq)
     tz = cs_input["pvlib_location"].tz
     return degradation_trend.tz_localize(tz)
@@ -56,7 +56,7 @@ def sensor_parameters(basic_parameters, degradation_trend):
     basic_parameters["pv"] = power
     basic_parameters["poa_global"] = poa_global
     basic_parameters["temperature_ambient"] = temperature_ambient
-    basic_parameters["interp_freq"] = "H"
+    basic_parameters["interp_freq"] = "h"
     return basic_parameters
 
 
@@ -143,7 +143,7 @@ def test_interpolation(basic_parameters, degradation_trend):
     basic_parameters["temperature_cell"] = dummy_series
     basic_parameters["windspeed"] = dummy_series
     basic_parameters["power_expected"] = dummy_series
-    basic_parameters["interp_freq"] = "H"
+    basic_parameters["interp_freq"] = "h"
 
     rd_analysis = TrendAnalysis(**basic_parameters)
 
@@ -404,7 +404,7 @@ def test_filter_ad_hoc_warnings(workflow, sensor_parameters):
 
     # warning about NaNs
     ad_hoc_filter = pd.Series(True, index=sensor_parameters["pv"].index)
-    ad_hoc_filter.iloc[10] = np.nan
+    ad_hoc_filter.iloc[10] = None  # np.nan
     rd_analysis.filter_params["ad_hoc_filter"] = ad_hoc_filter
     with pytest.warns(
         UserWarning, match="ad_hoc_filter contains NaN values; setting to False"
