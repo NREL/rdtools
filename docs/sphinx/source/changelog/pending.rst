@@ -11,3 +11,4 @@ Enhancements
 Bug fixes
 ---------
 * Set marker linewidth to zero in :py:func:`~rdtools.plotting.degradation_summary_plots` (:pull:`433`)
+
