@@ -652,7 +652,6 @@ class TrendAnalysis:
                 warnings.warn(
                     "aggregated ad_hoc_filter contains NaN values; setting to False (excluding)"
                 )
-                ad_hoc_filter_aggregated = ad_hoc_filter_aggregated.fillna(False)
                 ad_hoc_filter_aggregated.loc[ad_hoc_filter_aggregated.isnull()] = False
 
             if not filter_components_aggregated.index.equals(
