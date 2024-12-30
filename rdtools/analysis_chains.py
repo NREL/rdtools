@@ -956,6 +956,12 @@ class TrendAnalysis:
                 self.poa_global_clearsky,
                 pv_input="energy",
             )
+            warnings.warn(
+                """Clear-sky analysis is performed but `power_expected` was passed in by user.
+                   In this case, the power normalization is not tied to the modeled clear-sky
+                   irradiance and the clear-sky workflow may provide similar results to
+                   the sensor workflow."""
+            )
         self._filter(cs_normalized, "clearsky")
         cs_aggregated, cs_aggregated_insolation = self._aggregate(
             cs_normalized[self.clearsky_filter], cs_insolation[self.clearsky_filter]
