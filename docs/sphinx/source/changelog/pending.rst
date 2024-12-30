@@ -20,6 +20,7 @@ Bug fixes
 Requirements
 ------------
 * Updated tornado==6.4.2 in ``notebook_requirements.txt`` (:pull:`438`)
+* Updated Jinja2==3.1.5 in ``notebook_requirements.txt`` (:pull:`447`)
 
 
 Tests
