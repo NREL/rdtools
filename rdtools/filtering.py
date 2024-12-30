@@ -187,7 +187,7 @@ def pvlib_clearsky_filter(
         Plane of array irradiance based on measurments
     poa_global_clearsky : pandas.Series
         Plane of array irradiance based on a clear sky model
-    window_length : int, default 10
+    window_length : int, default 90
         Length of sliding time window in minutes. Must be greater than 2
         periods.
     mean_diff : float, default 75
