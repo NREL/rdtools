@@ -36,17 +36,15 @@ supported. A typical analysis of soiling and degradation contains the following:
 
 0. Import and preliminary calculations
 1. Normalize data using a performance metric
-2. Filter data that creates bias
+2. Filter data to reduce error
 3. Aggregate data
-4. Analyze aggregated data to estimate the degradation rate and/or
+4. Filter aggregated data to remove anomalies
+5. Analyze aggregated data to estimate the degradation rate and/or
    soiling loss
 
-Steps 1 and 2 may be accomplished with the clearsky workflow (see the
-:ref:`examples`) which can help eliminate problems from irradiance sensor
-drift.
-
-.. image:: _images/RdTools_workflows.png
-  :alt: RdTools workflow diagram
+It can be helpful to repeat the above steps with both ground-based measurements of weather
+and satellite weather to check for drift in the ground-based measurements. This is illustrated
+in the TrendAnalysis with NSRDB example.
 
 Degradation
 ^^^^^^^^^^^
@@ -55,7 +53,12 @@ The preferred method for degradation rate estimation is the year-on-year
 (YOY) approach (Jordan 2018), available in :py:func:`.degradation.degradation_year_on_year`.
 The YOY calculation yields in a distribution of degradation rates, the
 central tendency of which is the most representative of the true
-degradation. The width of the distribution provides information about
+degradation. We note that the workflow described above and implimented in 
+:py:class:`.analysis_chains.TrendAnalysis` provides an estimate of degradation rate,
+not performance loss rate (PLR). PLR includes losses that are explicitly filtered
+out by the primary workflow (Deceglie 2023).
+
+The width of the distribution provides information about
 the uncertainty in the estimate via a bootstrap calculation. The
 :ref:`examples` use the output of
 :py:func:`.degradation.degradation_year_on_year` to visualize the calculation.
@@ -63,28 +66,26 @@ the uncertainty in the estimate via a bootstrap calculation. The
 .. image:: _images/Clearsky_result_updated.png
    :alt: RdTools degradation results plot
 
-Two workflows are available for system performance ratio calculation,
-and illustrated in an example notebook. The sensor-based approach
-assumes that site irradiance and temperature sensors are calibrated and
-in good repair. Since this is not always the case, a 'clear-sky'
-workflow is provided that is based on modeled temperature and
-irradiance. Note that site irradiance data is still required to identify
-clear-sky conditions to be analyzed. In many cases, the 'clear-sky'
-analysis can identify conditions of instrument errors or irradiance
-sensor drift, such as in the above analysis.
+Drift of weather sensors over time (particularly irradiance) can bias the results
+of this workflow. The preferred way to check for this is to also run the workflow using
+satellite-derived weather data such as the National Solar Radiation Database (NSRDB) and
+compare results to the sensor-based analysis. If satellite data is not available,
+a 'clear-sky' workflow is also available in RdTools. This workflow is based on modeled
+temperature and irradiance. Note that site irradiance data is still required to identify
+clear-sky conditions to be analyzed.
 
-The clear-sky analysis tends to provide less stable results than sensor-based
+Satellite and clear-sky analysis tends to provide less stable results than sensor-based
 analysis when details such as filtering are changed. We generally recommend
-that the clear-sky analysis be used as a check on the sensor-based results,
+that the these be used only as a check on the sensor-based results,
 rather than as a stand-alone analysis.
 
 Soiling
 ^^^^^^^
 
-Soiling can be estimated with the stochastic rate and recovery (SRR)
-method (Deceglie 2018). This method works well when soiling patterns
-follow a "sawtooth" pattern, a linear decline followed by a sharp
-recovery associated with natural or manual cleaning.
+RdTools provides two methods for soiling analysis. The first is the
+stochastic rate and recovery (SRR) method (Deceglie 2018). This method works
+well when soiling patterns follow a "sawtooth" pattern, a linear decline followed
+by a sharp recovery associated with natural or manual cleaning.
 :py:func:`.soiling.soiling_srr` performs the calculation and returns the P50
 insolation-weighted soiling ratio, confidence interval, and additional
 information (``soiling_info``) which includes a summary of the soiling
@@ -96,6 +97,12 @@ identified soiling rates for the dataset.
    :alt: RdTools soiling results plot
    :width: 320
    :height: 216
+
+The combined estimation of degradation and soiling (CODS) method (Skomedal 2020) is also available
+in RdTools. CODS self-consistently extracts degradation, soiling, and seasonality
+of the daily-aggregated normalized performance signal. It is particularly useful
+when soiling trends are biasing degradation results. It's use is shown in both the TrendAnalysis
+example notebook as well as the funtional API example notebook for degradation and soiling. 
 
 TrendAnalysis
 ^^^^^^^^^^^^^
@@ -145,82 +152,18 @@ installing requirements. If this occurs, the requirements specified in
 
 For more detailed instructions, see the :ref:`developer_notes` page.
 
-RdTools currently is tested on Python 3.7+.
+RdTools currently is tested on Python 3.9+.
 
 Usage and examples
 ------------------
 
 Full workflow examples are found in the notebooks in :ref:`examples`.
-The examples are designed to work with python 3.10. For a consistent
+The examples are designed to work with python 3.12. For a consistent
 experience, we recommend installing the packages and versions documented
 in ``docs/notebook_requirements.txt``. This can be achieved in your
 environment by first installing RdTools as described above, then running
 ``pip install -r docs/notebook_requirements.txt`` from the base
 directory.
-
-The following functions are used for degradation and soiling analysis:
-
-.. code:: python
-
-   import rdtools
-
-The most frequently used functions are:
-
-.. code:: python
-
-   normalization.normalize_with_expected_power(pv, power_expected, poa_global,
-                                               pv_input='power')
-     '''
-     Inputs: Pandas time series of raw power or energy, expected power, and
-        plane of array irradiance.
-     Outputs: Pandas time series of normalized energy and POA insolation
-     '''
-
-.. code:: python
-
-   filtering.poa_filter(poa_global); filtering.tcell_filter(temperature_cell); 
-   filtering.clip_filter(power_ac); filtering.logic_clip_filter(power_ac);
-   filtering.xgboost_clip_filter(power_ac); filtering.normalized_filter(energy_normalized);
-   filtering.csi_filter(poa_global_measured, poa_global_clearsky); 
-     '''
-     Inputs: Pandas time series of raw data to be filtered.
-     Output: Boolean mask where `True` indicates acceptable data
-     '''
-
-.. code:: python
-
-   aggregation.aggregation_insol(energy_normalized, insolation, frequency='D')
-     '''
-     Inputs: Normalized energy and insolation
-     Output: Aggregated data, weighted by the insolation.
-     '''
-
-.. code:: python
-
-   degradation.degradation_year_on_year(energy_normalized)
-     '''
-     Inputs: Aggregated, normalized, filtered time series data
-     Outputs: Tuple: `yoy_rd`: Degradation rate 
-       `yoy_ci`: Confidence interval `yoy_info`: associated analysis data
-     '''
-
-.. code:: python
-
-   soiling.soiling_srr(energy_normalized_daily, insolation_daily)
-     '''
-     Inputs: Daily aggregated, normalized, filtered time series data for normalized performance and insolation
-     Outputs: Tuple: `sr`: Insolation-weighted soiling ratio 
-       `sr_ci`: Confidence interval `soiling_info`: associated analysis data
-     '''
-
-.. code:: python
-
-   availability.AvailabilityAnalysis(power_system, power_subsystem,
-                                     energy_cumulative, power_expected)
-     '''
-     Inputs: Pandas time series system and subsystem power and energy data
-     Outputs: DataFrame of production loss and availability metrics
-     '''
 
 Documentation
 -------------
@@ -234,7 +177,6 @@ take one of several types, we document them using the type alises listed below:
 
    ``numeric``
       scalar or ``pandas.Series``. Typically int or float dtype.
-
 
 Citing RdTools
 --------------
@@ -259,6 +201,10 @@ appropriate:
    Directly From PV Yield," in IEEE Journal of Photovoltaics, 8(2),
    pp. 547-551, 2018 DOI: `10.1109/JPHOTOV.2017.2784682 <https://doi.org/10.1109/JPHOTOV.2017.2784682>`_
 
+-  Åsmund Skomedal and Michael G. Deceglie, "Combined Estimation of Degradation and Soiling Losses in
+   Photovoltaic Systems," in IEEE Journal of Photovoltaics, 10(6) pp. 1788-1796, 2020.
+   DOI: `10.1109/JPHOTOV.2020.3018219 <https://doi.org/10.1109/JPHOTOV.2020.3018219>`_
+
 -  Kevin Anderson and Ryan Blumenthal, "Overcoming Communications Outages in
    Inverter Downtime Analysis", 2020 IEEE 47th Photovoltaic Specialists
    Conference (PVSC). DOI: `10.1109/PVSC45281.2020.9300635 <https://doi.org/10.1109/PVSC45281.2020.9300635>`_
@@ -266,7 +212,6 @@ appropriate:
 -  Kirsten Perry, Matthew Muller and Kevin Anderson, "Performance Comparison of Clipping
    Detection Techniques in AC Power Time Series," 2021 IEEE 48th Photovoltaic
    Specialists Conference (PVSC), 2021, pp. 1638-1643, DOI: `10.1109/PVSC43889.2021.9518733 <https://doi.org/10.1109/PVSC43889.2021.9518733>`_
-
 
 References
 ----------
@@ -286,6 +231,9 @@ methodology include:
    methodology comparison — A basis for a standard", in 43rd IEEE
    Photovoltaic Specialists Conference, Portland, OR, USA, 2016, DOI:
    10.1109/PVSC.2016.7749593.
+-  M. G. Deceglie, K. Anderson, D. Fregosi, W.B. Hobbs, M.A. Mikofski,
+   M. Theristis, and B. E. Meyers, "Perspective: Performance Loss Rate in
+   Photovoltaic Systems", Sol. RRL, 7: 2300196. DOI: 10.1002/solr.202300196
 -  Jordan DC, Kurtz SR, VanSant KT, Newmiller J, Compendium of
    Photovoltaic Degradation Rates, Progress in Photovoltaics: Research
    and Application, 2016, 24(7), 978 - 989.
@@ -327,6 +275,5 @@ Indices and tables
 
 
 .. links and references
-
 .. _release: https://github.com/NREL/rdtools/releases
 .. _github: https://github.com/NREL/rdtools

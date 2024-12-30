@@ -1,6 +1,4 @@
-from pkg_resources import parse_version
 import pytest
-from functools import wraps
 import numpy as np
 import pandas as pd
 import itertools
@@ -8,31 +6,6 @@ import pvlib
 import re
 
 import rdtools
-
-rdtools_base_version = \
-    parse_version(parse_version(rdtools.__version__).base_version)
-
-
-# decorator takes one argument: the base version for which it should fail
-# for example @fail_on_rdtools_version('3.0.0') will cause a test to fail
-# on rdtools versions 3.0.0, 3.0.0-alpha, 3.1.0, etc
-def fail_on_rdtools_version(version):
-    # second level of decorator takes the function under consideration
-    def wrapper(func):
-        # third level defers computation until the test is called
-        # this allows the specific test to fail at test runtime,
-        # rather than at decoration time (when the module is imported)
-        @wraps(func)
-        def inner(*args, **kwargs):
-            # fail if the version is too high
-            if rdtools_base_version >= parse_version(version):
-                pytest.fail('the tested function is scheduled to be '
-                            'removed in %s' % version)
-            # otherwise return the function to be executed
-            else:
-                return func(*args, **kwargs)
-        return inner
-    return wrapper
 
 
 def assert_isinstance(obj, klass):
@@ -56,11 +29,6 @@ def assert_warnings(messages, record):
     for pattern in messages:
         found_match = any(re.match(pattern, msg) for msg in warning_messages)
         assert found_match, f"warning '{pattern}' not in {warning_messages}"
-
-
-requires_pvlib_below_090 = \
-    pytest.mark.skipif(parse_version(pvlib.__version__) > parse_version('0.8.1'),
-                       reason='requires pvlib <= 0.8.1')
 
 
 # %% Soiling fixtures
@@ -96,6 +64,44 @@ def soiling_insolation(soiling_times):
     insolation = pd.Series(data=insolation, index=soiling_times)
 
     return insolation
+
+
+@pytest.fixture()
+def cods_times():
+    tz = 'Etc/GMT+7'
+    cods_times = pd.date_range('2019/01/01', '2021/01/01', freq='D', tz=tz)
+    return cods_times
+
+
+@pytest.fixture()
+def cods_normalized_daily_wo_noise(cods_times):
+    N = len(cods_times)
+    interval_1 = 1 - 0.005 * np.arange(0, 25, 1)
+    interval_2 = 1 - 0.002 * np.arange(0, 25, 1)
+    interval_3 = 1 - 0.001 * np.arange(0, 25, 1)
+    profile = np.concatenate((interval_1, interval_2, interval_3))
+    repeated_profile = np.concatenate([profile for _ in range(int(np.ceil(N / 75)))])
+    cods_normalized_daily_wo_noise = pd.Series(data=repeated_profile[:N], index=cods_times)
+    return cods_normalized_daily_wo_noise
+
+
+@pytest.fixture()
+def cods_normalized_daily(cods_normalized_daily_wo_noise):
+    N = len(cods_normalized_daily_wo_noise)
+    np.random.seed(1977)
+    noise = 1 + 0.02 * (np.random.rand(N) - 0.5)
+    cods_normalized_daily = cods_normalized_daily_wo_noise * noise
+    return cods_normalized_daily
+
+
+@pytest.fixture()
+def cods_normalized_daily_small_soiling(cods_normalized_daily_wo_noise):
+    N = len(cods_normalized_daily_wo_noise)
+    np.random.seed(1977)
+    noise = 1 + 0.02 * (np.random.rand(N) - 0.5)
+    cods_normalized_daily_small_soiling = cods_normalized_daily_wo_noise.apply(
+        lambda row: 1-(1-row)*0.1) * noise
+    return cods_normalized_daily_small_soiling
 
 
 # %% Availability fixtures

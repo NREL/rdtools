@@ -1,0 +1,188 @@
+********************************
+v3.0.0-beta.0 (October 28, 2024)
+********************************
+
+Breaking changes
+----------------
+These changes have the potential to change answers in existing scripts
+when compared with older versions of RdTools
+
+* Use the pvlib method for clear sky detection by default in :py:func:`~rdtools.analysis_chains.TrendAnalysis` (:pull:`412`)
+
+* Change default clipping filter ``model`` to ``logic`` (:pull:`425`)
+
+* Turn on the ``two_way_window_filter`` by default in ``TrendAnalysis`` (:pull:`425`)
+
+* Upgrade pvlib 0.9.0 to 0.11.0 (:pull:`428`)
+
+Enhancements
+------------
+* Added a new wrapper function for clearsky filters (:pull:`412`)
+* Improve test coverage, especially for the newly added filter capabilities (:pull:`413`)
+* Added codecov.yml configuration file (:pull:`420`)
+* Availability module no longer considered experimental (:pull:`429`)
+* Add capability to seed the CircularBlockBootstrap (:pull:`429`)
+* Allow sub-daily aggregation in :py:func:`~rdtools.degradation.degradation_year_on_year` (:pull:`390`)
+
+Bug fixes
+---------
+* Fix typos in citation section of the readme file (:issue:`414`, :pull:`421`)
+* Fix deploy workflow to pypi (:issue:`416`, :pull:`427`)
+* Deploy workflow was replaced with trusted publisher workflow for pypi (:pull:`427`)
+* Fix pandas 2.0.0 deprications and update syntax changes (:pull:`428`)
+* Fix numpy 2.0.0 deprications and update syntax changes (:pull:`428`)
+
+Tests
+-----
+* Testing matrix was updated to include python = [3.9, 3.10, 3.11, 3.12] (:pull:`428`)
+* nbval sanitization rules were added for date and time stamp (:pull:`428`)
+
+Documentation
+-------------
+* External link syntax updated to avoid warnings with new versions (:pull:`428`)
+
+
+
+Requirements
+------------
+* Specified versions in ``requirements.txt``, ``requirements_min.txt`` and ``docs/notebook_requirements.txt`` have been updated (:pull:`412`, :pull:`428`, :pull:`429`)
+
+    * Updated certifi==2024.7.4 in ``requirements.txt`` (:pull:`428`)
+    * Updated chardet==5.2.0 in ``requirements.txt`` (:pull:`428`)
+    * Updated cycler==0.12.1 in ``requirements.txt`` (:pull:`428`)
+    * Updated fonttools==4.53.1 in ``requirements.txt`` (:pull:`428`)
+    * Updated h5py==3.11.0 in ``requirements.txt`` (:pull:`428`)
+    * Updated idna==3.7 in ``requirements.txt`` (:pull:`428`)
+    * Updated joblib==1.4.2 in ``requirements.txt`` (:pull:`428`)
+    * Updated kiwisolver==1.4.5 in ``requirements.txt`` (:pull:`428`)
+    * Updated matplotlib==3.9.2 in ``requirements.txt`` (:pull:`428`)
+    * Updated numpy==2.1.1 in ``requirements.txt`` (:pull:`428`)
+    * Updated packaging==24.1 in ``requirements.txt`` (:pull:`428`)
+    * Updated pandas==2.2.2 in ``requirements.txt`` (:pull:`428`)
+    * Updated patsy==0.5.6 in ``requirements.txt`` (:pull:`428`)
+    * Updated Pillow==10.4.0 in ``requirements.txt`` (:pull:`428`)
+    * Updated plotly==5.23.0 in ``requirements.txt`` (:pull:`428`)
+    * Updated pvlib==0.11.0 in ``requirements.txt`` (:pull:`428`)
+    * Updated pyparsing==3.1.2 in ``requirements.txt`` (:pull:`428`)
+    * Updated python-dateutil==2.9.0 in ``requirements.txt`` (:pull:`428`)
+    * Updated pytz==2024.1 in ``requirements.txt`` (:pull:`428`)
+    * Added arch==7.0.0 in ``requirements.txt`` (:pull:`428`)
+    * Added filterpy==1.4.5 in ``requirements.txt`` (:pull:`428`)
+    * Updated requests==2.32.3 in ``requirements.txt`` (:pull:`428`)
+    * Updated retrying==1.3.4 in ``requirements.txt`` (:pull:`428`)
+    * Updated scikit-learn==1.5.1 in ``requirements.txt`` (:pull:`428`)
+    * Updated scipy==1.13.1 in ``requirements.txt`` (:pull:`428`)
+    * Updated setuptools-scm==8.1.0 in ``requirements.txt`` (:pull:`428`)
+    * Updated six==1.16.0 in ``requirements.txt`` (:pull:`428`)
+    * Updated statsmodels==0.14.2 in ``requirements.txt`` (:pull:`428`)
+    * Updated threadpoolctl==3.5.0 in ``requirements.txt`` (:pull:`428`)
+    * Updated typing_extensions==4.12.2 in ``requirements.txt`` (:pull:`428`)
+    * Updated urllib3==2.2.2 in ``requirements.txt`` (:pull:`428`)
+    * Updated xgboost==2.1.1 in ``requirements.txt`` (:pull:`428`)
+
+    * Updated matplotlib==3.5.3 in ``requirements_min.txt`` (:pull:`428`)
+    * Updated numpy==1.22.4 in ``requirements_min.txt`` (:pull:`428`)
+    * Updated pandas==1.4.4 in ``requirements_min.txt`` (:pull:`428`)
+    * Updated statsmodels==0.13.5 in ``requirements_min.txt`` (:pull:`428`)
+    * Updated scipy==1.8.1 in ``requirements_min.txt`` (:pull:`428`)
+    * Updated h5py==3.7.0 in ``requirements_min.txt`` (:pull:`428`)
+    * Updated pvlib==0.11.0 in ``requirements_min.txt`` (:pull:`428`)
+    * Updated scikit-learn==1.1.3 in ``requirements_min.txt`` (:pull:`428`)
+    * Updated arch==5.0 in ``requirements_min.txt`` (:pull:`429`)
+    * Updated filterpy==1.4.5 in ``requirements_min.txt`` (:pull:`428`)
+    * Updated xgboost==1.6.0 in ``requirements_min.txt`` (:pull:`431`)
+
+    * Updated appnope==0.1.4 in ``notebook_requirements.txt`` (:pull:`428`)
+    * Updated argon2-cffi==23.1.0 in ``notebook_requirements.txt`` (:pull:`428`)
+    * Updated backcall==0.2.0 in ``notebook_requirements.txt`` (:pull:`428`)
+    * Updated beautifulsoup4==4.12.3 in ``notebook_requirements.txt`` (:pull:`428`)
+    * Updated bleach==6.1.0 in ``notebook_requirements.txt`` (:pull:`428`)
+    * Updated cffi==1.17.0 in ``notebook_requirements.txt`` (:pull:`428`)
+    * Updated colorama==0.4.6 in ``notebook_requirements.txt`` (:pull:`428`)
+    * Updated decorator==5.1.1 in ``notebook_requirements.txt`` (:pull:`428`)
+    * Updated entrypoints==0.4 in ``notebook_requirements.txt`` (:pull:`428`)
+    * Updated html5lib==1.1 in ``notebook_requirements.txt`` (:pull:`428`)
+    * Updated ipykernel==6.29.5 in ``notebook_requirements.txt`` (:pull:`428`)
+    * Updated ipython==8.26.0 in ``notebook_requirements.txt`` (:pull:`428`)
+    * Updated ipywidgets==8.1.3 in ``notebook_requirements.txt`` (:pull:`428`)
+    * Updated jedi==0.19.1 in ``notebook_requirements.txt`` (:pull:`428`)
+    * Updated Jinja2==3.1.4 in ``notebook_requirements.txt`` (:pull:`428`)
+    * Updated jsonschema==4.23.0 in ``notebook_requirements.txt`` (:pull:`428`)
+    * Updated jupyter-client==8.6.2 in ``notebook_requirements.txt`` (:pull:`428`)
+    * Updated jupyter-console==6.6.3 in ``notebook_requirements.txt`` (:pull:`428`)
+    * Updated jupyter-core==5.7.2 in ``notebook_requirements.txt`` (:pull:`428`)
+    * Updated jupyterlab-pygments==0.3.0 in ``notebook_requirements.txt`` (:pull:`428`)
+    * Updated lxml==5.3.0 in ``notebook_requirements.txt`` (:pull:`428`)
+    * Updated MarkupSafe==2.1.5 in ``notebook_requirements.txt`` (:pull:`428`)
+    * Updated mistune==3.0.2 in ``notebook_requirements.txt`` (:pull:`428`)
+    * Updated nbclient==0.10.0 in ``notebook_requirements.txt`` (:pull:`428`)
+    * Updated nbconvert==7.16.4 in ``notebook_requirements.txt`` (:pull:`428`)
+    * Updated nbformat==5.10.4 in ``notebook_requirements.txt`` (:pull:`428`)
+    * Updated nest-asyncio==1.6.0 in ``notebook_requirements.txt`` (:pull:`428`)
+    * Updated notebook==7.2.1 in ``notebook_requirements.txt`` (:pull:`428`)
+    * Updated numexpr==2.10.1 in ``notebook_requirements.txt`` (:pull:`428`)
+    * Updated pandocfilters==1.5.1 in ``notebook_requirements.txt`` (:pull:`428`)
+    * Updated parso==0.8.4 in ``notebook_requirements.txt`` (:pull:`428`)
+    * Updated pexpect==4.9.0 in ``notebook_requirements.txt`` (:pull:`428`)
+    * Updated prometheus-client==0.20.0 in ``notebook_requirements.txt`` (:pull:`428`)
+    * Updated prompt-toolkit==3.0.47 in ``notebook_requirements.txt`` (:pull:`428`)
+    * Updated ptyprocess==0.7.0 in ``notebook_requirements.txt`` (:pull:`428`)
+    * Updated pycparser==2.22 in ``notebook_requirements.txt`` (:pull:`428`)
+    * Updated Pygments==2.18.0 in ``notebook_requirements.txt`` (:pull:`428`)
+    * Updated pyzmq==26.1.1 in ``notebook_requirements.txt`` (:pull:`428`)
+    * Updated qtconsole==5.5.2 in ``notebook_requirements.txt`` (:pull:`428`)
+    * Updated Send2Trash==1.8.3 in ``notebook_requirements.txt`` (:pull:`428`)
+    * Updated soupsieve==2.6 in ``notebook_requirements.txt`` (:pull:`428`)
+    * Updated terminado==0.18.1 in ``notebook_requirements.txt`` (:pull:`428`)
+    * Updated testpath==0.6.0 in ``notebook_requirements.txt`` (:pull:`428`)
+    * Updated tinycss2==1.3.0 in ``notebook_requirements.txt`` (:pull:`428`)
+    * Updated tornado==6.4.1 in ``notebook_requirements.txt`` (:pull:`428`)
+    * Updated traitlets==5.14.3 in ``notebook_requirements.txt`` (:pull:`428`)
+    * Updated wcwidth==0.2.13 in ``notebook_requirements.txt`` (:pull:`428`)
+    * Updated widgetsnbextension==4.0.11 in ``notebook_requirements.txt`` (:pull:`428`)
+
+* Update requirements in setup.py
+    * Increase maximum version of pvlib to <0.12 (:pull:`423`)
+    * Updated classifiers to accomodate new python versions (:pull:`428`)
+    * Add pytest-cov to TESTS_REQUIRE (:pull:`420`)
+    * Add arch >= 5.0 to INSTALL_REQUIRES (:pull:`429`)
+    * Add filterpy >= 1.4.2 to INSTALL_REQUIRES (:pull:`428`)
+    * Updated matplotlib >= 3.5.3 in INSTALL_REQUIRES (:pull:`428`)
+    * Updated numpy >= 1.22.4 in INSTALL_REQUIRES (:pull:`428`)
+    * Updated pandas >= 1.4.4 in INSTALL_REQUIRES (:pull:`428`)
+    * Updated statsmodels >= 0.13.5 in INSTALL_REQUIRES (:pull:`428`)
+    * Updated scipy >= 1.8.1 in INSTALL_REQUIRES (:pull:`428`)
+    * Updated h5py >= 3.7.0 in INSTALL_REQUIRES (:pull:`428`)
+    * Updated plotly>=4.0.0 in INSTALL_REQUIRES (:pull:`428`)
+    * Updated xgboost >= 1.6.0 in INSTALL_REQUIRES (:pull:`431`)
+    * Updated pvlib >= 0.9.0, <0.12.0 in INSTALL_REQUIRES (:pull:`428`)
+    * Updated scikit-learn >= 1.1.3 in INSTALL_REQUIRES (:pull:`428`)
+    * Updated sphinx==7.4.7 in EXTRAS_REQUIRE (:pull:`390`)
+    * Updated nbsphinx==0.9.5 in EXTRAS_REQUIRE (:pull:`428`)
+    * Updated nbsphinx-link==1.3.1 in EXTRAS_REQUIRE (:pull:`428`)
+    * Updated sphinx_rtd_theme==3.0.1 in EXTRAS_REQUIRE (:pull:`428`)
+    * Updated sphinx==8.0.2 in EXTRAS_REQUIRE (:pull:`428`)
+    * Updated nbsphinx==0.9.5 in EXTRAS_REQUIRE (:pull:`428`)
+    * Updated nbsphinx-link==1.3.1 in EXTRAS_REQUIRE (:pull:`428`)
+    * Updated sphinx_rtd_theme==3.0.1 in EXTRAS_REQUIRE (:pull:`428`)
+    * Updated sphinx-gallery==0.18.0 in EXTRAS_REQUIRE (:pull:`428`)
+
+
+* Updated Github actions in workflows (:pull:`428`)
+* Updated versioneer to 0.29 (:pull:`428`)
+* Updated os to ubuntu-24.04 and python to 3.12 in ``.readthedocs.yml`` (:pull:`428`)
+
+
+Deprecations
+------------
+* Removed  :py:func:`~rdtools.normalization.sapm_dc_power` (:pull:`419`)
+* Removed  :py:func:`~rdtools.normalization.normalize_with_sapm` (:pull:`419`)
+* Removed  :py:func:`~rdtools.test.conftest.fail_on_rdtools_version` (:pull:`428`)
+
+Contributors
+------------
+* Martin Springer (:ghuser:`martin-springer`)
+* Michael Deceglie (:ghuser:`mdeceglie`)
+* Kirsten Perry (:ghuser:`kperrynrel`)
+* Dirk Jordan (:ghuser:`dirkjordan`)
+* Chris Deline (:ghuser:`cdeline`)
