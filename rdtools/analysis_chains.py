@@ -957,9 +957,9 @@ class TrendAnalysis:
                 pv_input="energy",
             )
             warnings.warn(
-                """Clear-sky analysis is peformed but `power_expected` was passed in by user.
+                """Clear-sky analysis is performed but `power_expected` was passed in by user.
                    In this case, the power normalization is not tied to the modeled clear-sky
-                   irradiance and the clear-sky workflow will provide the same results as
+                   irradiance and the clear-sky workflow may provide similar results to
                    the sensor workflow."""
             )
         self._filter(cs_normalized, "clearsky")
