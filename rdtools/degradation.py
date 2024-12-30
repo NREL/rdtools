@@ -5,6 +5,7 @@ import numpy as np
 import statsmodels.api as sm
 from rdtools.bootstrap import _make_time_series_bootstrap_samples, \
     _construct_confidence_intervals
+from rdtools import utilities
 
 
 def degradation_ols(energy_normalized, confidence_level=68.2):
@@ -259,7 +260,7 @@ def degradation_year_on_year(energy_normalized, recenter=True,
     if recenter:
         start = energy_normalized.index[0]
         oneyear = start + pd.Timedelta('364d')
-        renorm = energy_normalized[start:oneyear].median()
+        renorm = utilities.robust_median(energy_normalized[start:oneyear])
     else:
         renorm = 1.0
 

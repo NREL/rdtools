@@ -69,6 +69,48 @@ def sensor_analysis(sensor_parameters):
 
 
 @pytest.fixture
+def sensor_analysis_nans(sensor_parameters):
+    def randomly_replace_with(series, replace_with=0, fraction=0.1, seed=None):
+        """
+        Randomly replace a fraction of entries in a pandas Series with input value `replace_with`.
+
+        Parameters:
+        series (pd.Series): The input pandas Series.
+        fraction (float): The fraction of entries to replace with 0. Default is 0.1 (10%).
+        seed (int, optional): Seed for the random number generator for reproducibility.
+
+        Returns:
+        pd.Series: The modified pandas Series with some entries replaced by 0.
+        """
+        if seed is not None:
+            np.random.seed(seed)
+
+        # Determine the number of entries to replace
+        n_replace = int(len(series) * fraction)
+
+        # Randomly select indices to replace
+        replace_indices = np.random.choice(series.index, size=n_replace, replace=False)
+
+        # Replace selected entries with
+        series.loc[replace_indices] = replace_with
+
+        return series
+
+    sensor_parameters_zeros = sensor_parameters.copy()
+    sensor_parameters_nans = sensor_parameters.copy()
+
+    sensor_parameters_zeros["pv"] = randomly_replace_with(sensor_parameters["pv"], seed=0)
+    sensor_parameters_nans["pv"] = sensor_parameters_zeros["pv"].replace(0, np.nan)
+
+    rd_analysis_zeros = TrendAnalysis(**sensor_parameters_zeros)
+    rd_analysis_zeros.sensor_analysis(analyses=["yoy_degradation"])
+
+    rd_analysis_nans = TrendAnalysis(**sensor_parameters_nans)
+    rd_analysis_nans.sensor_analysis(analyses=["yoy_degradation"])
+    return rd_analysis_zeros, rd_analysis_nans
+
+
+@pytest.fixture
 def sensor_analysis_exp_power(sensor_parameters):
     power_expected = normalization.pvwatts_dc_power(
         sensor_parameters["poa_global"], power_dc_rated=1
@@ -207,6 +249,21 @@ def test_sensor_analysis(sensor_analysis):
 
     assert -1 == pytest.approx(rd, abs=1e-2)
     assert [-1, -1] == pytest.approx(ci, abs=1e-2)
+
+
+def test_sensor_analysis_nans(sensor_analysis_nans):
+    rd_analysis_zeros, rd_analysis_nans = sensor_analysis_nans
+
+    yoy_results_zeros = rd_analysis_zeros.results["sensor"]["yoy_degradation"]
+    rd_zeros = yoy_results_zeros["p50_rd"]
+    ci_zeros = yoy_results_zeros["rd_confidence_interval"]
+
+    yoy_results_nans = rd_analysis_nans.results["sensor"]["yoy_degradation"]
+    rd_nans = yoy_results_nans["p50_rd"]
+    ci_nans = yoy_results_nans["rd_confidence_interval"]
+
+    assert rd_zeros == pytest.approx(rd_nans, abs=1e-2)
+    assert ci_zeros == pytest.approx(ci_nans, abs=1e-1)
 
 
 def test_sensor_analysis_filter_components(sensor_analysis):
