@@ -760,6 +760,7 @@ def test_energy_from_power_shifted_hourly_data():
     energy = normalization.energy_from_power(pv)
     pd.testing.assert_series_equal(energy, pv[1:], check_names=False)
 
+
 def test_validated_filter_dict_initialization():
     valid_keys = ["key1", "key2"]
     filter_dict = ValidatedFilterDict(valid_keys, key1="value1", key2="value2")
