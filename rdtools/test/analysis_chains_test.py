@@ -847,4 +847,3 @@ def test_invalid_filter_params_aggregated(
         KeyError, match=f"Key '{filter_param_aggregated}' is not a valid filter parameter."
     ):
         sensor_analysis.filter_params_aggregated[filter_param_aggregated] = {}
-
