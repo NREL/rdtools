@@ -11,9 +11,10 @@ Enhancements
 Bug fixes
 ---------
 * Set marker linewidth to zero in `rdtools.plotting.degradation_summary_plots` (:pull:`433`)
-* Fix `energy_from_power`` returns incorrect index for shifted hourly data (:issue:`370`, :pull:`437`)
-* Add warning to clearsky workflow when power_expected is passed by user (:pull:`439`)
+* Fix :py:func:`~rdtools.normalization.energy_from_power` returns incorrect index for shifted hourly data (:issue:`370`, :pull:`437`)
+* Add warning to clearsky workflow when ``power_expected`` is passed by user (:pull:`439`)
 * Fix different results with Nan's and Zeros in power series (:issue:`313`, :pull:`442`)
+* Add warning to clearsky workflow when power_expected is passed by user (:pull:`439`)
 
 
 Requirements
@@ -24,4 +25,3 @@ Requirements
 Tests
 -----
 * Add tests for pvlib clearsky fiter in analysis chain (:pull:`441`)
-

@@ -1,5 +1,6 @@
 from rdtools import TrendAnalysis, normalization, filtering
 from conftest import assert_isinstance, assert_warnings
+from rdtools.analysis_chains import ValidatedFilterDict
 import pytest
 import pvlib
 import pandas as pd
@@ -127,6 +128,59 @@ def sensor_analysis_aggregated_no_filter(sensor_parameters):
     rd_analysis.filter_params_aggregated = {}
     rd_analysis.sensor_analysis(analyses=["yoy_degradation"])
     return rd_analysis
+
+
+@pytest.fixture
+def clearsky_example_data(basic_parameters):
+    # Import the example data
+    file_url = (
+        "https://datahub.duramat.org/dataset/"
+        "a49bb656-7b36-437a-8089-1870a40c2a7d/"
+        "resource/d2c3fcf4-4f5f-47ad-8743-fc29"
+        "f1356835/download/pvdaq_system_4_2010"
+        "-2016_subset_soil_signal.csv"
+    )
+    cache_file = "PVDAQ_system_4_2010-2016_subset_soilsignal.pickle"
+
+    try:
+        df = pd.read_pickle(cache_file)
+    except FileNotFoundError:
+        df = pd.read_csv(file_url, index_col=0, parse_dates=True)
+        df.to_pickle(cache_file)
+
+    # Specify the Metadata
+    meta = {
+        "latitude": 39.7406,
+        "longitude": -105.1774,
+        "timezone": "Etc/GMT+7",
+        "gamma_pdc": -0.005,
+        "azimuth": 180,
+        "tilt": 40,
+        "power_dc_rated": 1000.0,
+        "temp_model_params": "open_rack_glass_polymer",
+    }
+
+    # Set the timezone
+    df.index = df.index.tz_localize(meta["timezone"])
+
+    # Select two years of data
+    df_crop = df[df.index < (df.index[0] + pd.Timedelta(days=2 * 365 + 1))]
+
+    basic_parameters["pv"] = df_crop["ac_power"]
+    basic_parameters["poa_global"] = df_crop["poa_irradiance"]
+    basic_parameters["temperature_ambient"] = df_crop["ambient_temp"]
+    basic_parameters["interp_freq"] = "1min"
+
+    # Set the pvlib location
+    loc = pvlib.location.Location(meta["latitude"], meta["longitude"], tz=meta["timezone"])
+
+    cs_input = dict(
+        pvlib_location=loc,
+        pv_tilt=meta["tilt"],
+        pv_azimuth=meta["azimuth"],
+        solar_position_method="ephemeris",  # just to improve test execution speed
+    )
+    return basic_parameters, cs_input
 
 
 def test_interpolation(basic_parameters, degradation_trend):
@@ -493,9 +547,7 @@ def test_no_gamma_pdc(sensor_parameters):
 
 
 @pytest.fixture
-def clearsky_parameters(
-    basic_parameters, sensor_parameters, cs_input, degradation_trend
-):
+def clearsky_parameters(basic_parameters, sensor_parameters, cs_input, degradation_trend):
     # clear-sky weather data.  Uses TrendAnalysis's internal clear-sky
     # functions to generate the data.
     rd_analysis = TrendAnalysis(**sensor_parameters)
@@ -514,6 +566,16 @@ def clearsky_analysis(cs_input, clearsky_parameters):
     rd_analysis = TrendAnalysis(**clearsky_parameters)
     rd_analysis.set_clearsky(**cs_input)
     rd_analysis.filter_params["clearsky_filter"] = {"model": "csi"}
+    rd_analysis.clearsky_analysis(analyses=["yoy_degradation"])
+    return rd_analysis
+
+
+@pytest.fixture
+def clearsky_pvlib_analysis(clearsky_example_data):
+    clearsky_parameters_example, cs_input_example = clearsky_example_data
+    rd_analysis = TrendAnalysis(**clearsky_parameters_example)
+    rd_analysis.set_clearsky(**cs_input_example)
+    rd_analysis.filter_params["clearsky_filter"] = {"model": "pvlib"}
     rd_analysis.clearsky_analysis(analyses=["yoy_degradation"])
     return rd_analysis
 
@@ -543,13 +605,31 @@ def sensor_clearsky_analysis(cs_input, clearsky_parameters):
     return rd_analysis
 
 
+@pytest.fixture
+def sensor_clearsky_pvlib_analysis(clearsky_example_data):
+    clearsky_parameters_example, cs_input_example = clearsky_example_data
+    rd_analysis = TrendAnalysis(**clearsky_parameters_example)
+    rd_analysis.set_clearsky(**cs_input_example)
+    rd_analysis.filter_params = {}  # disable all index-based filters
+    rd_analysis.filter_params["sensor_clearsky_filter"] = {"model": "pvlib"}
+    rd_analysis.sensor_analysis(analyses=["yoy_degradation"])
+    return rd_analysis
+
+
 def test_clearsky_analysis(clearsky_analysis):
     yoy_results = clearsky_analysis.results["clearsky"]["yoy_degradation"]
     ci = yoy_results["rd_confidence_interval"]
     rd = yoy_results["p50_rd"]
-    print(ci)
     assert pytest.approx(rd, abs=1e-2) == -5.15
     assert pytest.approx(ci, abs=1e-2) == [-5.17, -5.13]
+
+
+def test_clearsky_pvlib_analysis(clearsky_pvlib_analysis):
+    yoy_results = clearsky_pvlib_analysis.results["clearsky"]["yoy_degradation"]
+    ci = yoy_results["rd_confidence_interval"]
+    rd = yoy_results["p50_rd"]
+    assert pytest.approx(rd, abs=1e-2) == -1.589
+    assert pytest.approx(ci, abs=1e-2) == [-2.417, -0.861]
 
 
 def test_clearsky_analysis_filter_components(clearsky_analysis):
@@ -580,9 +660,16 @@ def test_sensor_clearsky_analysis(sensor_clearsky_analysis):
     yoy_results = sensor_clearsky_analysis.results["sensor"]["yoy_degradation"]
     ci = yoy_results["rd_confidence_interval"]
     rd = yoy_results["p50_rd"]
-    print(ci)
     assert -5.18 == pytest.approx(rd, abs=1e-2)
     assert [-5.18, -5.18] == pytest.approx(ci, abs=1e-2)
+
+
+def test_sensor_clearsky_pvlib_analysis(sensor_clearsky_pvlib_analysis):
+    yoy_results = sensor_clearsky_pvlib_analysis.results["sensor"]["yoy_degradation"]
+    ci = yoy_results["rd_confidence_interval"]
+    rd = yoy_results["p50_rd"]
+    assert -1.478 == pytest.approx(rd, abs=1e-2)
+    assert [-2.495, -0.649] == pytest.approx(ci, abs=1e-2)
 
 
 @pytest.fixture
@@ -797,3 +884,110 @@ def test_plot_degradation_timeseries(sensor_analysis, clearsky_analysis):
     assert_isinstance(
         clearsky_analysis.plot_degradation_timeseries("clearsky"), plt.Figure
     )
+
+
+def test_energy_from_power_hourly_data():
+
+    times = pd.date_range("2019-01-01 00:00:00", periods=3, freq="h")
+    pv = pd.Series([1.2, 2.8, 2.0], index=times)
+
+    energy = normalization.energy_from_power(pv)
+    pd.testing.assert_series_equal(energy, pv[1:], check_names=False)
+
+
+def test_energy_from_power_shifted_hourly_data():
+
+    times = pd.date_range("2019-01-01 00:30:00", periods=3, freq="h")
+    pv = pd.Series([1.2, 2.8, 2.0], index=times)
+
+    energy = normalization.energy_from_power(pv)
+    pd.testing.assert_series_equal(energy, pv[1:], check_names=False)
+
+
+def test_validated_filter_dict_initialization():
+    valid_keys = ["key1", "key2"]
+    filter_dict = ValidatedFilterDict(valid_keys, key1="value1", key2="value2")
+    assert filter_dict["key1"] == "value1"
+    assert filter_dict["key2"] == "value2"
+
+
+def test_validated_filter_dict_invalid_key_initialization():
+    valid_keys = ["key1", "key2"]
+    with pytest.raises(KeyError, match="Key 'key3' is not a valid filter parameter."):
+        ValidatedFilterDict(valid_keys, key1="value1", key3="value3")
+
+
+def test_validated_filter_dict_setitem():
+    valid_keys = ["key1", "key2"]
+    filter_dict = ValidatedFilterDict(valid_keys)
+    filter_dict["key1"] = "value1"
+    assert filter_dict["key1"] == "value1"
+
+
+def test_validated_filter_dict_setitem_invalid_key():
+    valid_keys = ["key1", "key2"]
+    filter_dict = ValidatedFilterDict(valid_keys)
+    with pytest.raises(KeyError, match="Key 'key3' is not a valid filter parameter."):
+        filter_dict["key3"] = "value3"
+
+
+def test_validated_filter_dict_update():
+    valid_keys = ["key1", "key2"]
+    filter_dict = ValidatedFilterDict(valid_keys)
+    filter_dict.update({"key1": "value1", "key2": "value2"})
+    assert filter_dict["key1"] == "value1"
+    assert filter_dict["key2"] == "value2"
+
+
+def test_validated_filter_dict_update_invalid_key():
+    valid_keys = ["key1", "key2"]
+    filter_dict = ValidatedFilterDict(valid_keys)
+    with pytest.raises(KeyError, match="Key 'key3' is not a valid filter parameter."):
+        filter_dict.update({"key1": "value1", "key3": "value3"})
+
+
+@pytest.mark.parametrize(
+    "filter_param",
+    [
+        "normalized_filter",
+        "poa_filter",
+        "tcell_filter",
+        "clip_filter",
+        "hour_angle_filter",
+        "clearsky_filter",
+        "sensor_clearsky_filter",
+        "ad_hoc_filter",
+    ],
+)
+def test_valid_filter_params(sensor_analysis, filter_param):
+    sensor_analysis.filter_params[filter_param] = {}
+    assert filter_param in sensor_analysis.filter_params
+
+
+def test_invalid_filter_params(sensor_analysis, filter_param="invalid_filter"):
+    with pytest.raises(KeyError, match=f"Key '{filter_param}' is not a valid filter parameter."):
+        sensor_analysis.filter_params[filter_param] = {}
+
+
+@pytest.mark.parametrize(
+    "filter_param_aggregated",
+    [
+        "two_way_window_filter",
+        "insolation_filter",
+        "hampel_filter",
+        "directional_tukey_filter",
+        "ad_hoc_filter",
+    ],
+)
+def test_valid_filter_params_aggregated(sensor_analysis, filter_param_aggregated):
+    sensor_analysis.filter_params_aggregated[filter_param_aggregated] = {}
+    assert filter_param_aggregated in sensor_analysis.filter_params_aggregated
+
+
+def test_invalid_filter_params_aggregated(
+    sensor_analysis, filter_param_aggregated="invalid_filter"
+):
+    with pytest.raises(
+        KeyError, match=f"Key '{filter_param_aggregated}' is not a valid filter parameter."
+    ):
+        sensor_analysis.filter_params_aggregated[filter_param_aggregated] = {}
