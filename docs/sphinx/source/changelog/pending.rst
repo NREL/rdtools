@@ -17,4 +17,3 @@ Bug fixes
 Requirements
 ------------
 * Updated tornado==6.4.2 in ``notebook_requirements.txt`` (:pull:`438`)
-
