@@ -13,7 +13,7 @@ RdTools is an open-source library to support reproducible technical analysis of
 time series data from photovoltaic energy systems. The library aims to provide
 best practice analysis routines along with the building blocks for users to
 tailor their own analyses. Current applications include the evaluation of PV
-production over several years to obtain rates of performance degradation and 
+production over several years to obtain rates of performance degradation and
 soiling loss. RdTools can handle both high frequency (hourly or better) or low
 frequency (daily, weekly, etc.) datasets. Best results are obtained with higher
 frequency data.
@@ -34,10 +34,10 @@ RdTools currently is tested on Python 3.9+.
 To cite RdTools, please use the following along with the version number
 and the specific DOI coresponding to that version from [Zenodo](https://doi.org/10.5281/zenodo.1210316):
 
--  Michael G. Deceglie, Ambarish Nag, Adam Shinn, Gregory Kimball,
-   Daniel Ruth, Dirk Jordan, Jiyang Yan, Kevin Anderson, Kirsten Perry,
-   Mark Mikofski, Matthew Muller, Will Vining, and Chris Deline,
-   RdTools, version {insert version}, Computer Software,
+-  Michael G. Deceglie, Kevin Anderson,  Adam Shinn, Ambarish Nag, Mark Mikofski,
+   Martin Springer, Jiyang Yan, Kirsten Perry, Sandra Villamar, Will Vining,
+   Gregory Kimball, Daniel Ruth, Noah Moyer, Quyen Nguyen, Dirk Jordan,
+   Matthew Muller, and Chris Deline, RdTools, version {insert version}, Computer Software,
    https://github.com/NREL/rdtools. DOI:{insert DOI}
 
 The underlying workflow of RdTools has been published in several places.
