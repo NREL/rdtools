@@ -155,8 +155,28 @@ class TrendAnalysis:
         self.max_timedelta = max_timedelta
         self.results = {}
 
-        # Initialize to use default filter parameters
-        self.filter_params = {
+        # Define valid filter parameters
+        self.valid_filter_params = [
+            "normalized_filter",
+            "poa_filter",
+            "tcell_filter",
+            "clip_filter",
+            "hour_angle_filter",
+            "clearsky_filter",
+            "sensor_clearsky_filter",
+            "ad_hoc_filter",
+        ]
+
+        self.valid_filter_params_aggregated = [
+            "two_way_window_filter",
+            "insolation_filter",
+            "hampel_filter",
+            "directional_tukey_filter",
+            "ad_hoc_filter",
+        ]
+
+        # Define default filter parameters
+        self.default_filter_params = {
             "normalized_filter": {},
             "poa_filter": {},
             "tcell_filter": {},
@@ -164,13 +184,50 @@ class TrendAnalysis:
             "clearsky_filter": {},
             "ad_hoc_filter": None,  # use this to include an explict filter
         }
-        self.filter_params_aggregated = {
+
+        self.default_filter_params_aggregated = {
             "two_way_window_filter": {},
-            "ad_hoc_filter": None
+            "ad_hoc_filter": None,
         }
+
+        # Initialize to use default filter parameters
+        self._filter_params = ValidatedFilterDict(
+            self.valid_filter_params, self.default_filter_params
+        )
+        self._filter_params_aggregated = ValidatedFilterDict(
+            self.valid_filter_params_aggregated, self.default_filter_params_aggregated
+        )
         # remove tcell_filter from list if power_expected is passed in
         if power_expected is not None and temperature_cell is None:
             del self.filter_params["tcell_filter"]
+
+    @property
+    def filter_params(self):
+        return self._filter_params
+
+    @filter_params.setter
+    def filter_params(self, new_filter_params):
+        if not isinstance(new_filter_params, dict):
+            raise ValueError("Attribute `filter_params` must be a dictionary.")
+
+        # If dictionary passed, check the new filter_params and set new filters.
+        self._filter_params = ValidatedFilterDict(self.valid_filter_params, new_filter_params)
+        print(f"Attribute `filter_params` changed to: {new_filter_params}")
+
+    @property
+    def filter_params_aggregated(self):
+        return self._filter_params_aggregated
+
+    @filter_params_aggregated.setter
+    def filter_params_aggregated(self, new_filter_params_aggregated):
+        if not (isinstance(new_filter_params_aggregated, dict) or None):
+            raise ValueError("Attribute `filter_params_aggregated` must be a dictionary.")
+
+        # If dictionary passed, check the new filter_params and set new filters.
+        self._filter_params_aggregated = ValidatedFilterDict(
+            self.valid_filter_params_aggregated, new_filter_params_aggregated
+        )
+        print(f"Attribute `filter_params_aggregated` changed to: {new_filter_params_aggregated}")
 
     def set_clearsky(
         self,
@@ -1211,3 +1268,27 @@ class TrendAnalysis:
 
         fig = plotting.degradation_timeseries_plot(yoy_info, rolling_days, **kwargs)
         return fig
+
+
+class ValidatedFilterDict(dict):
+    def __init__(self, valid_keys, *args, **kwargs):
+        self.valid_keys = valid_keys
+        self._err_msg = "Key '{0}' is not a valid filter parameter."
+        super(ValidatedFilterDict, self).__init__(*args, **kwargs)
+        self._validate_keys()
+
+    def __setitem__(self, key, value):
+        if key not in self.valid_keys:
+            raise KeyError(self._err_msg.format(key))
+        super(ValidatedFilterDict, self).__setitem__(key, value)
+
+    def update(self, *args, **kwargs):
+        for key in dict(*args, **kwargs).keys():
+            if key not in self.valid_keys:
+                raise KeyError(self._err_msg.format(key))
+        super(ValidatedFilterDict, self).update(*args, **kwargs)
+
+    def _validate_keys(self):
+        for key in self.keys():
+            if key not in self.valid_keys:
+                raise KeyError(self._err_msg.format(key))
