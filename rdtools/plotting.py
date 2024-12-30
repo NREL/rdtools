@@ -112,8 +112,9 @@ def degradation_summary_plots(yoy_rd, yoy_ci, yoy_info, normalized_yield,
         colors = yoy_info['usage_of_points'].map({0: 'red', 1: 'green', 2: plot_color})
     else:
         colors = plot_color
-    ax1.scatter(renormalized_yield.index, renormalized_yield,
-                c=colors, alpha=scatter_alpha)
+    ax1.scatter(
+        renormalized_yield.index, renormalized_yield, c=colors, alpha=scatter_alpha, linewidths=0
+    )
 
     ax1.plot(x, y, 'k--', linewidth=3)
     ax1.set_xlabel('Date')
