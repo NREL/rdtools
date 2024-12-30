@@ -129,19 +129,22 @@ def generate_power_time_series_no_clipping():
 def generate_power_time_series_irregular_intervals():
     power_datetime_index = pd.Series(np.arange(1, 62))
     # Add datetime index to second series
-    time_range_1 = pd.date_range('2016-12-02T11:00:00.000Z',
-                                 '2017-06-06T07:00:00.000Z', freq='1T')
+    time_range_1 = pd.date_range(
+        "2016-12-02T11:00:00.000Z", "2017-06-06T07:00:00.000Z", freq="1min"
+    )
     power_datetime_index.index = pd.to_datetime(time_range_1[:61])
     power_datetime_index_2 = pd.Series(np.arange(100, 200))
-    time_range_2 = pd.date_range(power_datetime_index.index.max(),
-                                 '2017-06-06T07:00:00.000Z', freq='15T')
+    time_range_2 = pd.date_range(
+        power_datetime_index.index.max(), "2017-06-06T07:00:00.000Z", freq="15min"
+    )
     power_datetime_index_2.index = pd.to_datetime(time_range_2[:100])
     power_datetime_index_2 = power_datetime_index_2.iloc[1:]
     power_datetime_index = pd.concat([power_datetime_index,
                                       power_datetime_index_2])
     power_datetime_index_3 = pd.Series(list(reversed(np.arange(100, 200))))
-    time_range_3 = pd.date_range(power_datetime_index.index.max(),
-                                 '2017-06-06T07:00:00.000Z', freq='5T')
+    time_range_3 = pd.date_range(
+        power_datetime_index.index.max(), "2017-06-06T07:00:00.000Z", freq="5min"
+    )
     power_datetime_index_3.index = pd.to_datetime(time_range_3[:100])
     power_datetime_index_3 = power_datetime_index_3.iloc[1:]
     power_datetime_index = pd.concat([power_datetime_index,
@@ -157,8 +160,7 @@ def generate_power_time_series_one_min_intervals():
     power_datetime_index = pd.concat([power_datetime_index,
                                       power_datetime_index[::-1]])
     # Add datetime index to second series
-    time_range = pd.date_range('2016-12-02T11:00:00.000Z',
-                               '2017-06-06T07:00:00.000Z', freq='1T')
+    time_range = pd.date_range("2016-12-02T11:00:00.000Z", "2017-06-06T07:00:00.000Z", freq="1min")
     power_datetime_index.index = pd.to_datetime(time_range[:100])
     # Note: Power is expected to be Series object with a datetime index.
     return power_datetime_index

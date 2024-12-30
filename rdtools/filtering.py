@@ -8,6 +8,7 @@ import pvlib
 from scipy.interpolate import interp1d
 import rdtools
 import xgboost as xgb
+from rdtools import utilities
 
 # Load in the XGBoost clipping model using joblib.
 xgboost_clipping_model = None
@@ -294,7 +295,7 @@ def pvlib_clearsky_filter(
 def clip_filter(power_ac, model="logic", **kwargs):
     """
     Master wrapper for running one of the desired clipping filters.
-    The default filter run is the quantile clipping filter.
+    The default filter run is the logic clipping filter.
 
     Parameters
     ----------
@@ -350,7 +351,7 @@ def quantile_clip_filter(power_ac, quantile=0.98):
         Boolean Series of whether the given measurement is below 99% of the
         quantile filter.
     """
-    v = power_ac.quantile(quantile)
+    v = utilities.robust_quantile(power_ac, quantile)
     return power_ac < v * 0.99
 
 
@@ -510,13 +511,15 @@ def _apply_overall_clipping_threshold(power_ac, clipping_mask, clipped_power_ac)
         periods are labeled as True and non-clipping periods are
         labeled as False. Has a pandas datetime index.
     """
+    q_power_ac = utilities.robust_quantile(power_ac, 0.99)
+    q_clipped_power_ac = utilities.robust_quantile(clipped_power_ac, 0.99)
+
     upper_bound_pdiff = abs(
-        (power_ac.quantile(0.99) - clipped_power_ac.quantile(0.99))
-        / ((power_ac.quantile(0.99) + clipped_power_ac.quantile(0.99)) / 2)
+        (q_power_ac - q_clipped_power_ac) / ((q_power_ac + q_clipped_power_ac) / 2)
     )
     percent_clipped = len(clipped_power_ac) / len(power_ac) * 100
     if (upper_bound_pdiff < 0.005) & (percent_clipped > 4):
-        max_clip = power_ac >= power_ac.quantile(0.99)
+        max_clip = power_ac >= q_power_ac
         clipping_mask = clipping_mask | max_clip
     return clipping_mask
 
@@ -644,9 +647,11 @@ def logic_clip_filter(
         # for high frequency data sets.
         daily_mean = clip_pwr.resample("D").mean()
         df_daily = daily_mean.to_frame(name="mean")
-        df_daily["clipping_max"] = clip_pwr.groupby(pd.Grouper(freq="D")).quantile(0.99)
-        df_daily["clipping_min"] = clip_pwr.groupby(pd.Grouper(freq="D")).quantile(
-            0.075
+        df_daily["clipping_max"] = clip_pwr.groupby(pd.Grouper(freq="D")).agg(
+            utilities.robust_quantile, q=0.99
+        )
+        df_daily["clipping_min"] = clip_pwr.groupby(pd.Grouper(freq="D")).agg(
+            utilities.robust_quantile, q=0.075
         )
         daily_clipping_max = df_daily["clipping_max"].reindex(
             index=power_ac_copy.index, method="ffill"

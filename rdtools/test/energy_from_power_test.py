@@ -103,7 +103,7 @@ def test_energy_from_power_single_value_with_target():
     times = pd.date_range("2019-01-01", freq="15min", periods=1)
     power = pd.Series([100.0], index=times)
     expected_result = pd.Series([100.0], index=times, name="energy_Wh")
-    result = energy_from_power(power, target_frequency="H")
+    result = energy_from_power(power, target_frequency="h")
     pd.testing.assert_series_equal(result, expected_result)
 
 

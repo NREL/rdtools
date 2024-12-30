@@ -8,7 +8,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from rdtools import normalization, filtering, aggregation, degradation
-from rdtools import clearsky_temperature, plotting
+from rdtools import clearsky_temperature, plotting, utilities
 import warnings
 
 
@@ -493,8 +493,9 @@ class TrendAnalysis:
         if renorm:
             # Normalize to the 95th percentile for convenience, this is renormalized out
             # in the calculations but is relevant to normalized_filter()
-            x = energy_normalized[np.isfinite(energy_normalized)]
-            energy_normalized = energy_normalized / x.quantile(0.95)
+            q = utilities.robust_quantile(energy_normalized[np.isfinite(energy_normalized)], 0.95)
+
+            energy_normalized = energy_normalized / q
 
         return energy_normalized, insolation
 
@@ -618,7 +619,7 @@ class TrendAnalysis:
                 warnings.warn(
                     "ad_hoc_filter contains NaN values; setting to False (excluding)"
                 )
-                ad_hoc_filter = ad_hoc_filter.fillna(False)
+                ad_hoc_filter.loc[ad_hoc_filter.isnull()] = False
 
             if not filter_components.index.equals(ad_hoc_filter.index):
                 warnings.warn(
@@ -626,9 +627,8 @@ class TrendAnalysis:
                     "values will be set to True (kept). Align the index with the index "
                     "of the filter_components attribute to prevent this warning"
                 )
-                ad_hoc_filter = ad_hoc_filter.reindex(filter_components.index).fillna(
-                    True
-                )
+                ad_hoc_filter = ad_hoc_filter.reindex(filter_components.index)
+                ad_hoc_filter.loc[ad_hoc_filter.isnull()] = True
 
             filter_components["ad_hoc_filter"] = ad_hoc_filter
 
@@ -709,7 +709,7 @@ class TrendAnalysis:
                 warnings.warn(
                     "aggregated ad_hoc_filter contains NaN values; setting to False (excluding)"
                 )
-                ad_hoc_filter_aggregated = ad_hoc_filter_aggregated.fillna(False)
+                ad_hoc_filter_aggregated.loc[ad_hoc_filter_aggregated.isnull()] = False
 
             if not filter_components_aggregated.index.equals(
                 ad_hoc_filter_aggregated.index
@@ -722,7 +722,8 @@ class TrendAnalysis:
                 )
                 ad_hoc_filter_aggregated = ad_hoc_filter_aggregated.reindex(
                     filter_components_aggregated.index
-                ).fillna(True)
+                )
+                ad_hoc_filter_aggregated.loc[ad_hoc_filter_aggregated.isnull()] = True
 
             filter_components_aggregated["ad_hoc_filter"] = ad_hoc_filter_aggregated
 
@@ -1012,7 +1013,6 @@ class TrendAnalysis:
         -------
         None
         """
-
         self._sensor_preprocess()
         sensor_results = {}
 

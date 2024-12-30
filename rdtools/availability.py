@@ -269,7 +269,7 @@ class AvailabilityAnalysis:
         subsystem_fraction = relative_sizes / relative_sizes.sum()
         smallest_delta = (
             power_subsystem.le(low_threshold)
-            .replace(False, np.nan)
+            .replace(False, None)
             .multiply(subsystem_fraction)
             .min(axis=1)
             .astype(float)

@@ -5,6 +5,7 @@ import numpy as np
 import statsmodels.api as sm
 from rdtools.bootstrap import _make_time_series_bootstrap_samples, \
     _construct_confidence_intervals
+from rdtools import utilities
 
 
 def degradation_ols(energy_normalized, confidence_level=68.2):
@@ -129,7 +130,9 @@ def degradation_classical_decomposition(energy_normalized,
     # Compute yearly rolling mean to isolate trend component using
     # moving average
     energy_ma = df['energy_normalized'].rolling('365d', center=True).mean()
-    has_full_year = (df['years'] >= df['years'][0] + 0.5) & (df['years'] <= df['years'][-1] - 0.5)
+    has_full_year = (df["years"] >= df["years"].iloc[0] + 0.5) & (
+        df["years"] <= df["years"].iloc[-1] - 0.5
+    )
     energy_ma[~has_full_year] = np.nan
     df['energy_ma'] = energy_ma
 
@@ -259,7 +262,7 @@ def degradation_year_on_year(energy_normalized, recenter=True,
     if recenter:
         start = energy_normalized.index[0]
         oneyear = start + pd.Timedelta('364d')
-        renorm = energy_normalized[start:oneyear].median()
+        renorm = utilities.robust_median(energy_normalized[start:oneyear])
     else:
         renorm = 1.0
 

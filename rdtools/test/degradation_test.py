@@ -53,20 +53,39 @@ class DegradationTestCase(unittest.TestCase):
         # define module constants and parameters
 
         # All frequencies
-        cls.list_all_input_freq = ["MS", "M", "W", "D", "h", "min", "s", "Irregular_D"]
+        cls.list_all_input_freq = ["MS", "ME", "W", "D", "h", "min", "s", "Irregular_D"]
 
         # Allowed frequencies for degradation_ols
-        cls.list_ols_input_freq = ["MS", "M", "W", "D", "h", "min", "s", "Irregular_D"]
+        cls.list_ols_input_freq = ["MS", "ME", "W", "D", "h", "min", "s", "Irregular_D"]
 
         '''
         Allowed frequencies for degradation_classical_decomposition
         in principle CD works on higher frequency data but that makes the
         tests painfully slow
         '''
-        cls.list_CD_input_freq = ['MS', 'M', 'W', 'D']
+        cls.list_CD_input_freq = ["MS", "ME", "W", "D"]
 
         # Allowed frequencies for degradation_year_on_year
-        cls.list_YOY_input_freq = ['MS', 'M', 'W', 'D', 'Irregular_D']
+        cls.list_YOY_input_freq = ["MS", "ME", "W", "D", "Irregular_D"]
+
+        # ------------------------------------------------------------------------------------------------
+        # Allow pandas < 2.2.0 to use 'M' as an alias for MonthEnd
+        # https://pandas.pydata.org/docs/whatsnew/v2.2.0.html#deprecate-aliases-m-q-y-etc-in-favour-of-me-qe-ye-etc-for-offsets
+        # Check pandas version and set frequency alias
+        pandas_version = pd.__version__.split(".")
+        if int(pandas_version[0]) < 2 or (
+            int(pandas_version[0]) == 2 and int(pandas_version[1]) < 2
+        ):
+            for list in [
+                cls.list_all_input_freq,
+                cls.list_ols_input_freq,
+                cls.list_CD_input_freq,
+                cls.list_YOY_input_freq,
+            ]:
+                if "ME" in list:
+                    list.remove("ME")
+                    list.append(pd.tseries.offsets.MonthEnd())
+        # ------------------------------------------------------------------------------------------------
 
         cls.rd = -0.005
 
@@ -184,18 +203,27 @@ class DegradationTestCase(unittest.TestCase):
         self.assertTrue((np.sum(rd_result[2]['usage_of_points'])) == 1462)
 
 
-@pytest.mark.parametrize('start,end,freq', [
-    ('2014-01-01', '2015-12-31', 'D'),   # no leap day
-    ('2015-01-01', '2016-12-31', 'D'),   # leap day included in index
-    ('2015-01-01', '2016-12-29', '7D'),  # leap day in period but not in index
-    ('2016-06-01', '2018-05-31', 'D'),   # leap year, but no leap day in period
-    #  ('2016-02-29', '2018-02-28', 'd'),   # starts on leap day (doesn't work)
-    ('2014-03-01', '2016-02-29', 'D'),   # ends on leap day
-    ('2015-01-01', '2016-12-31', 'M'),   # month end
-    ('2015-01-01', '2016-12-31', 'MS'),   # month start
-])
+@pytest.mark.parametrize(
+    "start,end,freq",
+    [
+        ("2014-01-01", "2015-12-31", "D"),  # no leap day
+        ("2015-01-01", "2016-12-31", "D"),  # leap day included in index
+        ("2015-01-01", "2016-12-29", "7D"),  # leap day in period but not in index
+        ("2016-06-01", "2018-05-31", "D"),  # leap year, but no leap day in period
+        #  ('2016-02-29', '2018-02-28', 'd'),   # starts on leap day (doesn't work)
+        ("2014-03-01", "2016-02-29", "D"),  # ends on leap day
+        ("2015-01-01", "2016-12-31", "ME"),  # month end
+        ("2015-01-01", "2016-12-31", "MS"),  # month start
+    ],
+)
 def test_yoy_two_years_error(start, end, freq):
-    # GH 339
+    # ----------------------------------------------------------------
+    # Allow pandas < 2.2.0 to use 'M' as an alias for MonthEnd
+    # https://pandas.pydata.org/docs/whatsnew/v2.2.0.html#deprecate-aliases-m-q-y-etc-in-favour-of-me-qe-ye-etc-for-offsets
+    if freq == "ME":
+        freq = pd.tseries.offsets.MonthEnd()
+    # ----------------------------------------------------------------
+
     times = pd.date_range(start, end, freq=freq)
     series = pd.Series(1, index=times)
     # introduce NaN at the end to ensure that the 2 year requirement applies to
