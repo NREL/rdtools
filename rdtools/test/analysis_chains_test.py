@@ -743,6 +743,24 @@ def test_plot_degradation_timeseries(sensor_analysis, clearsky_analysis):
     )
 
 
+def test_energy_from_power_hourly_data():
+
+    times = pd.date_range("2019-01-01 00:00:00", periods=3, freq="h")
+    pv = pd.Series([1.2, 2.8, 2.0], index=times)
+
+    energy = normalization.energy_from_power(pv)
+    pd.testing.assert_series_equal(energy, pv[1:], check_names=False)
+
+
+def test_energy_from_power_shifted_hourly_data():
+
+    times = pd.date_range("2019-01-01 00:30:00", periods=3, freq="h")
+    pv = pd.Series([1.2, 2.8, 2.0], index=times)
+
+    energy = normalization.energy_from_power(pv)
+    pd.testing.assert_series_equal(energy, pv[1:], check_names=False)
+
+
 def test_validated_filter_dict_initialization():
     valid_keys = ["key1", "key2"]
     filter_dict = ValidatedFilterDict(valid_keys, key1="value1", key2="value2")
