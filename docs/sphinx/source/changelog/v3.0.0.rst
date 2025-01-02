@@ -1,6 +1,6 @@
-********************************
-v3.0.0-beta.0 (October 28, 2024)
-********************************
+*********************************
+v3.0.0 (January XX, 2025)
+*********************************
 
 Breaking changes
 ----------------
@@ -8,43 +8,61 @@ These changes have the potential to change answers in existing scripts
 when compared with older versions of RdTools
 
 * Use the pvlib method for clear sky detection by default in :py:func:`~rdtools.analysis_chains.TrendAnalysis` (:pull:`412`)
-
 * Change default clipping filter ``model`` to ``logic`` (:pull:`425`)
-
 * Turn on the ``two_way_window_filter`` by default in ``TrendAnalysis`` (:pull:`425`)
-
 * Upgrade pvlib 0.9.0 to 0.11.0 (:pull:`428`)
+
 
 Enhancements
 ------------
+* Added framework for running aggregated filters in ``analysis_chains.py`` (:pull:`348`)
+* The Combined estimation Of Degradation and Soiling (CODS) algorithm is implemented
+  in the soiling module and illustrated in an example notebook (:pull:`150`, :pull:`333`)
+* New plotting functions :py:func:`rdtools.analysis_chains.TrendAnalysis.plot_degradation_timeseries` 
+  in TrendAnalysis object and :py:func:`rdtools.plotting.degradation_timeseries_plot`
+  to plot time series degradation trend.  (:issue:`334`, :pull:`335`)
+* Specifying ``detailed=True`` in :py:func:`rdtools.plotting.degradation_summary_plots`
+  now shows the number of year-on-year slopes in addition to color coding points
+  (:issue:`298`, :pull:`324`)
+* Add `CITATION.cff` file for citation information (:pull:`434`)
+* Added checks to TrendAnalysis for `filter_params` and `filter_params_aggregated`. Raises an error if unkown filter is supplied. (:pull:`436`)
 * Added a new wrapper function for clearsky filters (:pull:`412`)
-* Improve test coverage, especially for the newly added filter capabilities (:pull:`413`)
 * Added codecov.yml configuration file (:pull:`420`)
 * Availability module no longer considered experimental (:pull:`429`)
-* Add capability to seed the CircularBlockBootstrap (:pull:`429`)
 * Allow sub-daily aggregation in :py:func:`~rdtools.degradation.degradation_year_on_year` (:pull:`390`)
+* Circular block bootstrapping added as a method for calculating uncertainty in
+  ``degradation_year_on_year()`` via the ``Uncertainty_method`` argument (:pull:`150`)
+
+
+Deprecations
+------------
+* Removed  :py:func:`~rdtools.normalization.sapm_dc_power` (:pull:`419`)
+* Removed  :py:func:`~rdtools.normalization.normalize_with_sapm` (:pull:`419`)
+* Removed  :py:func:`~rdtools.test.conftest.fail_on_rdtools_version` (:pull:`428`)
+
 
 Bug fixes
 ---------
+* Set marker linewidth to zero in `rdtools.plotting.degradation_summary_plots` (:pull:`433`)
+* Fix :py:func:`~rdtools.normalization.energy_from_power` returns incorrect index for shifted hourly data (:issue:`370`, :pull:`437`)
+* Add warning to clearsky workflow when ``power_expected`` is passed by user (:pull:`439`)
+* Fix different results with Nan's and Zeros in power series (:issue:`313`, :pull:`442`)
+* Fix pandas deprecation warnings in tests (:pull:`444`)
 * Fix typos in citation section of the readme file (:issue:`414`, :pull:`421`)
 * Fix deploy workflow to pypi (:issue:`416`, :pull:`427`)
 * Deploy workflow was replaced with trusted publisher workflow for pypi (:pull:`427`)
 * Fix pandas 2.0.0 deprications and update syntax changes (:pull:`428`)
 * Fix numpy 2.0.0 deprications and update syntax changes (:pull:`428`)
-
-Tests
------
-* Testing matrix was updated to include python = [3.9, 3.10, 3.11, 3.12] (:pull:`428`)
-* nbval sanitization rules were added for date and time stamp (:pull:`428`)
-
-Documentation
--------------
-* External link syntax updated to avoid warnings with new versions (:pull:`428`)
-
+* Fix flake8 missing whitespaces ``bootstrap_test.py``, ``soiling_cods_test.py`` (:pull:`400`)
+* Specify dtype for seasonal samples ``soiling.py`` (:pull:`400`)
+* Update deprecated `check_less_precise` to `rtol` ``soiling_cods_test.py`` (:pull:`400`)
 
 
 Requirements
 ------------
+* Removed support for python<3.9
+* Updated tornado==6.4.2 in ``notebook_requirements.txt`` (:pull:`438`)
+* Updated Jinja2==3.1.5 in ``notebook_requirements.txt`` (:pull:`447`)
 * Specified versions in ``requirements.txt``, ``requirements_min.txt`` and ``docs/notebook_requirements.txt`` have been updated (:pull:`412`, :pull:`428`, :pull:`429`)
 
     * Updated certifi==2024.7.4 in ``requirements.txt`` (:pull:`428`)
@@ -79,7 +97,6 @@ Requirements
     * Updated typing_extensions==4.12.2 in ``requirements.txt`` (:pull:`428`)
     * Updated urllib3==2.2.2 in ``requirements.txt`` (:pull:`428`)
     * Updated xgboost==2.1.1 in ``requirements.txt`` (:pull:`428`)
-
     * Updated matplotlib==3.5.3 in ``requirements_min.txt`` (:pull:`428`)
     * Updated numpy==1.22.4 in ``requirements_min.txt`` (:pull:`428`)
     * Updated pandas==1.4.4 in ``requirements_min.txt`` (:pull:`428`)
@@ -91,7 +108,6 @@ Requirements
     * Updated arch==5.0 in ``requirements_min.txt`` (:pull:`429`)
     * Updated filterpy==1.4.5 in ``requirements_min.txt`` (:pull:`428`)
     * Updated xgboost==1.6.0 in ``requirements_min.txt`` (:pull:`431`)
-
     * Updated appnope==0.1.4 in ``notebook_requirements.txt`` (:pull:`428`)
     * Updated argon2-cffi==23.1.0 in ``notebook_requirements.txt`` (:pull:`428`)
     * Updated backcall==0.2.0 in ``notebook_requirements.txt`` (:pull:`428`)
@@ -171,18 +187,38 @@ Requirements
 * Updated Github actions in workflows (:pull:`428`)
 * Updated versioneer to 0.29 (:pull:`428`)
 * Updated os to ubuntu-24.04 and python to 3.12 in ``.readthedocs.yml`` (:pull:`428`)
+* Bump arch to 5.6.0 in ``requirements.txt``
+* Upgrade the notebook environment from python 3.7 to python 3.10.
+  (:issue:`319`, :pull:`326`)
+* Bump ``sphinx`` version from 3.2 to 4.5 and ``nbsphinx`` version
+  from 0.8.5 to 0.8.8 in the optional ``[doc]`` requirements (:pull:`317`, :pull:`325`)
+* ``arch`` and ``filterpy`` added as dependencies (:pull:`150`)
+* minimum version of ``numpy`` increased to 1.16 and minimum version of
+  statsmodels increased to 0.11.1 (:pull:`150`)
+* A number of updates to the environments specified in ``requirements.txt``,
+  ``requirements-min.txt``, and ``docs/notebook_requirements.txt``
+  (:pull:`326`, :pull:`314`, :pull:`337`)
 
 
-Deprecations
-------------
-* Removed  :py:func:`~rdtools.normalization.sapm_dc_power` (:pull:`419`)
-* Removed  :py:func:`~rdtools.normalization.normalize_with_sapm` (:pull:`419`)
-* Removed  :py:func:`~rdtools.test.conftest.fail_on_rdtools_version` (:pull:`428`)
+Tests
+-----
+* Add tests for pvlib clearsky fiter in analysis chain (:pull:`441`)
+* Testing matrix was updated to include python = [3.9, 3.10, 3.11, 3.12] (:pull:`428`)
+* nbval sanitization rules were added for date and time stamp (:pull:`428`)
+* Added a CI notebook check (:pull:`270`)
+* Improve test coverage, especially for the newly added filter capabilities (:pull:`413`)
+
+Documentation
+-------------
+* External link syntax updated to avoid warnings with new versions (:pull:`428`)
+
 
 Contributors
 ------------
-* Martin Springer (:ghuser:`martin-springer`)
+* Kevin Anderson (:ghuser:`kandersolar`)
 * Michael Deceglie (:ghuser:`mdeceglie`)
-* Kirsten Perry (:ghuser:`kperrynrel`)
-* Dirk Jordan (:ghuser:`dirkjordan`)
 * Chris Deline (:ghuser:`cdeline`)
+* Dirk Jordan (:ghuser:`dirkjordan`)
+* Kirsten Perry (:ghuser:`kperrynrel`)
+* Åsmund Skomedal (:ghuser:`asmunds`)
+* Martin Springer (:ghuser:`martin-springer`)
