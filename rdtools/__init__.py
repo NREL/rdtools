@@ -34,8 +34,8 @@ from rdtools.plotting import degradation_timeseries_plot
 # from rdtools.plotting import soiling_monte_carlo_plot
 # from rdtools.plotting import soiling_interval_plot
 # from rdtools.plotting import soiling_rate_histogram
-# from rdtools.plotting import availability_summary_plots
-# from rdtools.availability import AvailabilityAnalysis
+from rdtools.plotting import availability_summary_plots
+from rdtools.availability import AvailabilityAnalysis
 from rdtools.utilities import robust_quantile
 from rdtools.utilities import robust_median
 from rdtools.utilities import robust_mean
