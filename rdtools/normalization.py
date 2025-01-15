@@ -576,8 +576,8 @@ def _interpolate_series(time_series, target_index, max_timedelta=None,
 
     # convert to integer index and calculate the size of gaps in input
     timestamps = df.index.view('int64')
-    df['timestamp'] = timestamps
-    df['gapsize_ns'] = df['timestamp'].diff()
+    df.loc[:, 'timestamp'] = timestamps
+    df.loc[:, 'gapsize_ns'] = df['timestamp'].diff()
     df.index = timestamps
 
     valid_indput_index = df.index.copy()
