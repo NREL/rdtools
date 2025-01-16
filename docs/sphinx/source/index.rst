@@ -51,7 +51,7 @@ Degradation
 
 The preferred method for degradation rate estimation is the year-on-year
 (YOY) approach (Jordan 2018), available in :py:func:`.degradation.degradation_year_on_year`.
-The YOY calculation yields in a distribution of degradation rates, the
+The YOY calculation yields a distribution of degradation rates, the
 central tendency of which is the most representative of the true
 degradation. We note that the workflow described above and implimented in 
 :py:class:`.analysis_chains.TrendAnalysis` provides an estimate of degradation rate,
@@ -74,10 +74,10 @@ a 'clear-sky' workflow is also available in RdTools. This workflow is based on m
 temperature and irradiance. Note that site irradiance data is still required to identify
 clear-sky conditions to be analyzed.
 
-Satellite and clear-sky analysis tends to provide less stable results than sensor-based
+Satellite and clear-sky analyses tend to provide less stable results than sensor-based
 analysis when details such as filtering are changed. We generally recommend
 that the these be used only as a check on the sensor-based results,
-rather than as a stand-alone analysis.
+rather than as stand-alone analyses.
 
 Soiling
 ^^^^^^^
@@ -145,7 +145,7 @@ Alternatively it can be installed manually using the command line:
 2. Navigate to the repository: ``cd rdtools``
 3. Install via pip: ``pip install .``
 
-On some systems installation with ``pip`` can fail due to problems
+On some systems, installation with ``pip`` can fail due to problems
 installing requirements. If this occurs, the requirements specified in
 ``setup.py`` may need to be separately installed (for example by using
 ``conda``) before installing ``rdtools``.
@@ -183,11 +183,11 @@ Citing RdTools
 To cite RdTools, please use the following along with the version number
 and the specific DOI coresponding to that version from `Zenodo <https://doi.org/10.5281/zenodo.1210316>`_:
 
--  Michael G. Deceglie, Ambarish Nag, Adam Shinn, Gregory Kimball,
-   Daniel Ruth, Dirk Jordan, Jiyang Yan, Kevin Anderson, Kirsten Perry,
-   Mark Mikofski, Matthew Muller, Will Vining, and Chris Deline
-   RdTools, version {insert version}, Compuer Software,
-   https://github.com/NREL/rdtools. DOI:{insert DOI}
+-  Michael G. Deceglie, Kevin Anderson,  Adam Shinn, Ambarish Nag, Mark Mikofski,
+   Martin Springer, Jiyang Yan, Kirsten Perry, Sandra Villamar, Will Vining,
+   Gregory Kimball, Daniel Ruth, Noah Moyer, Quyen Nguyen, Dirk Jordan,
+   Matthew Muller, and Chris Deline, RdTools, version {insert version},
+   Compuer Software, https://github.com/NREL/rdtools. DOI:{insert DOI}
 
 The underlying workflow of RdTools has been published in several places.
 If you use RdTools in a published work, you may also wish to cite the following as
