@@ -1292,3 +1292,6 @@ class ValidatedFilterDict(dict):
         for key in self.keys():
             if key not in self.valid_keys:
                 raise KeyError(self._err_msg.format(key))
+
+    def __reduce__(self):
+        return (self.__class__, (self.valid_keys, dict(self)))
