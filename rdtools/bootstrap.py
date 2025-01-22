@@ -19,7 +19,7 @@ def _make_time_series_bootstrap_samples(
     decomposition_type='multiplicative', bootstrap_seed=None
 ):
     '''
-    Generate bootstrap samples based a time series signal and its model fit
+    Generate bootstrap samples based on a time series signal and its model fit
     using circular block bootstrapping.
 
     Parameters

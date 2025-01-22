@@ -474,8 +474,8 @@ class TrendAnalysis:
 
         if self.gamma_pdc is None:
             warnings.warn(
-                "Temperature coefficient not passed in to TrendAnalysis"
-                ". No temperature correction will be conducted."
+                "Temperature coefficient not passed in to TrendAnalysis. "
+                "No temperature correction will be conducted."
             )
         pvwatts_kws = {
             "poa_global": poa_global,
