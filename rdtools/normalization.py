@@ -1,7 +1,6 @@
 '''Functions for normalizing, rescaling, and regularizing PV system data.'''
 
 import pandas as pd
-import pvlib
 import numpy as np
 from scipy.optimize import minimize
 import warnings
@@ -169,138 +168,6 @@ def normalize_with_pvwatts(energy, pvwatts_kws):
 
     power_dc = pvwatts_dc_power(**pvwatts_kws)
     irrad = pvwatts_kws['poa_global']
-
-    energy_normalized, insolation = normalize_with_expected_power(energy, power_dc, irrad,
-                                                                  pv_input='energy')
-
-    return energy_normalized, insolation
-
-
-@deprecated(since='2.0.0', removal='3.0.0',
-            alternative='normalize_with_expected_power')
-def sapm_dc_power(pvlib_pvsystem, met_data):
-    '''
-    Use Sandia Array Performance Model (SAPM) and PVWatts to compute the
-    effective DC power using measured irradiance, ambient temperature, and wind
-    speed. Effective irradiance and cell temperature are calculated with SAPM,
-    and DC power with PVWatts.
-
-    .. warning::
-        The ``pvlib_pvsystem`` argument must be a ``pvlib.pvsystem.LocalizedPVSystem``
-        object, which is no longer available as of pvlib 0.9.0.  To use this function
-        you'll need to use an older version of pvlib.
-
-    Parameters
-    ----------
-    pvlib_pvsystem : pvlib.pvsystem.LocalizedPVSystem
-        Object contains orientation, geographic coordinates, equipment
-        constants (including DC rated power in watts).  The object must also
-        specify either the ``temperature_model_parameters`` attribute or both
-        ``racking_model`` and ``module_type`` attributes to infer the temperature model parameters.
-    met_data : pandas.DataFrame
-        Measured irradiance components, ambient temperature, and wind speed.
-        Expected met_data DataFrame column names:
-        ['DNI', 'GHI', 'DHI', 'Temperature', 'Wind Speed']
-
-    Note
-    ----
-    All series are assumed to be right-labeled, meaning that the recorded
-    value at a given timestamp refers to the previous time interval
-
-    Returns
-    -------
-    power_dc : pandas.Series
-        DC power in watts derived using Sandia Array Performance Model and
-        PVWatts.
-    effective_poa : pandas.Series
-        Effective irradiance calculated with SAPM
-    '''
-
-    solar_position = pvlib_pvsystem.get_solarposition(met_data.index)
-
-    total_irradiance = pvlib_pvsystem\
-        .get_irradiance(solar_position['zenith'],
-                        solar_position['azimuth'],
-                        met_data['DNI'],
-                        met_data['GHI'],
-                        met_data['DHI'])
-
-    aoi = pvlib_pvsystem.get_aoi(solar_position['zenith'],
-                                 solar_position['azimuth'])
-
-    airmass = pvlib_pvsystem\
-        .get_airmass(solar_position=solar_position, model='kastenyoung1989')
-    airmass_absolute = airmass['airmass_absolute']
-
-    effective_irradiance = pvlib.pvsystem\
-        .sapm_effective_irradiance(poa_direct=total_irradiance['poa_direct'],
-                                   poa_diffuse=total_irradiance['poa_diffuse'],
-                                   airmass_absolute=airmass_absolute,
-                                   aoi=aoi,
-                                   module=pvlib_pvsystem.module)
-
-    temp_cell = pvlib_pvsystem\
-        .sapm_celltemp(total_irradiance['poa_global'],
-                       met_data['Temperature'],
-                       met_data['Wind Speed'])
-
-    power_dc = pvlib_pvsystem\
-        .pvwatts_dc(g_poa_effective=effective_irradiance,
-                    temp_cell=temp_cell)
-
-    return power_dc, effective_irradiance
-
-
-@deprecated(since='2.0.0', removal='3.0.0',
-            alternative='normalize_with_expected_power')
-def normalize_with_sapm(energy, sapm_kws):
-    '''
-    Normalize system AC energy output given measured met_data and
-    meteorological data. This method relies on the Sandia Array Performance
-    Model (SAPM) to compute the effective DC energy using measured irradiance,
-    ambient temperature, and wind speed.
-
-    Energy timeseries and met_data timeseries can be different granularities.
-
-    .. warning::
-        The ``pvlib_pvsystem`` argument must be a ``pvlib.pvsystem.LocalizedPVSystem``
-        object, which is no longer available as of pvlib 0.9.0.  To use this function
-        you'll need to use an older version of pvlib.
-
-    Parameters
-    ----------
-    energy : pandas.Series
-        Energy time series to be normalized  in watt hours.
-        Must be a right-labeled regular time series.
-    sapm_kws : dict
-        Dictionary of parameters required for sapm_dc_power function. See
-        Other Parameters.
-
-    Other Parameters
-    ---------------
-    pvlib_pvsystem : pvlib.pvsystem.LocalizedPVSystem object
-        Object contains orientation, geographic coordinates, equipment
-        constants (including DC rated power in watts).  The object must also
-        specify either the ``temperature_model_parameters`` attribute or both
-        ``racking_model`` and ``module_type`` to infer the model parameters.
-    met_data : pandas.DataFrame
-        Measured met_data, ambient temperature, and wind speed.  Expected
-        column names are ['DNI', 'GHI', 'DHI', 'Temperature', 'Wind Speed']
-
-    Note
-    ----
-    All series are assumed to be right-labeled, meaning that the recorded
-    value at a given timestamp refers to the previous time interval
-
-    Returns
-    -------
-    energy_normalized : pandas.Series
-        Energy divided by Sandia Model DC energy.
-    insolation : pandas.Series
-        Insolation associated with each normalized point
-    '''
-
-    power_dc, irrad = sapm_dc_power(**sapm_kws)
 
     energy_normalized, insolation = normalize_with_expected_power(energy, power_dc, irrad,
                                                                   pv_input='energy')
@@ -542,15 +409,14 @@ def energy_from_power(power, target_frequency=None, max_timedelta=None,
     median_step_ns = t_steps.median()
 
     if target_frequency is None:
-        # 'N' is the Pandas offset alias for ns
-        target_frequency = str(int(median_step_ns)) + 'N'
+        target_frequency = str(int(median_step_ns)) + 'ns'
 
     if max_timedelta is None:
         max_interval_nanoseconds = median_step_ns
     else:
         max_interval_nanoseconds = max_timedelta.total_seconds() * 10.0**9
     # set max_timedelta for use in interpolate and _aggregate
-    max_timedelta = pd.to_timedelta(f'{max_interval_nanoseconds} nanos')
+    max_timedelta = pd.to_timedelta(f'{max_interval_nanoseconds} ns')
     try:
         freq_interval_size_ns = \
             pd.tseries.frequencies.to_offset(target_frequency).nanos
@@ -612,9 +478,9 @@ def _aggregate(time_series, target_frequency, max_timedelta, series_type):
     '''
 
     # series that has same index as desired output
-    output_dummy = time_series.resample(target_frequency,
-                                        closed='right',
-                                        label='right').sum()
+    output_dummy = time_series.resample(
+        target_frequency, closed="right", label="right", origin="start"
+    ).sum()
 
     union_index = time_series.index.union(output_dummy.index)
     time_series = time_series.dropna()
@@ -655,13 +521,13 @@ def _aggregate(time_series, target_frequency, max_timedelta, series_type):
         raise ValueError("series_type must be either 'instantaneous' or 'right_labeled', "
                          "not '{}'".format(series_type))
 
-    series_sum = pd.Series(data=series_sum, index=time_series.index[1:])
+    series_sum = pd.Series(data=np.insert(series_sum, 0, np.nan), index=time_series.index)
 
-    aggregated = series_sum.resample(target_frequency,
-                                     closed='right',
-                                     label='right').sum(min_count=1)
+    aggregated = series_sum.resample(
+        target_frequency, closed="right", label="right", origin="start"
+    ).sum(min_count=1)
 
-    return aggregated
+    return aggregated[1:]
 
 
 def _interpolate_series(time_series, target_index, max_timedelta=None,
@@ -709,9 +575,9 @@ def _interpolate_series(time_series, target_index, max_timedelta=None,
     df = df.dropna()
 
     # convert to integer index and calculate the size of gaps in input
-    timestamps = df.index.view('int64')
-    df['timestamp'] = timestamps
-    df['gapsize_ns'] = df['timestamp'].diff()
+    timestamps = df.index.view("int64").copy()
+    df["timestamp"] = timestamps
+    df["gapsize_ns"] = df["timestamp"].diff()
     df.index = timestamps
 
     valid_indput_index = df.index.copy()
@@ -736,7 +602,7 @@ def _interpolate_series(time_series, target_index, max_timedelta=None,
     df = df.sort_index()
 
     # calculate the gap size in the original data (timestamps)
-    df['gapsize_ns'] = df['gapsize_ns'].fillna(method='bfill')
+    df['gapsize_ns'] = df['gapsize_ns'].bfill()
     df.loc[valid_indput_index, 'gapsize_ns'] = 0
 
     # perform the interpolation when the max gap size criterion is satisfied

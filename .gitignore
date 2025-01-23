@@ -27,6 +27,7 @@ docs/sphinx/source/generated
 .eggs/
 build/
 dist/
+tmp/
 rdtools.egg-info*
 
 # emacs temp files
@@ -35,3 +36,6 @@ rdtools.egg-info*
 .\#*
 
 *.pickle
+
+# ignore vscode settings
+.vscode/

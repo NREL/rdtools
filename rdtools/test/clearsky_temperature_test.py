@@ -47,7 +47,7 @@ def test_with_tricky_timezones():
     tz = 'America/Santiago'
     start_date = datetime.datetime(2018, 8, 10, 0, 0, 0)
     end_date = datetime.datetime(2018, 8, 14, 23, 0, 0)
-    freq = 'H'
+    freq = "h"
     lat = -24
     lon = -70
 
