@@ -8,7 +8,8 @@ import pandas as pd
 import numpy as np
 import logging
 
-from rdtools import degradation_ols, degradation_classical_decomposition, degradation_year_on_year
+from rdtools import (degradation_ols, degradation_classical_decomposition,
+                     degradation_year_on_year, degradation_hybrid_ols_yoy)
 
 
 class DegradationTestCase(unittest.TestCase):
@@ -356,6 +357,84 @@ def test_yoy_no_pairs_found():
 
     with pytest.raises(ValueError, match="no year-over-year"):
         degradation_year_on_year(series)
+
+
+def _build_two_rate_series(rd1_pct, rd2_pct, start='2018-01-01',
+                           end='2022-01-01', noise=1e-3, seed=0):
+    """Synthetic daily series with a piecewise-linear degradation profile."""
+    idx = pd.date_range(start, end, freq='D')
+    years = (idx - idx[0]) / pd.Timedelta('365D')
+    rate1 = rd1_pct / 100.0
+    rate2 = rd2_pct / 100.0
+    y0 = 1.0
+    y_after_year1 = y0 + rate1 * 1.0
+    y = np.where(years < 1.0,
+                 y0 + rate1 * years,
+                 y_after_year1 + rate2 * (years - 1.0))
+    rng = np.random.default_rng(seed)
+    y = y + rng.normal(0, noise, len(y))
+    return pd.Series(y, index=idx)
+
+
+def test_degradation_hybrid_ols_yoy_basic():
+    """Recover known year-1 and post-year-1 rates from a synthetic series."""
+    rd1, rd2, info = degradation_hybrid_ols_yoy(
+        _build_two_rate_series(rd1_pct=-2.0, rd2_pct=-0.5)
+    )
+    assert np.isclose(rd1, -2.0, atol=0.2)
+    # Year-2+ rate is reported relative to start-of-year-2 capacity (~0.98),
+    # so the expected value is rd2 / 0.98 (still close to rd2 for small rd1).
+    assert np.isclose(rd2, -0.5 / 0.98, atol=0.2)
+    # Should also return the full tuples from each underlying call
+    assert len(info['year1']) == 3
+    assert len(info['years2plus']) == 3
+
+
+def test_degradation_hybrid_ols_yoy_too_short():
+    """Series shorter than year1_split + 2 years raises from YoY."""
+    # only 2 years of data; year-1 window has 1 year, year-2+ window has 1 year
+    series = _build_two_rate_series(rd1_pct=-1.0, rd2_pct=-0.5,
+                                    start='2018-01-01', end='2020-01-01')
+    with pytest.raises(ValueError, match='must provide at least two years'):
+        degradation_hybrid_ols_yoy(series)
+
+
+def test_degradation_hybrid_ols_yoy_calc_info_structure():
+    """calc_info exposes the documented keys and consistent renorm factor."""
+    series = _build_two_rate_series(rd1_pct=-1.0, rd2_pct=-0.5)
+    _, _, info = degradation_hybrid_ols_yoy(series)
+    for key in ('year1', 'years2plus', 'split_date',
+                'renormalizing_factor_year2'):
+        assert key in info
+    assert info['split_date'] == series.index[0] + pd.Timedelta(days=365.0)
+    yoy_calc_info = info['years2plus'][2]
+    assert info['renormalizing_factor_year2'] == \
+        yoy_calc_info['renormalizing_factor']
+
+
+def test_degradation_hybrid_ols_yoy_reserved_kwargs_rejected():
+    """recenter / confidence_level cannot be smuggled in via yoy_kwargs."""
+    series = _build_two_rate_series(rd1_pct=-1.0, rd2_pct=-0.5)
+    with pytest.raises(ValueError, match="'recenter'"):
+        degradation_hybrid_ols_yoy(series, yoy_kwargs={'recenter': False})
+    with pytest.raises(ValueError, match="'confidence_level'"):
+        degradation_hybrid_ols_yoy(
+            series, yoy_kwargs={'confidence_level': 90})
+
+
+def test_degradation_hybrid_ols_yoy_fractional_split():
+    """Non-integer year1_split (e.g. 0.5) is supported via Timedelta."""
+    series = _build_two_rate_series(rd1_pct=-1.0, rd2_pct=-0.5,
+                                    start='2018-01-01', end='2023-01-01')
+    _, _, info = degradation_hybrid_ols_yoy(series, year1_split=0.5)
+    assert info['split_date'] == series.index[0] + pd.Timedelta(days=0.5*365.0)
+
+
+def test_degradation_hybrid_ols_yoy_recenter_false():
+    """With recenter_year2=False, the renorm factor is 1.0."""
+    series = _build_two_rate_series(rd1_pct=-1.0, rd2_pct=-0.5)
+    _, _, info = degradation_hybrid_ols_yoy(series, recenter_year2=False)
+    assert info['renormalizing_factor_year2'] == 1.0
 
 
 def test_mk_test_no_trend():

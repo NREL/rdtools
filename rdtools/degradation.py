@@ -417,6 +417,113 @@ def degradation_year_on_year(energy_normalized, recenter=True,
         return Rd_pct
 
 
+def degradation_hybrid_ols_yoy(energy_normalized, year1_split=1.0,
+                               recenter_year2=True, confidence_level=68.2,
+                               yoy_kwargs=None):
+    '''
+    Estimate a two-piece (nonlinear) degradation profile by fitting ordinary
+    least squares on the first ``year1_split`` years and the year-on-year
+    method on the remainder. This is useful when early-life behavior (e.g.
+    light-induced degradation, light-soaking, initial stabilization) differs
+    qualitatively from steady-state degradation and a single rate would mask
+    that nonlinearity.
+
+    The year-1 rate is reported as %/year of the year-0 system capacity
+    (from the OLS intercept). The years-2+ rate is reported as %/year of the
+    capacity at the start of year 2: with ``recenter_year2=True`` the year-on-
+    year call recenters its input to the median of its first 365 days, which
+    for the post-split window is the start-of-year-2 baseline.
+
+    Parameters
+    ----------
+    energy_normalized : pandas.Series
+        Daily or lower frequency time series of normalized system output.
+        Must span at least ``year1_split`` + 2 years to populate both pieces.
+    year1_split : float, default 1.0
+        Boundary, in years from the start of the series, dividing the OLS
+        and year-on-year windows.
+    recenter_year2 : bool, default True
+        Whether the year-on-year call should recenter the post-split window
+        to its first-year median (recommended). If False, ``energy_normalized``
+        is assumed to be already normalized to the year 0 capacity and the
+        years-2+ rate is reported on that baseline.
+    confidence_level : float, default 68.2
+        The size of the confidence interval to return, in percent. Passed to
+        both underlying methods.
+    yoy_kwargs : dict, optional
+        Extra keyword arguments forwarded to
+        :py:func:`degradation_year_on_year` (e.g. ``uncertainty_method``,
+        ``multi_yoy``). ``recenter`` and ``confidence_level`` are set by this
+        function and should not be supplied here.
+
+    Returns
+    -------
+    Rd_pct_year1 : float
+        Estimated year-1 degradation, %/year of year-0 capacity.
+    Rd_pct_years2plus : float
+        Estimated steady-state degradation, %/year of capacity at the start
+        of year 2 (when ``recenter_year2=True``).
+    calc_info : dict
+        Detailed results with keys:
+
+        * ``year1`` - full ``(Rd_pct, Rd_CI, calc_info)`` tuple returned by
+          :py:func:`degradation_ols` on the year-1 window.
+        * ``years2plus`` - full ``(Rd_pct, Rd_CI, calc_info)`` tuple returned
+          by :py:func:`degradation_year_on_year` on the years-2+ window.
+        * ``split_date`` - ``pandas.Timestamp`` at which the two windows meet.
+        * ``renormalizing_factor_year2`` - the median used to recenter the
+          year-2+ window (``1.0`` when ``recenter_year2=False``).
+    '''
+
+    if yoy_kwargs is None:
+        yoy_kwargs = {}
+    for reserved in ('recenter', 'confidence_level'):
+        if reserved in yoy_kwargs:
+            raise ValueError(
+                f"'{reserved}' is controlled by degradation_hybrid_ols_yoy "
+                "and cannot be passed via yoy_kwargs"
+            )
+
+    energy_normalized = energy_normalized.sort_index()
+    start = energy_normalized.index[0]
+    # Use Timedelta (365 days/year) rather than DateOffset so non-integer
+    # year1_split values (e.g. 0.5) are accepted; this matches the
+    # 365.0-days/year convention used by degradation_ols.
+    split = start + pd.Timedelta(days=year1_split * 365.0)
+
+    s1 = energy_normalized.loc[start:split]
+    s2 = energy_normalized.loc[split:]
+
+    if s1.dropna().shape[0] < 2:
+        raise ValueError(
+            'hybrid analysis requires at least 2 samples in the first '
+            'year window'
+        )
+
+    year1_result = degradation_ols(s1.copy(), confidence_level=confidence_level)
+
+    years2plus_result = degradation_year_on_year(
+        s2.copy(), recenter=recenter_year2,
+        confidence_level=confidence_level, **yoy_kwargs)
+
+    Rd_pct_year1 = year1_result[0]
+    Rd_pct_years2plus = years2plus_result[0]
+
+    if isinstance(years2plus_result, tuple):
+        renorm_year2 = years2plus_result[2].get('renormalizing_factor', 1.0)
+    else:
+        renorm_year2 = 1.0
+
+    calc_info = {
+        'year1': year1_result,
+        'years2plus': years2plus_result,
+        'split_date': split,
+        'renormalizing_factor_year2': renorm_year2,
+    }
+
+    return (Rd_pct_year1, Rd_pct_years2plus, calc_info)
+
+
 def _avg_timestamp_old_Pandas(dt, dt_left):
     '''
     For old Pandas versions < 2.0.0, time columns cannot be averaged

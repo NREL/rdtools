@@ -56,6 +56,7 @@ Degradation
    degradation_classical_decomposition
    degradation_ols
    degradation_year_on_year
+   degradation_hybrid_ols_yoy
 
 
 Soiling
