@@ -9,7 +9,7 @@ import numpy as np
 import logging
 
 from rdtools import (degradation_ols, degradation_classical_decomposition,
-                     degradation_year_on_year, degradation_hybrid_ols_yoy)
+                     degradation_year_on_year, degradation_hybrid)
 
 
 class DegradationTestCase(unittest.TestCase):
@@ -376,9 +376,9 @@ def _build_two_rate_series(rd1_pct, rd2_pct, start='2018-01-01',
     return pd.Series(y, index=idx)
 
 
-def test_degradation_hybrid_ols_yoy_basic():
+def test_degradation_hybrid_basic():
     """Recover known year-1 and post-year-1 rates from a synthetic series."""
-    rd1, rd2, info = degradation_hybrid_ols_yoy(
+    rd1, rd2, info = degradation_hybrid(
         _build_two_rate_series(rd1_pct=-2.0, rd2_pct=-0.5)
     )
     assert np.isclose(rd1, -2.0, atol=0.2)
@@ -390,19 +390,19 @@ def test_degradation_hybrid_ols_yoy_basic():
     assert len(info['years2plus']) == 3
 
 
-def test_degradation_hybrid_ols_yoy_too_short():
+def test_degradation_hybrid_too_short():
     """Series shorter than year1_split + 2 years raises from YoY."""
     # only 2 years of data; year-1 window has 1 year, year-2+ window has 1 year
     series = _build_two_rate_series(rd1_pct=-1.0, rd2_pct=-0.5,
                                     start='2018-01-01', end='2020-01-01')
     with pytest.raises(ValueError, match='must provide at least two years'):
-        degradation_hybrid_ols_yoy(series)
+        degradation_hybrid(series)
 
 
-def test_degradation_hybrid_ols_yoy_calc_info_structure():
+def test_degradation_hybrid_calc_info_structure():
     """calc_info exposes the documented keys and consistent renorm factor."""
     series = _build_two_rate_series(rd1_pct=-1.0, rd2_pct=-0.5)
-    _, _, info = degradation_hybrid_ols_yoy(series)
+    _, _, info = degradation_hybrid(series)
     for key in ('year1', 'years2plus', 'split_date',
                 'renormalizing_factor_year2'):
         assert key in info
@@ -412,29 +412,113 @@ def test_degradation_hybrid_ols_yoy_calc_info_structure():
         yoy_calc_info['renormalizing_factor']
 
 
-def test_degradation_hybrid_ols_yoy_reserved_kwargs_rejected():
+def test_degradation_hybrid_reserved_kwargs_rejected():
     """recenter / confidence_level cannot be smuggled in via yoy_kwargs."""
     series = _build_two_rate_series(rd1_pct=-1.0, rd2_pct=-0.5)
     with pytest.raises(ValueError, match="'recenter'"):
-        degradation_hybrid_ols_yoy(series, yoy_kwargs={'recenter': False})
+        degradation_hybrid(series, yoy_kwargs={'recenter': False})
     with pytest.raises(ValueError, match="'confidence_level'"):
-        degradation_hybrid_ols_yoy(
+        degradation_hybrid(
             series, yoy_kwargs={'confidence_level': 90})
 
 
-def test_degradation_hybrid_ols_yoy_fractional_split():
+def test_degradation_hybrid_fractional_split():
     """Non-integer year1_split (e.g. 0.5) is supported via Timedelta."""
     series = _build_two_rate_series(rd1_pct=-1.0, rd2_pct=-0.5,
                                     start='2018-01-01', end='2023-01-01')
-    _, _, info = degradation_hybrid_ols_yoy(series, year1_split=0.5)
+    _, _, info = degradation_hybrid(series, year1_split=0.5)
     assert info['split_date'] == series.index[0] + pd.Timedelta(days=0.5*365.0)
 
 
-def test_degradation_hybrid_ols_yoy_recenter_false():
+def test_degradation_hybrid_recenter_false():
     """With recenter_year2=False, the renorm factor is 1.0."""
     series = _build_two_rate_series(rd1_pct=-1.0, rd2_pct=-0.5)
-    _, _, info = degradation_hybrid_ols_yoy(series, recenter_year2=False)
+    _, _, info = degradation_hybrid(series, recenter_year2=False)
     assert info['renormalizing_factor_year2'] == 1.0
+
+
+def test_degradation_hybrid_year1_method_default():
+    """year1_method='ols' (default) records the OLS function in calc_info."""
+    from rdtools.degradation import degradation_ols
+    series = _build_two_rate_series(rd1_pct=-1.0, rd2_pct=-0.5)
+    _, _, info = degradation_hybrid(series)
+    assert info['year1_method'] is degradation_ols
+
+
+def test_degradation_hybrid_year1_method_classical_decomposition():
+    """A wider year-1 window lets classical_decomposition produce a usable fit."""
+    from rdtools.degradation import degradation_classical_decomposition
+    # Need >= ~1.5 yr year1 window for CD's centered 365d rolling mean.
+    series = _build_two_rate_series(
+        rd1_pct=-1.0, rd2_pct=-0.5,
+        start='2018-01-01', end='2024-01-01',
+    )
+    rd1, rd2, info = degradation_hybrid(
+        series, year1_split=2.0, year1_method='classical_decomposition'
+    )
+    assert info['year1_method'] is degradation_classical_decomposition
+    # CD's calc_info has the extra 'mk_test_trend' / 'series' keys
+    assert 'mk_test_trend' in info['year1'][2]
+    assert np.isfinite(rd1)
+    assert np.isfinite(rd2)
+
+
+def test_degradation_hybrid_year1_method_callable():
+    """A user-supplied callable matching the (Rd_pct, Rd_CI, calc_info) contract works."""
+    series = _build_two_rate_series(rd1_pct=-1.0, rd2_pct=-0.5)
+
+    calls = []
+
+    def fake(year1_series, confidence_level=68.2):
+        calls.append((len(year1_series), confidence_level))
+        return (-1.0, np.array([-1.5, -0.5]),
+                {'slope': -0.01, 'intercept': 1.0})
+
+    _, _, info = degradation_hybrid(
+        series, year1_method=fake, confidence_level=90
+    )
+    assert info['year1_method'] is fake
+    assert info['year1'][0] == -1.0
+    assert calls and calls[0][1] == 90  # confidence_level forwarded
+
+
+def test_degradation_hybrid_year1_method_unknown_string():
+    """Unknown string keys raise ValueError listing the registered names."""
+    series = _build_two_rate_series(rd1_pct=-1.0, rd2_pct=-0.5)
+    with pytest.raises(ValueError, match="unknown year1_method"):
+        degradation_hybrid(series, year1_method='bogus')
+
+
+def test_degradation_hybrid_year1_method_bad_type():
+    """Non-string, non-callable year1_method raises TypeError."""
+    series = _build_two_rate_series(rd1_pct=-1.0, rd2_pct=-0.5)
+    with pytest.raises(TypeError, match="must be a string or callable"):
+        degradation_hybrid(series, year1_method=42)
+
+
+def test_degradation_hybrid_year1_kwargs_forwarded():
+    """year1_kwargs are forwarded to the chosen year-1 method."""
+    series = _build_two_rate_series(rd1_pct=-1.0, rd2_pct=-0.5)
+    captured = {}
+
+    def fake(year1_series, confidence_level=68.2, extra=None):
+        captured['extra'] = extra
+        return (0.0, np.array([0.0, 0.0]),
+                {'slope': 0.0, 'intercept': 1.0})
+
+    degradation_hybrid(
+        series, year1_method=fake, year1_kwargs={'extra': 'forwarded'}
+    )
+    assert captured['extra'] == 'forwarded'
+
+
+def test_degradation_hybrid_year1_kwargs_reserved_rejected():
+    """confidence_level cannot be smuggled in via year1_kwargs."""
+    series = _build_two_rate_series(rd1_pct=-1.0, rd2_pct=-0.5)
+    with pytest.raises(ValueError, match="'confidence_level'"):
+        degradation_hybrid(
+            series, year1_kwargs={'confidence_level': 90}
+        )
 
 
 def test_mk_test_no_trend():

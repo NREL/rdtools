@@ -835,7 +835,7 @@ class TrendAnalysis:
             Time Series of insolation-weighted aggregated normalized PV energy
         kwargs :
             Extra parameters passed to
-            degradation.degradation_hybrid_ols_yoy()
+            degradation.degradation_hybrid()
 
         Returns
         -------
@@ -847,10 +847,10 @@ class TrendAnalysis:
                                   year-on-year, %/year of start-of-year-2
                                   capacity (when recenter_year2=True).
             'calc_info' : Dict of detailed results
-                          (see degradation.degradation_hybrid_ols_yoy() docs)
+                          (see degradation.degradation_hybrid() docs)
         """
         self._filter_check(energy_normalized)
-        rd1, rd2, info = degradation.degradation_hybrid_ols_yoy(
+        rd1, rd2, info = degradation.degradation_hybrid(
             energy_normalized, **kwargs
         )
 
@@ -1055,7 +1055,7 @@ class TrendAnalysis:
             kwargs to pass to :py:func:`rdtools.soiling.soiling_srr`
         hybrid_kwargs : dict
             kwargs to pass to
-            :py:func:`rdtools.degradation.degradation_hybrid_ols_yoy`
+            :py:func:`rdtools.degradation.degradation_hybrid`
 
         Returns
         -------
@@ -1105,7 +1105,7 @@ class TrendAnalysis:
             kwargs to pass to :py:func:`rdtools.soiling.soiling_srr`
         hybrid_kwargs : dict
             kwargs to pass to
-            :py:func:`rdtools.degradation.degradation_hybrid_ols_yoy`
+            :py:func:`rdtools.degradation.degradation_hybrid`
 
         Returns
         -------

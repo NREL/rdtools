@@ -155,12 +155,12 @@ def hybrid_degradation_summary_plots(rd_pct_year1, rd_pct_years2plus,
         otherwise in %/year of year-0 capacity).
     calc_info : dict
         ``calc_info`` returned by
-        :py:func:`.degradation.degradation_hybrid_ols_yoy`, with keys
+        :py:func:`.degradation.degradation_hybrid`, with keys
         ``year1``, ``years2plus``, ``split_date``, and
         ``renormalizing_factor_year2``.
     normalized_yield : pandas.Series
         PV yield data that is normalized, filtered, and aggregated -- the same
-        series passed to ``degradation_hybrid_ols_yoy``.
+        series passed to ``degradation_hybrid``.
     hist_xmin : float, optional
         lower limit of x-axis for the histogram
     hist_xmax : float, optional
@@ -187,7 +187,7 @@ def hybrid_degradation_summary_plots(rd_pct_year1, rd_pct_years2plus,
     ----
     ``rd_pct_year1``, ``rd_pct_years2plus``, and ``calc_info`` are the
     unpacked outputs of
-    :py:func:`.degradation.degradation_hybrid_ols_yoy`.
+    :py:func:`.degradation.degradation_hybrid`.
 
     Returns
     -------

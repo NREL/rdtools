@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-from rdtools.degradation import degradation_year_on_year, degradation_hybrid_ols_yoy
+from rdtools.degradation import degradation_year_on_year, degradation_hybrid
 from rdtools.filtering import logic_clip_filter
 from rdtools.soiling import soiling_srr
 from rdtools.plotting import (
@@ -98,7 +98,7 @@ def test_degradation_summary_plots_kwargs(degradation_info):
 @pytest.fixture()
 def hybrid_degradation_info(degradation_power_signal):
     '''
-    Return results of running degradation_hybrid_ols_yoy on the synthetic
+    Return results of running degradation_hybrid on the synthetic
     power signal.
 
     Returns
@@ -109,7 +109,7 @@ def hybrid_degradation_info(degradation_power_signal):
     calc_info : dict with keys ``year1``, ``years2plus``, ``split_date``,
         ``renormalizing_factor_year2``
     '''
-    rd1, rd2, info = degradation_hybrid_ols_yoy(degradation_power_signal)
+    rd1, rd2, info = degradation_hybrid(degradation_power_signal)
     return degradation_power_signal, rd1, rd2, info
 
 

@@ -417,22 +417,37 @@ def degradation_year_on_year(energy_normalized, recenter=True,
         return Rd_pct
 
 
-def degradation_hybrid_ols_yoy(energy_normalized, year1_split=1.0,
+# Registry of built-in year-1 regression methods recognised by
+# :py:func:`degradation_hybrid` when ``year1_method`` is a string.
+# Each entry must accept ``(energy_normalized, confidence_level=...)`` and
+# return ``(Rd_pct, Rd_CI, calc_info)``.
+_YEAR1_METHODS = {
+    'ols': degradation_ols,
+    'classical_decomposition': degradation_classical_decomposition,
+}
+
+
+def degradation_hybrid(energy_normalized, year1_split=1.0,
+                               year1_method='ols', year1_kwargs=None,
                                recenter_year2=True, confidence_level=68.2,
                                yoy_kwargs=None):
     '''
-    Estimate a two-piece (nonlinear) degradation profile by fitting ordinary
-    least squares on the first ``year1_split`` years and the year-on-year
-    method on the remainder. This is useful when early-life behavior (e.g.
-    light-induced degradation, light-soaking, initial stabilization) differs
-    qualitatively from steady-state degradation and a single rate would mask
-    that nonlinearity.
+    Estimate a two-piece (nonlinear) degradation profile by fitting a
+    user-selected regression method on the first ``year1_split`` years and
+    the year-on-year method on the remainder. This is useful when early-life
+    behavior (e.g. light-induced degradation, light-soaking, initial
+    stabilization) differs qualitatively from steady-state degradation and a
+    single rate would mask that nonlinearity.
 
     The year-1 rate is reported as %/year of the year-0 system capacity
-    (from the OLS intercept). The years-2+ rate is reported as %/year of the
+    (from the year-1 fit). The years-2+ rate is reported as %/year of the
     capacity at the start of year 2: with ``recenter_year2=True`` the year-on-
     year call recenters its input to the median of its first 365 days, which
     for the post-split window is the start-of-year-2 baseline.
+
+    Despite the name (kept for backward compatibility with earlier internal
+    APIs), the year-1 piece is no longer restricted to OLS -- see
+    ``year1_method`` below.
 
     Parameters
     ----------
@@ -440,8 +455,30 @@ def degradation_hybrid_ols_yoy(energy_normalized, year1_split=1.0,
         Daily or lower frequency time series of normalized system output.
         Must span at least ``year1_split`` + 2 years to populate both pieces.
     year1_split : float, default 1.0
-        Boundary, in years from the start of the series, dividing the OLS
+        Boundary, in years from the start of the series, dividing the year-1
         and year-on-year windows.
+    year1_method : str or callable, default 'ols'
+        The regression method used on the first ``year1_split`` years.
+        Built-in string choices:
+
+        * ``'ols'`` (default) - :py:func:`degradation_ols`. Works on any
+          ``year1_split`` window with at least two samples.
+        * ``'classical_decomposition'`` -
+          :py:func:`degradation_classical_decomposition`. Internally uses a
+          centered 365-day rolling mean and trims the first/last 0.5 years
+          of the window, so usable trend points only exist when the year-1
+          window spans roughly 1.5+ years. Set ``year1_split`` to at least
+          ``2.0`` in practice.
+
+        Alternatively, pass any callable with the signature
+        ``f(energy_normalized, confidence_level=..., **year1_kwargs)
+        -> (Rd_pct, Rd_CI, calc_info)``. The returned ``calc_info`` dict
+        should contain ``'slope'`` and ``'intercept'`` to remain compatible
+        with :py:func:`rdtools.plotting.hybrid_degradation_summary_plots`.
+    year1_kwargs : dict, optional
+        Extra keyword arguments forwarded to the year-1 method.
+        ``confidence_level`` is set by this function and must not be supplied
+        here.
     recenter_year2 : bool, default True
         Whether the year-on-year call should recenter the post-split window
         to its first-year median (recommended). If False, ``energy_normalized``
@@ -467,20 +504,46 @@ def degradation_hybrid_ols_yoy(energy_normalized, year1_split=1.0,
         Detailed results with keys:
 
         * ``year1`` - full ``(Rd_pct, Rd_CI, calc_info)`` tuple returned by
-          :py:func:`degradation_ols` on the year-1 window.
+          the selected ``year1_method`` on the year-1 window.
         * ``years2plus`` - full ``(Rd_pct, Rd_CI, calc_info)`` tuple returned
           by :py:func:`degradation_year_on_year` on the years-2+ window.
+        * ``year1_method`` - the resolved year-1 callable.
         * ``split_date`` - ``pandas.Timestamp`` at which the two windows meet.
         * ``renormalizing_factor_year2`` - the median used to recenter the
           year-2+ window (``1.0`` when ``recenter_year2=False``).
     '''
+
+    # Resolve the year-1 method (string registry or user-supplied callable).
+    if isinstance(year1_method, str):
+        try:
+            year1_func = _YEAR1_METHODS[year1_method]
+        except KeyError:
+            raise ValueError(
+                f"unknown year1_method '{year1_method}'; expected one of "
+                f"{sorted(_YEAR1_METHODS)} or a callable"
+            )
+    elif callable(year1_method):
+        year1_func = year1_method
+    else:
+        raise TypeError(
+            "year1_method must be a string or callable, "
+            f"got {type(year1_method).__name__}"
+        )
+
+    if year1_kwargs is None:
+        year1_kwargs = {}
+    if 'confidence_level' in year1_kwargs:
+        raise ValueError(
+            "'confidence_level' is controlled by degradation_hybrid "
+            "and cannot be passed via year1_kwargs"
+        )
 
     if yoy_kwargs is None:
         yoy_kwargs = {}
     for reserved in ('recenter', 'confidence_level'):
         if reserved in yoy_kwargs:
             raise ValueError(
-                f"'{reserved}' is controlled by degradation_hybrid_ols_yoy "
+                f"'{reserved}' is controlled by degradation_hybrid "
                 "and cannot be passed via yoy_kwargs"
             )
 
@@ -500,7 +563,8 @@ def degradation_hybrid_ols_yoy(energy_normalized, year1_split=1.0,
             'year window'
         )
 
-    year1_result = degradation_ols(s1.copy(), confidence_level=confidence_level)
+    year1_result = year1_func(s1.copy(), confidence_level=confidence_level,
+                              **year1_kwargs)
 
     years2plus_result = degradation_year_on_year(
         s2.copy(), recenter=recenter_year2,
@@ -517,6 +581,7 @@ def degradation_hybrid_ols_yoy(energy_normalized, year1_split=1.0,
     calc_info = {
         'year1': year1_result,
         'years2plus': years2plus_result,
+        'year1_method': year1_func,
         'split_date': split,
         'renormalizing_factor_year2': renorm_year2,
     }
