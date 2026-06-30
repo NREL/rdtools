@@ -134,6 +134,25 @@ def degradation_summary_plots(yoy_rd, yoy_ci, yoy_info, normalized_yield,
     return fig
 
 
+# Pretty labels for the built-in degradation_hybrid year-1 methods.
+# Custom callables fall back to their ``__name__``.
+_YEAR1_PRETTY_LABEL = {
+    'degradation_ols': 'OLS',
+    'degradation_theil_sen': 'Theil-Sen',
+    'degradation_classical_decomposition': 'CD',
+}
+
+
+def _year1_pretty_label(calc_info):
+    """Return a human-readable name for the year-1 method recorded in
+    a ``degradation_hybrid`` ``calc_info`` dict."""
+    fn = calc_info.get('year1_method')
+    if fn is None:
+        return 'year-1 method'
+    name = getattr(fn, '__name__', None) or 'year-1 method'
+    return _YEAR1_PRETTY_LABEL.get(name, name)
+
+
 def hybrid_degradation_summary_plots(rd_pct_year1, rd_pct_years2plus,
                                      calc_info, normalized_yield,
                                      hist_xmin=None, hist_xmax=None, bins=None,
@@ -142,13 +161,14 @@ def hybrid_degradation_summary_plots(rd_pct_year1, rd_pct_years2plus,
                                      summary_title=None, scatter_alpha=0.5):
     '''
     Create plots (scatter plot and histogram) that summarize the two-piece
-    hybrid (OLS year-1 + year-on-year years-2+) degradation analysis.
+    hybrid (configurable year-1 method + year-on-year years-2+) degradation
+    analysis.
 
     Parameters
     ----------
     rd_pct_year1 : float
-        Year-1 degradation rate from the OLS piece, in %/year of the year-0
-        system capacity.
+        Year-1 degradation rate from the year-1 piece, in %/year of the
+        year-0 system capacity.
     rd_pct_years2plus : float
         Steady-state degradation rate from the year-on-year piece, in %/year
         of the start-of-year-2 capacity (when ``recenter_year2=True``;
@@ -157,7 +177,9 @@ def hybrid_degradation_summary_plots(rd_pct_year1, rd_pct_years2plus,
         ``calc_info`` returned by
         :py:func:`.degradation.degradation_hybrid`, with keys
         ``year1``, ``years2plus``, ``split_date``, and
-        ``renormalizing_factor_year2``.
+        ``renormalizing_factor_year2``. The ``year1_method`` key, when
+        present, is used to label the year-1 piece in the legend and
+        annotation.
     normalized_yield : pandas.Series
         PV yield data that is normalized, filtered, and aggregated -- the same
         series passed to ``degradation_hybrid``.
@@ -174,7 +196,7 @@ def hybrid_degradation_summary_plots(rd_pct_year1, rd_pct_years2plus,
     scatter_ymax : float, optional
         upper limit of y-axis for the scatter plot
     year1_color : str, optional
-        color of the year-1 OLS fit line. Defaults to ``'tab:orange'``.
+        color of the year-1 fit line. Defaults to ``'tab:orange'``.
     years2plus_color : str, optional
         color of the scatter points, years-2+ rate line, and the YoY
         histogram bars. Defaults to ``'C0'``.
@@ -200,6 +222,7 @@ def hybrid_degradation_summary_plots(rd_pct_year1, rd_pct_years2plus,
     _, years2plus_ci, years2plus_info = calc_info['years2plus']
     split_date = calc_info['split_date']
     renorm_year2 = calc_info['renormalizing_factor_year2']
+    year1_label = _year1_pretty_label(calc_info)
 
     yoy_values = years2plus_info['YoY_values']
 
@@ -216,7 +239,7 @@ def hybrid_degradation_summary_plots(rd_pct_year1, rd_pct_years2plus,
     start = normalized_yield.index[0]
     end = normalized_yield.index[-1]
 
-    # Year-1 OLS line: y = intercept + slope * years_from_start.
+    # Year-1 fit line: y = intercept + slope * years_from_start.
     year1_intercept = year1_info['intercept']
     year1_slope = year1_info['slope']
     year1_span_years = (split_date - start).days / 365.0
@@ -237,16 +260,16 @@ def hybrid_degradation_summary_plots(rd_pct_year1, rd_pct_years2plus,
     ax2.hist(yoy_values, label='YoY (years 2+)', bins=bins,
              color=years2plus_color)
     ax2.axvline(x=rd_pct_year1, color=year1_color, linestyle='dashed',
-                linewidth=3, label='year-1 OLS rate')
+                linewidth=3, label=f'year-1 {year1_label} rate')
     ax2.axvline(x=rd_pct_years2plus, color='black', linestyle='dashed',
                 linewidth=3, label='years-2+ YoY rate')
     ax2.set_xlim(hist_xmin, hist_xmax)
 
     label = (
-        f" year 1 (OLS): $R_d$ = {rd_pct_year1:+.2f} %/yr\n"
-        f"   CI: [{year1_ci[0]:+.2f}, {year1_ci[1]:+.2f}] %/yr\n"
-        f" years 2+ (YoY): $R_d$ = {rd_pct_years2plus:+.2f} %/yr\n"
-        f"   CI: [{years2plus_ci[0]:+.2f}, {years2plus_ci[1]:+.2f}] %/yr"
+        f" year 1 ({year1_label}): {rd_pct_year1:+.2f} %/yr  "
+        f"[{year1_ci[0]:+.2f}, {year1_ci[1]:+.2f}]\n"
+        f" years 2+ (YoY): {rd_pct_years2plus:+.2f} %/yr  "
+        f"[{years2plus_ci[0]:+.2f}, {years2plus_ci[1]:+.2f}]"
     )
     ax2.annotate(label, xy=(0.5, 0.55), xycoords='axes fraction',
                  bbox=dict(facecolor='white', edgecolor=None, alpha=0))
@@ -256,9 +279,9 @@ def hybrid_degradation_summary_plots(rd_pct_year1, rd_pct_years2plus,
     ax1.scatter(normalized_yield.index, normalized_yield,
                 c=years2plus_color, alpha=scatter_alpha, linewidths=0)
     ax1.plot(year1_x, year1_y, '-', color=year1_color, linewidth=3,
-             label=f'Year 1 OLS ({rd_pct_year1:+.2f} %/yr)')
+             label=f'Year 1 ({year1_label})')
     ax1.plot(years2plus_x, years2plus_y, '--', color='black', linewidth=3,
-             label=f'Years 2+ YoY ({rd_pct_years2plus:+.2f} %/yr)')
+             label='Years 2+ (YoY)')
     ax1.axvline(split_date, color='gray', linestyle=':', linewidth=1.5,
                 label='Split')
     ax1.set_xlabel('Date')

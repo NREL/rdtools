@@ -55,6 +55,7 @@ Degradation
 
    degradation_classical_decomposition
    degradation_ols
+   degradation_theil_sen
    degradation_year_on_year
    degradation_hybrid
 

@@ -9,7 +9,8 @@ import numpy as np
 import logging
 
 from rdtools import (degradation_ols, degradation_classical_decomposition,
-                     degradation_year_on_year, degradation_hybrid)
+                     degradation_year_on_year, degradation_hybrid,
+                     degradation_theil_sen)
 
 
 class DegradationTestCase(unittest.TestCase):
@@ -69,6 +70,11 @@ class DegradationTestCase(unittest.TestCase):
         # Allowed frequencies for degradation_year_on_year
         cls.list_YOY_input_freq = ["MS", "ME", "W", "D", "Irregular_D"]
 
+        # Allowed frequencies for degradation_theil_sen.  Pairwise-slope cost
+        # is O(n^2), so high-frequency inputs (hourly and below) are skipped
+        # to keep the test suite snappy.
+        cls.list_TS_input_freq = ["MS", "ME", "W", "D", "Irregular_D"]
+
         # ------------------------------------------------------------------------------------------------
         # Allow pandas < 2.2.0 to use 'M' as an alias for MonthEnd
         # https://pandas.pydata.org/docs/whatsnew/v2.2.0.html#deprecate-aliases-m-q-y-etc-in-favour-of-me-qe-ye-etc-for-offsets
@@ -82,6 +88,7 @@ class DegradationTestCase(unittest.TestCase):
                 cls.list_ols_input_freq,
                 cls.list_CD_input_freq,
                 cls.list_YOY_input_freq,
+                cls.list_TS_input_freq,
             ]:
                 if "ME" in list:
                     list.remove("ME")
@@ -122,6 +129,20 @@ class DegradationTestCase(unittest.TestCase):
         for input_freq in self.list_CD_input_freq:
             logging.debug('Frequency: {}'.format(input_freq))
             rd_result = degradation_classical_decomposition(
+                self.test_corr_energy[input_freq])
+            self.assertAlmostEqual(rd_result[0], 100 * self.rd, places=1)
+            logging.debug('Actual: {}'.format(100 * self.rd))
+            logging.debug('Estimated: {}'.format(rd_result[0]))
+
+    def test_degradation_theil_sen(self):
+        ''' Test degradation with the Theil-Sen estimator. '''
+
+        funcName = sys._getframe().f_code.co_name
+        logging.debug('Running {}'.format(funcName))
+
+        for input_freq in self.list_TS_input_freq:
+            logging.debug('Frequency: {}'.format(input_freq))
+            rd_result = degradation_theil_sen(
                 self.test_corr_energy[input_freq])
             self.assertAlmostEqual(rd_result[0], 100 * self.rd, places=1)
             logging.debug('Actual: {}'.format(100 * self.rd))
@@ -170,7 +191,8 @@ class DegradationTestCase(unittest.TestCase):
 
         input_freq = "W"
 
-        for func in [degradation_ols, degradation_year_on_year]:
+        for func in [degradation_ols, degradation_year_on_year,
+                     degradation_theil_sen]:
 
             ci1 = 68.2
             ci2 = 95
@@ -461,6 +483,19 @@ def test_degradation_hybrid_year1_method_classical_decomposition():
     assert 'mk_test_trend' in info['year1'][2]
     assert np.isfinite(rd1)
     assert np.isfinite(rd2)
+
+
+def test_degradation_hybrid_year1_method_theil_sen():
+    """The 'theil_sen' string maps to the Theil-Sen estimator and recovers the year-1 rate."""
+    from rdtools.degradation import degradation_theil_sen
+    series = _build_two_rate_series(rd1_pct=-2.0, rd2_pct=-0.5)
+    rd1, rd2, info = degradation_hybrid(series, year1_method='theil_sen')
+    assert info['year1_method'] is degradation_theil_sen
+    # Theil-Sen calc_info has 'slope_low' / 'slope_high' (instead of OLS' bse-derived CI)
+    assert 'slope_low' in info['year1'][2]
+    assert 'slope_high' in info['year1'][2]
+    assert np.isclose(rd1, -2.0, atol=0.2)
+    assert np.isclose(rd2, -0.5 / 0.98, atol=0.2)
 
 
 def test_degradation_hybrid_year1_method_callable():

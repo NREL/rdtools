@@ -177,6 +177,77 @@ def degradation_classical_decomposition(energy_normalized,
     return (Rd_pct, Rd_CI, calc_info)
 
 
+def degradation_theil_sen(energy_normalized, confidence_level=68.2):
+    '''
+    Estimate the trend of a timeseries using the Theil-Sen estimator -- a
+    robust non-parametric regression that takes the median of the slopes
+    between all pairs of observations.
+
+    Compared to :py:func:`degradation_ols`, Theil-Sen is less sensitive to
+    outliers and makes no distributional assumption about residuals.  Useful
+    when the input contains a handful of bad days that would dominate an
+    OLS fit. The pairwise-slope calculation is roughly :math:`O(n^2)`, so
+    very-high-frequency inputs (e.g. minute-level) are not recommended;
+    aggregate to daily or lower first.
+
+    The confidence interval is derived from the rank statistics of the
+    pairwise slopes (no Monte Carlo or bootstrap), and is converted to
+    %/year of the year-0 capacity by dividing by the Theil-Sen intercept.
+
+    Parameters
+    ----------
+    energy_normalized : pandas.Series
+        Daily or lower frequency time series of normalized system output.
+    confidence_level : float, default 68.2
+        The size of the confidence interval to return, in percent.
+
+    Returns
+    -------
+    Rd_pct : float
+        Estimated degradation relative to the year-0 system capacity [%/year]
+    Rd_CI : numpy.array
+        The calculated confidence interval bounds (length 2).
+    calc_info : dict
+        A dict that contains:
+
+        * ``slope`` - estimated slope (median of pairwise slopes), in units
+          of normalized energy per year.
+        * ``intercept`` - intercept of the median-slope line, in normalized
+          energy units (the implied year-0 capacity).
+        * ``slope_low`` / ``slope_high`` - lower / upper bound of the
+          rank-based confidence interval on ``slope``.
+        * ``theilslopes_result`` - the raw
+          :py:func:`scipy.stats.theilslopes` return.
+    '''
+    from scipy.stats import theilslopes
+
+    series = energy_normalized.dropna()
+    if series.shape[0] < 2:
+        raise ValueError('Theil-Sen estimator requires at least 2 non-NaN '
+                         'observations')
+
+    years = (series.index - series.index[0]) / pd.Timedelta('365D')
+    alpha = confidence_level / 100.0
+    result = theilslopes(series.values, years.values, alpha=alpha)
+
+    # scipy returns either a plain (slope, intercept, lo_slope, up_slope)
+    # tuple or a TheilslopesResult namedtuple; both unpack positionally.
+    slope, intercept, lo_slope, up_slope = result
+
+    Rd_pct = 100.0 * slope / intercept
+    Rd_CI = 100.0 * np.array([lo_slope, up_slope]) / intercept
+
+    calc_info = {
+        'slope': slope,
+        'intercept': intercept,
+        'slope_low': lo_slope,
+        'slope_high': up_slope,
+        'theilslopes_result': result,
+    }
+
+    return (Rd_pct, Rd_CI, calc_info)
+
+
 def degradation_year_on_year(energy_normalized, recenter=True,
                              exceedance_prob=95, confidence_level=68.2,
                              uncertainty_method='simple', block_length=30,
@@ -424,6 +495,7 @@ def degradation_year_on_year(energy_normalized, recenter=True,
 _YEAR1_METHODS = {
     'ols': degradation_ols,
     'classical_decomposition': degradation_classical_decomposition,
+    'theil_sen': degradation_theil_sen,
 }
 
 
@@ -468,7 +540,15 @@ def degradation_hybrid(energy_normalized, year1_split=1.0,
           centered 365-day rolling mean and trims the first/last 0.5 years
           of the window, so usable trend points only exist when the year-1
           window spans roughly 1.5+ years. Set ``year1_split`` to at least
-          ``2.0`` in practice.
+          ``2.0`` in practice. Also requires a regular (fixed-freq,
+          gap-free) series; aggregated rdtools output with filter-induced
+          NaN gaps must be interpolated first (see the example notebook
+          for a wrapper callable that does this).
+        * ``'theil_sen'`` - :py:func:`degradation_theil_sen`. Robust to
+          outliers in the year-1 window via a non-parametric
+          median-of-pairwise-slopes fit. Works on any ``year1_split``
+          window with at least two non-NaN samples; cost grows as
+          :math:`O(n^2)`, so daily-or-lower aggregation is recommended.
 
         Alternatively, pass any callable with the signature
         ``f(energy_normalized, confidence_level=..., **year1_kwargs)
