@@ -236,8 +236,10 @@ def hybrid_degradation_summary_plots(rd_pct_year1, rd_pct_years2plus,
     # Histogram of YoY values (years 2+).
     ax2.hist(yoy_values, label='YoY (years 2+)', bins=bins,
              color=years2plus_color)
+    ax2.axvline(x=rd_pct_year1, color=year1_color, linestyle='dashed',
+                linewidth=3, label='year-1 OLS rate')
     ax2.axvline(x=rd_pct_years2plus, color='black', linestyle='dashed',
-                linewidth=3)
+                linewidth=3, label='years-2+ YoY rate')
     ax2.set_xlim(hist_xmin, hist_xmax)
 
     label = (
