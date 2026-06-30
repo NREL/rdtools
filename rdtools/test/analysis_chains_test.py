@@ -69,6 +69,13 @@ def sensor_analysis(sensor_parameters):
 
 
 @pytest.fixture
+def sensor_analysis_hybrid(sensor_parameters):
+    rd_analysis = TrendAnalysis(**sensor_parameters)
+    rd_analysis.sensor_analysis(analyses=["hybrid_degradation"])
+    return rd_analysis
+
+
+@pytest.fixture
 def sensor_analysis_nans(sensor_parameters):
     def randomly_replace_with(series, replace_with=0, fraction=0.1, seed=None):
         """
@@ -570,6 +577,15 @@ def clearsky_analysis(cs_input, clearsky_parameters):
 
 
 @pytest.fixture
+def clearsky_analysis_hybrid(cs_input, clearsky_parameters):
+    rd_analysis = TrendAnalysis(**clearsky_parameters)
+    rd_analysis.set_clearsky(**cs_input)
+    rd_analysis.filter_params["clearsky_filter"] = {"model": "csi"}
+    rd_analysis.clearsky_analysis(analyses=["hybrid_degradation"])
+    return rd_analysis
+
+
+@pytest.fixture
 def clearsky_pvlib_analysis(clearsky_example_data):
     clearsky_parameters_example, cs_input_example = clearsky_example_data
     rd_analysis = TrendAnalysis(**clearsky_parameters_example)
@@ -815,6 +831,20 @@ def test_plot_cs(clearsky_analysis):
     assert_isinstance(clearsky_analysis.plot_pv_vs_irradiance("clearsky"), plt.Figure)
 
 
+def test_plot_hybrid_degradation(sensor_analysis_hybrid):
+    assert_isinstance(
+        sensor_analysis_hybrid.plot_hybrid_degradation_summary("sensor"),
+        plt.Figure,
+    )
+
+
+def test_plot_hybrid_degradation_cs(clearsky_analysis_hybrid):
+    assert_isinstance(
+        clearsky_analysis_hybrid.plot_hybrid_degradation_summary("clearsky"),
+        plt.Figure,
+    )
+
+
 def test_plot_soiling(soiling_analysis_sensor):
     assert_isinstance(
         soiling_analysis_sensor.plot_soiling_monte_carlo("sensor"), plt.Figure
@@ -891,6 +921,7 @@ def test_clip_filter_frequency_error(basic_parameters):
     "method_name",
     [
         "plot_degradation_summary",
+        "plot_hybrid_degradation_summary",
         "plot_soiling_monte_carlo",
         "plot_soiling_interval",
         "plot_soiling_rate_histogram",

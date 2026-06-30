@@ -1171,6 +1171,43 @@ class TrendAnalysis:
         )
         return fig
 
+    def plot_hybrid_degradation_summary(self, case, **kwargs):
+        """
+        Return a figure of a scatter plot and a histogram summarizing the
+        two-piece hybrid (OLS year-1 + year-on-year years-2+) degradation
+        analysis.
+
+        Parameters
+        ----------
+        case : str
+            The workflow result to plot, allowed values are 'sensor' and 'clearsky'
+        kwargs :
+            Extra parameters passed to
+            :py:func:`rdtools.plotting.hybrid_degradation_summary_plots`
+
+        Returns
+        -------
+        matplotlib.figure.Figure
+        """
+
+        if case == "sensor":
+            results_dict = self.results["sensor"]["hybrid_degradation"]
+            aggregated = self.sensor_aggregated_performance
+        elif case == "clearsky":
+            results_dict = self.results["clearsky"]["hybrid_degradation"]
+            aggregated = self.clearsky_aggregated_performance
+        else:
+            raise ValueError("case must be either 'sensor' or 'clearsky'")
+
+        fig = plotting.hybrid_degradation_summary_plots(
+            results_dict["rd_pct_year1"],
+            results_dict["rd_pct_years2plus"],
+            results_dict["calc_info"],
+            aggregated,
+            **kwargs,
+        )
+        return fig
+
     def plot_soiling_monte_carlo(self, case, **kwargs):
         """
         Return a figure visualizing the Monte Carlo of soiling profiles used in

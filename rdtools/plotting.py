@@ -134,6 +134,144 @@ def degradation_summary_plots(yoy_rd, yoy_ci, yoy_info, normalized_yield,
     return fig
 
 
+def hybrid_degradation_summary_plots(rd_pct_year1, rd_pct_years2plus,
+                                     calc_info, normalized_yield,
+                                     hist_xmin=None, hist_xmax=None, bins=None,
+                                     scatter_ymin=None, scatter_ymax=None,
+                                     year1_color=None, years2plus_color=None,
+                                     summary_title=None, scatter_alpha=0.5):
+    '''
+    Create plots (scatter plot and histogram) that summarize the two-piece
+    hybrid (OLS year-1 + year-on-year years-2+) degradation analysis.
+
+    Parameters
+    ----------
+    rd_pct_year1 : float
+        Year-1 degradation rate from the OLS piece, in %/year of the year-0
+        system capacity.
+    rd_pct_years2plus : float
+        Steady-state degradation rate from the year-on-year piece, in %/year
+        of the start-of-year-2 capacity (when ``recenter_year2=True``;
+        otherwise in %/year of year-0 capacity).
+    calc_info : dict
+        ``calc_info`` returned by
+        :py:func:`.degradation.degradation_hybrid_ols_yoy`, with keys
+        ``year1``, ``years2plus``, ``split_date``, and
+        ``renormalizing_factor_year2``.
+    normalized_yield : pandas.Series
+        PV yield data that is normalized, filtered, and aggregated -- the same
+        series passed to ``degradation_hybrid_ols_yoy``.
+    hist_xmin : float, optional
+        lower limit of x-axis for the histogram
+    hist_xmax : float, optional
+        upper limit of x-axis for the histogram
+    bins : int, optional
+        Number of bins in the histogram. If omitted,
+        ``len(yoy_values) // 40`` is used (matching
+        :py:func:`degradation_summary_plots`).
+    scatter_ymin : float, optional
+        lower limit of y-axis for the scatter plot
+    scatter_ymax : float, optional
+        upper limit of y-axis for the scatter plot
+    year1_color : str, optional
+        color of the year-1 OLS fit line. Defaults to ``'tab:orange'``.
+    years2plus_color : str, optional
+        color of the scatter points, years-2+ rate line, and the YoY
+        histogram bars. Defaults to ``'C0'``.
+    summary_title : str, optional
+        overall title for the summary figure
+    scatter_alpha : float, default 0.5
+        transparency of the scatter points
+
+    Note
+    ----
+    ``rd_pct_year1``, ``rd_pct_years2plus``, and ``calc_info`` are the
+    unpacked outputs of
+    :py:func:`.degradation.degradation_hybrid_ols_yoy`.
+
+    Returns
+    -------
+    fig : matplotlib.figure.Figure
+        Figure with two axes (scatter on the left, histogram on the right).
+    '''
+
+    # Unpack the nested per-piece info dicts
+    _, year1_ci, year1_info = calc_info['year1']
+    _, years2plus_ci, years2plus_info = calc_info['years2plus']
+    split_date = calc_info['split_date']
+    renorm_year2 = calc_info['renormalizing_factor_year2']
+
+    yoy_values = years2plus_info['YoY_values']
+
+    if bins is None:
+        bins = len(yoy_values) // 40
+    bins = int(min(bins, len(yoy_values)))
+
+    if year1_color is None:
+        year1_color = 'tab:orange'
+    if years2plus_color is None:
+        years2plus_color = 'C0'
+
+    # Build the piecewise degradation profile in raw (un-renormalized) units.
+    start = normalized_yield.index[0]
+    end = normalized_yield.index[-1]
+
+    # Year-1 OLS line: y = intercept + slope * years_from_start.
+    year1_intercept = year1_info['intercept']
+    year1_slope = year1_info['slope']
+    year1_span_years = (split_date - start).days / 365.0
+    year1_x = [start, split_date]
+    year1_y = [year1_intercept,
+               year1_intercept + year1_slope * year1_span_years]
+
+    # Years-2+ rate line: starts at renorm_year2 at split_date, linear thereafter.
+    years2plus_span_years = (end - split_date).days / 365.0
+    years2plus_x = [split_date, end]
+    years2plus_y = [renorm_year2,
+                    renorm_year2 * (1 + rd_pct_years2plus / 100.0
+                                    * years2plus_span_years)]
+
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 3))
+
+    # Histogram of YoY values (years 2+).
+    ax2.hist(yoy_values, label='YoY (years 2+)', bins=bins,
+             color=years2plus_color)
+    ax2.axvline(x=rd_pct_years2plus, color='black', linestyle='dashed',
+                linewidth=3)
+    ax2.set_xlim(hist_xmin, hist_xmax)
+
+    label = (
+        f" year 1 (OLS): $R_d$ = {rd_pct_year1:+.2f} %/yr\n"
+        f"   CI: [{year1_ci[0]:+.2f}, {year1_ci[1]:+.2f}] %/yr\n"
+        f" years 2+ (YoY): $R_d$ = {rd_pct_years2plus:+.2f} %/yr\n"
+        f"   CI: [{years2plus_ci[0]:+.2f}, {years2plus_ci[1]:+.2f}] %/yr"
+    )
+    ax2.annotate(label, xy=(0.5, 0.55), xycoords='axes fraction',
+                 bbox=dict(facecolor='white', edgecolor=None, alpha=0))
+    ax2.set_xlabel('Annual degradation (%)')
+
+    # Scatter plot in raw (un-renormalized) units with both fits overlaid.
+    ax1.scatter(normalized_yield.index, normalized_yield,
+                c=years2plus_color, alpha=scatter_alpha, linewidths=0)
+    ax1.plot(year1_x, year1_y, '-', color=year1_color, linewidth=3,
+             label=f'Year 1 OLS ({rd_pct_year1:+.2f} %/yr)')
+    ax1.plot(years2plus_x, years2plus_y, '--', color='black', linewidth=3,
+             label=f'Years 2+ YoY ({rd_pct_years2plus:+.2f} %/yr)')
+    ax1.axvline(split_date, color='gray', linestyle=':', linewidth=1.5,
+                label='Split')
+    ax1.set_xlabel('Date')
+    ax1.set_ylabel('Normalized energy')
+    ax1.set_ylim(scatter_ymin, scatter_ymax)
+    ax1.legend(loc='best', fontsize='small')
+
+    fig.autofmt_xdate()
+
+    if summary_title is not None:
+        fig.suptitle(summary_title)
+
+    return fig
+
+
 def soiling_monte_carlo_plot(soiling_info, normalized_yield, point_alpha=0.5,
                              profile_alpha=0.05, ymin=None, ymax=None,
                              profiles=None, point_color=None,
