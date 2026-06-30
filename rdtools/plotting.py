@@ -140,6 +140,7 @@ _YEAR1_PRETTY_LABEL = {
     'degradation_ols': 'OLS',
     'degradation_theil_sen': 'Theil-Sen',
     'degradation_classical_decomposition': 'CD',
+    'degradation_fourier_ols': 'Fourier-OLS',
 }
 
 
@@ -184,13 +185,18 @@ def hybrid_degradation_summary_plots(rd_pct_year1, rd_pct_years2plus,
         PV yield data that is normalized, filtered, and aggregated -- the same
         series passed to ``degradation_hybrid``.
     hist_xmin : float, optional
-        lower limit of x-axis for the histogram
+        Lower limit of the histogram x-axis and of the binning range. If
+        omitted, the 1st percentile of the YoY values is used so the bins
+        are not stretched by a handful of outliers.
     hist_xmax : float, optional
-        upper limit of x-axis for the histogram
+        Upper limit of the histogram x-axis and of the binning range. If
+        omitted, the 99th percentile of the YoY values is used.
     bins : int, optional
-        Number of bins in the histogram. If omitted,
-        ``len(yoy_values) // 40`` is used (matching
-        :py:func:`degradation_summary_plots`).
+        Number of bins in the histogram. If omitted, a default of
+        ``max(10, n_in_range // 40)`` is used, where ``n_in_range`` counts
+        the YoY values that fall inside the (possibly default) display
+        range. This guarantees a useful number of bars inside the viewport
+        even when the YoY distribution has heavy tails.
     scatter_ymin : float, optional
         lower limit of y-axis for the scatter plot
     scatter_ymax : float, optional
@@ -226,9 +232,35 @@ def hybrid_degradation_summary_plots(rd_pct_year1, rd_pct_years2plus,
 
     yoy_values = years2plus_info['YoY_values']
 
+    # Determine the histogram display range. Defaulting to a robust
+    # percentile clip when the user has not supplied explicit limits
+    # prevents a handful of outlier YoY slopes from spreading the bin
+    # grid so wide that only one or two bars fall inside the (typical)
+    # +/- a few %/yr viewport.
+    yoy_finite = np.asarray(yoy_values)
+    yoy_finite = yoy_finite[np.isfinite(yoy_finite)]
+    if len(yoy_finite) > 0:
+        lo_default, hi_default = np.percentile(yoy_finite, [1, 99])
+    else:
+        lo_default, hi_default = -1.0, 1.0
+    range_lo = hist_xmin if hist_xmin is not None else lo_default
+    range_hi = hist_xmax if hist_xmax is not None else hi_default
+    if range_hi <= range_lo:
+        # Degenerate range (constant data, or user passed reversed limits).
+        # Fall back to a small window around the lower bound so hist() does
+        # not raise.
+        range_hi = range_lo + 1e-9
+    hist_range = (range_lo, range_hi)
+
     if bins is None:
-        bins = len(yoy_values) // 40
-    bins = int(min(bins, len(yoy_values)))
+        # Base the bin count on samples inside the display window, not on
+        # the full dataset; this keeps bin width sensible when the tails
+        # are heavy.
+        n_in_range = int(np.sum(
+            (yoy_finite >= hist_range[0]) & (yoy_finite <= hist_range[1])
+        ))
+        bins = max(10, n_in_range // 40)
+    bins = int(min(bins, max(1, len(yoy_finite))))
 
     if year1_color is None:
         year1_color = 'tab:orange'
@@ -258,12 +290,12 @@ def hybrid_degradation_summary_plots(rd_pct_year1, rd_pct_years2plus,
 
     # Histogram of YoY values (years 2+).
     ax2.hist(yoy_values, label='YoY (years 2+)', bins=bins,
-             color=years2plus_color)
+             range=hist_range, color=years2plus_color)
     ax2.axvline(x=rd_pct_year1, color=year1_color, linestyle='dashed',
                 linewidth=3, label=f'year-1 {year1_label} rate')
     ax2.axvline(x=rd_pct_years2plus, color='black', linestyle='dashed',
                 linewidth=3, label='years-2+ YoY rate')
-    ax2.set_xlim(hist_xmin, hist_xmax)
+    ax2.set_xlim(hist_range)
 
     label = (
         f" year 1 ({year1_label}): {rd_pct_year1:+.2f} %/yr  "

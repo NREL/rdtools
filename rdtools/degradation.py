@@ -1,5 +1,7 @@
 '''Functions for calculating the degradation rate of photovoltaic systems.'''
 
+from collections import namedtuple
+
 import pandas as pd
 import numpy as np
 import statsmodels.api as sm
@@ -248,6 +250,212 @@ def degradation_theil_sen(energy_normalized, confidence_level=68.2):
     return (Rd_pct, Rd_CI, calc_info)
 
 
+def degradation_fourier_ols(energy_normalized,
+                            skip_year1_in_seasonal_fit=False,
+                            seasonal_period_days=365.25, harmonics=1,
+                            slope_method='ols',
+                            confidence_level=68.2):
+    '''
+    Estimate the year-1 degradation rate of a seasonal time series using a
+    two-stage seasonal-Fourier regression.
+
+    Stage 1 fits an OLS model with a linear trend plus ``harmonics`` pairs of
+    sine/cosine regressors to ``energy_normalized`` (optionally excluding
+    the first 365 days). Stage 2 subtracts the resulting seasonal pattern
+    from the year-1 window (the first 365 days of ``energy_normalized``)
+    and fits a simple linear regression (OLS or Theil-Sen, selectable via
+    ``slope_method``) to the deseasonalized residual to extract the slope.
+
+    Estimating seasonality from the full multi-year series, then fitting
+    the slope only on year 1, lets the year-1 trend be inferred without
+    contamination from a poorly-constrained seasonal estimate -- which is
+    the dominant source of bias when fitting a one-year window directly,
+    since the linear trend and seasonal Fourier regressors are not
+    orthogonal on a single annual cycle.
+
+    Parameters
+    ----------
+    energy_normalized : pandas.Series
+        Daily or lower frequency time series of normalized system output.
+        Must span at least 365 days. When
+        ``skip_year1_in_seasonal_fit=True``, must also extend past the
+        first 365 days so the seasonal fit has data to work with.
+    skip_year1_in_seasonal_fit : bool, default False
+        If ``True``, exclude the first 365 days of ``energy_normalized``
+        from the stage-1 seasonal fit. Set this when an unusual year-1
+        trend (LID, light-soaking, initial stabilization) might otherwise
+        be absorbed into the seasonal coefficients and bias the recovered
+        year-1 slope. The default is ``False`` because year 1 makes only a
+        small contribution to the seasonal estimate once several other
+        cycles are also in the fit, and excluding it discards data.
+    seasonal_period_days : float, default 365.25
+        Fundamental period of the seasonal harmonics, in days.
+    harmonics : int, default 1
+        Number of harmonic pairs to include. ``harmonics=1`` adds the
+        annual sine and cosine; ``harmonics=2`` also adds the semi-annual
+        pair, etc.
+    slope_method : {'ols', 'theil_sen'}, default 'ols'
+        Regression used in stage 2 to fit the slope of the deseasonalized
+        year-1 window. ``'ols'`` uses :py:func:`degradation_ols`-style
+        OLS with parametric Monte-Carlo CIs; ``'theil_sen'`` uses
+        :py:func:`degradation_theil_sen`, a robust median-of-pairwise-
+        slopes estimator that is resistant to a handful of bad days in
+        the year-1 window (rank-based CI, no bootstrap).
+
+        Stage 1 (the seasonal fit) is always OLS: it operates on many
+        seasonal cycles where individual outliers wash out, and the
+        multi-regressor Fourier design has no clean Theil-Sen-style
+        univariate analog.
+    confidence_level : float, default 68.2
+        The size of the confidence interval to return, in percent.
+
+    Returns
+    -------
+    Rd_pct : float
+        Estimated year-1 degradation relative to the year-0 system
+        capacity [%/year].
+    Rd_CI : numpy.array
+        The calculated confidence interval bounds (length 2). For
+        ``slope_method='ols'`` this is derived from the stage-2 OLS
+        slope's standard error via Monte Carlo, mirroring
+        :py:func:`degradation_ols`. For ``slope_method='theil_sen'``
+        it comes from the rank-based CI on the Theil-Sen pairwise
+        slopes. Neither propagates the stage-1 seasonal-coefficient
+        uncertainty -- a typically small contribution when
+        ``energy_normalized`` spans several seasonal cycles.
+    calc_info : dict
+        A dict that always contains:
+
+        * ``slope`` / ``intercept`` - stage-2 slope (normalized energy
+          per year) and intercept (year-0 capacity).
+        * ``seasonal_coeffs`` - the fitted sine/cosine coefficients as a
+          length-``2*harmonics`` numpy array, ordered
+          ``(sin_1, cos_1, sin_2, cos_2, ...)``.
+        * ``seasonal_period_days`` / ``harmonics`` - echo of the inputs.
+        * ``seasonal_ols_result`` - stage-1 ``statsmodels``
+          ``RegressionResults`` (useful for inspecting the seasonal-fit
+          residuals or amplitude).
+        * ``skip_year1_in_seasonal_fit`` - echo of the input flag.
+        * ``year1_end`` - the ``pandas.Timestamp`` marking the end of the
+          year-1 window (start + 365 days).
+        * ``slope_method`` - echo of the ``slope_method`` argument.
+
+        When ``slope_method='ols'`` it additionally contains
+        ``rmse``, ``slope_stderr``, ``intercept_stderr``, and
+        ``ols_result`` (the stage-2 ``statsmodels`` results).
+        When ``slope_method='theil_sen'`` it additionally contains
+        ``slope_low``, ``slope_high`` (rank-based CI on the slope) and
+        ``theilslopes_result`` (the raw scipy return).
+    '''
+    if slope_method not in ('ols', 'theil_sen'):
+        raise ValueError(
+            f"unknown slope_method '{slope_method}'; "
+            "expected 'ols' or 'theil_sen'"
+        )
+
+    energy_normalized = energy_normalized.dropna().sort_index()
+    if energy_normalized.shape[0] < 2:
+        raise ValueError(
+            'degradation_fourier_ols requires at least 2 non-NaN '
+            'observations in energy_normalized'
+        )
+
+    if harmonics < 1:
+        raise ValueError('harmonics must be >= 1')
+
+    start = energy_normalized.index.min()
+    year1_end = start + pd.Timedelta(days=365.0)
+    if energy_normalized.index.max() < year1_end:
+        raise ValueError(
+            'energy_normalized must span at least 365 days to define a '
+            'year-1 window'
+        )
+
+    year1 = energy_normalized.loc[start:year1_end]
+
+    # Stage 1 seasonal-fit input.
+    if skip_year1_in_seasonal_fit:
+        seasonal_input = energy_normalized.loc[year1_end:]
+        # Exclude the boundary point so it isn't shared with the year-1 slice
+        # (purely cosmetic for the stage-1 fit, but keeps the partition clean).
+        seasonal_input = seasonal_input.iloc[1:] if (
+            len(seasonal_input) > 0
+            and seasonal_input.index[0] == year1_end
+        ) else seasonal_input
+        if seasonal_input.shape[0] < 2 * harmonics + 2:
+            raise ValueError(
+                'after skipping the first 365 days, energy_normalized has '
+                'too few samples to constrain the seasonal fit '
+                f'(need at least {2 * harmonics + 2}, '
+                f'got {seasonal_input.shape[0]}); '
+                'pass skip_year1_in_seasonal_fit=False or supply a longer series'
+            )
+    else:
+        seasonal_input = energy_normalized
+
+    # Stage 1: OLS with a linear trend + Fourier seasonal regressors.
+    epoch = seasonal_input.index.min()
+    days_s = (seasonal_input.index - epoch) / pd.Timedelta('1d')
+    omega = 2.0 * np.pi / seasonal_period_days
+
+    seasonal_cols = [np.ones_like(days_s, dtype=float), days_s.to_numpy()]
+    for k in range(1, harmonics + 1):
+        seasonal_cols.append(np.sin(k * omega * days_s))
+        seasonal_cols.append(np.cos(k * omega * days_s))
+    X_seasonal = np.column_stack(seasonal_cols)
+    seasonal_model = sm.OLS(seasonal_input.to_numpy(), X_seasonal).fit()
+    seasonal_coeffs = np.asarray(seasonal_model.params[2:])
+
+    # Subtract the stage-1 seasonal pattern from the year-1 slice.
+    days_y1_seasonal = (year1.index - epoch) / pd.Timedelta('1d')
+    seasonal_y1 = np.zeros(len(year1), dtype=float)
+    for k in range(1, harmonics + 1):
+        c_k = seasonal_coeffs[2 * (k - 1)]
+        d_k = seasonal_coeffs[2 * (k - 1) + 1]
+        seasonal_y1 += (c_k * np.sin(k * omega * days_y1_seasonal)
+                        + d_k * np.cos(k * omega * days_y1_seasonal))
+    deseasonalized = pd.Series(year1.to_numpy() - seasonal_y1,
+                               index=year1.index)
+
+    # Stage 2: fit the slope of the deseasonalized year-1 slice using the
+    # selected method. The slice is anchored at the first year-1 timestamp
+    # so the intercept (and Rd_pct) match the convention used by
+    # degradation_ols / degradation_theil_sen.
+    if slope_method == 'ols':
+        years_y1 = (year1.index - start) / pd.Timedelta('365D')
+        X_trend = sm.add_constant(years_y1.to_numpy())
+        trend_model = sm.OLS(deseasonalized.to_numpy(), X_trend).fit()
+        intercept, slope = trend_model.params
+        rmse = np.sqrt(trend_model.mse_resid)
+        stderr_b, stderr_m = trend_model.bse
+        Rd_pct = 100.0 * slope / intercept
+        Rd_CI = _degradation_CI(trend_model, confidence_level=confidence_level)
+        slope_info = {
+            'slope': slope,
+            'intercept': intercept,
+            'rmse': rmse,
+            'slope_stderr': stderr_m,
+            'intercept_stderr': stderr_b,
+            'ols_result': trend_model,
+        }
+    else:  # 'theil_sen'
+        Rd_pct, Rd_CI, slope_info = degradation_theil_sen(
+            deseasonalized, confidence_level=confidence_level)
+
+    calc_info = {
+        **slope_info,
+        'seasonal_coeffs': seasonal_coeffs,
+        'seasonal_period_days': seasonal_period_days,
+        'harmonics': harmonics,
+        'seasonal_ols_result': seasonal_model,
+        'skip_year1_in_seasonal_fit': skip_year1_in_seasonal_fit,
+        'year1_end': year1_end,
+        'slope_method': slope_method,
+    }
+
+    return (Rd_pct, Rd_CI, calc_info)
+
+
 def degradation_year_on_year(energy_normalized, recenter=True,
                              exceedance_prob=95, confidence_level=68.2,
                              uncertainty_method='simple', block_length=30,
@@ -490,12 +698,24 @@ def degradation_year_on_year(energy_normalized, recenter=True,
 
 # Registry of built-in year-1 regression methods recognised by
 # :py:func:`degradation_hybrid` when ``year1_method`` is a string.
-# Each entry must accept ``(energy_normalized, confidence_level=...)`` and
-# return ``(Rd_pct, Rd_CI, calc_info)``.
+# Each entry pairs the underlying function with the kind of input it expects:
+#
+# * ``'year1'`` -- the year-1 slice carved out by :py:func:`degradation_hybrid`.
+#   The function receives only the first ``year1_split`` years and must
+#   return ``(Rd_pct, Rd_CI, calc_info)`` for that slice.
+# * ``'full'``  -- the full ``energy_normalized`` series. The function uses
+#   the years past year 1 internally (e.g. for seasonal modeling) and
+#   returns the year-1 rate.
+#
+# User-supplied callables passed via ``year1_method`` are treated as
+# ``'year1'``-kind by default; wrap them in a closure that captures the
+# full series if you need ``'full'``-kind semantics.
+_Year1Method = namedtuple('_Year1Method', ['func', 'input_kind'])
+
 _YEAR1_METHODS = {
-    'ols': degradation_ols,
-    'classical_decomposition': degradation_classical_decomposition,
-    'theil_sen': degradation_theil_sen,
+    'ols':         _Year1Method(degradation_ols, 'year1'),
+    'theil_sen':   _Year1Method(degradation_theil_sen, 'year1'),
+    'fourier_ols': _Year1Method(degradation_fourier_ols, 'full'),
 }
 
 
@@ -535,26 +755,27 @@ def degradation_hybrid(energy_normalized, year1_split=1.0,
 
         * ``'ols'`` (default) - :py:func:`degradation_ols`. Works on any
           ``year1_split`` window with at least two samples.
-        * ``'classical_decomposition'`` -
-          :py:func:`degradation_classical_decomposition`. Internally uses a
-          centered 365-day rolling mean and trims the first/last 0.5 years
-          of the window, so usable trend points only exist when the year-1
-          window spans roughly 1.5+ years. Set ``year1_split`` to at least
-          ``2.0`` in practice. Also requires a regular (fixed-freq,
-          gap-free) series; aggregated rdtools output with filter-induced
-          NaN gaps must be interpolated first (see the example notebook
-          for a wrapper callable that does this).
         * ``'theil_sen'`` - :py:func:`degradation_theil_sen`. Robust to
           outliers in the year-1 window via a non-parametric
           median-of-pairwise-slopes fit. Works on any ``year1_split``
           window with at least two non-NaN samples; cost grows as
           :math:`O(n^2)`, so daily-or-lower aggregation is recommended.
+        * ``'fourier_ols'`` - :py:func:`degradation_fourier_ols`. Two-stage
+          OLS that fits a linear trend + Fourier seasonal regressors. This
+          entry consumes the full ``energy_normalized`` series internally
+          (so the seasonal coefficients are constrained on every cycle the
+          input contains, not just the year-1 window), and reports the
+          year-1 slope from the deseasonalized first 365 days. Useful when
+          ``year1_split`` is too short for the linear trend and seasonal
+          regressors to be orthogonal on their own.
 
         Alternatively, pass any callable with the signature
         ``f(energy_normalized, confidence_level=..., **year1_kwargs)
         -> (Rd_pct, Rd_CI, calc_info)``. The returned ``calc_info`` dict
         should contain ``'slope'`` and ``'intercept'`` to remain compatible
         with :py:func:`rdtools.plotting.hybrid_degradation_summary_plots`.
+        (:py:func:`degradation_classical_decomposition` can be used this
+        way -- see the example notebook for an interpolating wrapper.)
     year1_kwargs : dict, optional
         Extra keyword arguments forwarded to the year-1 method.
         ``confidence_level`` is set by this function and must not be supplied
@@ -596,14 +817,17 @@ def degradation_hybrid(energy_normalized, year1_split=1.0,
     # Resolve the year-1 method (string registry or user-supplied callable).
     if isinstance(year1_method, str):
         try:
-            year1_func = _YEAR1_METHODS[year1_method]
+            entry = _YEAR1_METHODS[year1_method]
         except KeyError:
             raise ValueError(
                 f"unknown year1_method '{year1_method}'; expected one of "
                 f"{sorted(_YEAR1_METHODS)} or a callable"
             )
+        year1_func = entry.func
+        year1_input_kind = entry.input_kind
     elif callable(year1_method):
         year1_func = year1_method
+        year1_input_kind = 'year1'
     else:
         raise TypeError(
             "year1_method must be a string or callable, "
@@ -643,7 +867,13 @@ def degradation_hybrid(energy_normalized, year1_split=1.0,
             'year window'
         )
 
-    year1_result = year1_func(s1.copy(), confidence_level=confidence_level,
+    # Dispatch based on the year-1 method's declared input contract.
+    if year1_input_kind == 'full':
+        year1_input = energy_normalized
+    else:  # 'year1'
+        year1_input = s1.copy()
+
+    year1_result = year1_func(year1_input, confidence_level=confidence_level,
                               **year1_kwargs)
 
     years2plus_result = degradation_year_on_year(

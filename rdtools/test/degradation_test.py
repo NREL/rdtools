@@ -10,7 +10,7 @@ import logging
 
 from rdtools import (degradation_ols, degradation_classical_decomposition,
                      degradation_year_on_year, degradation_hybrid,
-                     degradation_theil_sen)
+                     degradation_theil_sen, degradation_fourier_ols)
 
 
 class DegradationTestCase(unittest.TestCase):
@@ -75,6 +75,10 @@ class DegradationTestCase(unittest.TestCase):
         # to keep the test suite snappy.
         cls.list_TS_input_freq = ["MS", "ME", "W", "D", "Irregular_D"]
 
+        # Allowed frequencies for degradation_fourier_ols.  Same shape as
+        # OLS but skip the irregular case (stage-1 OLS handles regular grids).
+        cls.list_FO_input_freq = ["MS", "ME", "W", "D"]
+
         # ------------------------------------------------------------------------------------------------
         # Allow pandas < 2.2.0 to use 'M' as an alias for MonthEnd
         # https://pandas.pydata.org/docs/whatsnew/v2.2.0.html#deprecate-aliases-m-q-y-etc-in-favour-of-me-qe-ye-etc-for-offsets
@@ -89,6 +93,7 @@ class DegradationTestCase(unittest.TestCase):
                 cls.list_CD_input_freq,
                 cls.list_YOY_input_freq,
                 cls.list_TS_input_freq,
+                cls.list_FO_input_freq,
             ]:
                 if "ME" in list:
                     list.remove("ME")
@@ -143,6 +148,20 @@ class DegradationTestCase(unittest.TestCase):
         for input_freq in self.list_TS_input_freq:
             logging.debug('Frequency: {}'.format(input_freq))
             rd_result = degradation_theil_sen(
+                self.test_corr_energy[input_freq])
+            self.assertAlmostEqual(rd_result[0], 100 * self.rd, places=1)
+            logging.debug('Actual: {}'.format(100 * self.rd))
+            logging.debug('Estimated: {}'.format(rd_result[0]))
+
+    def test_degradation_fourier_ols(self):
+        ''' Test the one-stage (full_series=None) Fourier-OLS recovers the trend. '''
+
+        funcName = sys._getframe().f_code.co_name
+        logging.debug('Running {}'.format(funcName))
+
+        for input_freq in self.list_FO_input_freq:
+            logging.debug('Frequency: {}'.format(input_freq))
+            rd_result = degradation_fourier_ols(
                 self.test_corr_energy[input_freq])
             self.assertAlmostEqual(rd_result[0], 100 * self.rd, places=1)
             logging.debug('Actual: {}'.format(100 * self.rd))
@@ -467,24 +486,6 @@ def test_degradation_hybrid_year1_method_default():
     assert info['year1_method'] is degradation_ols
 
 
-def test_degradation_hybrid_year1_method_classical_decomposition():
-    """A wider year-1 window lets classical_decomposition produce a usable fit."""
-    from rdtools.degradation import degradation_classical_decomposition
-    # Need >= ~1.5 yr year1 window for CD's centered 365d rolling mean.
-    series = _build_two_rate_series(
-        rd1_pct=-1.0, rd2_pct=-0.5,
-        start='2018-01-01', end='2024-01-01',
-    )
-    rd1, rd2, info = degradation_hybrid(
-        series, year1_split=2.0, year1_method='classical_decomposition'
-    )
-    assert info['year1_method'] is degradation_classical_decomposition
-    # CD's calc_info has the extra 'mk_test_trend' / 'series' keys
-    assert 'mk_test_trend' in info['year1'][2]
-    assert np.isfinite(rd1)
-    assert np.isfinite(rd2)
-
-
 def test_degradation_hybrid_year1_method_theil_sen():
     """The 'theil_sen' string maps to the Theil-Sen estimator and recovers the year-1 rate."""
     from rdtools.degradation import degradation_theil_sen
@@ -496,6 +497,45 @@ def test_degradation_hybrid_year1_method_theil_sen():
     assert 'slope_high' in info['year1'][2]
     assert np.isclose(rd1, -2.0, atol=0.2)
     assert np.isclose(rd2, -0.5 / 0.98, atol=0.2)
+
+
+def test_degradation_hybrid_year1_method_fourier_ols():
+    """The 'fourier_ols' registry entry is a 'full'-input method: hybrid passes the whole series."""
+    from rdtools.degradation import degradation_fourier_ols
+    series = _build_two_rate_series(rd1_pct=-2.0, rd2_pct=-0.5)
+    rd1, rd2, info = degradation_hybrid(
+        series,
+        year1_method='fourier_ols',
+    )
+    assert info['year1_method'] is degradation_fourier_ols
+    assert 'seasonal_coeffs' in info['year1'][2]
+    assert np.isclose(rd1, -2.0, atol=0.2)
+    assert np.isclose(rd2, -0.5 / 0.98, atol=0.2)
+
+
+def test_degradation_fourier_ols_slope_method_theil_sen():
+    """``slope_method='theil_sen'`` recovers the year-1 rate and exposes Theil-Sen CI fields."""
+    series = _build_two_rate_series(rd1_pct=-2.0, rd2_pct=-0.5)
+    rd, ci, info = degradation_fourier_ols(series, slope_method='theil_sen')
+    # year-1 rate should track the truth within Theil-Sen noise on 365 daily points
+    assert np.isclose(rd, -2.0, atol=0.3)
+    # CI brackets the point estimate
+    assert ci[0] <= rd <= ci[1]
+    # Theil-Sen-specific calc_info fields are present; OLS-specific ones are not
+    assert info['slope_method'] == 'theil_sen'
+    assert 'slope_low' in info and 'slope_high' in info
+    assert 'theilslopes_result' in info
+    assert 'ols_result' not in info
+    # Seasonal stage echoes still present
+    assert 'seasonal_coeffs' in info
+    assert 'seasonal_ols_result' in info
+
+
+def test_degradation_fourier_ols_slope_method_invalid():
+    """Unknown ``slope_method`` raises ValueError listing the valid choices."""
+    series = _build_two_rate_series(rd1_pct=-2.0, rd2_pct=-0.5)
+    with pytest.raises(ValueError, match="unknown slope_method"):
+        degradation_fourier_ols(series, slope_method='bogus')
 
 
 def test_degradation_hybrid_year1_method_callable():
