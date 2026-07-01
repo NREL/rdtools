@@ -140,7 +140,7 @@ _YEAR1_PRETTY_LABEL = {
     'degradation_ols': 'OLS',
     'degradation_theil_sen': 'Theil-Sen',
     'degradation_classical_decomposition': 'CD',
-    'degradation_fourier_ols': 'Fourier-OLS',
+    'degradation_fourier': 'Fourier',
 }
 
 

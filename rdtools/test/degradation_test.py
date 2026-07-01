@@ -10,7 +10,7 @@ import logging
 
 from rdtools import (degradation_ols, degradation_classical_decomposition,
                      degradation_year_on_year, degradation_hybrid,
-                     degradation_theil_sen, degradation_fourier_ols)
+                     degradation_theil_sen, degradation_fourier)
 
 
 class DegradationTestCase(unittest.TestCase):
@@ -75,7 +75,7 @@ class DegradationTestCase(unittest.TestCase):
         # to keep the test suite snappy.
         cls.list_TS_input_freq = ["MS", "ME", "W", "D", "Irregular_D"]
 
-        # Allowed frequencies for degradation_fourier_ols.  Same shape as
+        # Allowed frequencies for degradation_fourier.  Same shape as
         # OLS but skip the irregular case (stage-1 OLS handles regular grids).
         cls.list_FO_input_freq = ["MS", "ME", "W", "D"]
 
@@ -153,16 +153,22 @@ class DegradationTestCase(unittest.TestCase):
             logging.debug('Actual: {}'.format(100 * self.rd))
             logging.debug('Estimated: {}'.format(rd_result[0]))
 
-    def test_degradation_fourier_ols(self):
-        ''' Test the one-stage (full_series=None) Fourier-OLS recovers the trend. '''
+    def test_degradation_fourier(self):
+        ''' Exercise the multi-frequency Fourier path on the classical
+        (OLS-only) stage-1 branch. The YoY stage-1 default requires a
+        longer stage-1 window than 3 years of monthly/weekly data can
+        provide once year 1 is skipped, and is covered separately by
+        :func:`test_degradation_fourier_seasonal_trend_method_yoy` on
+        daily data. '''
 
         funcName = sys._getframe().f_code.co_name
         logging.debug('Running {}'.format(funcName))
 
         for input_freq in self.list_FO_input_freq:
             logging.debug('Frequency: {}'.format(input_freq))
-            rd_result = degradation_fourier_ols(
-                self.test_corr_energy[input_freq])
+            rd_result = degradation_fourier(
+                self.test_corr_energy[input_freq],
+                seasonal_trend_method='ols')
             self.assertAlmostEqual(rd_result[0], 100 * self.rd, places=1)
             logging.debug('Actual: {}'.format(100 * self.rd))
             logging.debug('Estimated: {}'.format(rd_result[0]))
@@ -432,12 +438,29 @@ def test_degradation_hybrid_basic():
 
 
 def test_degradation_hybrid_too_short():
-    """Series shorter than year1_split + 2 years raises from YoY."""
+    """Series shorter than 3 years raises from the hybrid pre-check."""
     # only 2 years of data; year-1 window has 1 year, year-2+ window has 1 year
     series = _build_two_rate_series(rd1_pct=-1.0, rd2_pct=-0.5,
                                     start='2018-01-01', end='2020-01-01')
-    with pytest.raises(ValueError, match='must provide at least two years'):
+    with pytest.raises(ValueError, match='requires at least .* years of data'):
         degradation_hybrid(series)
+
+
+def test_degradation_hybrid_too_short_for_fourier_yoy():
+    """The pre-check catches the extra stage-1 requirement of Fourier + YoY."""
+    # 3 years of data: enough for years-2+ YoY (2 years past year 1) and just
+    # enough for Fourier's stage-1 YoY (which also needs 2 years past year 1
+    # when skip_year1=True) -- so this should pass.
+    ok = _build_two_rate_series(rd1_pct=-1.0, rd2_pct=-0.5,
+                                start='2018-01-01', end='2021-01-02')
+    degradation_hybrid(ok, year1_method='fourier')  # should not raise
+
+    # 2.5 years is too short: year 1 + 1.5 years past = 2.5 total, but
+    # fourier default (yoy + skip) needs 3 (year 1 + 2 years for YoY pairs).
+    short = _build_two_rate_series(rd1_pct=-1.0, rd2_pct=-0.5,
+                                   start='2018-01-01', end='2020-07-01')
+    with pytest.raises(ValueError, match='requires at least .* years of data'):
+        degradation_hybrid(short, year1_method='fourier')
 
 
 def test_degradation_hybrid_calc_info_structure():
@@ -461,14 +484,6 @@ def test_degradation_hybrid_reserved_kwargs_rejected():
     with pytest.raises(ValueError, match="'confidence_level'"):
         degradation_hybrid(
             series, yoy_kwargs={'confidence_level': 90})
-
-
-def test_degradation_hybrid_fractional_split():
-    """Non-integer year1_split (e.g. 0.5) is supported via Timedelta."""
-    series = _build_two_rate_series(rd1_pct=-1.0, rd2_pct=-0.5,
-                                    start='2018-01-01', end='2023-01-01')
-    _, _, info = degradation_hybrid(series, year1_split=0.5)
-    assert info['split_date'] == series.index[0] + pd.Timedelta(days=0.5*365.0)
 
 
 def test_degradation_hybrid_recenter_false():
@@ -499,24 +514,24 @@ def test_degradation_hybrid_year1_method_theil_sen():
     assert np.isclose(rd2, -0.5 / 0.98, atol=0.2)
 
 
-def test_degradation_hybrid_year1_method_fourier_ols():
-    """The 'fourier_ols' registry entry is a 'full'-input method: hybrid passes the whole series."""
-    from rdtools.degradation import degradation_fourier_ols
+def test_degradation_hybrid_year1_method_fourier():
+    """The 'fourier' registry entry is a 'full'-input method: hybrid passes the whole series."""
+    from rdtools.degradation import degradation_fourier
     series = _build_two_rate_series(rd1_pct=-2.0, rd2_pct=-0.5)
     rd1, rd2, info = degradation_hybrid(
         series,
-        year1_method='fourier_ols',
+        year1_method='fourier',
     )
-    assert info['year1_method'] is degradation_fourier_ols
+    assert info['year1_method'] is degradation_fourier
     assert 'seasonal_coeffs' in info['year1'][2]
     assert np.isclose(rd1, -2.0, atol=0.2)
     assert np.isclose(rd2, -0.5 / 0.98, atol=0.2)
 
 
-def test_degradation_fourier_ols_slope_method_theil_sen():
+def test_degradation_fourier_slope_method_theil_sen():
     """``slope_method='theil_sen'`` recovers the year-1 rate and exposes Theil-Sen CI fields."""
     series = _build_two_rate_series(rd1_pct=-2.0, rd2_pct=-0.5)
-    rd, ci, info = degradation_fourier_ols(series, slope_method='theil_sen')
+    rd, ci, info = degradation_fourier(series, slope_method='theil_sen')
     # year-1 rate should track the truth within Theil-Sen noise on 365 daily points
     assert np.isclose(rd, -2.0, atol=0.3)
     # CI brackets the point estimate
@@ -531,11 +546,50 @@ def test_degradation_fourier_ols_slope_method_theil_sen():
     assert 'seasonal_ols_result' in info
 
 
-def test_degradation_fourier_ols_slope_method_invalid():
+def test_degradation_fourier_slope_method_invalid():
     """Unknown ``slope_method`` raises ValueError listing the valid choices."""
     series = _build_two_rate_series(rd1_pct=-2.0, rd2_pct=-0.5)
     with pytest.raises(ValueError, match="unknown slope_method"):
-        degradation_fourier_ols(series, slope_method='bogus')
+        degradation_fourier(series, slope_method='bogus')
+
+
+def test_degradation_fourier_seasonal_trend_method_yoy():
+    """``seasonal_trend_method='yoy'`` recovers the year-1 rate and exposes YoY-specific calc_info."""
+    series = _build_two_rate_series(rd1_pct=-2.0, rd2_pct=-0.5)
+    rd, ci, info = degradation_fourier(
+        series, seasonal_trend_method='yoy',
+    )
+    # Should still recover the planted year-1 rate to within noise.
+    assert np.isclose(rd, -2.0, atol=0.2)
+    assert ci[0] <= rd <= ci[1]
+    # calc_info records the choice and the YoY-derived trend slope.
+    assert info['seasonal_trend_method'] == 'yoy'
+    assert info['yoy_stage1_rd_pct'] is not None
+    # yoy_stage1_rd_pct is 100 * (slope per year); trend_slope_per_day is the
+    # scalar we used to detrend at stage 1. These must be consistent.
+    assert np.isclose(
+        info['seasonal_trend_slope_per_day'] * 100.0 * 365.25,
+        info['yoy_stage1_rd_pct'],
+    )
+    # Seasonal coefficients length matches 2 * harmonics.
+    assert info['seasonal_coeffs'].shape == (2 * info['harmonics'],)
+
+
+def test_degradation_fourier_seasonal_trend_method_ols_records_slope():
+    """``seasonal_trend_method='ols'`` reports its trend slope and no YoY stage-1 result."""
+    series = _build_two_rate_series(rd1_pct=-2.0, rd2_pct=-0.5)
+    _, _, info = degradation_fourier(series, seasonal_trend_method='ols')
+    assert info['seasonal_trend_method'] == 'ols'
+    assert info['yoy_stage1_rd_pct'] is None
+    # Trend slope is a finite float in normalized units per day (order 1e-5).
+    assert np.isfinite(info['seasonal_trend_slope_per_day'])
+
+
+def test_degradation_fourier_seasonal_trend_method_invalid():
+    """Unknown ``seasonal_trend_method`` raises ValueError listing the valid choices."""
+    series = _build_two_rate_series(rd1_pct=-2.0, rd2_pct=-0.5)
+    with pytest.raises(ValueError, match="unknown seasonal_trend_method"):
+        degradation_fourier(series, seasonal_trend_method='bogus')
 
 
 def test_degradation_hybrid_year1_method_callable():
