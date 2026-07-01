@@ -1,6 +1,7 @@
 '''Functions for plotting degradation and soiling analysis results.'''
 
 import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
 import pandas as pd
 import plotly.express as px
 import numpy as np
@@ -159,7 +160,8 @@ def hybrid_degradation_summary_plots(rd_pct_year1, rd_pct_years2plus,
                                      hist_xmin=None, hist_xmax=None, bins=None,
                                      scatter_ymin=None, scatter_ymax=None,
                                      year1_color=None, years2plus_color=None,
-                                     summary_title=None, scatter_alpha=0.5):
+                                     summary_title=None, scatter_alpha=0.5,
+                                     annotation_fontsize=9):
     '''
     Create plots (scatter plot and histogram) that summarize the two-piece
     hybrid (configurable year-1 method + year-on-year years-2+) degradation
@@ -210,6 +212,10 @@ def hybrid_degradation_summary_plots(rd_pct_year1, rd_pct_years2plus,
         overall title for the summary figure
     scatter_alpha : float, default 0.5
         transparency of the scatter points
+    annotation_fontsize : float or str, default 9
+        font size for the per-piece rate/CI annotation drawn on the
+        histogram panel. Pass a smaller number (or a matplotlib size
+        string like ``'x-small'``) if the default overlaps the bars.
 
     Note
     ----
@@ -298,13 +304,26 @@ def hybrid_degradation_summary_plots(rd_pct_year1, rd_pct_years2plus,
     ax2.set_xlim(hist_range)
 
     label = (
-        f" year 1 ({year1_label}): {rd_pct_year1:+.2f} %/yr  "
-        f"[{year1_ci[0]:+.2f}, {year1_ci[1]:+.2f}]\n"
-        f" years 2+ (YoY): {rd_pct_years2plus:+.2f} %/yr  "
-        f"[{years2plus_ci[0]:+.2f}, {years2plus_ci[1]:+.2f}]"
+        f"year 1 ({year1_label}):\n"
+        f"  {rd_pct_year1:+.2f} %/yr\n"
+        f"  68% CI [{year1_ci[0]:+.2f}, {year1_ci[1]:+.2f}]\n"
+        f"years 2+ (YoY):\n"
+        f"  {rd_pct_years2plus:+.2f} %/yr\n"
+        f"  68% CI [{years2plus_ci[0]:+.2f}, {years2plus_ci[1]:+.2f}]"
     )
-    ax2.annotate(label, xy=(0.5, 0.55), xycoords='axes fraction',
-                 bbox=dict(facecolor='white', edgecolor=None, alpha=0))
+    # Route the annotation through Matplotlib's Legend so ``loc='best'``
+    # can auto-place it in the emptiest corner. This is more robust than a
+    # fixed anchor because histogram shapes vary a lot across datasets.
+    # An invisible Patch carries the multi-line label; the histogram bars
+    # and the two axvlines already have their own ``label=`` attributes,
+    # but supplying ``handles=[...]`` explicitly overrides that so only
+    # our annotation renders.
+    _annotation_handle = mpatches.Patch(facecolor='none',
+                                        edgecolor='none', label=label)
+    ax2.legend(handles=[_annotation_handle], loc='best',
+               fontsize=annotation_fontsize,
+               handlelength=0, handletextpad=0,
+               framealpha=0.85, edgecolor='0.7', borderpad=0.4)
     ax2.set_xlabel('Annual degradation (%)')
 
     # Scatter plot in raw (un-renormalized) units with both fits overlaid.
