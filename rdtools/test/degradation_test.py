@@ -554,7 +554,7 @@ def test_degradation_fourier_slope_method_invalid():
 
 
 def test_degradation_fourier_seasonal_trend_method_yoy():
-    """``seasonal_trend_method='yoy'`` recovers the year-1 rate and exposes YoY-specific calc_info."""
+    """``seasonal_trend_method='yoy'`` recovers year-1 rate + YoY calc_info."""
     series = _build_two_rate_series(rd1_pct=-2.0, rd2_pct=-0.5)
     rd, ci, info = degradation_fourier(
         series, seasonal_trend_method='yoy',

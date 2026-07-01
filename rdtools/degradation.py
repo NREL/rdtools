@@ -828,9 +828,9 @@ _YEAR1_METHODS = {
 
 
 def degradation_hybrid(energy_normalized,
-                               year1_method='ols', year1_kwargs=None,
-                               recenter_year2=True, confidence_level=68.2,
-                               yoy_kwargs=None):
+                       year1_method='ols', year1_kwargs=None,
+                       recenter_year2=True, confidence_level=68.2,
+                       yoy_kwargs=None):
     '''
     Estimate a two-piece (nonlinear) degradation profile by fitting a
     user-selected regression method on the first 365 days and the
