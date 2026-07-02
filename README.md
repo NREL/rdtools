@@ -34,10 +34,14 @@ pip install rdtools[dev]        # notebooks + test combined
 ```
 
 Alternatively, RdTools uses [pixi](https://pixi.sh) for reproducible
-environment management. To get started with pixi:
+environment management. To get started with pixi, first
+[install pixi](https://pixi.sh/latest/#installation), then clone this
+repository and run `pixi install` from its root:
 
 ```
-pixi install          # default environment (core + notebooks)
+git clone https://github.com/NatLabRockies/rdtools.git
+cd rdtools
+pixi install          # default environment (rdtools + notebooks)
 pixi run lab          # launch Jupyter Lab
 ```
 
