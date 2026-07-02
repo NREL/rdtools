@@ -92,11 +92,26 @@ version constraint is updated), the pixi lockfile must be regenerated:
        pixi update
 
 2. **Verify environments install correctly** — run ``pixi install`` to
-   re-create environments from the updated lockfile:
+   re-create the ``default`` environment from the updated lockfile:
 
    ::
 
        pixi install
+
+   ``pixi install`` on its own only refreshes the ``default`` environment.
+   To refresh a specific environment (for example ``dev``), pass ``-e``:
+
+   ::
+
+       pixi install -e dev
+
+   To refresh every environment defined in ``pyproject.toml`` in one go
+   (useful after a lockfile format bump or a broad dependency change),
+   use ``--all``:
+
+   ::
+
+       pixi install --all
 
 3. **Run tests** to make sure nothing is broken:
 
@@ -119,7 +134,9 @@ version constraint is updated), the pixi lockfile must be regenerated:
 
 .. note::
     Contributors who pull changes that include an updated ``pixi.lock``
-    just need to run ``pixi install`` to get the new environment.
+    typically only need to run ``pixi install`` (which refreshes
+    ``default``) or ``pixi install -e dev`` (if they work in the ``dev``
+    environment) to pick up the new packages.
 
 Installing without pixi
 ~~~~~~~~~~~~~~~~~~~~~~~~
