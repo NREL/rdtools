@@ -38,6 +38,14 @@ Maintenance
   ``[tool.pixi.feature.min.pypi-dependencies]`` stays in sync with the lower
   bounds in ``[project.dependencies]`` and that ``pixi.lock`` is up to date
   with ``pyproject.toml``. (:pull:`497`)
+* Bumped all GitHub Actions in the CI workflows to their latest stable
+  majors (``actions/checkout@v7``, ``actions/setup-python@v6``,
+  ``actions/upload-artifact@v7``, ``actions/download-artifact@v8``,
+  ``codecov/codecov-action@v5``, ``prefix-dev/setup-pixi@v0.10.0``), added a
+  top-level ``permissions: contents: read`` block to each workflow, tightened
+  the ``publish-to-pypi`` trigger to only run on ``master``/``development``
+  pushes and tag pushes, and bumped the ``flake8`` job from Python 3.12 to
+  3.13. (:pull:`497`)
 
 Bug Fixes
 ---------

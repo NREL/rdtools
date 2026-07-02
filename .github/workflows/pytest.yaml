@@ -7,13 +7,15 @@ on:
     - development
   pull_request:
 
+permissions:
+  contents: read
 
 jobs:
   check-deps:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-    - uses: prefix-dev/setup-pixi@v0.8.3
+    - uses: actions/checkout@v7
+    - uses: prefix-dev/setup-pixi@v0.10.0
       with:
         run-install: false
     - name: Verify pixi.lock is in sync with pyproject.toml
@@ -35,8 +37,8 @@ jobs:
   validate-envs:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-    - uses: prefix-dev/setup-pixi@v0.8.3
+    - uses: actions/checkout@v7
+    - uses: prefix-dev/setup-pixi@v0.10.0
       with:
         environments: core default dev
         frozen: true
@@ -55,14 +57,14 @@ jobs:
       fail-fast: false
 
     steps:
-    - uses: actions/checkout@v4
-    - uses: prefix-dev/setup-pixi@v0.8.3
+    - uses: actions/checkout@v7
+    - uses: prefix-dev/setup-pixi@v0.10.0
       with:
         environments: ${{ matrix.environment }}
     - name: Test with pytest (${{ matrix.environment }})
       run: pixi run -e ${{ matrix.environment }} test
     - name: Upload coverage reports to Codecov
-      uses: codecov/codecov-action@v4
+      uses: codecov/codecov-action@v5
       env:
         CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
@@ -70,14 +72,14 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
-    - uses: prefix-dev/setup-pixi@v0.8.3
+    - uses: actions/checkout@v7
+    - uses: prefix-dev/setup-pixi@v0.10.0
       with:
         environments: dev-min
     - name: Test with pytest (minimum versions)
       run: pixi run -e dev-min test
     - name: Upload coverage reports to Codecov
-      uses: codecov/codecov-action@v4
+      uses: codecov/codecov-action@v5
       env:
         CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
@@ -89,9 +91,9 @@ jobs:
       fail-fast: false
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v6
       with:
         python-version: ${{ matrix.python-version }}
     - name: Install latest versions
@@ -101,6 +103,6 @@ jobs:
     - name: Test with pytest (latest)
       run: python -m pytest --cov=rdtools --cov-report=xml
     - name: Upload coverage reports to Codecov
-      uses: codecov/codecov-action@v4
+      uses: codecov/codecov-action@v5
       env:
         CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}

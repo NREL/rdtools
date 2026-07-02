@@ -2,6 +2,9 @@ name: nbval
 
 on: [pull_request]
 
+permissions:
+  contents: read
+
 jobs:
   notebook-check:
 
@@ -18,8 +21,8 @@ jobs:
         ]
 
     steps:
-    - uses: actions/checkout@v4
-    - uses: prefix-dev/setup-pixi@v0.8.3
+    - uses: actions/checkout@v7
+    - uses: prefix-dev/setup-pixi@v0.10.0
       with:
         environments: dev
     - name: Validate notebook output
@@ -30,7 +33,7 @@ jobs:
         mkdir docs/artifacts
         pixi run -e dev jupyter nbconvert --to html --output artifacts/${{ matrix.notebook-file }}.html docs/${{ matrix.notebook-file }}
     - name: Upload artifacts
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: executed_notebook_${{ matrix.notebook-file }}
         path: docs/artifacts
