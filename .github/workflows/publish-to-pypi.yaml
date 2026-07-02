@@ -18,6 +18,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v7
+      with:
+        fetch-depth: 0  # setuptools-scm needs tags to resolve the version
     - name: Set up Python
       uses: actions/setup-python@v6
       with:
