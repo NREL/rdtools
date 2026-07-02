@@ -20,7 +20,7 @@ jobs:
         run-install: false
     - name: Verify pixi.lock is in sync with pyproject.toml
       run: |
-        if ! pixi install --locked --environment dev; then
+        if ! pixi install --locked -e dev; then
           echo ""
           echo "::error title=pixi.lock out of sync::pixi.lock does not match pyproject.toml."
           echo ""

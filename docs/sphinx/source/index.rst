@@ -101,8 +101,8 @@ identified soiling rates for the dataset.
 The combined estimation of degradation and soiling (CODS) method (Skomedal 2020) is also available
 in RdTools. CODS self-consistently extracts degradation, soiling, and seasonality
 of the daily-aggregated normalized performance signal. It is particularly useful
-when soiling trends are biasing degradation results. It's use is shown in both the TrendAnalysis
-example notebook as well as the funtional API example notebook for degradation and soiling.
+when soiling trends are biasing degradation results. Its use is shown in both the TrendAnalysis
+example notebook as well as the functional API example notebook for degradation and soiling.
 
 TrendAnalysis
 ^^^^^^^^^^^^^
@@ -186,7 +186,7 @@ and the specific DOI coresponding to that version from `Zenodo <https://doi.org/
    Martin Springer, Jiyang Yan, Kirsten Perry, Sandra Villamar, Will Vining,
    Gregory Kimball, Daniel Ruth, Noah Moyer, Quyen Nguyen, Dirk Jordan,
    Matthew Muller, and Chris Deline, RdTools, version {insert version},
-   Compuer Software, https://github.com/NatLabRockies/rdtools. DOI:{insert DOI}
+   Computer Software, https://github.com/NatLabRockies/rdtools. DOI:{insert DOI}
 
 The underlying workflow of RdTools has been published in several places.
 If you use RdTools in a published work, you may also wish to cite the following as
