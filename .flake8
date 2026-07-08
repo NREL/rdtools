@@ -16,3 +16,4 @@ exclude =
     docs
     .eggs
     build
+    tmp

@@ -23,17 +23,20 @@ from rdtools.filtering import insolation_filter
 from rdtools.filtering import hampel_filter
 from rdtools.filtering import hour_angle_filter
 from rdtools.filtering import directional_tukey_filter
-# from rdtools.soiling import soiling_srr
-# from rdtools.soiling import soiling_cods
-# from rdtools.soiling import monthly_soiling_rates
-# from rdtools.soiling import annual_soiling_ratios
+from rdtools.soiling import soiling_srr
+from rdtools.soiling import soiling_cods
+from rdtools.soiling import monthly_soiling_rates
+from rdtools.soiling import annual_soiling_ratios
+from rdtools.soiling import SRRAnalysis
+from rdtools.soiling import CODSAnalysis
+from rdtools.soiling import NoValidIntervalError
 from rdtools.analysis_chains import TrendAnalysis
 from rdtools.plotting import degradation_summary_plots
 from rdtools.plotting import tune_filter_plot
 from rdtools.plotting import degradation_timeseries_plot
-# from rdtools.plotting import soiling_monte_carlo_plot
-# from rdtools.plotting import soiling_interval_plot
-# from rdtools.plotting import soiling_rate_histogram
+from rdtools.plotting import soiling_monte_carlo_plot
+from rdtools.plotting import soiling_interval_plot
+from rdtools.plotting import soiling_rate_histogram
 from rdtools.plotting import availability_summary_plots
 from rdtools.availability import AvailabilityAnalysis
 from rdtools.utilities import robust_quantile

@@ -5,6 +5,7 @@ from rdtools.soiling import SRRAnalysis
 from rdtools.soiling import annual_soiling_ratios
 from rdtools.soiling import monthly_soiling_rates
 from rdtools.soiling import NoValidIntervalError
+from rdtools.soiling import segmented_soiling_period
 import pytest
 
 
@@ -13,6 +14,7 @@ def test_soiling_srr(soiling_normalized_daily, soiling_insolation, soiling_times
     reps = 10
     np.random.seed(1977)
     sr, sr_ci, soiling_info = soiling_srr(soiling_normalized_daily, soiling_insolation, reps=reps)
+
     assert 0.964369 == pytest.approx(sr, abs=1e-6), "Soiling ratio different from expected value"
     assert np.array([0.962540, 0.965295]) == pytest.approx(
         sr_ci, abs=1e-6
@@ -39,6 +41,8 @@ def test_soiling_srr(soiling_normalized_daily, soiling_insolation, soiling_times
         "soiling_rate_high",
         "inferred_start_loss",
         "inferred_end_loss",
+        "inferred_recovery",
+        "inferred_begin_shift",
         "length",
         "valid",
     ]
@@ -52,9 +56,11 @@ def test_soiling_srr(soiling_normalized_daily, soiling_insolation, soiling_times
         assert (
             x in actual_summary_columns
         ), f"'{x}' was expected as a column, but not in soiling_info['soiling_interval_summary']"
+
     assert isinstance(
         soiling_info["soiling_interval_summary"], pd.DataFrame
     ), 'soiling_info["soiling_interval_summary"] not a dataframe'
+
     expected_means = pd.Series(
         {
             "soiling_rate": -0.002644544,
@@ -62,6 +68,8 @@ def test_soiling_srr(soiling_normalized_daily, soiling_insolation, soiling_times
             "soiling_rate_high": -0.002455915,
             "inferred_start_loss": 1.020124,
             "inferred_end_loss": 0.9566552,
+            "inferred_recovery": 0.065416,
+            "inferred_begin_shift": 0.084814,
             "length": 24.0,
             "valid": 1.0,
         }
@@ -73,6 +81,8 @@ def test_soiling_srr(soiling_normalized_daily, soiling_insolation, soiling_times
             "soiling_rate_high",
             "inferred_start_loss",
             "inferred_end_loss",
+            "inferred_recovery",
+            "inferred_begin_shift",
             "length",
             "valid",
         ]
@@ -95,11 +105,22 @@ def test_soiling_srr(soiling_normalized_daily, soiling_insolation, soiling_times
 
 @pytest.mark.filterwarnings("ignore:.*20% or more of the daily data.*:UserWarning")
 @pytest.mark.parametrize(
-    "method,expected_sr",
-    [("random_clean", 0.936177), ("half_norm_clean", 0.915093), ("perfect_clean", 0.977116)],
+    "method,detect_neg_shifts,expected_sr",
+    [
+        ("random_clean", False, 0.936177),
+        ("half_norm_clean", False, 0.915093),
+        ("perfect_clean", False, 0.977116),
+        ("perfect_clean", True, 0.977116),
+        ("inferred_clean", True, 0.975805),
+    ],
 )
 def test_soiling_srr_consecutive_invalid(
-    soiling_normalized_daily, soiling_insolation, soiling_times, method, expected_sr
+    soiling_normalized_daily,
+    soiling_insolation,
+    soiling_times,
+    method,
+    detect_neg_shifts,
+    expected_sr,
 ):
     reps = 10
     np.random.seed(1977)
@@ -109,10 +130,12 @@ def test_soiling_srr_consecutive_invalid(
         reps=reps,
         max_relative_slope_error=20.0,
         method=method,
+        detect_neg_shifts=detect_neg_shifts,
     )
     assert expected_sr == pytest.approx(
         sr, abs=1e-6
-    ), f"Soiling ratio different from expected value for {method} with consecutive invalid intervals"  # noqa: E501
+    ), f"Soiling ratio different from expected value for {method} \
+        with consecutive invalid intervals"
 
 
 @pytest.mark.parametrize(
@@ -142,7 +165,7 @@ def test_soiling_srr_with_precip(
 
 
 def test_soiling_srr_confidence_levels(soiling_normalized_daily, soiling_insolation):
-    "Tests SRR with different confidence level settingsf from above"
+    """Tests SRR with different confidence level settings."""
     np.random.seed(1977)
     sr, sr_ci, soiling_info = soiling_srr(
         soiling_normalized_daily,
@@ -173,8 +196,8 @@ def test_soiling_srr_dayscale(soiling_normalized_daily, soiling_insolation):
 
 
 def test_soiling_srr_clean_threshold(soiling_normalized_daily, soiling_insolation):
-    """Test that clean test_soiling_srr_clean_threshold works with a float and
-    can cause no soiling intervals to be found"""
+    """Test that clean_threshold works with a float and
+    can cause no soiling intervals to be found."""
     np.random.seed(1977)
     sr, sr_ci, soiling_info = soiling_srr(
         soiling_normalized_daily, soiling_insolation, reps=10, clean_threshold=0.01
@@ -205,19 +228,31 @@ def test_soiling_srr_trim(soiling_normalized_daily, soiling_insolation):
 
 
 @pytest.mark.parametrize(
-    "method,expected_sr", [("random_clean", 0.920444), ("perfect_clean", 0.966912)]
+    "method,detect_neg_shifts,expected_sr",
+    [
+        ("random_clean", False, 0.920444),
+        ("perfect_clean", False, 0.966912),
+        ("perfect_clean", True, 0.966912),
+        ("inferred_clean", True, 0.965565),
+    ],
 )
-def test_soiling_srr_method(soiling_normalized_daily, soiling_insolation, method, expected_sr):
+def test_soiling_srr_method(
+    soiling_normalized_daily, soiling_insolation, method, detect_neg_shifts, expected_sr
+):
     np.random.seed(1977)
     sr, sr_ci, soiling_info = soiling_srr(
-        soiling_normalized_daily, soiling_insolation, reps=10, method=method
+        soiling_normalized_daily,
+        soiling_insolation,
+        reps=10,
+        method=method,
+        detect_neg_shifts=detect_neg_shifts,
     )
     assert expected_sr == pytest.approx(
         sr, abs=1e-6
     ), f'Soiling ratio with method="{method}" different from expected value'
 
 
-def test_soiling_srr_min_interval_length(soiling_normalized_daily, soiling_insolation):
+def test_soiling_srr_min_interval_days(soiling_normalized_daily, soiling_insolation):
     "Test that a long minimum interval length prevents finding shorter intervals"
     with pytest.raises(NoValidIntervalError):
         np.random.seed(1977)
@@ -227,7 +262,7 @@ def test_soiling_srr_min_interval_length(soiling_normalized_daily, soiling_insol
             soiling_insolation,
             confidence_level=68.2,
             reps=10,
-            min_interval_length=26,
+            min_interval_days=26,
         )
 
     # but min=24 should be fine:
@@ -236,7 +271,7 @@ def test_soiling_srr_min_interval_length(soiling_normalized_daily, soiling_insol
         soiling_insolation,
         confidence_level=68.2,
         reps=10,
-        min_interval_length=24,
+        min_interval_days=24,
     )
 
 
@@ -270,7 +305,8 @@ def test_soiling_srr_negative_step(soiling_normalized_daily, soiling_insolation)
 
     assert 0.936932 == pytest.approx(
         sr, abs=1e-6
-    ), "Soiling ratio different from expected when a large negative step is incorporated into the data"  # noqa: E501
+    ), "Soiling ratio different from expected when a large negative step is\
+        incorporated into the data"
 
 
 def test_soiling_srr_max_negative_slope_error(soiling_normalized_daily, soiling_insolation):
@@ -306,6 +342,20 @@ def test_soiling_srr_with_nan_interval(soiling_normalized_daily, soiling_insolat
         sr, abs=1e-6
     ), "Soiling ratio different from expected value when an entire interval was NaN"
 
+    # With perfect_clean method, detect_neg_shifts, and piecewise_fit the warning is not raised
+    np.random.seed(1977)
+    sr, sr_ci, soiling_info = soiling_srr(
+        normalized_corrupt,
+        soiling_insolation,
+        reps=reps,
+        method="perfect_clean",
+        detect_neg_shifts=True,
+        piecewise_fit=True,
+    )
+    assert 0.974103 == pytest.approx(
+        sr, abs=1e-6
+    ), "Soiling ratio different from expected value when an entire interval was NaN"
+
 
 def test_soiling_srr_outlier_factor(soiling_normalized_daily, soiling_insolation):
     _, _, info = soiling_srr(
@@ -330,11 +380,11 @@ def test_soiling_srr_kwargs(monkeypatch, soiling_normalized_daily, soiling_insol
 
 
 @pytest.mark.parametrize(("start,expected_sr"), [(18, 0.984779), (17, 0.981258)])
-def test_soiling_srr_min_interval_length_default(
+def test_soiling_srr_min_interval_days_default(
     soiling_normalized_daily, soiling_insolation, start, expected_sr
 ):
     """
-    Make sure that the default value of min_interval_length is 7 days by testing
+    Make sure that the default value of min_interval_days is 7 days by testing
     on a cropped version of the example data
     """
     reps = 10
@@ -391,6 +441,141 @@ def test_soiling_srr_argument_checks(soiling_normalized_daily, soiling_insolatio
 
     with pytest.raises(ValueError, match="Invalid method specification"):
         _ = soiling_srr(method="bad", **kwargs)
+
+    match = "method='inferred_clean' requires detect_neg_shifts=True"
+    with pytest.raises(ValueError, match=match):
+        _ = soiling_srr(method="inferred_clean", detect_neg_shifts=False, **kwargs)
+
+
+# ###########################
+# detect_neg_shifts and piecewise_fit tests
+# ###########################
+@pytest.mark.parametrize(
+    "method,detect_neg_shifts,expected_sr",
+    [
+        ("half_norm_clean", False, 0.980143),
+        ("half_norm_clean", True, 0.975057),
+        ("perfect_clean", True, 0.964117),
+        ("inferred_clean", True, 0.963585),
+    ],
+)
+def test_negative_shifts(
+    soiling_normalized_daily_with_neg_shifts,
+    soiling_insolation,
+    soiling_times,
+    method,
+    detect_neg_shifts,
+    expected_sr,
+):
+    reps = 10
+    np.random.seed(1977)
+    sr, sr_ci, soiling_info = soiling_srr(
+        soiling_normalized_daily_with_neg_shifts,
+        soiling_insolation,
+        reps=reps,
+        method=method,
+        detect_neg_shifts=detect_neg_shifts,
+    )
+    assert expected_sr == pytest.approx(
+        sr, abs=1e-6
+    ), f'Soiling ratio with method="{method}" and detect_neg_shifts="{detect_neg_shifts}" \
+        different from expected value'
+
+
+@pytest.mark.parametrize(
+    "method,piecewise_fit,expected_sr",
+    [
+        ("half_norm_clean", False, 0.8670264),
+        ("half_norm_clean", True, 0.927017),
+        ("perfect_clean", True, 0.896936),
+        ("inferred_clean", True, 0.896214),
+    ],
+)
+def test_piecewise(
+    soiling_normalized_daily_with_piecewise_slope,
+    soiling_insolation,
+    soiling_times,
+    method,
+    piecewise_fit,
+    expected_sr,
+):
+    reps = 10
+    np.random.seed(1977)
+    # Note: piecewise methods require detect_neg_shifts=True for perfect_clean/inferred_clean
+    detect_neg_shifts = method in ("perfect_clean", "inferred_clean")
+    sr, sr_ci, soiling_info = soiling_srr(
+        soiling_normalized_daily_with_piecewise_slope,
+        soiling_insolation,
+        reps=reps,
+        method=method,
+        detect_neg_shifts=detect_neg_shifts,
+        piecewise_fit=piecewise_fit,
+    )
+    assert expected_sr == pytest.approx(
+        sr, abs=1e-6
+    ), f'Soiling ratio with method="{method}" and piecewise_fit="{piecewise_fit}" \
+        different from expected value'
+
+
+def test_piecewise_and_neg_shifts(
+    soiling_normalized_daily_with_piecewise_slope,
+    soiling_normalized_daily_with_neg_shifts,
+    soiling_insolation,
+    soiling_times,
+):
+    reps = 10
+    np.random.seed(1977)
+    sr, sr_ci, soiling_info = soiling_srr(
+        soiling_normalized_daily_with_piecewise_slope,
+        soiling_insolation,
+        reps=reps,
+        method="perfect_clean",
+        detect_neg_shifts=True,
+        piecewise_fit=True,
+    )
+    assert 0.896936 == pytest.approx(
+        sr, abs=1e-6
+    ), "Soiling ratio different from expected value for data with piecewise slopes"
+    np.random.seed(1977)
+    sr, sr_ci, soiling_info = soiling_srr(
+        soiling_normalized_daily_with_neg_shifts,
+        soiling_insolation,
+        reps=reps,
+        method="perfect_clean",
+        detect_neg_shifts=True,
+    )
+    assert 0.964117 == pytest.approx(
+        sr, abs=1e-6
+    ), "Soiling ratio different from expected value for data with negative shifts"
+
+
+def test_detect_neg_shifts_clean_threshold(
+    soiling_normalized_daily_with_neg_shifts, soiling_insolation
+):
+    """Test that clean_threshold works with detect_neg_shifts=True and
+    can cause no soiling intervals to be found"""
+    np.random.seed(1977)
+    sr, sr_ci, soiling_info = soiling_srr(
+        soiling_normalized_daily_with_neg_shifts,
+        soiling_insolation,
+        reps=10,
+        clean_threshold=0.1,
+        method="perfect_clean",
+        detect_neg_shifts=True,
+        piecewise_fit=True,
+    )
+    assert 0.934926 == pytest.approx(
+        sr, abs=1e-6
+    ), "Soiling ratio with specified clean_threshold different from expected value"
+
+    with pytest.raises(NoValidIntervalError):
+        np.random.seed(1977)
+        soiling_srr(
+            soiling_normalized_daily_with_neg_shifts,
+            soiling_insolation,
+            reps=10,
+            clean_threshold=1,
+        )
 
 
 # ###########################
@@ -522,9 +707,9 @@ def test_monthly_soiling_rates(soiling_interval_summary):
     pd.testing.assert_frame_equal(result, expected, check_dtype=False)
 
 
-def test_monthly_soiling_rates_min_interval_length(soiling_interval_summary):
+def test_monthly_soiling_rates_min_interval_days(soiling_interval_summary):
     np.random.seed(1977)
-    result = monthly_soiling_rates(soiling_interval_summary, min_interval_length=20)
+    result = monthly_soiling_rates(soiling_interval_summary, min_interval_days=20)
 
     expected = np.array(
         [
@@ -590,3 +775,87 @@ def test_monthly_soiling_rates_reps(soiling_interval_summary):
     expected = _build_monthly_summary(expected)
 
     pd.testing.assert_frame_equal(result, expected, check_dtype=False)
+
+
+# ######################################
+# invalid segmented_soiling_period tests
+# ######################################
+
+
+@pytest.fixture
+def pr_series():
+    """
+    Panda series of daily performance ratios measured during the given deposition period
+    with datetime index and is length 10.
+    """
+    pr_idx = pd.date_range(start="2022-01-01", periods=10, freq="D")
+    pr_series = pd.Series(np.random.rand(10), index=pr_idx)
+    return pr_series
+
+
+def test_no_datetime_index_pr(pr_series):
+    """
+    Tests if ValueError is raised when pr_series does not have datetime index.
+    """
+    pr = pr_series.reset_index()
+    with pytest.raises(ValueError, match="The time series does not have DatetimeIndex"):
+        _ = segmented_soiling_period(pr)
+
+
+def test_no_change_point(pr_series):
+    """
+    Tests if no change point was found when fitting soiling profile with segmentation.
+    """
+    days_clean_vs_cp = 7
+    result_sr, result_cp_date = segmented_soiling_period(
+        pr_series, days_clean_vs_cp=days_clean_vs_cp
+    )
+    expected_sr = pd.Series([np.nan] * len(pr_series), index=pr_series.index)
+    expected_cp_date = None
+
+    pd.testing.assert_series_equal(result_sr, expected_sr)
+    assert result_cp_date == expected_cp_date
+
+
+def test_except_block():
+    """
+    Tests except block for when all segmentation methods did not work.
+    """
+    pr_idx = pd.date_range(start="2022-01-01", periods=5, freq="D")
+    pr_series = pd.Series(np.array([1, 2, 3, 4, 5]), index=pr_idx)
+    result_sr, result_cp_date = segmented_soiling_period(pr_series)
+
+    expected_sr = pd.Series([np.nan] * len(pr_series), index=pr_series.index)
+    expected_cp_date = None
+
+    pd.testing.assert_series_equal(result_sr, expected_sr)
+    assert result_cp_date == expected_cp_date
+
+
+def test_short_segmentation_periods():
+    """
+    Tests if segmentation fails for short soiling periods.
+    """
+    pr_idx = pd.date_range(start="2022-01-01", periods=35, freq="D")
+    pr_series = pd.Series(np.random.normal(loc=5, scale=2, size=35), index=pr_idx)
+    result_sr, result_cp_date = segmented_soiling_period(pr_series)
+
+    expected_sr = pd.Series([np.nan] * len(pr_series), index=pr_series.index)
+    expected_cp_date = None
+
+    pd.testing.assert_series_equal(result_sr, expected_sr)
+    assert result_cp_date == expected_cp_date
+
+
+def test_long_segmentation_periods():
+    "Tests if segmentation fails for longer soiling periods."
+    pr_idx = pd.date_range(start="2022-01-01", periods=47, freq="D")
+    testing_list = list(np.arange(46)) + [50]
+    pr_series = pd.Series(testing_list, index=pr_idx)
+    result_sr, result_cp_date = segmented_soiling_period(pr_series)
+
+    expected_sr = pd.Series([np.nan] * len(pr_series), index=pr_series.index)
+    expected_cp_date = None
+
+    pd.testing.assert_series_equal(result_sr, expected_sr)
+    assert result_cp_date == expected_cp_date

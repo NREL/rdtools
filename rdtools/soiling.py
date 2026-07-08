@@ -1,37 +1,28 @@
 """
 Functions for calculating soiling metrics from photovoltaic system data.
-
-The soiling module is currently experimental. The API, results,
-and default behaviors may change in future releases (including MINOR
-and PATCH releases) as the code matures.
 """
 
-from rdtools import degradation as RdToolsDeg
+from rdtools import degradation
 from rdtools.bootstrap import _make_time_series_bootstrap_samples
 
+import bisect
+import itertools
+import sys
+import time
 import warnings
 
-import pandas as pd
 import numpy as np
+import pandas as pd
+import scipy.stats as st
+import statsmodels.api as sm
+from scipy.optimize import curve_fit
 from scipy.stats.mstats import theilslopes
 from bayesian_filters.kalman import KalmanFilter
 from bayesian_filters.common import Q_discrete_white_noise
-import itertools
-import bisect
-import time
-import sys
 from statsmodels.tsa.seasonal import STL
 from statsmodels.tsa.stattools import adfuller
-import statsmodels.api as sm
 
-lowess = sm.nonparametric.lowess
-
-warnings.warn(
-    "The soiling module is currently experimental. The API, results, "
-    "and default behaviors may change in future releases (including MINOR "
-    "and PATCH releases) as the code matures.",
-    stacklevel=2,
-)
+lowess = sm.nonparametric.lowess  # Used in CODSAnalysis/Matt
 
 
 # Custom exception
@@ -70,14 +61,14 @@ class SRRAnalysis:
         self.monte_losses = []
 
         if pd.infer_freq(self.pm.index) != "D":
-            raise ValueError("Daily performance metric series must have " "daily frequency")
+            raise ValueError("Daily performance metric series must have daily frequency")
 
         if pd.infer_freq(self.insolation_daily.index) != "D":
-            raise ValueError("Daily insolation series must have " "daily frequency")
+            raise ValueError("Daily insolation series must have daily frequency")
 
         if self.precipitation_daily is not None:
             if pd.infer_freq(self.precipitation_daily.index) != "D":
-                raise ValueError("Precipitation series must have " "daily frequency")
+                raise ValueError("Precipitation series must have daily frequency")
 
     def _calc_daily_df(
         self,
@@ -87,6 +78,11 @@ class SRRAnalysis:
         clean_criterion="shift",
         precip_threshold=0.01,
         outlier_factor=1.5,
+        detect_neg_shifts=False,
+        piecewise_fit=False,
+        neg_shift_factor=2.5,
+        min_piecewise_days=27,
+        collapse_window_days=5,
     ):
         """
         Calculates self.daily_df, a pandas dataframe prepared for SRR analysis,
@@ -124,6 +120,21 @@ class SRRAnalysis:
             The factor used in the Tukey fence definition of outliers for flagging positive shifts
             in the rolling median used for cleaning detection. A smaller value will cause more and
             smaller shifts to be classified as cleaning events.
+        detect_neg_shifts : bool, default False
+            If True, detects negative shifts in the rolling median and subdivides
+            intervals accordingly.
+        piecewise_fit : bool, default False
+            If True, tests for piecewise linear fits within intervals and
+            subdivides at detected change points.
+        neg_shift_factor : float, default 2.5
+            Multiplier of ``clean_threshold`` to identify negative shift events.
+            Only used when ``detect_neg_shifts=True``.
+        min_piecewise_days : int, default 27
+            Minimum interval length in days required to attempt piecewise fitting.
+            Only used when ``piecewise_fit=True``.
+        collapse_window_days : int, default 5
+            Window size in days for collapsing multiple consecutive cleaning
+            events into a single event.
         """
         if (day_scale % 2 == 0) and ("shift" in clean_criterion):
             warnings.warn(
@@ -141,6 +152,7 @@ class SRRAnalysis:
 
         df = df.join(df_insol)
         precip = self.precipitation_daily
+
         if precip is not None:
             df_precip = precip.to_frame()
             df_precip.columns = ["precip"]
@@ -191,6 +203,14 @@ class SRRAnalysis:
             )
 
         df["clean_event_detected"] = df.delta > clean_threshold
+
+        # Collapse multiple consecutive cleaning events into a single event
+        # to avoid fragmenting soiling intervals unnecessarily
+        reduced_cleaning_events = _collapse_cleaning_events(
+            df.clean_event_detected, df.delta.values, collapse_window_days
+        )
+        df["clean_event_detected"] = reduced_cleaning_events
+
         precip_event = df["precip"] > precip_threshold
 
         if clean_criterion == "precip_and_shift":
@@ -208,28 +228,59 @@ class SRRAnalysis:
             df["clean_event"] = df["clean_event_detected"]
         else:
             raise ValueError(
-                "clean_criterion must be one of "
-                '{"precip_and_shift", "precip_or_shift", '
-                '"precip", "shift"}'
+                "clean_criterion must be one of"
+                '{"precip_and_shift", "precip_or_shift", "precip", "shift"}'
             )
 
         df["clean_event"] = df.clean_event | out_start | out_end
 
-        df = df.fillna(0)
+        # Add negative shifts which allows further segmentation of the soiling
+        # intervals and handles correction for data outages
+        df.delta = df.delta.fillna(0)  # to avoid NA corrupting calculation
+        if detect_neg_shifts:
+            df["drop_event"] = df.delta < -neg_shift_factor * clean_threshold
+            df["break_event"] = df.clean_event | df.drop_event
+        else:
+            df["break_event"] = df.clean_event.copy()
 
         # Give an index to each soiling interval/run
-        df["run"] = df.clean_event.cumsum()
+        df["run"] = df.break_event.cumsum()
         df.index.name = "date"  # this gets used by name
+
+        # When piecewise_fit is enabled, add a single breakpoint per soiling
+        # interval if statistical criteria are met with the piecewise linear fit
+        # compared to a single linear fit
+        if piecewise_fit:
+            piecewise_loop = sorted(list(set(df["run"])))
+            cp_dates = []
+            for r in piecewise_loop:
+                run = df[df["run"] == r]
+                pr = run.pi_norm.copy()
+                pr = pr.ffill()  # linear fitting cant handle nans
+                pr = pr.bfill()  # catch first position nan
+                if len(run) > min_piecewise_days and run.pi_norm.sum() > 0:
+                    sr, cp_index = segmented_soiling_period(pr)
+                    if cp_index is not None:
+                        cp_dates.append(pr.index[cp_index])
+            df["slope_change_event"] = df.index.isin(cp_dates)
+            df["break_event"] = df.break_event | df.slope_change_event
+            df["run"] = df.break_event.cumsum()
+        else:
+            df["slope_change_event"] = False
 
         self.renorm_factor = renorm
         self.daily_df = df
 
+    ######################################################################
+    # added neg_shift into parameters in the following def/Matt
     def _calc_result_df(
         self,
         trim=False,
         max_relative_slope_error=500.0,
-        max_negative_step=0.05,
-        min_interval_length=7,
+        max_neg_step=0.05,
+        min_interval_days=7,
+        detect_neg_shifts=False,
+        forward_median_window=10,
     ):
         """
         Calculates self.result_df, a pandas dataframe summarizing the soiling
@@ -244,13 +295,19 @@ class SRRAnalysis:
         max_relative_slope_error : float, default 500
             the maximum relative size of the slope confidence interval for an
             interval to be considered valid (percentage).
-        max_negative_step : float, default 0.05
+        max_neg_step : float, default 0.05
             The maximum magnitude of negative discrete steps allowed in an
             interval for the interval to be considered valid (units of
-            normalized performance metric).
-        min_interval_length : int, default 7
-            The minimum duration for an interval to be considered
-            valid.  Cannot be less than 2 (days).
+            normalized performance metric). Only used when ``detect_neg_shifts=False``.
+        min_interval_days : int, default 7
+            The minimum duration in days for an interval to be considered
+            valid.  Cannot be less than 2 days.
+        detect_neg_shifts : bool, default False
+            If True, detects negative shifts in the rolling median and uses
+            shift corrections at segment boundaries.
+        forward_median_window : int, default 10
+            Window size for forward median calculation used to validate shift
+            corrections. Only used when ``detect_neg_shifts=True``.
         """
 
         daily_df = self.daily_df
@@ -284,19 +341,50 @@ class SRRAnalysis:
                 "run_slope_high": 0,
                 "max_neg_step": min(run.delta),
                 "start_loss": 1,
-                "inferred_start_loss": run.pi_norm.mean(),
-                "inferred_end_loss": run.pi_norm.mean(),
+                "inferred_start_loss": (
+                    np.nan if run.pi_norm.isna().any() else run.pi_norm.median()
+                ),
+                "inferred_end_loss": (
+                    np.nan if run.pi_norm.isna().any() else run.pi_norm.median()
+                ),
+                "slope_err": 10000,  # high dummy start value for later logic
                 "valid": False,
+                "clean_event": run.clean_event.iloc[0],  # record of clean events
+                "run_loss_baseline": 0.0,  # loss from the polyfit over the soiling interval
             }
-            if len(run) > min_interval_length and run.pi_norm.sum() > 0:
+            if len(run) > min_interval_days and run.pi_norm.sum() > 0:
                 fit = theilslopes(run.pi_norm, run.day)
                 fit_poly = np.poly1d(fit[0:2])
                 result_dict["run_slope"] = fit[0]
                 result_dict["run_slope_low"] = fit[2]
                 result_dict["run_slope_high"] = min([0.0, fit[3]])
-                result_dict["inferred_start_loss"] = fit_poly(start_day)
-                result_dict["inferred_end_loss"] = fit_poly(end_day)
                 result_dict["valid"] = True
+                ########################################################
+                # moved the following 2 line to the next section within conditional statement/Matt
+                # result_dict['inferred_start_loss'] = fit_poly(start_day)
+                # result_dict['inferred_end_loss'] = fit_poly(end_day)
+
+                ####################################################
+                # the following is moved here so median values are retained/Matt
+                # for soiling inferrences when rejected fits occur
+
+                result_dict["slope_err"] = (
+                    result_dict["run_slope_high"] - result_dict["run_slope_low"]
+                ) / abs(result_dict["run_slope"])
+
+                if (result_dict["slope_err"] <= (max_relative_slope_error / 100.0)) & (
+                    result_dict["run_slope"] < 0
+                ):
+                    result_dict["inferred_start_loss"] = fit_poly(start_day)
+                    result_dict["inferred_end_loss"] = fit_poly(end_day)
+                    #############################################
+                    # calculate loss over soiling interval per polyfit/matt
+                    result_dict["run_loss_baseline"] = (
+                        result_dict["inferred_start_loss"] - result_dict["inferred_end_loss"]
+                    )
+
+                    ###############################################
+
             result_list.append(result_dict)
 
         results = pd.DataFrame(result_list)
@@ -304,31 +392,53 @@ class SRRAnalysis:
         if results.empty:
             raise NoValidIntervalError("No valid soiling intervals were found")
 
-        # Filter results for each interval,
-        # setting invalid interval to slope of 0
-        results["slope_err"] = (results.run_slope_high - results.run_slope_low) / abs(
-            results.run_slope
-        )
-        # critera for exclusions
-        filt = (
-            (results.run_slope > 0)
-            | (results.slope_err >= max_relative_slope_error / 100.0)
-            | (results.max_neg_step <= -1.0 * max_negative_step)
-        )
-
-        results.loc[filt, "run_slope"] = 0
-        results.loc[filt, "run_slope_low"] = 0
-        results.loc[filt, "run_slope_high"] = 0
-        results.loc[filt, "valid"] = False
+        # Filter results for each interval, setting invalid interval to slope of 0
+        # When detect_neg_shifts=True, negative shifts are used as breaks for soiling
+        # intervals so we don't filter by max_neg_step
+        if detect_neg_shifts:
+            filt = (results.run_slope > 0) | (
+                results.slope_err >= max_relative_slope_error / 100.0
+            )
+            results.loc[filt, "run_slope"] = 0
+            results.loc[filt, "run_slope_low"] = 0
+            results.loc[filt, "run_slope_high"] = 0
+        else:
+            # Original logic: filter by max_neg_step as well
+            filt = (
+                (results.run_slope > 0)
+                | (results.slope_err >= max_relative_slope_error / 100.0)
+                | (results.max_neg_step <= -1.0 * max_neg_step)
+            )
+            results.loc[filt, "run_slope"] = 0
+            results.loc[filt, "run_slope_low"] = 0
+            results.loc[filt, "run_slope_high"] = 0
 
         # Calculate the next inferred start loss from next valid interval
         results["next_inferred_start_loss"] = np.clip(
             results[results.valid].inferred_start_loss.shift(-1), 0, 1
         )
+
         # Calculate the inferred recovery at the end of each interval
-        results["inferred_recovery"] = np.clip(
-            results.next_inferred_start_loss - results.inferred_end_loss, 0, 1
+        results["inferred_recovery"] = results.next_inferred_start_loss - results.inferred_end_loss
+
+        # Calculate beginning inferred shift (end of previous soiling period
+        # to start of current period)
+        results["prev_end"] = results[results.valid].inferred_end_loss.shift(1)
+        # if the current interval starts with a clean event, the previous end
+        # is a nan, and the current interval is valid then set prev_end=1
+        results.loc[
+            results.clean_event & np.isnan(results.prev_end) & results.valid,
+            "prev_end",
+        ] = 1
+        results["inferred_begin_shift"] = results.inferred_start_loss - results.prev_end
+        # if original shift detection was positive the shift should not be
+        # negative due to fitting results
+        results.loc[results.clean_event, "inferred_begin_shift"] = np.clip(
+            results.inferred_begin_shift, 0, 1
         )
+
+        if not detect_neg_shifts:
+            results.loc[filt, "valid"] = False
 
         if len(results[results.valid]) == 0:
             raise NoValidIntervalError("No valid soiling intervals were found")
@@ -343,26 +453,135 @@ class SRRAnalysis:
         pm_frame_out["loss_inferred_clean"] = np.nan
         pm_frame_out["days_since_clean"] = (pm_frame_out.index - pm_frame_out.start).dt.days
 
-        # Calculate the daily derate
-        pm_frame_out["loss_perfect_clean"] = (
-            pm_frame_out.start_loss + pm_frame_out.days_since_clean * pm_frame_out.run_slope
-        )
-        # filling the flat intervals may need to be recalculated
-        # for different assumptions
-        pm_frame_out.loss_perfect_clean = pm_frame_out.loss_perfect_clean.fillna(1)
+        # Enhanced loss calculation with handling of negative shifts and changepoints
+        if detect_neg_shifts:
+            pm_frame_out["inferred_begin_shift"] = pm_frame_out["inferred_begin_shift"].bfill()
+            min_periods = forward_median_window // 2
+            pm_frame_out["forward_median"] = (
+                pm_frame_out.pi.iloc[::-1]
+                .rolling(forward_median_window, min_periods=min_periods)
+                .median()
+            )
+            prev_shift = 1
+            soil_inferred_clean = []
+            soil_perfect_clean = []
+            day_start = -1
+            start_infer = 1
+            start_perfect = 1
+            soil_infer = 1
+            soil_perfect = 1
+            total_down = 0
+            shift = 0
+            shift_perfect = 0
+            begin_perfect_shifts = [0]
+            begin_infer_shifts = [0]
 
-        pm_frame_out["loss_inferred_clean"] = (
-            pm_frame_out.inferred_start_loss
-            + pm_frame_out.days_since_clean * pm_frame_out.run_slope
-        )
-        # filling the flat intervals may need to be recalculated
-        # for different assumptions
-        pm_frame_out.loss_inferred_clean = pm_frame_out.loss_inferred_clean.fillna(1)
+            for date, rs, d, start_shift, changepoint, forward_median in zip(
+                pm_frame_out.index,
+                pm_frame_out.run_slope,
+                pm_frame_out.days_since_clean,
+                pm_frame_out.inferred_begin_shift,
+                pm_frame_out.slope_change_event,
+                pm_frame_out.forward_median,
+            ):
+                new_soil = d - day_start
+                day_start = d
 
+                if new_soil <= 0:  # begin new soil period
+                    if (start_shift == prev_shift) | (changepoint):  # no shift at
+                        # a slope changepoint
+                        shift = 0
+                        shift_perfect = 0
+                    else:
+                        if (start_shift < 0) & (prev_shift < 0):  # (both negative) or
+                            # downward shifts to start last 2 intervals
+                            shift = 0
+                            shift_perfect = 0
+                            total_down = total_down + start_shift  # adding total downshifts
+                            # to subtract from an eventual cleaning event
+                        elif (start_shift > 0) & (prev_shift >= 0):  # (both positive) or
+                            # cleanings start the last 2 intervals
+                            shift = start_shift
+                            shift_perfect = 1
+                            total_down = 0
+                        # add #####################3/27/24
+                        elif (start_shift == 0) & (prev_shift >= 0):
+                            shift = start_shift
+                            shift_perfect = start_shift
+                            total_down = 0
+                        #############################################################
+                        elif (start_shift >= 0) & (prev_shift < 0):  # cleaning starts the current
+                            # interval but there was a previous downshift
+                            shift = start_shift + total_down  # correct for the negative shifts
+                            shift_perfect = shift  # dont set to one 1 if correcting for a
+                            # downshift (debateable alternative set to 1)
+                            total_down = 0
+                        elif (start_shift < 0) & (prev_shift >= 0):
+                            # negative shift starts the interval, previous shift was cleaning
+                            shift = 0
+                            shift_perfect = 0
+                            total_down = start_shift
+                    # check that shifts results in being at or above the median of
+                    # the next 10 days of data
+                    # this catches places where start points of polyfits were
+                    # skewed below where data start
+                    if (soil_infer + shift) < forward_median:
+                        shift = forward_median - soil_infer
+                    if (soil_perfect + shift_perfect) < forward_median:
+                        shift_perfect = forward_median - soil_perfect
+
+                    # append the daily soiling ratio to each modeled fit
+                    begin_perfect_shifts.append(shift_perfect)
+                    begin_infer_shifts.append(shift)
+                    # clip to last value in case shift ends up negative
+                    soil_infer = np.clip((soil_infer + shift), soil_infer, 1)
+                    start_infer = soil_infer  # make next start value the last inferred value
+                    soil_inferred_clean.append(soil_infer)
+                    # clip to last value in case shift ends up negative
+                    soil_perfect = np.clip((soil_perfect + shift_perfect), soil_perfect, 1)
+                    start_perfect = soil_perfect
+                    soil_perfect_clean.append(soil_perfect)
+                    if changepoint is False:
+                        prev_shift = start_shift  # assigned at new soil period
+
+                elif new_soil > 0:  # within soiling period
+                    # append the daily soiling ratio to each modeled fit
+                    soil_infer = start_infer + rs * d
+                    soil_inferred_clean.append(soil_infer)
+
+                    soil_perfect = start_perfect + rs * d
+                    soil_perfect_clean.append(soil_perfect)
+
+            pm_frame_out["loss_inferred_clean"] = pd.Series(
+                soil_inferred_clean, index=pm_frame_out.index
+            )
+            pm_frame_out["loss_perfect_clean"] = pd.Series(
+                soil_perfect_clean, index=pm_frame_out.index
+            )
+
+            results["begin_perfect_shift"] = pd.Series(begin_perfect_shifts)
+            results["begin_infer_shift"] = pd.Series(begin_infer_shifts)
+        else:
+            pm_frame_out["loss_perfect_clean"] = (
+                pm_frame_out.start_loss + pm_frame_out.days_since_clean * pm_frame_out.run_slope
+            )
+            # filling the flat intervals may need to be recalculated
+            # for different assumptions
+            pm_frame_out.loss_perfect_clean = pm_frame_out.loss_perfect_clean.fillna(1)
+            # inferred_start_loss was set to the value from poly fit at the beginning of the
+            # soiling interval
+            pm_frame_out["loss_inferred_clean"] = (
+                pm_frame_out.inferred_start_loss
+                + pm_frame_out.days_since_clean * pm_frame_out.run_slope
+            )
+            # filling the flat intervals may need to be recalculated
+            # for different assumptions
+            pm_frame_out.loss_inferred_clean = pm_frame_out.loss_inferred_clean.fillna(1)
+        #######################################################################
         self.result_df = results
         self.analyzed_daily_df = pm_frame_out
 
-    def _calc_monte(self, monte, method="half_norm_clean"):
+    def _calc_monte(self, monte, method="half_norm_clean", detect_neg_shifts=False):
         """
         Runs the Monte Carlo step of the SRR method. Calculates
         self.random_profiles, a list of the random soiling profiles realized in
@@ -373,22 +592,30 @@ class SRRAnalysis:
         ----------
         monte : int
             number of Monte Carlo simulations to run
-        method : str, {'half_norm_clean', 'random_clean', 'perfect_clean'} \
-                default 'half_norm_clean'
+        method : str, {'half_norm_clean', 'random_clean', 'perfect_clean', 'inferred_clean'} \
+            default 'half_norm_clean'
+
             How to treat the recovery of each cleaning event
 
-            * 'random_clean' - a random recovery between 0-100%
-            * 'perfect_clean' - each cleaning event returns the performance
-              metric to 1
             * 'half_norm_clean' - The starting point of each interval is taken
-              randomly from a half normal distribution with its
-              mode (mu) at 1 and
-              its sigma equal to 1/3 * (1-b) where b is the intercept
-              of the fit to the interval.
+              randomly from a half normal distribution with its mode (mu) at 1
+              and its sigma equal to 1/3 * (1-b) where b is the intercept of
+              the fit to the interval.
+            * 'random_clean' - a random recovery between 0-100%.
+            * 'perfect_clean' - each cleaning event returns the performance
+              metric to 1.
+            * 'inferred_clean' - at each detected clean event the performance
+              metric increases based on fits to the data.
+
+            When ``detect_neg_shifts=True``, 'perfect_clean' and 'inferred_clean'
+            use enhanced logic that handles negative shifts at segment boundaries.
+        detect_neg_shifts : bool, default False
+            If True, uses enhanced logic for 'perfect_clean' and 'inferred_clean'
+            methods that handles negative shifts at segment boundaries.
         """
 
         # Raise a warning if there is >20% invalid data
-        if (method == "half_norm_clean") or (method == "random_clean"):
+        if method in ("half_norm_clean", "random_clean"):
             valid_fraction = self.analyzed_daily_df["valid"].mean()
             if valid_fraction <= 0.8:
                 warnings.warn(
@@ -396,9 +623,10 @@ class SRRAnalysis:
                     'intervals. This can be problematic with the "half_norm_clean" '
                     'and "random_clean" cleaning assumptions. Consider more permissive '
                     'validity criteria such as increasing "max_relative_slope_error" '
-                    'and/or "max_negative_step" and/or decreasing "min_interval_length".'
-                    ' Alternatively, consider using method="perfect_clean". For more'
-                    " info see https://github.com/NatLabRockies/rdtools/issues/272",
+                    'and/or "max_neg_step" and/or decreasing '
+                    '"min_interval_days". Alternatively, consider using '
+                    'method="perfect_clean". For more info see '
+                    "https://github.com/NatLabRockies/rdtools/issues/272",
                     stacklevel=2,
                 )
         monte_losses = []
@@ -429,10 +657,14 @@ class SRRAnalysis:
 
             # randomize the extent of the cleaning
             inter_start = 1.0
+            delta_previous_run_loss = 0
             start_list = []
             if (method == "half_norm_clean") or (method == "random_clean"):
                 # Randomize recovery of valid intervals only
                 valid_intervals = results_rand[results_rand.valid].copy()
+                valid_intervals["inferred_recovery"] = np.clip(
+                    valid_intervals.inferred_recovery, 0, 1
+                )
                 valid_intervals["inferred_recovery"] = valid_intervals.inferred_recovery.fillna(
                     1.0
                 )
@@ -489,11 +721,53 @@ class SRRAnalysis:
                     results_rand.update(invalid_update)
 
             elif method == "perfect_clean":
-                for i, row in results_rand.iterrows():
-                    start_list.append(inter_start)
-                    end = inter_start + row.run_loss
-                    inter_start = 1
-                results_rand["start_loss"] = start_list
+                if detect_neg_shifts:
+                    # Enhanced logic with negative shift detection
+                    for i, row in results_rand.iterrows():
+                        if row.begin_perfect_shift > 0:
+                            inter_start = np.clip(
+                                (inter_start + row.begin_perfect_shift + delta_previous_run_loss),
+                                end,
+                                1,
+                            )
+                            delta_previous_run_loss = -1 * row.run_loss - row.run_loss_baseline
+                        else:
+                            delta_previous_run_loss = (
+                                delta_previous_run_loss - 1 * row.run_loss - row.run_loss_baseline
+                            )
+                        start_list.append(inter_start)
+                        end = inter_start + row.run_loss
+                        inter_start = end
+                    results_rand["start_loss"] = start_list
+                else:
+                    # Simple logic: each cleaning returns to 1
+                    for i, row in results_rand.iterrows():
+                        start_list.append(inter_start)
+                        end = inter_start + row.run_loss
+                        inter_start = 1
+                    results_rand["start_loss"] = start_list
+
+            elif method == "inferred_clean":
+                if detect_neg_shifts:
+                    # Enhanced logic with negative shift detection
+                    for i, row in results_rand.iterrows():
+                        if row.begin_infer_shift > 0:
+                            inter_start = np.clip(
+                                (inter_start + row.begin_infer_shift + delta_previous_run_loss),
+                                end,
+                                1,
+                            )
+                            delta_previous_run_loss = -1 * row.run_loss - row.run_loss_baseline
+                        else:
+                            delta_previous_run_loss = (
+                                delta_previous_run_loss - 1 * row.run_loss - row.run_loss_baseline
+                            )
+                        start_list.append(inter_start)
+                        end = inter_start + row.run_loss
+                        inter_start = end
+                    results_rand["start_loss"] = start_list
+                else:
+                    raise ValueError("method='inferred_clean' requires detect_neg_shifts=True")
 
             else:
                 raise ValueError("Invalid method specification")
@@ -527,13 +801,19 @@ class SRRAnalysis:
         method="half_norm_clean",
         clean_criterion="shift",
         precip_threshold=0.01,
-        min_interval_length=7,
+        min_interval_days=7,
         exceedance_prob=95.0,
         confidence_level=68.2,
         recenter=True,
         max_relative_slope_error=500.0,
-        max_negative_step=0.05,
+        max_neg_step=0.05,
         outlier_factor=1.5,
+        detect_neg_shifts=False,
+        piecewise_fit=False,
+        neg_shift_factor=2.5,
+        min_piecewise_days=27,
+        collapse_window_days=5,
+        forward_median_window=10,
     ):
         """
         Run the SRR method from beginning to end.  Perform the stochastic rate
@@ -556,17 +836,24 @@ class SRRAnalysis:
         trim : bool, default False
             Whether to trim (remove) the first and last soiling intervals to
             avoid inclusion of partial intervals
-        method : str, {'half_norm_clean', 'random_clean', 'perfect_clean'} \
+        method : str, {'half_norm_clean', 'random_clean', 'perfect_clean', 'inferred_clean'} \
             default 'half_norm_clean'
+
             How to treat the recovery of each cleaning event
 
-            * 'random_clean' - a random recovery between 0-100%
-            * 'perfect_clean' - each cleaning event returns the performance
-              metric to 1
             * 'half_norm_clean' - The starting point of each interval is taken
               randomly from a half normal distribution with its mode (mu) at 1 and
               its sigma equal to 1/3 * (1-b) where b is the intercept of the fit to
               the interval.
+            * 'random_clean' - a random recovery between 0-100%.
+            * 'perfect_clean' - each cleaning event returns the performance
+              metric to 1.
+            * 'inferred_clean' - at each detected clean event the performance
+              metric increases based on fits to the data.
+
+            When ``detect_neg_shifts=True``, 'perfect_clean' and 'inferred_clean'
+            use enhanced logic that handles negative shifts and tracks shift
+            corrections at segment boundaries.
         clean_criterion : str, {'shift', 'precip_and_shift', 'precip_or_shift', 'precip'} \
             default 'shift'
             The method of partitioning the dataset into soiling intervals
@@ -581,9 +868,9 @@ class SRRAnalysis:
             The daily precipitation threshold for defining
             precipitation cleaning events.
             Units must be consistent with ``self.precipitation_daily``
-        min_interval_length : int, default 7
-            The minimum duration for an interval to be considered
-            valid.  Cannot be less than 2 (days).
+        min_interval_days : int, default 7
+            The minimum duration in days for an interval to be considered
+            valid.  Cannot be less than 2 days.
         exceedance_prob : float, default 95.0
             The probability level to use for exceedance value calculation in
             percent
@@ -595,14 +882,37 @@ class SRRAnalysis:
         max_relative_slope_error : float, default 500
             the maximum relative size of the slope confidence interval for an
             interval to be considered valid (percentage).
-        max_negative_step : float, default 0.05
+        max_neg_step : float, default 0.05
             The maximum magnitude of negative discrete steps allowed in an
             interval for the interval to be considered valid (units of
-            normalized performance metric).
+            normalized performance metric). Only used when ``detect_neg_shifts=False``.
         outlier_factor : float, default 1.5
             The factor used in the Tukey fence definition of outliers for flagging positive shifts
             in the rolling median used for cleaning detection. A smaller value will cause more and
             smaller shifts to be classified as cleaning events.
+        detect_neg_shifts : bool, default False
+            If True, detects negative shifts in the rolling median and subdivides
+            intervals accordingly. When a negative shift is detected followed by
+            a recovery, the algorithm tracks these transitions. When enabled with
+            ``method='perfect_clean'`` or ``method='inferred_clean'``, uses
+            enhanced logic that handles shift corrections at segment boundaries.
+        piecewise_fit : bool, default False
+            If True, tests for piecewise linear fits within soiling intervals.
+            Intervals that show a significant slope change are subdivided at the
+            detected change point.
+        neg_shift_factor : float, default 2.5
+            Multiplier of ``clean_threshold`` to identify negative shift events.
+            Only used when ``detect_neg_shifts=True``. A value of 2.5 means a shift
+            of -2.5 * clean_threshold triggers interval subdivision.
+        min_piecewise_days : int, default 27
+            Minimum interval length in days required to attempt piecewise fitting.
+            Only used when ``piecewise_fit=True``.
+        collapse_window_days : int, default 5
+            Window size in days for collapsing multiple consecutive cleaning
+            events into a single event.
+        forward_median_window : int, default 10
+            Window size for forward median calculation used to validate shift
+            corrections. Only used when ``detect_neg_shifts=True``.
 
         Returns
         -------
@@ -657,6 +967,17 @@ class SRRAnalysis:
               +------------------------+----------------------------------------------+
 
         """
+        # Validate method and detect_neg_shifts compatibility
+        if detect_neg_shifts and method not in (
+            "half_norm_clean",
+            "perfect_clean",
+            "inferred_clean",
+        ):
+            raise ValueError(
+                f"detect_neg_shifts=True requires method='half_norm_clean', 'perfect_clean' or "
+                f"'inferred_clean', got '{method}'"
+            )
+
         self._calc_daily_df(
             day_scale=day_scale,
             clean_threshold=clean_threshold,
@@ -664,14 +985,23 @@ class SRRAnalysis:
             clean_criterion=clean_criterion,
             precip_threshold=precip_threshold,
             outlier_factor=outlier_factor,
+            detect_neg_shifts=detect_neg_shifts,
+            piecewise_fit=piecewise_fit,
+            neg_shift_factor=neg_shift_factor,
+            min_piecewise_days=min_piecewise_days,
+            collapse_window_days=collapse_window_days,
         )
+
         self._calc_result_df(
             trim=trim,
             max_relative_slope_error=max_relative_slope_error,
-            max_negative_step=max_negative_step,
-            min_interval_length=min_interval_length,
+            max_neg_step=max_neg_step,
+            min_interval_days=min_interval_days,
+            detect_neg_shifts=detect_neg_shifts,
+            forward_median_window=forward_median_window,
         )
-        self._calc_monte(reps, method=method)
+
+        self._calc_monte(reps, method=method, detect_neg_shifts=detect_neg_shifts)
 
         # Calculate the P50 and confidence interval
         half_ci = confidence_level / 2.0
@@ -681,7 +1011,9 @@ class SRRAnalysis:
         P_level = result[3]
 
         # Construct calc_info output
-
+        ###############################################
+        # add inferred_recovery, inferred_begin_shift /Matt
+        ###############################################
         intervals_out = self.result_df[
             [
                 "start",
@@ -691,6 +1023,8 @@ class SRRAnalysis:
                 "run_slope_high",
                 "inferred_start_loss",
                 "inferred_end_loss",
+                "inferred_recovery",
+                "inferred_begin_shift",
                 "length",
                 "valid",
             ]
@@ -706,6 +1040,7 @@ class SRRAnalysis:
 
         df_d = self.analyzed_daily_df
         sr_perfect = df_d[df_d["valid"]]["loss_perfect_clean"]
+
         calc_info = {
             "exceedance_level": P_level,
             "renormalizing_factor": self.renorm_factor,
@@ -728,13 +1063,19 @@ def soiling_srr(
     method="half_norm_clean",
     clean_criterion="shift",
     precip_threshold=0.01,
-    min_interval_length=7,
+    min_interval_days=7,
     exceedance_prob=95.0,
     confidence_level=68.2,
     recenter=True,
     max_relative_slope_error=500.0,
-    max_negative_step=0.05,
+    max_neg_step=0.05,
     outlier_factor=1.5,
+    detect_neg_shifts=False,
+    piecewise_fit=False,
+    neg_shift_factor=2.5,
+    min_piecewise_days=27,
+    collapse_window_days=5,
+    forward_median_window=10,
 ):
     """
     Functional wrapper for :py:class:`~rdtools.soiling.SRRAnalysis`. Perform
@@ -768,17 +1109,23 @@ def soiling_srr(
     trim : bool, default False
         Whether to trim (remove) the first and last soiling intervals to avoid
         inclusion of partial intervals
-    method : str, {'half_norm_clean', 'random_clean', 'perfect_clean'} \
+    method : str, {'half_norm_clean', 'random_clean', 'perfect_clean', 'inferred_clean'} \
         default 'half_norm_clean'
+
         How to treat the recovery of each cleaning event
 
-        * 'random_clean' - a random recovery between 0-100%
-        * 'perfect_clean' - each cleaning event returns the performance
-          metric to 1
         * 'half_norm_clean' - The starting point of each interval is taken
           randomly from a half normal distribution with its mode (mu) at 1 and
           its sigma equal to 1/3 * (1-b) where b is the intercept of the fit to
           the interval.
+        * 'random_clean' - a random recovery between 0-100%.
+        * 'perfect_clean' - each cleaning event returns the performance
+          metric to 1.
+        * 'inferred_clean' - at each detected clean event the performance
+          metric increases based on fits to the data.
+
+        When ``detect_neg_shifts=True``, 'perfect_clean' and 'inferred_clean'
+        use enhanced logic that handles negative shifts at segment boundaries.
     clean_criterion : str, {'shift', 'precip_and_shift', 'precip_or_shift', 'precip'} \
         default 'shift'
         The method of partitioning the dataset into soiling intervals
@@ -792,9 +1139,9 @@ def soiling_srr(
     precip_threshold : float, default 0.01
         The daily precipitation threshold for defining precipitation
         cleaning events. Units must be consistent with precip.
-    min_interval_length : int, default 7
-        The minimum duration, in days, for an interval to be considered
-        valid.  Cannot be less than 2 (days).
+    min_interval_days : int, default 7
+        The minimum duration in days for an interval to be considered
+        valid.  Cannot be less than 2 days.
     exceedance_prob : float, default 95.0
         the probability level to use for exceedance value calculation in
         percent
@@ -806,14 +1153,37 @@ def soiling_srr(
     max_relative_slope_error : float, default 500.0
         the maximum relative size of the slope confidence interval for an
         interval to be considered valid (percentage).
-    max_negative_step : float, default 0.05
+    max_neg_step : float, default 0.05
         The maximum magnitude of negative discrete steps allowed in an interval
         for the interval to be considered valid (units of normalized
-        performance metric).
+        performance metric). Only used when ``detect_neg_shifts=False``.
     outlier_factor : float, default 1.5
         The factor used in the Tukey fence definition of outliers for flagging positive shifts
         in the rolling median used for cleaning detection. A smaller value will cause more and
         smaller shifts to be classified as cleaning events.
+    detect_neg_shifts : bool, default False
+        If True, detects negative shifts in the rolling median and subdivides
+        intervals accordingly. When a negative shift is detected followed by
+        a recovery, the algorithm tracks these transitions. When enabled with
+        ``method='perfect_clean'`` or ``method='inferred_clean'``, uses
+        enhanced logic that handles shift corrections at segment boundaries.
+    piecewise_fit : bool, default False
+        If True, tests for piecewise linear fits within soiling intervals.
+        Intervals that show a significant slope change are subdivided at the
+        detected change point.
+    neg_shift_factor : float, default 2.5
+        Multiplier of ``clean_threshold`` to identify negative shift events.
+        Only used when ``detect_neg_shifts=True``. A value of 2.5 means a shift
+        of -2.5 * clean_threshold triggers interval subdivision.
+    min_piecewise_days : int, default 27
+        Minimum interval length in days required to attempt piecewise fitting.
+        Only used when ``piecewise_fit=True``.
+    collapse_window_days : int, default 5
+        Window size in days for collapsing multiple consecutive cleaning
+        events into a single event.
+    forward_median_window : int, default 10
+        Window size for forward median calculation used to validate shift
+        corrections. Only used when ``detect_neg_shifts=True``.
 
     Returns
     -------
@@ -880,15 +1250,20 @@ def soiling_srr(
         method=method,
         clean_criterion=clean_criterion,
         precip_threshold=precip_threshold,
-        min_interval_length=min_interval_length,
+        min_interval_days=min_interval_days,
         exceedance_prob=exceedance_prob,
         confidence_level=confidence_level,
         recenter=recenter,
         max_relative_slope_error=max_relative_slope_error,
-        max_negative_step=max_negative_step,
+        max_neg_step=max_neg_step,
         outlier_factor=outlier_factor,
+        detect_neg_shifts=detect_neg_shifts,
+        piecewise_fit=piecewise_fit,
+        neg_shift_factor=neg_shift_factor,
+        min_piecewise_days=min_piecewise_days,
+        collapse_window_days=collapse_window_days,
+        forward_median_window=forward_median_window,
     )
-
     return sr, sr_ci, soiling_info
 
 
@@ -956,8 +1331,7 @@ def annual_soiling_ratios(stochastic_soiling_profiles, insolation_daily, confide
             "The indexes of stochastic_soiling_profiles are not entirely "
             "contained within the index of insolation_daily. Every day in "
             "stochastic_soiling_profiles should be represented in "
-            "insolation_daily. This may cause erroneous results.",
-            stacklevel=2,
+            "insolation_daily. This may cause erroneous results."
         )
 
     insolation_daily = insolation_daily.reindex(all_profiles.index)
@@ -991,7 +1365,7 @@ def annual_soiling_ratios(stochastic_soiling_profiles, insolation_daily, confide
 
 def monthly_soiling_rates(
     soiling_interval_summary,
-    min_interval_length=14,
+    min_interval_days=14,
     max_relative_slope_error=500.0,
     reps=100000,
     confidence_level=68.2,
@@ -1013,7 +1387,7 @@ def monthly_soiling_rates(
         ``soiling_rate_high``, ``soiling_rate_low``, ``soiling_rate``,
         ``length``, ``valid``,``start``, and ``end``.
 
-    min_interval_length : int, default 14
+    min_interval_days : int, default 14
         The minimum number of days a soiling interval must contain to be
         included in the calculation. Similar to the same parameter in
         :py:func:`soiling_srr` and :py:meth:`SRRAnalysis.run` but with a
@@ -1069,7 +1443,7 @@ def monthly_soiling_rates(
     rate = soiling_interval_summary["soiling_rate"]
     rel_error = 100 * abs((high - low) / rate)
     intervals = soiling_interval_summary[
-        (soiling_interval_summary["length"] >= min_interval_length)
+        (soiling_interval_summary["length"] >= min_interval_days)
         & (soiling_interval_summary["valid"])
         & (rel_error <= max_relative_slope_error)
     ].copy()
@@ -1400,9 +1774,7 @@ class CODSAnalysis:
             order = tuple([c for c in order if c != "Rd"])
 
         if "SR" not in order:
-            raise ValueError(
-                "'SR' must be in argument 'order' " + "(e.g. order=['SR', 'SC', 'Rd']"
-            )
+            raise ValueError("'SR' must be in argument 'order' (e.g. order=['SR', 'SC', 'Rd']")
         n_steps = len(order)
         day = np.arange(len(pi))
         degradation_trend = [1]
@@ -1497,7 +1869,7 @@ class CODSAnalysis:
                     deg_trend = pd.Series(index=pi.index, data=STL_res.trend.apply(np.exp))
                     degradation_trend.append(deg_trend / deg_trend.iloc[0])
                     yoy_save.append(
-                        RdToolsDeg.degradation_year_on_year(
+                        degradation.degradation_year_on_year(
                             degradation_trend[-1], uncertainty_method=None
                         )
                     )
@@ -1507,7 +1879,7 @@ class CODSAnalysis:
                 # Decompose signal
                 trend_dummy = pi / seasonal_component[-1] / soiling_ratio[-1]
                 # Run YoY
-                yoy = RdToolsDeg.degradation_year_on_year(trend_dummy, uncertainty_method=None)
+                yoy = degradation.degradation_year_on_year(trend_dummy, uncertainty_method=None)
                 # Convert degradation rate to trend
                 degradation_trend.append(
                     pd.Series(index=pi.index, data=(1 + day * yoy / 100 / 365.0))
@@ -1580,7 +1952,7 @@ class CODSAnalysis:
         # Save values
         df_out.seasonal_component = seasonal_component[-1]
         df_out.degradation_trend = degradation_trend[-1]
-        degradation = yoy_save[-1]
+        degradation_value = yoy_save[-1]
         final_kdf = soiling_dfs[-1]
         df_out.soiling_ratio = final_kdf.soiling_ratio
         df_out.soiling_rates = final_kdf.soiling_rates
@@ -1618,7 +1990,7 @@ class CODSAnalysis:
 
         # Set up results dictionary
         results_dict = dict(
-            degradation=degradation,
+            degradation=degradation_value,
             soiling_loss=soiling_loss,
             residual_shift=residual_shift,
             RMSE=RMSE,
@@ -1887,7 +2259,7 @@ class CODSAnalysis:
         if np.sum(small_soiling_signal) > nr_models / 2:
             self.result_df = result_df
             self.residual_shift = results[np.argmax(weights)]["residual_shift"]
-            YOY = RdToolsDeg.degradation_year_on_year(pi)
+            YOY = degradation.degradation_year_on_year(pi)
             self.degradation = [YOY[0], YOY[1][0], YOY[1][1]]
             self.soiling_loss = [0, 0, (1 - result_df.soiling_ratio).mean()]
             self.small_soiling_signal = True
@@ -2589,7 +2961,7 @@ def soiling_cods(
     sr = 1 - CODS.soiling_loss[0] / 100
     sr_ci = 1 - np.array(CODS.soiling_loss[1:3]) / 100
 
-    return sr, sr_ci, CODS.degradation[0], np.array(CODS.degradation[1:3]), CODS.result_df
+    return (sr, sr_ci, CODS.degradation[0], np.array(CODS.degradation[1:3]), CODS.result_df)
 
 
 def _collapse_cleaning_events(inferred_ce_in, metric, f=4):
@@ -2771,7 +3143,7 @@ def _find_numeric_outliers(x, multiplier=1.5, where="both", verbose=False):
 def _RMSE(y_true, y_pred):
     """Calculates the Root Mean Squared Error for y_true and y_pred, where
     y_pred is the "prediction", and y_true is the truth."""
-    mask = ~np.isnan(y_pred)
+    mask = ~pd.isnull(y_pred)
     return np.sqrt(np.mean((y_pred[mask] - y_true[mask]) ** 2))
 
 
@@ -2793,3 +3165,139 @@ def _progressBarWithETA(value, endvalue, time, bar_length=20):
         + " min | Progress: [{:}] {:.0f} %".format(arrow + spaces, percent)
     )
     sys.stdout.flush()
+
+
+def _piecewise_linear(x, x0, b, k1, k2):
+    """
+    Piecewise linear function with a single breakpoint.
+
+    Parameters
+    ----------
+    x : array-like
+        Independent variable
+    x0 : float
+        Breakpoint location where the slope changes
+    b : float
+        y-intercept of the first segment
+    k1 : float
+        Slope of the first segment (x < x0)
+    k2 : float
+        Change in slope for the second segment (x >= x0).
+        The slope of the second segment is k1 + k2.
+
+    Returns
+    -------
+    array-like
+        Piecewise linear values:
+        - For x < x0: k1 * x + b
+        - For x >= x0: k1 * x + b + k2 * (x - x0)
+    """
+    cond_list = [x < x0, x >= x0]
+    func_list = [lambda x: k1 * x + b, lambda x: k1 * x + b + k2 * (x - x0)]
+    return np.piecewise(x, cond_list, func_list)
+
+
+def segmented_soiling_period(
+    pr,
+    days_clean_vs_cp=13,
+    initial_guesses=None,
+    bounds=None,
+    min_r2=0.15,
+):
+    """
+    Applies segmented regression to a single deposition period
+    (data points in between two cleaning events).
+    Segmentation is neglected if change point occurs within a number of days
+    (days_clean_vs_cp) of the cleanings.
+
+    Parameters
+    ----------
+    pr :
+        Series of daily performance ratios measured during the given deposition period.
+    days_clean_vs_cp : numeric (default=13)
+        Minimum number of days accepted between cleanings and change points.
+    bounds : list (default=None)
+        List of bounds for fitting function. If not specified, they are
+        defined in the function.
+    initial_guesses : list (default=None)
+        List of initial guesses for fitting function. If None, uses [13, 1, 0, 0].
+    min_r2 : numeric (default=0.15)
+        Minimum R2 to consider valid the extracted soiling profile.
+
+    Returns
+    -------
+    sr: numeric
+        Series containing the daily soiling ratio values after segmentation.
+        List of nan if segmentation was not possible.
+    cp_index: int
+        Integer index at which continuous change point occurred.
+        None if segmentation was not possible.
+    """
+    # Check if PR dataframe has datetime index
+    if not isinstance(pr.index, pd.DatetimeIndex):
+        raise ValueError("The time series does not have DatetimeIndex")
+
+    # Initialize default for initial_guesses to avoid mutable default argument
+    if initial_guesses is None:
+        initial_guesses = [13, 1, 0, 0]
+
+    # Define bounds if not provided
+    if bounds is None:
+        # bounds are neg in first 4 and pos in second 4
+        # ordered as x0,b,k1,k2 where x0 is the breakpoint k1 and k2 are slopes
+        bounds = [(13, -5, -np.inf, -np.inf), ((len(pr) - 13), 5, +np.inf, +np.inf)]
+    y = pr.values
+    x = np.arange(0.0, len(y))
+
+    # Check for constant or near-constant y values (cannot fit piecewise regression)
+    if np.nanstd(y) < 1e-10 or np.all(np.isnan(y)):
+        z = [np.nan] * len(x)
+        cp_index = None
+        sr = pd.Series(z, index=pr.index)
+        return sr, cp_index
+
+    try:
+        # Fit soiling profile with segmentation
+        p, e = curve_fit(_piecewise_linear, x, y, p0=initial_guesses, bounds=bounds)
+
+        # Ignore change point if too close to a cleaning
+        # Change point p[0] converted to integer to use as an index.
+        # None if no change point is found.
+        if p[0] > days_clean_vs_cp and p[0] < len(y) - days_clean_vs_cp:
+            z = _piecewise_linear(x, *p)
+            cp_index = int(p[0])
+
+            # Calculate R² improvement to decide if piecewise fit is worthwhile
+            R2_original = st.linregress(y, x)[2] ** 2
+            R2_piecewise = st.linregress(y, z)[2] ** 2
+
+            R2_improve = R2_piecewise - R2_original
+            R2_percent_improve = (R2_piecewise / R2_original) - 1 if R2_original > 0 else 0
+            if R2_original < 1:
+                R2_percent_of_possible_improve = R2_improve / (1 - R2_original)
+            else:
+                R2_percent_of_possible_improve = 0
+
+            # Apply stricter requirements for shorter soiling periods
+            if len(y) < 45:
+                if (R2_piecewise < min_r2) or (
+                    (R2_percent_of_possible_improve < 0.5) and (R2_percent_improve < 0.5)
+                ):
+                    z = [np.nan] * len(x)
+                    cp_index = None
+            else:
+                if (R2_percent_improve < 0.01) or (R2_piecewise < 0.4):
+                    z = [np.nan] * len(x)
+                    cp_index = None
+        else:
+            z = [np.nan] * len(x)
+            cp_index = None
+    except (ValueError, RuntimeError):
+        # curve_fit can fail for various reasons (constant values, convergence issues)
+        # This is expected for some intervals; silently return no change point
+        z = [np.nan] * len(x)
+        cp_index = None
+    # Create Series from modelled profile
+    sr = pd.Series(z, index=pr.index)
+
+    return sr, cp_index
