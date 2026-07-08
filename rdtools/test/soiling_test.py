@@ -212,7 +212,7 @@ def test_soiling_srr_max_negative_slope_error(soiling_normalized_daily, soiling_
 def test_soiling_srr_with_nan_interval(soiling_normalized_daily, soiling_insolation):
     '''
     Previous versions had a bug which would have raised an error when an entire interval
-    was NaN. See https://github.com/NREL/rdtools/issues/129
+    was NaN. See https://github.com/NatLabRockies/rdtools/issues/129
     '''
     reps = 10
     normalized_corrupt = soiling_normalized_daily.copy()

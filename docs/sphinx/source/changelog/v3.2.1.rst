@@ -1,0 +1,65 @@
+********************
+v 3.2.1 (July 08, 2026)
+********************
+
+Maintenance
+-----------
+* Migrated project configuration from ``setup.py``/``setup.cfg`` to
+  ``pyproject.toml`` using ``setuptools`` as the build backend.
+  (:pull:`491`)
+* Replaced ``versioneer`` with ``setuptools-scm`` for automatic version
+  management from git tags. (:pull:`491`)
+* Removed legacy build files: ``setup.py``, ``setup.cfg``, ``versioneer.py``,
+  ``MANIFEST.in``, and ``rdtools/_version.py``. (:pull:`491`)
+* Updated ``rdtools/__init__.py`` to use ``importlib.metadata`` for version
+  retrieval instead of versioneer. (:pull:`491`)
+* Updated GitHub URLs and references from ``NREL/rdtools`` to
+  ``NatLabRockies/rdtools`` and email addresses from ``@nrel.gov`` to
+  ``@nlr.gov``. (:pull:`492`)
+* Adopted `pixi <https://pixi.sh>`_ for reproducible environment management.
+  Replaced ``requirements.txt``, ``requirements-min.txt``, and
+  ``docs/notebook_requirements.txt`` with pixi environments and a lockfile.
+  (:pull:`493`)
+* Rewrote CI workflows (``pytest.yaml``, ``nbval.yaml``) to use pixi via
+  ``prefix-dev/setup-pixi`` and removed the ``requirements.yaml`` workflow.
+  (:pull:`493`)
+* Added Python 3.14 to the test matrix and package classifiers.
+  (:pull:`493`)
+* Simplified pixi environments: ``core`` (bare), ``default`` (notebooks),
+  ``dev`` (notebooks + test, alias for ``dev-py313``), ``dev-py310`` through
+  ``dev-py314`` (full dev per Python version), and ``dev-min`` (minimum
+  dependency versions). All shared environments pin Python 3.13.
+  (:pull:`493`)
+* Added composable pip extras: ``[notebooks]``, ``[test]``, ``[dev]``,
+  ``[doc]``, and ``[all]``. (:pull:`493`)
+* Updated documentation (README, Sphinx index, developer notes, and example
+  notebook setup cells) for pixi and pip extras. (:pull:`493`)
+* Added a ``check-deps`` pixi task and matching CI job that verifies
+  ``[tool.pixi.feature.min.pypi-dependencies]`` stays in sync with the lower
+  bounds in ``[project.dependencies]`` and that ``pixi.lock`` is up to date
+  with ``pyproject.toml``. (:pull:`497`)
+* Bumped all GitHub Actions in the CI workflows to their latest stable
+  majors (``actions/checkout@v7``, ``actions/setup-python@v6``,
+  ``actions/upload-artifact@v7``, ``actions/download-artifact@v8``,
+  ``codecov/codecov-action@v5``, ``prefix-dev/setup-pixi@v0.10.0``), added a
+  top-level ``permissions: contents: read`` block to each workflow, tightened
+  the ``publish-to-pypi`` trigger to only run on ``master``/``development``
+  pushes and tag pushes, and bumped the ``flake8`` job from Python 3.12 to
+  3.13. (:pull:`497`)
+
+Bug Fixes
+---------
+* Fixed broken link to TrendAnalysis example in Sphinx index page.
+  (:pull:`492`)
+* Fixed README CI status badges using a deprecated GitHub Actions badge URL
+  format. (:pull:`497`)
+
+Requirements
+------------
+* Replaced the unmaintained ``filterpy`` dependency with its maintained fork
+  ``bayesian-filters``, which provides the same API and fixes
+  ``SyntaxWarning`` on Python 3.13+. (:pull:`497`)
+* Added ``llvm-openmp`` (the conda-forge name for libomp) as a platform-specific
+  conda dependency for macOS (osx-64 and osx-arm64) to fix XGBoost installation
+  issues. Users no longer need to install libomp via Homebrew. (:pull:`493`)
+

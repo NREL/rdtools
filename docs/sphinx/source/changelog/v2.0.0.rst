@@ -11,12 +11,12 @@ API Changes
   right-labeled energy with :py:func:`~rdtools.normalization.energy_from_power`
   before being used with these normalization functions (:pull:`105`, :pull:`108`).
 * Remove ``low_power_cutoff`` parameter in :py:func:`~rdtools.filtering.clip_filter` (:issue:`84`).
-* Many kwargs have changed name (but not input order) to bring nomenclature into 
+* Many kwargs have changed name (but not input order) to bring nomenclature into
   closer alignment with the `DuraMAT pv-terms project <https://duramat.github.io/pv-terms>`_: (:pull:`185`)
 
   * :py:func:`~rdtools.aggregation.aggregation_insol` first kwarg is now ``energy_normalized``.
-  * :py:func:`~rdtools.degradation.degradation_year_on_year`, 
-    :py:func:`~rdtools.degradation.degradation_ols` and 
+  * :py:func:`~rdtools.degradation.degradation_year_on_year`,
+    :py:func:`~rdtools.degradation.degradation_ols` and
     :py:func:`~rdtools.degradation.degradation_classical_decomposition`
     first kwarg is now ``energy_normalized``.
   * :py:func:`~rdtools.filtering.normalized_filter` input kwargs are now ``energy_normalized``, ``energy_normalized_low`` and ``energy_normalized_high``.

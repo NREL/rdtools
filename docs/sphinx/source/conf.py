@@ -62,8 +62,8 @@ source_suffix = ['.rst', '.md']
 
 # List of external link aliases.  Allows use of :pull:`123` to autolink that PR
 extlinks = {
-    "issue": ("https://github.com/NREL/rdtools/issues/%s", "GH #%s"),
-    "pull": ("https://github.com/NREL/rdtools/pull/%s", "GH #%s"),
+    "issue": ("https://github.com/NatLabRockies/rdtools/issues/%s", "GH #%s"),
+    "pull": ("https://github.com/NatLabRockies/rdtools/pull/%s", "GH #%s"),
     "ghuser": ("https://github.com/%s", "@%s"),
 }
 
@@ -195,7 +195,7 @@ def make_github_url(pagename):
     # either a branch name or a git tag will work for the URL
     branch = version_map.get(rtd_version, rtd_version)
 
-    URL_BASE = "https://github.com/nrel/rdtools/blob/{}/".format(branch)
+    URL_BASE = "https://github.com/NatLabRockies/rdtools/blob/{}/".format(branch)
 
     # is it an API autogen page?
     if pagename.startswith("generated/"):

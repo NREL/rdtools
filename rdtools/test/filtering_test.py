@@ -509,7 +509,7 @@ def test_hour_angle_filter():
     series = pd.Series([1, 2, 3, 4, 5], index=index)
 
     # Define latitude and longitude
-    lat, lon = 39.7413, -105.1684  # NREL, Golden, CO
+    lat, lon = 39.7413, -105.1684  # NLR, Golden, CO
 
     # Call the function with the test data
     result = hour_angle_filter(series, lat, lon)

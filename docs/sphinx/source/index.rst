@@ -53,7 +53,7 @@ The preferred method for degradation rate estimation is the year-on-year
 (YOY) approach (Jordan 2018), available in :py:func:`.degradation.degradation_year_on_year`.
 The YOY calculation yields a distribution of degradation rates, the
 central tendency of which is the most representative of the true
-degradation. We note that the workflow described above and implemented in 
+degradation. We note that the workflow described above and implemented in
 :py:class:`.analysis_chains.TrendAnalysis` provides an estimate of degradation rate,
 not performance loss rate (PLR). PLR includes losses that are explicitly filtered
 out by the primary workflow (Deceglie 2023).
@@ -101,15 +101,15 @@ identified soiling rates for the dataset.
 The combined estimation of degradation and soiling (CODS) method (Skomedal 2020) is also available
 in RdTools. CODS self-consistently extracts degradation, soiling, and seasonality
 of the daily-aggregated normalized performance signal. It is particularly useful
-when soiling trends are biasing degradation results. It's use is shown in both the TrendAnalysis
-example notebook as well as the funtional API example notebook for degradation and soiling. 
+when soiling trends are biasing degradation results. Its use is shown in both the TrendAnalysis
+example notebook as well as the functional API example notebook for degradation and soiling.
 
 TrendAnalysis
 ^^^^^^^^^^^^^
-An object-oriented API for complete soiling and degradation analysis including 
+An object-oriented API for complete soiling and degradation analysis including
 the normalize, filter, aggregate, analyze steps is available in
 :py:class:`.analysis_chains.TrendAnalysis`. See the
-`TrendAnalysis example <examples/TrendAnalysis_example_pvdaq4.html>`_ for details. 
+`TrendAnalysis example <examples/TrendAnalysis_example_pvdaq4.html>`_ for details.
 
 Availability
 ------------
@@ -147,23 +147,22 @@ Alternatively it can be installed manually using the command line:
 
 On some systems, installation with ``pip`` can fail due to problems
 installing requirements. If this occurs, the requirements specified in
-``setup.py`` may need to be separately installed (for example by using
+``pyproject.toml`` may need to be separately installed (for example by using
 ``conda``) before installing ``rdtools``.
 
 For more detailed instructions, see the :ref:`developer_notes` page.
 
-RdTools currently is tested on Python 3.9+.
+RdTools currently is tested on Python 3.10+.
 
 Usage and examples
 ------------------
 
 Full workflow examples are found in the notebooks in :ref:`examples`.
-The examples are designed to work with python 3.12. For a consistent
-experience, we recommend installing the packages and versions documented
-in ``docs/notebook_requirements.txt``. This can be achieved in your
-environment by first installing RdTools as described above, then running
-``pip install -r docs/notebook_requirements.txt`` from the base
-directory.
+The examples are designed to work with python 3.13. For a consistent
+experience, we recommend using `pixi <https://pixi.sh>`_ to set up the
+notebook environment. From the base directory, run ``pixi run lab``
+to launch JupyterLab with all required packages. Alternatively, install
+manually with ``pip install rdtools[notebooks]``.
 
 Documentation
 -------------
@@ -187,7 +186,7 @@ and the specific DOI coresponding to that version from `Zenodo <https://doi.org/
    Martin Springer, Jiyang Yan, Kirsten Perry, Sandra Villamar, Will Vining,
    Gregory Kimball, Daniel Ruth, Noah Moyer, Quyen Nguyen, Dirk Jordan,
    Matthew Muller, and Chris Deline, RdTools, version {insert version},
-   Compuer Software, https://github.com/NREL/rdtools. DOI:{insert DOI}
+   Computer Software, https://github.com/NatLabRockies/rdtools. DOI:{insert DOI}
 
 The underlying workflow of RdTools has been published in several places.
 If you use RdTools in a published work, you may also wish to cite the following as
@@ -220,7 +219,7 @@ References
   :py:func:`.clearsky_temperature.get_clearsky_tamb()`, uses data from images
   created by Jesse Allen, NASA’s Earth Observatory using data courtesy
   of the MODIS Land Group.
-    
+
     + https://neo.sci.gsfc.nasa.gov/view.php?datasetId=MOD_LSTD_CLIM_M
     + https://neo.sci.gsfc.nasa.gov/view.php?datasetId=MOD_LSTN_CLIM_M
 
@@ -275,5 +274,5 @@ Indices and tables
 
 
 .. links and references
-.. _release: https://github.com/NREL/rdtools/releases
-.. _github: https://github.com/NREL/rdtools
+.. _release: https://github.com/NatLabRockies/rdtools/releases
+.. _github: https://github.com/NatLabRockies/rdtools

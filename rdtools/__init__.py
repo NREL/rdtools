@@ -40,5 +40,9 @@ from rdtools.utilities import robust_quantile
 from rdtools.utilities import robust_median
 from rdtools.utilities import robust_mean
 
-from . import _version
-__version__ = _version.get_versions()['version']
+from importlib.metadata import version, PackageNotFoundError
+
+try:
+    __version__ = version("rdtools")
+except PackageNotFoundError:
+    __version__ = "0+unknown"

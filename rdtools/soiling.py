@@ -13,8 +13,8 @@ import warnings
 import pandas as pd
 import numpy as np
 from scipy.stats.mstats import theilslopes
-from filterpy.kalman import KalmanFilter
-from filterpy.common import Q_discrete_white_noise
+from bayesian_filters.kalman import KalmanFilter
+from bayesian_filters.common import Q_discrete_white_noise
 import itertools
 import bisect
 import time
@@ -123,7 +123,7 @@ class SRRAnalysis():
             warnings.warn('An even value of day_scale was passed. An odd value is '
                           'recommended, otherwise, consecutive days may be erroneously '
                           'flagged as cleaning events. '
-                          'See https://github.com/NREL/rdtools/issues/189',
+                          'See https://github.com/NatLabRockies/rdtools/issues/189',
                           stacklevel=2)
 
         df = self.pm.to_frame()
@@ -383,7 +383,7 @@ class SRRAnalysis():
                               'validity criteria such as increasing "max_relative_slope_error" '
                               'and/or "max_negative_step" and/or decreasing "min_interval_length".'
                               ' Alternatively, consider using method="perfect_clean". For more'
-                              ' info see https://github.com/NREL/rdtools/issues/272',
+                              ' info see https://github.com/NatLabRockies/rdtools/issues/272',
                               stacklevel=2
                               )
         monte_losses = []

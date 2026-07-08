@@ -1,13 +1,13 @@
 <img src="./docs/sphinx/source/_images/logo_horizontal_highres.png" width="500" alt="RdTools logo"/>
 
 Master branch:
-[![Build Status](https://github.com/NREL/rdtools/workflows/pytest/badge.svg?branch=master)](https://github.com/NREL/rdtools/actions?query=branch%3Amaster)
+[![Build Status](https://github.com/NatLabRockies/rdtools/actions/workflows/pytest.yaml/badge.svg?branch=master)](https://github.com/NatLabRockies/rdtools/actions/workflows/pytest.yaml?query=branch%3Amaster)
 
 Development branch:
-[![Build Status](https://github.com/NREL/rdtools/workflows/pytest/badge.svg?branch=development)](https://github.com/NREL/rdtools/actions?query=branch%3Adevelopment)
+[![Build Status](https://github.com/NatLabRockies/rdtools/actions/workflows/pytest.yaml/badge.svg?branch=development)](https://github.com/NatLabRockies/rdtools/actions/workflows/pytest.yaml?query=branch%3Adevelopment)
 
 Code coverage:
-[![codecov](https://codecov.io/gh/NREL/rdtools/graph/badge.svg?token=K2HDjFkBws)](https://codecov.io/gh/NREL/rdtools)
+[![codecov](https://codecov.io/gh/NatLabRockies/rdtools/graph/badge.svg?token=K2HDjFkBws)](https://codecov.io/gh/NatLabRockies/rdtools)
 
 RdTools is an open-source library to support reproducible technical analysis of
 time series data from photovoltaic energy systems. The library aims to provide
@@ -25,20 +25,50 @@ command line:
 pip install rdtools
 ```
 
+Optional extras are available:
+
+```
+pip install rdtools[notebooks]  # Jupyter and notebook dependencies
+pip install rdtools[test]       # pytest, coverage, flake8
+pip install rdtools[dev]        # notebooks + test combined
+```
+
+Alternatively, RdTools uses [pixi](https://pixi.sh) for reproducible
+environment management. To get started with pixi, first
+[install pixi](https://pixi.sh/latest/#installation), then clone this
+repository and run `pixi install` from its root:
+
+```
+git clone https://github.com/NatLabRockies/rdtools.git
+cd rdtools
+pixi install          # default environment (rdtools + notebooks)
+pixi run lab          # launch Jupyter Lab
+```
+
+For development, use the `dev` environment which includes both notebook
+and test dependencies:
+
+```
+pixi shell -e dev     # activate the dev environment
+pixi run -e dev test  # run pytest with coverage
+pixi run -e dev nbval # validate notebooks
+pixi run -e dev lab   # launch Jupyter Lab
+```
+
 For API documentation and full examples, please see the [documentation](https://rdtools.readthedocs.io).
 
-RdTools currently is tested on Python 3.9+.
+RdTools currently is tested on Python 3.10+.
 
 ## Citing RdTools
 
 To cite RdTools, please use the following along with the version number
 and the specific DOI coresponding to that version from [Zenodo](https://doi.org/10.5281/zenodo.1210316):
 
--  Michael G. Deceglie, Kevin Anderson,  Adam Shinn, Ambarish Nag, Mark Mikofski,
-   Martin Springer, Jiyang Yan, Kirsten Perry, Sandra Villamar, Will Vining,
+-  Michael G. Deceglie, Martin Springer, Kevin Anderson,  Adam Shinn, Kirsten Perry, Ambarish Nag,
+   Mark Mikofski, Jiyang Yan, Sandra Villamar, Will Vining,
    Gregory Kimball, Daniel Ruth, Noah Moyer, Quyen Nguyen, Dirk Jordan,
    Matthew Muller, and Chris Deline, RdTools, version {insert version}, Computer Software,
-   https://github.com/NREL/rdtools. DOI:{insert DOI}
+   https://github.com/NatLabRockies/rdtools. DOI:{insert DOI}
 
 The underlying workflow of RdTools has been published in several places.
 If you use RdTools in a published work, you may also wish to cite the following as
@@ -76,5 +106,5 @@ Other useful references which may also be consulted for degradation rate methodo
 
 ## Further Instructions and Updates
 
-Check out the [wiki](https://github.com/NREL/rdtools/wiki) for additional usage documentation, and for information on development goals and framework.
+Check out the [wiki](https://github.com/NatLabRockies/rdtools/wiki) for additional usage documentation, and for information on development goals and framework.
 
