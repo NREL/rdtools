@@ -6,6 +6,55 @@ import pytest
 # from rdtools.test.conftest import cods_normalized_daily
 
 
+def test_cods_with_nan_prefix(cods_normalized_daily):
+    '''Test CODSAnalysis with data starting with NaN values'''
+    # Add NaN values at the beginning
+    data_with_nan_prefix = cods_normalized_daily.copy()
+    data_with_nan_prefix.iloc[:5] = np.nan
+
+    # Should work - the NaN prefix should be trimmed
+    cods = soiling.CODSAnalysis(data_with_nan_prefix)
+    assert len(cods.pm) == len(cods_normalized_daily) - 5, \
+        "NaN prefix was not trimmed correctly"
+    assert not np.isnan(cods.pm.iloc[0]), \
+        "First value should not be NaN after trimming"
+
+
+def test_cods_non_daily_frequency_raises():
+    '''Test CODSAnalysis raises ValueError for non-daily frequency data'''
+    # Create hourly data (non-daily frequency)
+    hourly_index = pd.date_range('2019/01/01', periods=100, freq='h', tz='UTC')
+    hourly_data = pd.Series(data=np.random.rand(100), index=hourly_index)
+
+    match = "Daily performance metric series must have daily frequency"
+    with pytest.raises(ValueError, match=match):
+        soiling.CODSAnalysis(hourly_data)
+
+
+def test_cods_invalid_order_raises(cods_normalized_daily):
+    '''Test iterative_signal_decomposition raises ValueError when SR not in order'''
+    cods = soiling.CODSAnalysis(cods_normalized_daily)
+
+    # order without 'SR' should raise ValueError
+    with pytest.raises(ValueError, match="'SR' must be in argument 'order'"):
+        cods.iterative_signal_decomposition(order=('SC', 'Rd'))
+
+
+def test_kalman_filter_prescient_cleaning_events_mismatch(cods_normalized_daily):
+    '''Test Kalman filter raises ValueError for mismatched prescient_cleaning_events length'''
+    cods = soiling.CODSAnalysis(cods_normalized_daily)
+
+    # Create prescient_cleaning_events with wrong length but sum > 4 to trigger check
+    events_data = [True, True, True, True, True, False, False, False, False, False]
+    wrong_length_events = pd.Series(
+        events_data, index=pd.date_range('2019/01/01', periods=10, freq='D'))
+
+    match = "The indices of prescient_cleaning_events must correspond"
+    with pytest.raises(ValueError, match=match):
+        cods._Kalman_filter_for_SR(cods_normalized_daily,
+                                   prescient_cleaning_events=wrong_length_events)
+
+
 def test_iterative_signal_decomposition(cods_normalized_daily):
     ''' Test iterative_signal_decomposition with fixed test case '''
     np.random.seed(1977)

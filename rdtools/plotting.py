@@ -1,10 +1,11 @@
 '''Functions for plotting degradation and soiling analysis results.'''
 
+import warnings
+
 import matplotlib.pyplot as plt
 import pandas as pd
 import plotly.express as px
 import numpy as np
-import warnings
 
 
 def degradation_summary_plots(yoy_rd, yoy_ci, yoy_info, normalized_yield,
@@ -138,14 +139,9 @@ def soiling_monte_carlo_plot(soiling_info, normalized_yield, point_alpha=0.5,
                              profile_alpha=0.05, ymin=None, ymax=None,
                              profiles=None, point_color=None,
                              profile_color='C1'):
-    '''
+    """
     Create figure to visualize Monte Carlo of soiling profiles used in the SRR
     analysis.
-
-    .. warning::
-        The soiling module is currently experimental. The API, results,
-        and default behaviors may change in future releases (including MINOR
-        and PATCH releases) as the code matures.
 
     Parameters
     ----------
@@ -173,13 +169,7 @@ def soiling_monte_carlo_plot(soiling_info, normalized_yield, point_alpha=0.5,
     Returns
     -------
     fig : matplotlib.figure.Figure
-    '''
-    warnings.warn(
-        'The soiling module is currently experimental. The API, results, '
-        'and default behaviors may change in future releases (including MINOR '
-        'and PATCH releases) as the code matures.', stacklevel=2
-    )
-
+    """
     fig, ax = plt.subplots()
     renormalized = normalized_yield / soiling_info['renormalizing_factor']
     ax.plot(renormalized.index, renormalized, 'o', alpha=point_alpha,
@@ -202,13 +192,8 @@ def soiling_monte_carlo_plot(soiling_info, normalized_yield, point_alpha=0.5,
 def soiling_interval_plot(soiling_info, normalized_yield, point_alpha=0.5,
                           profile_alpha=1, ymin=None, ymax=None,
                           point_color=None, profile_color=None):
-    '''
+    """
     Create figure to visualize valid soiling profiles used in the SRR analysis.
-
-    .. warning::
-        The soiling module is currently experimental. The API, results,
-        and default behaviors may change in future releases (including MINOR
-        and PATCH releases) as the code matures.
 
     Parameters
     ----------
@@ -233,13 +218,7 @@ def soiling_interval_plot(soiling_info, normalized_yield, point_alpha=0.5,
     Returns
     -------
     fig : matplotlib.figure.Figure
-    '''
-    warnings.warn(
-        'The soiling module is currently experimental. The API, results, '
-        'and default behaviors may change in future releases (including MINOR '
-        'and PATCH releases) as the code matures.', stacklevel=2
-    )
-
+    """
     sratio = soiling_info['soiling_ratio_perfect_clean']
     fig, ax = plt.subplots()
     renormalized = normalized_yield / soiling_info['renormalizing_factor']
@@ -254,13 +233,8 @@ def soiling_interval_plot(soiling_info, normalized_yield, point_alpha=0.5,
 
 
 def soiling_rate_histogram(soiling_info, bins=None):
-    '''
+    """
     Create histogram of soiling rates found in the SRR analysis.
-
-    .. warning::
-        The soiling module is currently experimental. The API, results,
-        and default behaviors may change in future releases (including MINOR
-        and PATCH releases) as the code matures.
 
     Parameters
     ----------
@@ -273,12 +247,7 @@ def soiling_rate_histogram(soiling_info, bins=None):
     Returns
     -------
     fig : matplotlib.figure.Figure
-    '''
-    warnings.warn(
-        'The soiling module is currently experimental. The API, results, '
-        'and default behaviors may change in future releases (including MINOR '
-        'and PATCH releases) as the code matures.', stacklevel=2
-    )
+    """
 
     soiling_summary = soiling_info['soiling_interval_summary']
     fig, ax = plt.subplots()
