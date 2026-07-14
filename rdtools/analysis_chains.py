@@ -824,6 +824,42 @@ class TrendAnalysis:
 
         return yoy_results
 
+    def _hybrid_degradation(self, energy_normalized, **kwargs):
+        """
+        Perform hybrid degradation analysis (OLS on year 1, year-on-year on
+        the remainder) on insolation-weighted aggregated energy yield.
+
+        Parameters
+        ----------
+        energy_normalized : pandas.Series
+            Time Series of insolation-weighted aggregated normalized PV energy
+        kwargs :
+            Extra parameters passed to
+            degradation.degradation_hybrid()
+
+        Returns
+        -------
+        dict
+            Hybrid degradation results with keys:
+            'rd_pct_year1' : Year-1 degradation rate from OLS, %/year of
+                             year-0 capacity.
+            'rd_pct_years2plus' : Steady-state degradation rate from
+                                  year-on-year, %/year of start-of-year-2
+                                  capacity (when recenter_year2=True).
+            'calc_info' : Dict of detailed results
+                          (see degradation.degradation_hybrid() docs)
+        """
+        self._filter_check(energy_normalized)
+        rd1, rd2, info = degradation.degradation_hybrid(
+            energy_normalized, **kwargs
+        )
+
+        return {
+            "rd_pct_year1": rd1,
+            "rd_pct_years2plus": rd2,
+            "calc_info": info,
+        }
+
     def _srr_soiling(self, energy_normalized_daily, insolation_daily, **kwargs):
         """
         Perform stochastic rate and recovery soiling analysis.
@@ -1001,7 +1037,8 @@ class TrendAnalysis:
         )
 
     def sensor_analysis(
-        self, analyses=["yoy_degradation"], yoy_kwargs={}, srr_kwargs={}
+        self, analyses=["yoy_degradation"], yoy_kwargs={}, srr_kwargs={},
+        hybrid_kwargs={}
     ):
         """
         Perform entire sensor-based analysis workflow.
@@ -1010,12 +1047,15 @@ class TrendAnalysis:
         Parameters
         ---------
         analyses : list
-            Analyses to perform as a list of strings. Valid entries are 'yoy_degradation'
-            and 'srr_soiling'
+            Analyses to perform as a list of strings. Valid entries are
+            'yoy_degradation', 'hybrid_degradation', and 'srr_soiling'.
         yoy_kwargs : dict
             kwargs to pass to :py:func:`rdtools.degradation.degradation_year_on_year`
         srr_kwargs : dict
             kwargs to pass to :py:func:`rdtools.soiling.soiling_srr`
+        hybrid_kwargs : dict
+            kwargs to pass to
+            :py:func:`rdtools.degradation.degradation_hybrid`
 
         Returns
         -------
@@ -1030,6 +1070,12 @@ class TrendAnalysis:
             )
             sensor_results["yoy_degradation"] = yoy_results
 
+        if "hybrid_degradation" in analyses:
+            hybrid_results = self._hybrid_degradation(
+                self.sensor_aggregated_performance, **hybrid_kwargs
+            )
+            sensor_results["hybrid_degradation"] = hybrid_results
+
         if "srr_soiling" in analyses:
             srr_results = self._srr_soiling(
                 self.sensor_aggregated_performance,
@@ -1041,7 +1087,8 @@ class TrendAnalysis:
         self.results["sensor"] = sensor_results
 
     def clearsky_analysis(
-        self, analyses=["yoy_degradation"], yoy_kwargs={}, srr_kwargs={}
+        self, analyses=["yoy_degradation"], yoy_kwargs={}, srr_kwargs={},
+        hybrid_kwargs={}
     ):
         """
         Perform entire clear-sky-based analysis workflow. Results are stored
@@ -1050,12 +1097,15 @@ class TrendAnalysis:
         Parameters
         ---------
         analyses : list
-            Analyses to perform as a list of strings. Valid entries are 'yoy_degradation'
-            and 'srr_soiling'
+            Analyses to perform as a list of strings. Valid entries are
+            'yoy_degradation', 'hybrid_degradation', and 'srr_soiling'.
         yoy_kwargs : dict
             kwargs to pass to :py:func:`rdtools.degradation.degradation_year_on_year`.
         srr_kwargs : dict
             kwargs to pass to :py:func:`rdtools.soiling.soiling_srr`
+        hybrid_kwargs : dict
+            kwargs to pass to
+            :py:func:`rdtools.degradation.degradation_hybrid`
 
         Returns
         -------
@@ -1070,6 +1120,12 @@ class TrendAnalysis:
                 self.clearsky_aggregated_performance, **yoy_kwargs
             )
             clearsky_results["yoy_degradation"] = yoy_results
+
+        if "hybrid_degradation" in analyses:
+            hybrid_results = self._hybrid_degradation(
+                self.clearsky_aggregated_performance, **hybrid_kwargs
+            )
+            clearsky_results["hybrid_degradation"] = hybrid_results
 
         if "srr_soiling" in analyses:
             srr_results = self._srr_soiling(
@@ -1109,6 +1165,43 @@ class TrendAnalysis:
         fig = plotting.degradation_summary_plots(
             results_dict["p50_rd"],
             results_dict["rd_confidence_interval"],
+            results_dict["calc_info"],
+            aggregated,
+            **kwargs,
+        )
+        return fig
+
+    def plot_hybrid_degradation_summary(self, case, **kwargs):
+        """
+        Return a figure of a scatter plot and a histogram summarizing the
+        two-piece hybrid (OLS year-1 + year-on-year years-2+) degradation
+        analysis.
+
+        Parameters
+        ----------
+        case : str
+            The workflow result to plot, allowed values are 'sensor' and 'clearsky'
+        kwargs :
+            Extra parameters passed to
+            :py:func:`rdtools.plotting.hybrid_degradation_summary_plots`
+
+        Returns
+        -------
+        matplotlib.figure.Figure
+        """
+
+        if case == "sensor":
+            results_dict = self.results["sensor"]["hybrid_degradation"]
+            aggregated = self.sensor_aggregated_performance
+        elif case == "clearsky":
+            results_dict = self.results["clearsky"]["hybrid_degradation"]
+            aggregated = self.clearsky_aggregated_performance
+        else:
+            raise ValueError("case must be either 'sensor' or 'clearsky'")
+
+        fig = plotting.hybrid_degradation_summary_plots(
+            results_dict["rd_pct_year1"],
+            results_dict["rd_pct_years2plus"],
             results_dict["calc_info"],
             aggregated,
             **kwargs,

@@ -55,7 +55,10 @@ Degradation
 
    degradation_classical_decomposition
    degradation_ols
+   degradation_theil_sen
+   degradation_fourier
    degradation_year_on_year
+   degradation_hybrid
 
 
 Soiling

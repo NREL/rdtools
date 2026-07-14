@@ -1,10 +1,11 @@
 import pandas as pd
 import numpy as np
-from rdtools.degradation import degradation_year_on_year
+from rdtools.degradation import degradation_year_on_year, degradation_hybrid
 from rdtools.filtering import logic_clip_filter
 from rdtools.soiling import soiling_srr
 from rdtools.plotting import (
     degradation_summary_plots,
+    hybrid_degradation_summary_plots,
     soiling_monte_carlo_plot,
     soiling_interval_plot,
     soiling_rate_histogram,
@@ -91,6 +92,55 @@ def test_degradation_summary_plots_kwargs(degradation_info):
     labels = [c for c in ax.get_children() if isinstance(c, matplotlib.text.Annotation)]
     text = labels[0].get_text()
     assert re.search(r'n = \d', text)
+    plt.close('all')
+
+
+@pytest.fixture()
+def hybrid_degradation_info(degradation_power_signal):
+    '''
+    Return results of running degradation_hybrid on the synthetic
+    power signal.
+
+    Returns
+    -------
+    power_signal : pd.Series
+    rd_pct_year1 : float
+    rd_pct_years2plus : float
+    calc_info : dict with keys ``year1``, ``years2plus``, ``split_date``,
+        ``renormalizing_factor_year2``
+    '''
+    rd1, rd2, info = degradation_hybrid(degradation_power_signal)
+    return degradation_power_signal, rd1, rd2, info
+
+
+def test_hybrid_degradation_summary_plots(hybrid_degradation_info):
+    power, rd1, rd2, info = hybrid_degradation_info
+
+    # test defaults
+    result = hybrid_degradation_summary_plots(rd1, rd2, info, power)
+    assert_isinstance(result, plt.Figure)
+    # two axes: scatter on the left, histogram on the right
+    assert len(result.axes) == 2
+    plt.close('all')
+
+
+def test_hybrid_degradation_summary_plots_kwargs(hybrid_degradation_info):
+    power, rd1, rd2, info = hybrid_degradation_info
+
+    kwargs = dict(
+        hist_xmin=-2,
+        hist_xmax=2,
+        bins=50,
+        scatter_ymin=0.5,
+        scatter_ymax=1.2,
+        year1_color='g',
+        years2plus_color='m',
+        summary_title='hybrid test',
+        scatter_alpha=1.0,
+    )
+    result = hybrid_degradation_summary_plots(rd1, rd2, info, power, **kwargs)
+    assert_isinstance(result, plt.Figure)
+    assert result._suptitle.get_text() == 'hybrid test'
     plt.close('all')
 
 
