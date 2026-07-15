@@ -224,6 +224,11 @@ def _(mo):
         show_value=True,
     )
     log_toggle = mo.ui.switch(label='Log-transform input', value=False)
+    lam_end_slider = mo.ui.slider(
+        start=0.0, stop=10.0, step=0.1, value=0.0,
+        label='λ end-drop',
+        show_value=True,
+    )
 
     loss_specific = mo.vstack([
         mo.md('**Loss-specific parameters**'),
@@ -231,6 +236,14 @@ def _(mo):
         mo.md(
             '_q is used only for `quantile` loss; '
             'M is used only for `huber` loss._'
+        ),
+    ])
+    monotone_specific = mo.vstack([
+        mo.md('**Monotone end-drop penalty**'),
+        lam_end_slider,
+        mo.md(
+            '_λ end-drop penalises large drops in the final ~10 % of the record. '
+            'Only used for `monotone` trend type; 0 disables it._'
         ),
     ])
     controls = mo.vstack([
@@ -246,12 +259,15 @@ def _(mo):
         mo.md('---'),
         loss_specific,
         mo.md('---'),
+        monotone_specific,
+        mo.md('---'),
         log_toggle,
         mo.md('---'),
     ])
     return (
         controls,
         huber_m_slider,
+        lam_end_slider,
         lam_seasonal_slider,
         lam_trend_slider,
         log_toggle,
@@ -271,6 +287,7 @@ def _(controls):
 @app.cell
 def _(
     huber_m_slider,
+    lam_end_slider,
     lam_seasonal_slider,
     lam_trend_slider,
     log_toggle,
@@ -286,6 +303,7 @@ def _(
         'numharmonics':  numharmonics_slider.value,
         'lam_seasonal':  10 ** lam_seasonal_slider.value,
         'lam_trend':     10 ** lam_trend_slider.value,
+        'lam_end':       lam_end_slider.value,
         'q':             q_slider.value,
         'huber_M':       huber_m_slider.value,
         'log_transform': log_toggle.value,

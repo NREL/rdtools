@@ -42,6 +42,21 @@ def _get_kwargs(func, locals_dict):
     return {k: locals_dict[k] for k in inspect.signature(func).parameters}
 
 
+def _end_drop_weights(N, frac_start=0.90, frac_end=0.95, end_scale=1.0, base=0.0):
+    """
+    Weights for the first-difference (drop) penalty, length N-1.
+
+    base       : weight in the bulk of the series (0.0 = no extra penalty there).
+    end_scale  : weight reached in the end region. LARGER = stronger prior
+                 that end drops are unlikely -> flatter tail.
+    frac_start : fraction of N where the end region begins.
+    frac_end   : fraction of N where end_scale is fully reached.
+    """
+    L = N - 1
+    pos = (np.arange(L) + 0.5) / N            # location of each difference
+    ramp = np.clip((pos - frac_start) / (frac_end - frac_start), 0.0, 1.0)
+    return base + (end_scale - base) * ramp
+
 # ---------------------------------------------------------------------------
 # Core decomposition
 # ---------------------------------------------------------------------------
@@ -53,6 +68,8 @@ def make_problem(
     loss='l2',
     lam_seasonal=1e-1,
     lam_trend=1e0,
+    lam_end=0.0,
+    end_frac=(0.90, 0.95),
     q=0.75,
     huber_M=1.0,
     T=365.2425,
@@ -70,7 +87,8 @@ def make_problem(
       - ``'pwl'``      : piecewise-linear with one breakpoint after the first
         year (index ``int(T)``), continuity enforced at the knot
       - ``'monotone'`` : free signal constrained to be non-increasing
-        (``diff(x2) <= 0``), regularised on second differences
+        (``diff(x2) <= 0``), regularised on second differences plus an
+        optional end-drop penalty (see *lam_end* / *end_frac*)
 
     - **x3** – Residual, penalised according to *loss*:
 
@@ -95,7 +113,18 @@ def make_problem(
     lam_seasonal : float
         Regularisation weight on Fourier coefficients.
     lam_trend : float
-        Regularisation weight on trend smoothness.
+        Regularisation weight on trend smoothness (second differences for
+        ``'monotone'``; slope magnitude for ``'linear'`` and ``'pwl'``).
+    lam_end : float
+        End-drop penalty weight; only used when ``trend_type='monotone'``.
+        Adds a weighted penalty on first differences (drops) in the tail
+        region of the series to discourage large, late-record declines that
+        may be artefacts of noise or missing data. ``0.0`` disables the
+        penalty entirely (default).
+    end_frac : tuple of float, (frac_start, frac_end)
+        Fraction-of-record positions at which the end-drop penalty ramps
+        from zero to *lam_end*. Only used when ``trend_type='monotone'``
+        and ``lam_end > 0``. Default ``(0.90, 0.95)``.
     q : float
         Quantile level in (0, 1); only used when ``loss='quantile'``.
     huber_M : float
@@ -150,7 +179,11 @@ def make_problem(
     elif trend_type == 'monotone':
         x2 = cp.Variable(N, name='x2_monotone')
         trend_constraints = [cp.diff(x2) <= 0]
-        trend_reg = lam_trend * cp.sum_squares(cp.diff(x2, k=2))
+        drop = cp.diff(x2)
+        w = _end_drop_weights(N, frac_start=end_frac[0], frac_end=end_frac[1],
+                              end_scale=lam_end)
+        trend_reg = (lam_trend * cp.sum_squares(cp.diff(x2, k=2))
+                     + cp.sum_squares(cp.multiply(w, drop)))
 
     else:
         raise ValueError(
@@ -1090,12 +1123,19 @@ def format_degradation_report(sd_trend_results):
             f"trend_type must be 'linear', 'pwl', or 'monotone'; got '{trend_type}'"
         )
 
+    end_penalty_str = (
+        f" | **λ end:** {args['lam_end']:.2e}"
+        if trend_type == 'monotone' and args.get('lam_end', 0.0) > 0
+        else ""
+    )
+
     return (
         f"## Degradation report\n\n"
         f"**Trend type:** `{trend_type}` | **Loss:** `{args['loss']}` | "
         f"**Harmonics:** {args['numharmonics']} | "
         f"**λ seasonal:** {args['lam_seasonal']:.2e} | "
-        f"**λ trend:** {args['lam_trend']:.2e}\n\n"
+        f"**λ trend:** {args['lam_trend']:.2e}"
+        f"{end_penalty_str}\n\n"
         f"| Segment | Rate |\n"
         f"|---|---|\n"
         f"{body}\n\n"
@@ -1115,6 +1155,8 @@ def degradation(
     numharmonics=6,
     lam_seasonal=1e-1,
     lam_trend=1e0,
+    lam_end=0.0,
+    end_frac=(0.90, 0.95),
     q=0.75,
     huber_M=1.0,
     log_transform=False,
@@ -1150,6 +1192,13 @@ def degradation(
         Regularisation weight on Fourier coefficients.
     lam_trend : float
         Regularisation weight on trend smoothness.
+    lam_end : float
+        End-drop penalty weight; only used when ``trend_type='monotone'``.
+        See :func:`make_problem` for details. ``0.0`` disables it (default).
+    end_frac : tuple of float
+        ``(frac_start, frac_end)`` ramp positions for the end-drop penalty.
+        Only used when ``trend_type='monotone'`` and ``lam_end > 0``.
+        Default ``(0.90, 0.95)``.
     q : float
         Quantile level in (0, 1); only used when ``loss='quantile'``.
     huber_M : float
@@ -1200,6 +1249,8 @@ def degradation(
         loss=loss,
         lam_seasonal=lam_seasonal,
         lam_trend=lam_trend,
+        lam_end=lam_end,
+        end_frac=end_frac,
         q=q,
         huber_M=huber_M,
         T=T,
