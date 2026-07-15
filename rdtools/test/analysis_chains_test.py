@@ -845,6 +845,36 @@ def test_plot_hybrid_degradation_cs(clearsky_analysis_hybrid):
     )
 
 
+@pytest.fixture
+def sensor_analysis_sd(sensor_parameters):
+    rd_analysis = TrendAnalysis(**sensor_parameters)
+    rd_analysis.sensor_analysis(analyses=["signal_decomposition"])
+    return rd_analysis
+
+
+@pytest.fixture
+def clearsky_analysis_sd(cs_input, clearsky_parameters):
+    rd_analysis = TrendAnalysis(**clearsky_parameters)
+    rd_analysis.set_clearsky(**cs_input)
+    rd_analysis.filter_params["clearsky_filter"] = {"model": "csi"}
+    rd_analysis.clearsky_analysis(analyses=["signal_decomposition"])
+    return rd_analysis
+
+
+def test_plot_signal_decomposition_sensor(sensor_analysis_sd):
+    assert_isinstance(
+        sensor_analysis_sd.plot_signal_decomposition_summary("sensor"),
+        plt.Figure,
+    )
+
+
+def test_plot_signal_decomposition_clearsky(clearsky_analysis_sd):
+    assert_isinstance(
+        clearsky_analysis_sd.plot_signal_decomposition_summary("clearsky"),
+        plt.Figure,
+    )
+
+
 def test_plot_soiling(soiling_analysis_sensor):
     assert_isinstance(
         soiling_analysis_sensor.plot_soiling_monte_carlo("sensor"), plt.Figure
@@ -922,6 +952,7 @@ def test_clip_filter_frequency_error(basic_parameters):
     [
         "plot_degradation_summary",
         "plot_hybrid_degradation_summary",
+        "plot_signal_decomposition_summary",
         "plot_soiling_monte_carlo",
         "plot_soiling_interval",
         "plot_soiling_rate_histogram",

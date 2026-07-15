@@ -16,6 +16,7 @@ analysis workflow.
 
    analysis_chains
    degradation
+   signal_decomposition
    soiling
    availability
    filtering
@@ -42,6 +43,30 @@ Object-oriented end-to-end analysis
    analysis_chains.TrendAnalysis.plot_soiling_monte_carlo
    analysis_chains.TrendAnalysis.plot_pv_vs_irradiance
    analysis_chains.TrendAnalysis.plot_degradation_timeseries
+   analysis_chains.TrendAnalysis.plot_signal_decomposition_summary
+
+
+Signal Decomposition
+====================
+
+.. automodule:: rdtools.signal_decomposition
+   :noindex:
+
+.. autosummary::
+   :toctree: generated/
+
+   signal_decomposition.degradation
+   signal_decomposition.make_problem
+   signal_decomposition.prepare_input
+   signal_decomposition.recover_components
+   signal_decomposition.extract_degradation_rate
+   signal_decomposition.extract_degradation_rate_log
+   signal_decomposition.get_valid_endpoints
+   signal_decomposition.analyze_fit_stability
+   signal_decomposition.plot_decomposition
+   signal_decomposition.plot_stability
+   signal_decomposition.animate_degradation
+   signal_decomposition.format_degradation_report
 
 
 Degradation

@@ -9,6 +9,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from rdtools import normalization, filtering, aggregation, degradation
 from rdtools import clearsky_temperature, plotting, utilities
+from rdtools import signal_decomposition
 import warnings
 
 
@@ -860,6 +861,38 @@ class TrendAnalysis:
             "calc_info": info,
         }
 
+    def _signal_decomposition_degradation(self, energy_normalized, **kwargs):
+        """
+        Perform signal-decomposition degradation analysis.
+
+        Parameters
+        ----------
+        energy_normalized : pandas.Series
+            Time series of insolation-weighted aggregated normalized PV energy.
+        kwargs :
+            Extra parameters passed to
+            :py:func:`rdtools.signal_decomposition.degradation`
+
+        Returns
+        -------
+        dict
+            Signal decomposition results with keys:
+
+            'rd_pct' : Overall degradation rate (%/year).
+            'rd_confidence_interval' : ``np.array([nan, nan])`` stub.
+            'sd_trend_results' : Full results dict from
+                :py:func:`rdtools.signal_decomposition.degradation`.
+        """
+        self._filter_check(energy_normalized)
+        rd, ci, info = signal_decomposition.degradation(
+            energy_normalized, **kwargs
+        )
+        return {
+            "rd_pct": rd,
+            "rd_confidence_interval": ci,
+            "sd_trend_results": info,
+        }
+
     def _srr_soiling(self, energy_normalized_daily, insolation_daily, **kwargs):
         """
         Perform stochastic rate and recovery soiling analysis.
@@ -1038,7 +1071,7 @@ class TrendAnalysis:
 
     def sensor_analysis(
         self, analyses=["yoy_degradation"], yoy_kwargs={}, srr_kwargs={},
-        hybrid_kwargs={}
+        hybrid_kwargs={}, sd_kwargs={}
     ):
         """
         Perform entire sensor-based analysis workflow.
@@ -1048,7 +1081,8 @@ class TrendAnalysis:
         ---------
         analyses : list
             Analyses to perform as a list of strings. Valid entries are
-            'yoy_degradation', 'hybrid_degradation', and 'srr_soiling'.
+            'yoy_degradation', 'hybrid_degradation', 'srr_soiling', and
+            'signal_decomposition'.
         yoy_kwargs : dict
             kwargs to pass to :py:func:`rdtools.degradation.degradation_year_on_year`
         srr_kwargs : dict
@@ -1056,6 +1090,9 @@ class TrendAnalysis:
         hybrid_kwargs : dict
             kwargs to pass to
             :py:func:`rdtools.degradation.degradation_hybrid`
+        sd_kwargs : dict
+            kwargs to pass to
+            :py:func:`rdtools.signal_decomposition.degradation`
 
         Returns
         -------
@@ -1084,11 +1121,17 @@ class TrendAnalysis:
             )
             sensor_results["srr_soiling"] = srr_results
 
+        if "signal_decomposition" in analyses:
+            sd_results = self._signal_decomposition_degradation(
+                self.sensor_aggregated_performance, **sd_kwargs
+            )
+            sensor_results["signal_decomposition"] = sd_results
+
         self.results["sensor"] = sensor_results
 
     def clearsky_analysis(
         self, analyses=["yoy_degradation"], yoy_kwargs={}, srr_kwargs={},
-        hybrid_kwargs={}
+        hybrid_kwargs={}, sd_kwargs={}
     ):
         """
         Perform entire clear-sky-based analysis workflow. Results are stored
@@ -1098,7 +1141,8 @@ class TrendAnalysis:
         ---------
         analyses : list
             Analyses to perform as a list of strings. Valid entries are
-            'yoy_degradation', 'hybrid_degradation', and 'srr_soiling'.
+            'yoy_degradation', 'hybrid_degradation', 'srr_soiling', and
+            'signal_decomposition'.
         yoy_kwargs : dict
             kwargs to pass to :py:func:`rdtools.degradation.degradation_year_on_year`.
         srr_kwargs : dict
@@ -1106,6 +1150,9 @@ class TrendAnalysis:
         hybrid_kwargs : dict
             kwargs to pass to
             :py:func:`rdtools.degradation.degradation_hybrid`
+        sd_kwargs : dict
+            kwargs to pass to
+            :py:func:`rdtools.signal_decomposition.degradation`
 
         Returns
         -------
@@ -1134,6 +1181,12 @@ class TrendAnalysis:
                 **srr_kwargs,
             )
             clearsky_results["srr_soiling"] = srr_results
+
+        if "signal_decomposition" in analyses:
+            sd_results = self._signal_decomposition_degradation(
+                self.clearsky_aggregated_performance, **sd_kwargs
+            )
+            clearsky_results["signal_decomposition"] = sd_results
 
         self.results["clearsky"] = clearsky_results
 
@@ -1205,6 +1258,36 @@ class TrendAnalysis:
             results_dict["calc_info"],
             aggregated,
             **kwargs,
+        )
+        return fig
+
+    def plot_signal_decomposition_summary(self, case, **kwargs):
+        """
+        Return a figure of the seasonal-trend decomposition for the
+        signal-decomposition degradation analysis.
+
+        Parameters
+        ----------
+        case : str
+            The workflow result to plot, allowed values are 'sensor' and
+            'clearsky'.
+        kwargs :
+            Extra parameters passed to
+            :py:func:`rdtools.signal_decomposition.plot_decomposition`
+
+        Returns
+        -------
+        matplotlib.figure.Figure
+        """
+        if case == "sensor":
+            results_dict = self.results["sensor"]["signal_decomposition"]
+        elif case == "clearsky":
+            results_dict = self.results["clearsky"]["signal_decomposition"]
+        else:
+            raise ValueError("case must be either 'sensor' or 'clearsky'")
+
+        fig = signal_decomposition.plot_decomposition(
+            results_dict["sd_trend_results"], **kwargs
         )
         return fig
 
