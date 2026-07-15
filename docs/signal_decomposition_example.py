@@ -13,7 +13,7 @@ def _():
     import rdtools
     from rdtools import signal_decomposition as sd
 
-    return mo, pd, rdtools, sd
+    return mo, pd, plt, rdtools, sd
 
 
 @app.cell(hide_code=True)
@@ -199,17 +199,17 @@ def _(mo):
         label='Loss function',
     )
     numharmonics_slider = mo.ui.slider(
-        start=1, stop=20, step=1, value=6,
+        start=1, stop=20, step=1, value=3,
         label='Num harmonics',
         show_value=True,
     )
     lam_seasonal_slider = mo.ui.slider(
-        start=-4, stop=2, step=0.25, value=-1,
+        start=-4, stop=2, step=0.1, value=-1,
         label='λ seasonal (log₁₀)',
         show_value=True,
     )
     lam_trend_slider = mo.ui.slider(
-        start=-4, stop=4, step=0.25, value=0,
+        start=-4, stop=4, step=0.1, value=0,
         label='λ trend (log₁₀)',
         show_value=True,
     )
@@ -307,14 +307,20 @@ def _(mo, results, sd):
 
 
 @app.cell
-def _(results, sd, ta):
+def _(plt, results, sd, ta):
     sd.plot_trend(results['sd_trend_results'], ta.sensor_aggregated_performance)
+    plt.ylim(0.6, 1)
+    plt.gcf()
     return
 
 
 @app.cell
-def _(results, sd):
+def _(plt, results, sd):
     sd.plot_decomposition(results['sd_trend_results'])
+    _fig = plt.gcf()
+    _fig.get_axes()[0]\
+        .set_ylim(0.6, 1)
+    _fig
     return
 
 

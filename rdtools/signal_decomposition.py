@@ -776,13 +776,14 @@ def plot_trend(sd_trend_results, energy_normalized, figsize=(8, 5)):
     -------
     matplotlib.figure.Figure
     """
+    plt.style.use('tableau-colorblind10')
     x2 = sd_trend_results['components']['x2']
 
     fig, ax = plt.subplots(figsize=figsize)
-    energy_normalized.plot(ax=ax, color='#aaaaaa', lw=0.8,
-                           label='normalized daily energy')
-    ax.plot(energy_normalized.index, x2, color='#27a865', lw=1.5,
-            label='trend')
+    energy_normalized.plot(ax=ax, lw=0.8,
+                           label='normalized daily energy', marker='.',
+                           ls='none', ms=1)
+    ax.plot(energy_normalized.index, x2, lw=1.5, label='trend')
     ax.legend(fontsize=9, framealpha=0.7)
     ax.spines[['top', 'right']].set_visible(False)
     plt.tight_layout()
@@ -810,6 +811,7 @@ def plot_decomposition(sd_trend_results, figsize=(12, 10)):
     -------
     matplotlib.figure.Figure
     """
+    plt.style.use('tableau-colorblind10')
     y = sd_trend_results['y']
     components = sd_trend_results['components']
 
@@ -826,26 +828,26 @@ def plot_decomposition(sd_trend_results, figsize=(12, 10)):
     fig.subplots_adjust(hspace=0.08)
 
     ax = axes[0]
-    ax.plot(t, y, color='#aaaaaa', lw=0.8, label='Measured y', zorder=1)
-    ax.plot(t, fit, color='#e05c2a', lw=1.5, label='Fit (x1+x2)', zorder=2)
+    ax.plot(t, y, lw=0.8, label='Measured y', zorder=1)
+    ax.plot(t, fit, lw=1.5, label='Fit (x1+x2)', zorder=2)
     ax.set_ylabel('y')
     ax.legend(loc='upper right', fontsize=8, framealpha=0.7)
     ax.set_title('Decomposition', fontsize=11, fontweight='bold')
 
     ax = axes[1]
-    ax.plot(t, x1, color='#2a7de0', lw=1.2)
+    ax.plot(t, x1, lw=1.2)
     ax.axhline(x3_ref, color='black', lw=0.5, ls='--')
     ax.set_ylabel('x1  (seasonal)')
 
     ax = axes[2]
-    ax.plot(t, x2, color='#27a865', lw=1.5)
+    ax.plot(t, x2, lw=1.5)
     ax.set_ylabel('x2  (trend)')
 
     ax = axes[3]
     ax.fill_between(t, x3, x3_ref,
-                    where=(x3 >= x3_ref), color='#e05c2a', alpha=0.5, lw=0)
+                    where=(x3 >= x3_ref), alpha=0.5, lw=0)
     ax.fill_between(t, x3, x3_ref,
-                    where=(x3 < x3_ref), color='#2a7de0', alpha=0.5, lw=0)
+                    where=(x3 < x3_ref), alpha=0.5, lw=0)
     ax.axhline(x3_ref, color='black', lw=0.7)
     ax.set_ylabel('x3  (residual)')
     ax.set_xlabel('Sample index')
