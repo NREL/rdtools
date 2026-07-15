@@ -595,6 +595,7 @@ def analyze_fit_stability(
     - ``'convergence_tol'`` : float — tolerance used for ``converged_at``
     """
     y_full = np.asarray(y_full, dtype=float)
+    make_problem_kwargs = {k: v for k, v in make_problem_kwargs.items() if k != 'y'}
     N = len(y_full)
     trend_type = make_problem_kwargs.get('trend_type', 'linear')
     frame_lengths = get_valid_endpoints(y_full, step=step, T=T)
@@ -944,6 +945,7 @@ def animate_degradation(
     matplotlib.animation.FuncAnimation
     """
     y_full = np.asarray(y_full, dtype=float)
+    make_problem_kwargs = {k: v for k, v in make_problem_kwargs.items() if k != 'y'}
     N = len(y_full)
     t_full = np.arange(N)
 
