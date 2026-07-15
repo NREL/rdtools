@@ -202,6 +202,9 @@ class TrendAnalysis:
         if power_expected is not None and temperature_cell is None:
             del self.filter_params["tcell_filter"]
 
+        self._sensor_preprocessed = False
+        self._clearsky_preprocessed = False
+
     @property
     def filter_params(self):
         return self._filter_params
@@ -1000,6 +1003,7 @@ class TrendAnalysis:
         self.sensor_aggregated_insolation = self.sensor_aggregated_insolation.resample(
             self.aggregation_freq, origin="start_day"
         ).asfreq()
+        self._sensor_preprocessed = True
 
     def _clearsky_preprocess(self):
         """
@@ -1068,10 +1072,11 @@ class TrendAnalysis:
                 self.aggregation_freq, origin="start_day"
             ).asfreq()
         )
+        self._clearsky_preprocessed = True
 
     def sensor_analysis(
         self, analyses=["yoy_degradation"], yoy_kwargs={}, srr_kwargs={},
-        hybrid_kwargs={}, sd_kwargs={}
+        hybrid_kwargs={}, sd_kwargs={}, skip_preprocess=False
     ):
         """
         Perform entire sensor-based analysis workflow.
@@ -1093,12 +1098,20 @@ class TrendAnalysis:
         sd_kwargs : dict
             kwargs to pass to
             :py:func:`rdtools.signal_decomposition.degradation`
+        skip_preprocess : bool, default False
+            If True and preprocessing has already been performed, skip
+            :py:meth:`_sensor_preprocess`. Useful when calling
+            ``sensor_analysis`` repeatedly with only ``sd_kwargs`` changing
+            (e.g. a reactive notebook). Note: if ``filter_params`` have been
+            modified since the last preprocess, set this to False to pick up
+            the changes.
 
         Returns
         -------
         None
         """
-        self._sensor_preprocess()
+        if not (skip_preprocess and self._sensor_preprocessed):
+            self._sensor_preprocess()
         sensor_results = {}
 
         if "yoy_degradation" in analyses:
@@ -1131,7 +1144,7 @@ class TrendAnalysis:
 
     def clearsky_analysis(
         self, analyses=["yoy_degradation"], yoy_kwargs={}, srr_kwargs={},
-        hybrid_kwargs={}, sd_kwargs={}
+        hybrid_kwargs={}, sd_kwargs={}, skip_preprocess=False
     ):
         """
         Perform entire clear-sky-based analysis workflow. Results are stored
@@ -1153,13 +1166,20 @@ class TrendAnalysis:
         sd_kwargs : dict
             kwargs to pass to
             :py:func:`rdtools.signal_decomposition.degradation`
+        skip_preprocess : bool, default False
+            If True and preprocessing has already been performed, skip
+            :py:meth:`_clearsky_preprocess`. Useful when calling
+            ``clearsky_analysis`` repeatedly with only ``sd_kwargs`` changing
+            (e.g. a reactive notebook). Note: if ``filter_params`` have been
+            modified since the last preprocess, set this to False to pick up
+            the changes.
 
         Returns
         -------
         None
         """
-
-        self._clearsky_preprocess()
+        if not (skip_preprocess and self._clearsky_preprocessed):
+            self._clearsky_preprocess()
         clearsky_results = {}
 
         if "yoy_degradation" in analyses:

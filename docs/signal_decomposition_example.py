@@ -290,7 +290,8 @@ def _(
         'huber_M':       huber_m_slider.value,
         'log_transform': log_toggle.value,
     }
-    ta.sensor_analysis(analyses=['signal_decomposition'], sd_kwargs=sd_kwargs)
+    ta.sensor_analysis(analyses=['signal_decomposition'], sd_kwargs=sd_kwargs,
+                       skip_preprocess=True)
     results = ta.results['sensor']['signal_decomposition']
     rd = results['rd_pct']
     print(f"Rd = {rd:+.3f} %/yr  |  solver: {results['sd_trend_results']['problem_status']}")
