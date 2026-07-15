@@ -1,3 +1,6 @@
+# local prototypes (not for version control)
+prototypes/
+
 # ignore data files
 *.[ct]sv
 *.zip
