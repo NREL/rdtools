@@ -78,6 +78,7 @@ notebooks = [
     "numexpr >= 2.10.2",
     "tabulate >= 0.9.0",
     "lxml",
+    "marimo >= 0.9.0",
 ]
 dev = [
     "rdtools[notebooks,test]",
@@ -187,6 +188,7 @@ dev-min = { features = ["test", "min", "py310"] }
 
 [tool.pixi.feature.notebooks.tasks]
 lab = "jupyter lab docs/"
+mo-home = "marimo edit docs/"
 
 [tool.pixi.feature.test.tasks]
 test = "pytest --cov=rdtools --cov-report=xml rdtools/test/"

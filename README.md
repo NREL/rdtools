@@ -49,15 +49,30 @@ For development, use the `dev` environment which includes both notebook
 and test dependencies:
 
 ```
-pixi shell -e dev     # activate the dev environment
-pixi run -e dev test  # run pytest with coverage
-pixi run -e dev nbval # validate notebooks
-pixi run -e dev lab   # launch Jupyter Lab
+pixi shell -e dev       # activate the dev environment
+pixi run -e dev test    # run pytest with coverage
+pixi run -e dev nbval   # validate notebooks
+pixi run -e dev lab     # launch Jupyter Lab
+pixi run -e dev mo-home # launch Marimo home page in docs/ folder
 ```
 
 For API documentation and full examples, please see the [documentation](https://rdtools.readthedocs.io).
 
 RdTools currently is tested on Python 3.10+.
+
+### Marimo 
+
+[Marimo](https://www.marimo.io) is an open-source reactive notebook. More information on the "home page" [here](https://docs.marimo.io/guides/editor_features/home/). 
+
+Edit a specific notebook by running:
+```
+pixi run -e dev marimo edit docs/signal_decomposition_example.py
+```
+Run a specific notebook in "app mode" (code hidden):
+```
+pixi run -e dev marimo run docs/signal_decomposition_example.py
+```
+
 
 ## Citing RdTools
 
