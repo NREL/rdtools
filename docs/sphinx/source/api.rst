@@ -63,6 +63,7 @@ Signal Decomposition
    signal_decomposition.extract_degradation_rate_log
    signal_decomposition.get_valid_endpoints
    signal_decomposition.analyze_fit_stability
+   signal_decomposition.plot_trend
    signal_decomposition.plot_decomposition
    signal_decomposition.plot_stability
    signal_decomposition.animate_degradation

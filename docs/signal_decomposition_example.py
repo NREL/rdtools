@@ -307,6 +307,12 @@ def _(mo, results, sd):
 
 
 @app.cell
+def _(results, sd, ta):
+    sd.plot_trend(results['sd_trend_results'], ta.sensor_aggregated_performance)
+    return
+
+
+@app.cell
 def _(results, sd):
     sd.plot_decomposition(results['sd_trend_results'])
     return

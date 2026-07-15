@@ -757,6 +757,38 @@ def plot_stability(stability, T=365.2425, figsize=(12, 10)):
     return fig
 
 
+def plot_trend(sd_trend_results, energy_normalized, figsize=(8, 5)):
+    """
+    Plot normalised daily energy with the fitted trend overlaid.
+
+    Parameters
+    ----------
+    sd_trend_results : dict
+        Output of :func:`degradation` (the third return value).
+    energy_normalized : pandas.Series
+        Normalised daily energy with a datetime index — typically
+        ``TrendAnalysis.sensor_aggregated_performance`` or
+        ``TrendAnalysis.clearsky_aggregated_performance``.
+    figsize : tuple
+        Figure size in inches.
+
+    Returns
+    -------
+    matplotlib.figure.Figure
+    """
+    x2 = sd_trend_results['components']['x2']
+
+    fig, ax = plt.subplots(figsize=figsize)
+    energy_normalized.plot(ax=ax, color='#aaaaaa', lw=0.8,
+                           label='normalized daily energy')
+    ax.plot(energy_normalized.index, x2, color='#27a865', lw=1.5,
+            label='trend')
+    ax.legend(fontsize=9, framealpha=0.7)
+    ax.spines[['top', 'right']].set_visible(False)
+    plt.tight_layout()
+    return fig
+
+
 def plot_decomposition(sd_trend_results, figsize=(12, 10)):
     """
     Four-panel seasonal-trend decomposition plot.
