@@ -494,6 +494,65 @@ def extract_degradation_rate_log(variables, trend_type, T=365.2425):
         )
 
 
+_MIN_SUCCESS_FRAC = 0.5
+
+
+def _bootstrap_ci(
+    fit,
+    residuals,
+    nan_mask,
+    make_problem_args,
+    trend_type,
+    log_transform,
+    T,
+    n_bootstrap,
+    block_size,
+    confidence_level,
+    random_state,
+):
+    if n_bootstrap == 0:
+        return np.array([np.nan, np.nan])
+
+    rng = np.random.default_rng(random_state)
+    if block_size is None:
+        block_size = int(T)
+
+    valid_idx = np.where(~nan_mask)[0]
+    res_valid = residuals[valid_idx]
+    M = res_valid.size
+    L = min(block_size, M)
+    n_blocks = int(np.ceil(M / L))
+
+    extractor = extract_degradation_rate_log if log_transform else extract_degradation_rate
+    rate_key = 'rate_pct_yr' if trend_type == 'linear' else 'rate_overall_pct_yr'
+
+    collected = []
+    for _ in range(n_bootstrap):
+        starts = rng.integers(0, M - L + 1, size=n_blocks)
+        resampled = np.concatenate([res_valid[s:s + L] for s in starts])[:M]
+
+        y_star = fit.copy()
+        y_star[valid_idx] += resampled
+        y_star[nan_mask] = np.nan
+
+        try:
+            b = make_problem(y_star, **make_problem_args)
+            b['problem'].solve(solver=cp.CLARABEL)
+            if b['problem'].status not in ('optimal', 'optimal_inaccurate'):
+                continue
+            rates = extractor(b['variables'], trend_type, T=T)
+            collected.append(rates[rate_key])
+        except Exception:
+            continue
+
+    if len(collected) < _MIN_SUCCESS_FRAC * n_bootstrap:
+        return np.array([np.nan, np.nan])
+
+    lower_pct = (100 - confidence_level) / 2
+    upper_pct = 100 - lower_pct
+    return np.array(np.percentile(collected, [lower_pct, upper_pct]))
+
+
 # ---------------------------------------------------------------------------
 # Stability analysis
 # ---------------------------------------------------------------------------
@@ -1163,6 +1222,9 @@ def degradation(
     huber_M=1.0,
     log_transform=False,
     confidence_level=68.2,
+    n_bootstrap=500,
+    block_size=None,
+    random_state=None,
 ):
     """
     Signal-decomposition degradation analysis.
@@ -1174,9 +1236,9 @@ def degradation(
     Assumes daily aggregation (``T = 365.2425`` samples/year). Non-daily
     ``aggregation_freq`` support is future work.
 
-    The confidence interval is not yet implemented; ``Rd_CI`` is a stub
-    ``np.array([np.nan, np.nan])``. The ``confidence_level`` parameter is
-    accepted for API symmetry but unused.
+    The confidence interval is computed via a moving-block bootstrap over the
+    fitted residuals, respecting residual autocorrelation. See ``n_bootstrap``,
+    ``block_size``, and ``confidence_level`` for controls.
 
     Parameters
     ----------
@@ -1211,7 +1273,23 @@ def degradation(
         Rates are computed as compound annual rates via
         :func:`extract_degradation_rate_log`.
     confidence_level : float
-        Accepted for API symmetry; unused. CI estimation is future work.
+        Confidence level for ``Rd_CI`` in percent (e.g. ``68.2`` for ≈1σ,
+        ``95`` for 95%). The interval is the empirical
+        ``[(100 - confidence_level)/2, 100 - (100 - confidence_level)/2]``
+        percentiles of the bootstrap distribution. Default ``68.2``.
+    n_bootstrap : int
+        Number of bootstrap replicates. Larger values give a more stable CI
+        estimate at proportionally higher cost. Default ``500``. Set to ``0``
+        to skip the CI entirely and return ``[nan, nan]`` immediately — useful
+        for fast interactive exploration.
+    block_size : int or None
+        Length (in samples) of each contiguous block used in the moving-block
+        bootstrap. ``None`` (default) uses ``int(T)`` ≈ one year, which
+        preserves low-frequency residual dependence relevant for trend-slope
+        uncertainty.
+    random_state : int or None
+        Seed for the random number generator. ``None`` (default) gives a
+        different result each call; an integer makes the CI reproducible.
 
     Returns
     -------
@@ -1220,7 +1298,9 @@ def degradation(
         is ``rate_pct_yr``; for ``'pwl'`` and ``'monotone'`` it is
         ``rate_overall_pct_yr``.
     Rd_CI : numpy.ndarray, shape (2,)
-        Confidence interval stub — always ``[nan, nan]``.
+        ``[lower, upper]`` confidence interval on the degradation rate
+        (%/year) at ``confidence_level``, computed via moving-block bootstrap.
+        Returns ``[nan, nan]`` if fewer than half of bootstrap solves succeed.
     sd_trend_results : dict
         Full results dict. Keys:
 
@@ -1276,7 +1356,23 @@ def degradation(
     else:
         Rd_pct = rates['rate_overall_pct_yr']
 
-    Rd_CI = np.array([np.nan, np.nan])
+    fit_work = variables['x1'].value + variables['x2'].value
+    residuals_work = variables['x3'].value
+    nan_mask = np.isnan(y_input)
+
+    Rd_CI = _bootstrap_ci(
+        fit=fit_work,
+        residuals=residuals_work,
+        nan_mask=nan_mask,
+        make_problem_args={k: v for k, v in build['args'].items() if k != 'y'},
+        trend_type=trend_type,
+        log_transform=log_transform,
+        T=T,
+        n_bootstrap=n_bootstrap,
+        block_size=block_size,
+        confidence_level=confidence_level,
+        random_state=random_state,
+    )
 
     components = recover_components(variables, log_transform=log_transform)
 

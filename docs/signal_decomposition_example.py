@@ -146,7 +146,7 @@ def _(ta):
         f"YoY whole-series:  Rd = {yoy['p50_rd']:+.3f} %/yr   "
         f"68% CI = [{ci_yoy[0]:+.3f}, {ci_yoy[1]:+.3f}]"
     )
-    return
+    return (yoy,)
 
 
 @app.cell(hide_code=True)
@@ -308,12 +308,13 @@ def _(
         'huber_M':       huber_m_slider.value,
         'log_transform': log_toggle.value,
     }
-    ta.sensor_analysis(analyses=['signal_decomposition'], sd_kwargs=sd_kwargs,
+    ta.sensor_analysis(analyses=['signal_decomposition'],
+                       sd_kwargs={**sd_kwargs, 'n_bootstrap': 0},
                        skip_preprocess=True)
     results = ta.results['sensor']['signal_decomposition']
     rd = results['rd_pct']
     print(f"Rd = {rd:+.3f} %/yr  |  solver: {results['sd_trend_results']['problem_status']}")
-    return (results,)
+    return results, sd_kwargs
 
 
 @app.cell
@@ -345,7 +346,56 @@ def _(plt, results, sd):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    ## 5. Fit stability
+    ## 5. Confidence interval
+
+    Run a moving-block bootstrap (500 replicates, block length ≈ 1 year) on the
+    residuals of the current fit to estimate a 68.2 % confidence interval on the
+    degradation rate. Runtime is roughly 500× the point-estimate solve time
+    (~15-30 sec on a typical machine).
+
+    Press the button to run. Uses the same model parameters as the widget
+    settings above. The table below compares the result with the year-on-year
+    baseline from §3.
+    """)
+    return
+
+
+@app.cell
+def _(mo):
+    run_ci = mo.ui.run_button(label='run CI bootstrap (500 replicates)')
+    run_ci
+    return (run_ci,)
+
+
+@app.cell
+def _(mo, run_ci, sd_kwargs, ta, yoy):
+    mo.stop(not run_ci.value)
+
+    ta.sensor_analysis(
+        analyses=['signal_decomposition'],
+        sd_kwargs=sd_kwargs,
+        skip_preprocess=True,
+    )
+    _ci_res = ta.results['sensor']['signal_decomposition']
+    _yoy    = yoy
+
+    _rd_sd  = _ci_res['rd_pct']
+    _ci_sd  = _ci_res['rd_confidence_interval']
+    _rd_yoy = _yoy['p50_rd']
+    _ci_yoy = _yoy['rd_confidence_interval']
+
+    _hdr = f"{'Method':<26} {'Rd (%/yr)':>10}  {'68% CI':}"
+    _sep = '-' * 58
+    _row_yoy = f"{'YoY (whole series)':<26} {_rd_yoy:>+10.3f}  [{_ci_yoy[0]:+.3f}, {_ci_yoy[1]:+.3f}]"
+    _row_sd  = f"{'Signal decomp':<26} {_rd_sd:>+10.3f}  [{_ci_sd[0]:+.3f}, {_ci_sd[1]:+.3f}]"
+    print(f"{_hdr}\n{_sep}\n{_row_yoy}\n{_row_sd}")
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ## 6. Fit stability
 
     How much does the estimated degradation rate change as the available
     data record grows? `analyze_fit_stability` solves the decomposition for
@@ -390,7 +440,7 @@ def _(stability_fig):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    ## 6. Degradation animation
+    ## 7. Degradation animation
 
     Renders a frame-by-frame animation of the decomposition fit as the
     data record grows, saved to `degradation_animation.mp4` (requires
@@ -421,6 +471,126 @@ def _(mo, results, run_ani, sd):
         fps=12,
         step=5,
     )
+    return
+
+
+@app.cell
+def _(mo):
+    mo.md(r"""
+    ## 8. Conditional quantile sweep
+
+    Solves the decomposition at several quantile levels
+    ($q \in \{0.1, 0.3, 0.5, 0.7, 0.9\}$) and overlays each fitted
+    quantile estimate on the input data — a "conditional quantile time
+    series". Loss is forced to `quantile`; every other setting (trend
+    type, harmonics, regularisation, log-transform, Huber M — where
+    relevant) is wired from the widget panel above.
+
+    Press the button to run.
+    """)
+    return
+
+
+@app.cell
+def _(mo):
+    run_qsweep = mo.ui.run_button(label='run quantile sweep')
+    run_qsweep
+    return (run_qsweep,)
+
+
+@app.cell
+def _(
+    huber_m_slider,
+    lam_end_slider,
+    lam_seasonal_slider,
+    lam_trend_slider,
+    log_toggle,
+    mo,
+    numharmonics_slider,
+    plt,
+    run_qsweep,
+    ta,
+    trend_type_radio,
+):
+    mo.stop(not run_qsweep.value)
+
+    quantiles = [0.1, 0.3, 0.5, 0.7, 0.9]
+
+    # Settings shared across all solves, wired from the widgets.
+    # Loss is forced to 'quantile' since we are sweeping q.
+    base_kwargs = {
+        'trend_type':    trend_type_radio.value,
+        'loss':          'quantile',
+        'numharmonics':  numharmonics_slider.value,
+        'lam_seasonal':  10 ** lam_seasonal_slider.value,
+        'lam_trend':     10 ** lam_trend_slider.value,
+        'lam_end':       lam_end_slider.value,
+        'huber_M':       huber_m_slider.value,
+        'log_transform': log_toggle.value,
+    }
+
+    quantile_fits = {}
+    for q in quantiles:
+        sd_kwargs_q = {**base_kwargs, 'q': q, 'n_bootstrap': 0}
+        ta.sensor_analysis(
+            analyses=['signal_decomposition'],
+            sd_kwargs=sd_kwargs_q,
+            skip_preprocess=True,
+        )
+        res_q = ta.results['sensor']['signal_decomposition']
+        tr = res_q['sd_trend_results']
+
+        # Fitted conditional quantile curve = seasonal + trend (x1 + x2).
+        # Swap to `tr['x2']` alone if you want only the trend component.
+        # estimate = tr['components']['x1'] + tr['components']['x2']
+        estimate = tr['components']['x2']
+
+        quantile_fits[q] = {
+            'estimate': estimate,
+            'rd_pct':   res_q['rd_pct'],
+            'status':   tr['problem_status'],
+        }
+        print(
+            f"q = {q:.2f}  Rd = {res_q['rd_pct']:+.3f} %/yr  "
+            f"|  solver: {tr['problem_status']}"
+        )
+
+    # Build the conditional quantile time series plot.
+    y_input = ta.sensor_aggregated_performance
+
+    fig_qsweep, ax_qsweep = plt.subplots(figsize=(11, 5))
+    ax_qsweep.plot(
+        y_input.index, y_input.values,
+        '.', color='0.7', markersize=2, alpha=0.5,
+        label='input (aggregated)',
+    )
+
+    cmap = plt.get_cmap('viridis')
+    for i, q in enumerate(quantiles):
+        est = quantile_fits[q]['estimate']
+        ax_qsweep.plot(
+            y_input.index, est,
+            color=cmap(i / (len(quantiles) - 1)),
+            linewidth=1.8,
+            label=f'q = {q:.1f}  ({quantile_fits[q]["rd_pct"]:+.2f} %/yr)',
+        )
+
+    ax_qsweep.set_xlabel('date')
+    ax_qsweep.set_ylabel('normalised energy')
+    ax_qsweep.set_title(
+        f'Conditional quantile time series  '
+        f'(trend: {trend_type_radio.value})'
+    )
+    ax_qsweep.legend(loc='best', fontsize=8, ncol=2)
+    ax_qsweep.grid(True, alpha=0.3)
+    fig_qsweep.tight_layout()
+    plt.ylim(0.6, 1)
+    return (fig_qsweep,)
+
+
+@app.cell
+def _(fig_qsweep):
+    fig_qsweep
     return
 
 
