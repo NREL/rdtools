@@ -511,7 +511,7 @@ def _bootstrap_ci(
     random_state,
 ):
     if n_bootstrap == 0:
-        return np.array([np.nan, np.nan])
+        return {}
 
     rng = np.random.default_rng(random_state)
     if block_size is None:
@@ -524,9 +524,9 @@ def _bootstrap_ci(
     n_blocks = int(np.ceil(M / L))
 
     extractor = extract_degradation_rate_log if log_transform else extract_degradation_rate
-    rate_key = 'rate_pct_yr' if trend_type == 'linear' else 'rate_overall_pct_yr'
+    _skip = {'rate_instantaneous_pct_yr'}
 
-    collected = []
+    collected = {}
     for _ in range(n_bootstrap):
         starts = rng.integers(0, M - L + 1, size=n_blocks)
         resampled = np.concatenate([res_valid[s:s + L] for s in starts])[:M]
@@ -541,16 +541,23 @@ def _bootstrap_ci(
             if b['problem'].status not in ('optimal', 'optimal_inaccurate'):
                 continue
             rates = extractor(b['variables'], trend_type, T=T)
-            collected.append(rates[rate_key])
+            for k, v in rates.items():
+                if k.startswith('rate_') and k not in _skip:
+                    collected.setdefault(k, []).append(v)
         except Exception:
             continue
 
-    if len(collected) < _MIN_SUCCESS_FRAC * n_bootstrap:
-        return np.array([np.nan, np.nan])
-
     lower_pct = (100 - confidence_level) / 2
     upper_pct = 100 - lower_pct
-    return np.array(np.percentile(collected, [lower_pct, upper_pct]))
+
+    n_success = len(next(iter(collected.values()), []))
+    if n_success < _MIN_SUCCESS_FRAC * n_bootstrap:
+        return {}
+
+    return {
+        k: np.percentile(np.array(v), [lower_pct, upper_pct], axis=0)
+        for k, v in collected.items()
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -1280,8 +1287,7 @@ def degradation(
     n_bootstrap : int
         Number of bootstrap replicates. Larger values give a more stable CI
         estimate at proportionally higher cost. Default ``500``. Set to ``0``
-        to skip the CI entirely and return ``[nan, nan]`` immediately — useful
-        for fast interactive exploration.
+        to skip CI estimation entirely — useful for fast interactive exploration.
     block_size : int or None
         Length (in samples) of each contiguous block used in the moving-block
         bootstrap. ``None`` (default) uses ``int(T)`` ≈ one year, which
@@ -1298,14 +1304,21 @@ def degradation(
         is ``rate_pct_yr``; for ``'pwl'`` and ``'monotone'`` it is
         ``rate_overall_pct_yr``.
     Rd_CI : numpy.ndarray, shape (2,)
-        ``[lower, upper]`` confidence interval on the degradation rate
+        ``[lower, upper]`` confidence interval on the overall degradation rate
         (%/year) at ``confidence_level``, computed via moving-block bootstrap.
-        Returns ``[nan, nan]`` if fewer than half of bootstrap solves succeed.
+        Returns ``[nan, nan]`` if ``n_bootstrap=0`` or fewer than half of
+        bootstrap solves succeed.
     sd_trend_results : dict
         Full results dict. Keys:
 
         - Rate keys (flat-merged from :func:`extract_degradation_rate` or
           :func:`extract_degradation_rate_log`; vary by *trend_type*)
+        - ``'ci_<rate_key>'``: bootstrap CI arrays for each bootstrapped rate,
+          shape ``(2,)`` for scalar rates or ``(2, n)`` for array rates.
+          Present only when ``n_bootstrap > 0`` and enough solves succeed.
+          Examples: ``'ci_rate_pct_yr'`` (linear),
+          ``'ci_rate_pre_pct_yr'`` / ``'ci_rate_post_pct_yr'`` / ``'ci_rate_overall_pct_yr'`` (pwl),
+          ``'ci_rate_overall_pct_yr'`` / ``'ci_rate_yearly_pct_yr'`` (monotone).
         - ``'components'``: dict with ``'x1'``, ``'x2'``, ``'x3'``,
           ``'fit'`` arrays in the original (non-log) domain
         - ``'y'``: original input values (pre-log-transform) as ndarray
@@ -1360,7 +1373,7 @@ def degradation(
     residuals_work = variables['x3'].value
     nan_mask = np.isnan(y_input)
 
-    Rd_CI = _bootstrap_ci(
+    ci_dict = _bootstrap_ci(
         fit=fit_work,
         residuals=residuals_work,
         nan_mask=nan_mask,
@@ -1374,6 +1387,9 @@ def degradation(
         random_state=random_state,
     )
 
+    rate_ci_key = 'rate_pct_yr' if trend_type == 'linear' else 'rate_overall_pct_yr'
+    Rd_CI = ci_dict.get(rate_ci_key, np.array([np.nan, np.nan]))
+
     components = recover_components(variables, log_transform=log_transform)
 
     sd_trend_results = {
@@ -1382,6 +1398,7 @@ def degradation(
         'y':              y,
         'args':           build['args'],
         'problem_status': prob.status,
+        **{f'ci_{k}': v for k, v in ci_dict.items()},
     }
 
     return Rd_pct, Rd_CI, sd_trend_results
