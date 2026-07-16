@@ -206,7 +206,7 @@ def make_problem(
         data_fidelity = (1.0 / N) * cp.sum(cp.huber(x3, huber_M))
 
     elif loss == 'quantile':
-        data_fidelity = (1.0 / N) * (
+        data_fidelity = 2 * (1.0 / N) * (
             q * cp.sum(cp.pos(x3)) + (1 - q) * cp.sum(cp.pos(-x3))
         )
 
