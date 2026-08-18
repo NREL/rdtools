@@ -39,6 +39,11 @@ def _(mo):
     qualifies, it performs a true seasonal-plus-degradation decomposition and
     returns an exact unity soiling factor. This is intentionally more work than
     the default degradation-only analysis, which remains a single decomposition.
+
+    The component is designed for conventional dry soil or sand accumulation
+    interrupted by discrete cleaning events. Biological growth on modules is a
+    different process, and persistent partial outages must be detected or
+    corrected upstream because their level shifts can resemble soiling.
     """)
     return
 
@@ -259,7 +264,9 @@ def _(mo):
 
     The synthetic reference is aggregated to daily resolution and aligned to
     the filtered signal-decomposition index. It is a useful known component,
-    but not a claim that real low-to-moderate soiling follows this generator.
+    but not a claim that all real low-to-moderate soiling follows this exact
+    generator. In particular, the interpretation here is dry accumulation and
+    cleaning, not biological fouling.
     The unmodified PVDAQ case has a reference ratio of one because no synthetic
     loss was added.
     """)
@@ -400,7 +407,9 @@ def _(mo):
     slope, are retained for diagnostics but marked invalid. Summary medians
     weight valid interval rates by their calendar-day exposure overall and in
     each climatological quarter. As above, the point-estimate table omits the
-    CI fields until the bootstrap is run.
+    CI fields until the bootstrap is run. These local rates describe dry
+    accumulation between detected recoveries; they should not be interpreted
+    as biological-growth rates.
     """)
     return
 

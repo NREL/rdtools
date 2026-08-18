@@ -25,6 +25,7 @@ Diagnostic / stability tools::
 
 import inspect
 import warnings
+from itertools import pairwise
 
 import cvxpy as cp
 import matplotlib.animation as animation
@@ -105,7 +106,10 @@ def make_problem(
       - ``'quantile'`` : pinball loss at quantile level *q*
 
     - **s** – Optional nonpositive log-soiling component. Its downward
-      increments receive an L2 penalty and its magnitude an L1 penalty.
+      increments receive an L2 penalty and its magnitude a weighted L1
+      penalty. The weights default to one, reproducing the convex model used
+      by the soiling selector. After selection, :func:`degradation` updates
+      these weights for two cleaning-interval IRL1 debiasing solves.
 
     NaN entries in *y* are treated as missing: the equality constraint
     ``y == x1 + x2 + x3`` is imposed only at non-NaN indices.
@@ -223,13 +227,19 @@ def make_problem(
         soiling_down = cp.Parameter(
             nonneg=True, value=float(lam_soiling_down), name='lam_soiling_down'
         )
-        soiling_value = cp.Parameter(
-            nonneg=True, value=float(lam_soiling_value), name='lam_soiling_value'
+        # lam_soiling_value is a validated fixed coefficient. Keeping it a
+        # numeric constant avoids a product of two Parameters below, which
+        # would be convex but not DPP.
+        soiling_value = float(lam_soiling_value)
+        soiling_value_weights = cp.Parameter(
+            N, nonneg=True, value=np.ones(N), name='soiling_value_weights'
         )
         soiling_constraints = [soiling <= 0]
         soiling_reg = (
             soiling_down * cp.norm2(cp.neg(cp.diff(soiling)))
-            + soiling_value * cp.norm1(soiling)
+            + soiling_value * cp.sum(
+                cp.multiply(soiling_value_weights, cp.abs(soiling))
+            )
         )
     else:
         soiling = 0
@@ -289,7 +299,7 @@ def make_problem(
     if include_soiling:
         out['parameters'] = {
             'lam_soiling_down': soiling_down,
-            'lam_soiling_value': soiling_value,
+            'soiling_value_weights': soiling_value_weights,
         }
     return out
 
@@ -369,6 +379,8 @@ _SOILING_MAX_RECOVERIES_PER_YEAR = 30.0
 _SOILING_MAX_NEIGHBOR_NRMSE = 0.75
 _SOILING_MIN_NEIGHBOR_CORRELATION = 0.90
 _SOILING_RECOVERY_THRESHOLD = 0.005
+_SOILING_IRL1_EPSILON = 0.01
+_SOILING_IRL1_ITERATIONS = 2
 
 
 def _centered_correlation(left, right):
@@ -469,6 +481,101 @@ def _solve_soiling_path(build, y, T):
     return metrics, selected_index, paths[-1].copy()
 
 
+def _soiling_interval_value_weights(path, epsilon=_SOILING_IRL1_EPSILON):
+    """Return one IRL1 value weight per inferred cleaning interval.
+
+    A material upward log step starts a new cleaning-to-cleaning interval.
+    Every sample in an interval receives
+
+    ``epsilon / (quantile(abs(path[interval]), 0.75) + epsilon)``.
+
+    Thus a clean or nearly clean interval retains the original L1 penalty
+    (weight near one), while an already-established soiling interval receives
+    less value shrinkage. Weights depend only on the preceding estimate, never
+    on observations or truth, so the next subproblem remains convex.
+    """
+    path = np.asarray(path, dtype=float)
+    recoveries = np.flatnonzero(
+        np.diff(path) >= _SOILING_RECOVERY_THRESHOLD
+    ) + 1
+    boundaries = np.r_[0, recoveries, len(path)]
+    weights = np.ones(len(path), dtype=float)
+    for start, stop in pairwise(boundaries):
+        depth = np.quantile(np.abs(path[start:stop]), 0.75)
+        weights[start:stop] = epsilon / (depth + epsilon)
+    return weights
+
+
+def _refine_soiling_irl1(
+        build, y, iterations=_SOILING_IRL1_ITERATIONS,
+        epsilon=_SOILING_IRL1_EPSILON, warn_on_failure=True):
+    """Debias a selected soiling fit with interval-weighted IRL1 solves.
+
+    The input problem must already contain the soiling component selected by
+    the frozen regularization-path rule. Each iteration derives fixed interval
+    weights from the preceding soiling estimate, assigns the vector CVXPY
+    Parameter, and resolves the otherwise unchanged convex decomposition.
+    This is a sequence of convex programs; it does not alter path selection or
+    turn a structural null into a positive result.
+
+    If an iteration fails validation, restore and resolve the preceding
+    successful weighting rather than returning variables from a failed solve.
+    The returned diagnostics state how many of the requested iterations were
+    completed.
+    """
+    problem = build['problem']
+    variables = build['variables']
+    parameter = build['parameters']['soiling_value_weights']
+    observed = np.isfinite(y)
+    previous = np.asarray(variables['soiling'].value, dtype=float).copy()
+    last_weights = np.ones(len(previous), dtype=float)
+    rows = []
+    for iteration in range(1, iterations + 1):
+        weights = _soiling_interval_value_weights(previous, epsilon)
+        parameter.value = weights
+        status = 'solver_error'
+        valid = False
+        try:
+            problem.solve(solver=cp.CLARABEL, warm_start=True)
+            status = problem.status
+            values = [variables[key].value for key in ('x1', 'x2', 'soiling', 'x3')]
+            if status in ('optimal', 'optimal_inaccurate') and all(
+                    value is not None and np.all(np.isfinite(value)) for value in values):
+                reconstructed = sum(np.asarray(value) for value in values)
+                valid = np.allclose(
+                    reconstructed[observed], y[observed], rtol=1e-5, atol=1e-6
+                )
+        except cp.error.SolverError:
+            pass
+        rows.append({
+            'iteration': iteration,
+            'status': status,
+            'valid': bool(valid),
+            'weight_min': float(np.min(weights)),
+            'weight_median': float(np.median(weights)),
+        })
+        if not valid:
+            if warn_on_failure:
+                warnings.warn(
+                    f'Soiling IRL1 iteration {iteration} failed; returning '
+                    f'the preceding successful fit.',
+                    UserWarning,
+                    stacklevel=2,
+                )
+            parameter.value = last_weights
+            problem.solve(solver=cp.CLARABEL, warm_start=True)
+            break
+        previous = np.asarray(variables['soiling'].value, dtype=float).copy()
+        last_weights = weights.copy()
+    return {
+        'method': 'cleaning_interval_irl1',
+        'epsilon': float(epsilon),
+        'requested_iterations': int(iterations),
+        'completed_iterations': int(sum(row['valid'] for row in rows)),
+        'iterations': pd.DataFrame(rows),
+    }
+
+
 def _soiling_intervals(soiling_ratio, index, min_interval_days=7):
     """Fit compound local rates between material recovery events."""
     ratio = np.asarray(soiling_ratio, dtype=float)
@@ -476,7 +583,7 @@ def _soiling_intervals(soiling_ratio, index, min_interval_days=7):
     recoveries = np.flatnonzero(np.diff(log_ratio) >= _SOILING_RECOVERY_THRESHOLD) + 1
     boundaries = np.r_[0, recoveries, len(ratio)]
     rows = []
-    for interval_index, (start, stop) in enumerate(zip(boundaries[:-1], boundaries[1:])):
+    for interval_index, (start, stop) in enumerate(pairwise(boundaries)):
         positions = np.arange(start, stop)
         valid = np.isfinite(log_ratio[positions])
         positions = positions[valid]
@@ -841,6 +948,13 @@ def _bootstrap_ci(
             b['problem'].solve(solver=cp.CLARABEL)
             if b['problem'].status not in ('optimal', 'optimal_inaccurate'):
                 continue
+            # Bootstrap the final estimator, including its two deterministic
+            # post-selection IRL1 steps. Re-running only the uniform-L1 model
+            # would give intervals for a different estimator than the point fit.
+            if soiling_context is not None and not soiling_context['null_model']:
+                _refine_soiling_irl1(b, y_star, warn_on_failure=False)
+                if b['problem'].status not in ('optimal', 'optimal_inaccurate'):
+                    continue
             rates = extractor(b['variables'], trend_type, T=T)
             for k, v in rates.items():
                 if k.startswith('rate_') and k not in _skip:
@@ -1641,10 +1755,24 @@ def degradation(
     Decomposes *energy_normalized* into seasonal, trend, and residual
     components via convex optimisation and returns the overall degradation
     rate of the trend component. By default this performs one decomposition
-    without soiling. With ``include_soiling=True``, it solves the validated
-    soiling regularisation path, applies the frozen structural selector, and
-    finishes with either a selected soiling model or an actual no-soiling
-    decomposition.
+    without soiling. With ``include_soiling=True``, the final algorithm is:
+
+    1. solve the validated nine-weight uniform-L1 soiling path;
+    2. apply the frozen coherence/materiality selector;
+    3. if no candidate qualifies, solve and return the structural no-soiling
+       model;
+    4. otherwise, refit the selected model twice using cleaning-interval IRL1
+       value weights with epsilon 0.01, leaving every other component,
+       constraint, and selected downward weight unchanged.
+
+    IRL1 reduces amplitude shrinkage after detection; it never participates in
+    detection. Bootstrap replicates repeat the same final two-step refinement.
+
+    The soiling component represents conventional dry soil or sand
+    accumulation interrupted by discrete cleaning/recovery events. It is not a
+    biological-fouling model. Persistent partial outages can produce similar
+    downward level shifts and must be detected or corrected upstream before
+    using this option.
 
     Assumes daily aggregation (``T = 365.2425`` samples/year). Non-daily
     ``aggregation_freq`` support is future work.
@@ -1686,7 +1814,9 @@ def degradation(
     include_soiling : bool
         Run the validated soiling path and selector. This option requires the
         validated linear/Huber/log configuration; conflicting model options
-        raise ``ValueError``. Default False.
+        raise ``ValueError``. The model assumes conventional dry accumulation
+        with discrete recoveries and upstream handling of partial outages; it
+        is not intended for biological fouling. Default False.
     insolation_daily : pandas.Series or None
         Daily insolation aligned by date. When provided, insolation-weighted
         soiling losses are returned in addition to time-averaged losses.
@@ -1742,9 +1872,10 @@ def degradation(
         - ``'y'``: original input values (pre-log-transform) as ndarray
         - ``'args'``: dict of kwargs passed to :func:`make_problem`
         - ``'problem_status'``: solver status string
-        - ``'soiling'`` when requested: selector diagnostics, daily soiling
-          ratio/rate estimates, cleaning-to-cleaning intervals, overall and
-          quarterly rate summaries, and time-averaged loss metrics. Optional
+        - ``'soiling'`` when requested: selector and IRL1-refinement
+          diagnostics, daily soiling ratio/rate estimates,
+          cleaning-to-cleaning intervals, overall and quarterly rate
+          summaries, and time-averaged loss metrics. Optional
           insolation-weighted losses are included when *insolation_daily* is
           supplied. Negative rates denote soiling accumulation.
 
@@ -1825,11 +1956,15 @@ def degradation(
             path_build, y_input, T
         )
         detected = selected_index is not None
+        refinement = None
         if detected:
             selected_weight = float(_SOILING_LAM_DOWN_GRID[selected_index])
             path_build['parameters']['lam_soiling_down'].value = selected_weight
             path_build['problem'].solve(solver=cp.CLARABEL, warm_start=True)
             path_build['args']['lam_soiling_down'] = selected_weight
+            # Detection is now frozen. Debias only the selected positive fit;
+            # null records never enter this IRL1 sequence.
+            refinement = _refine_soiling_irl1(path_build, y_input)
             build = path_build
         else:
             selected_weight = None
@@ -1845,6 +1980,7 @@ def degradation(
             'fallback_lam_soiling_down': float(_SOILING_LAM_DOWN_GRID[-1]),
             'fallback_soiling_component_log': fallback_component,
             'lam_soiling_value': _SOILING_LAM_VALUE,
+            'refinement': refinement,
             'candidate_metrics': candidate_metrics,
             'thresholds': {
                 'q75_loss_min': _SOILING_Q75_MIN,

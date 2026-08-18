@@ -216,10 +216,21 @@ def test_soiling_low_level_problem_is_parameterized_and_nonpositive():
     assert build['problem'].is_dcp()
     assert build['problem'].is_dpp()
     assert set(build['parameters']) == {
-        'lam_soiling_down', 'lam_soiling_value'
+        'lam_soiling_down', 'soiling_value_weights'
     }
     build['problem'].solve(solver=signal_decomposition.cp.CLARABEL)
     assert np.max(build['variables']['soiling'].value) <= 1e-7
+
+
+def test_soiling_interval_irl1_weights_are_constant_within_intervals():
+    path = np.r_[-0.001 * np.arange(10), -0.002 * np.arange(8)]
+    path[10:] += 0.01
+    weights = signal_decomposition._soiling_interval_value_weights(
+        path, epsilon=0.01
+    )
+    assert np.unique(weights[:10]).size == 1
+    assert np.unique(weights[10:]).size == 1
+    assert np.all((weights > 0) & (weights <= 1))
 
 
 def test_soiling_low_level_weights_are_explicit():
@@ -287,6 +298,9 @@ def test_soiling_selector_detects_coherent_signal_and_reports_metrics():
     )
     soiling = info['soiling']
     assert soiling['selector']['detected']
+    assert soiling['selector']['refinement']['method'] == 'cleaning_interval_irl1'
+    assert soiling['selector']['refinement']['epsilon'] == 0.01
+    assert soiling['selector']['refinement']['completed_iterations'] == 2
     assert soiling['selector']['selected_candidate_index'] == 1
     assert len(soiling['selector']['candidate_metrics']) == 9
     assert soiling['loss']['time_averaged_loss_pct'] > 0
