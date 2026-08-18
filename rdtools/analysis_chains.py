@@ -864,7 +864,9 @@ class TrendAnalysis:
             "calc_info": info,
         }
 
-    def _signal_decomposition_degradation(self, energy_normalized, **kwargs):
+    def _signal_decomposition_degradation(
+        self, energy_normalized, insolation_daily=None, **kwargs
+    ):
         """
         Perform signal-decomposition degradation analysis.
 
@@ -872,6 +874,9 @@ class TrendAnalysis:
         ----------
         energy_normalized : pandas.Series
             Time series of insolation-weighted aggregated normalized PV energy.
+        insolation_daily : pandas.Series or None
+            Aligned aggregated insolation used for optional soiling-loss
+            weighting.
         kwargs :
             Extra parameters passed to
             :py:func:`rdtools.signal_decomposition.degradation`
@@ -882,13 +887,13 @@ class TrendAnalysis:
             Signal decomposition results with keys:
 
             'rd_pct' : Overall degradation rate (%/year).
-            'rd_confidence_interval' : ``np.array([nan, nan])`` stub.
+            'rd_confidence_interval' : Bootstrap confidence interval.
             'sd_trend_results' : Full results dict from
                 :py:func:`rdtools.signal_decomposition.degradation`.
         """
         self._filter_check(energy_normalized)
         rd, ci, info = signal_decomposition.degradation(
-            energy_normalized, **kwargs
+            energy_normalized, insolation_daily=insolation_daily, **kwargs
         )
         return {
             "rd_pct": rd,
@@ -1136,7 +1141,9 @@ class TrendAnalysis:
 
         if "signal_decomposition" in analyses:
             sd_results = self._signal_decomposition_degradation(
-                self.sensor_aggregated_performance, **sd_kwargs
+                self.sensor_aggregated_performance,
+                self.sensor_aggregated_insolation,
+                **sd_kwargs,
             )
             sensor_results["signal_decomposition"] = sd_results
 
@@ -1204,7 +1211,9 @@ class TrendAnalysis:
 
         if "signal_decomposition" in analyses:
             sd_results = self._signal_decomposition_degradation(
-                self.clearsky_aggregated_performance, **sd_kwargs
+                self.clearsky_aggregated_performance,
+                self.clearsky_aggregated_insolation,
+                **sd_kwargs,
             )
             clearsky_results["signal_decomposition"] = sd_results
 

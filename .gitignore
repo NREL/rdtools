@@ -1,6 +1,11 @@
 # local prototypes (not for version control)
 prototypes/
 
+# local agent memory (not for version control)
+memories/
+.agents/
+skills-lock.json
+
 # ignore data files
 *.[ct]sv
 *.zip

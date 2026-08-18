@@ -1,4 +1,4 @@
-from rdtools import TrendAnalysis, normalization, filtering
+from rdtools import TrendAnalysis, normalization, filtering, signal_decomposition
 from conftest import assert_isinstance, assert_warnings
 from rdtools.analysis_chains import ValidatedFilterDict
 import pytest
@@ -872,6 +872,26 @@ def test_plot_signal_decomposition_clearsky(clearsky_analysis_sd):
     assert_isinstance(
         clearsky_analysis_sd.plot_signal_decomposition_summary("clearsky"),
         plt.Figure,
+    )
+
+
+def test_signal_decomposition_passes_insolation(
+        sensor_parameters, mocker):
+    analysis = TrendAnalysis(**sensor_parameters)
+    index = pd.date_range('2020-01-01', periods=10, freq='D')
+    energy = pd.Series(1.0, index=index)
+    insolation = pd.Series(5.0, index=index)
+    mocker.patch.object(analysis, '_filter_check')
+    mocked = mocker.patch.object(
+        signal_decomposition,
+        'degradation',
+        return_value=(-0.5, np.array([-0.6, -0.4]), {}),
+    )
+    analysis._signal_decomposition_degradation(
+        energy, insolation, include_soiling=True
+    )
+    mocked.assert_called_once_with(
+        energy, insolation_daily=insolation, include_soiling=True
     )
 
 

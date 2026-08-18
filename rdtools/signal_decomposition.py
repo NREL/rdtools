@@ -24,12 +24,14 @@ Diagnostic / stability tools::
 """
 
 import inspect
+import warnings
 
 import cvxpy as cp
 import matplotlib.animation as animation
 import matplotlib.cm as cm
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 import spcqe
 
 
@@ -57,6 +59,7 @@ def _end_drop_weights(N, frac_start=0.90, frac_end=0.95, end_scale=1.0, base=0.0
     ramp = np.clip((pos - frac_start) / (frac_end - frac_start), 0.0, 1.0)
     return base + (end_scale - base) * ramp
 
+
 # ---------------------------------------------------------------------------
 # Core decomposition
 # ---------------------------------------------------------------------------
@@ -72,12 +75,16 @@ def make_problem(
     end_frac=(0.90, 0.95),
     q=0.75,
     huber_M=1.0,
+    include_soiling=False,
+    lam_soiling_down=None,
+    lam_soiling_value=None,
     T=365.2425,
 ):
     """
     Build the convex seasonal-trend decomposition problem.
 
-    Solves ``y = x1 + x2 + x3`` where:
+    Solves ``y = x1 + x2 + x3`` plus an optional named soiling component
+    ``s``, giving ``y = x1 + x2 + s + x3``, where:
 
     - **x1** – Seasonal component expressed as ``B @ theta`` (truncated Fourier
       basis), regularised with ``lam_seasonal * ||W @ theta||_2^2``.
@@ -96,6 +103,9 @@ def make_problem(
       - ``'l1'``       : ``(1/N) * ||x3||_1``
       - ``'huber'``    : ``(1/N) * sum(huber_M(x3))``
       - ``'quantile'`` : pinball loss at quantile level *q*
+
+    - **s** – Optional nonpositive log-soiling component. Its downward
+      increments receive an L2 penalty and its magnitude an L1 penalty.
 
     NaN entries in *y* are treated as missing: the equality constraint
     ``y == x1 + x2 + x3`` is imposed only at non-NaN indices.
@@ -129,6 +139,14 @@ def make_problem(
         Quantile level in (0, 1); only used when ``loss='quantile'``.
     huber_M : float
         Huber threshold; only used when ``loss='huber'``.
+    include_soiling : bool
+        Include the nonpositive log-soiling component.
+    lam_soiling_down : float or None
+        L2 weight on downward soiling increments. Required when
+        ``include_soiling=True``.
+    lam_soiling_value : float or None
+        L1 weight on the soiling component magnitude. Required when
+        ``include_soiling=True``.
     T : float
         Period length in samples (default 365.2425 for daily data).
 
@@ -139,7 +157,9 @@ def make_problem(
     - ``'problem'``   : :class:`cvxpy.Problem` — call ``.solve()`` before
       inspecting variables.
     - ``'variables'`` : dict of CVXPY expressions (``'theta'``, ``'x1'``,
-      ``'x2'``, ``'x3'``, plus trend-specific scalars).
+      ``'x2'``, ``'x3'``, optional ``'soiling'``, plus trend-specific scalars).
+    - ``'parameters'``: reusable CVXPY soiling-weight parameters when
+      ``include_soiling=True``.
     - ``'args'``      : dict of the kwargs actually passed to this function.
     """
     y = np.asarray(y, dtype=float)
@@ -191,7 +211,33 @@ def make_problem(
         )
 
     # ------------------------------------------------------------------
-    # 3.  Residual  x3 = y - x1 - x2
+    # 2b. Optional nonpositive soiling component
+    # ------------------------------------------------------------------
+    if include_soiling:
+        if lam_soiling_down is None or lam_soiling_value is None:
+            raise ValueError(
+                "lam_soiling_down and lam_soiling_value are required when "
+                "include_soiling=True"
+            )
+        soiling = cp.Variable(N, name='soiling')
+        soiling_down = cp.Parameter(
+            nonneg=True, value=float(lam_soiling_down), name='lam_soiling_down'
+        )
+        soiling_value = cp.Parameter(
+            nonneg=True, value=float(lam_soiling_value), name='lam_soiling_value'
+        )
+        soiling_constraints = [soiling <= 0]
+        soiling_reg = (
+            soiling_down * cp.norm2(cp.neg(cp.diff(soiling)))
+            + soiling_value * cp.norm1(soiling)
+        )
+    else:
+        soiling = 0
+        soiling_constraints = []
+        soiling_reg = 0
+
+    # ------------------------------------------------------------------
+    # 3.  Residual  x3 = y - x1 - x2 (- soiling)
     # ------------------------------------------------------------------
     good_data = ~np.isnan(y)
     x3 = cp.Variable(N)
@@ -218,9 +264,9 @@ def make_problem(
     # ------------------------------------------------------------------
     # 4.  Objective and problem
     # ------------------------------------------------------------------
-    objective = cp.Minimize(data_fidelity + seasonal_reg + trend_reg)
-    constraints = trend_constraints
-    constraints.append(y[good_data] == (x1 + x2 + x3)[good_data])
+    objective = cp.Minimize(data_fidelity + seasonal_reg + trend_reg + soiling_reg)
+    constraints = trend_constraints + soiling_constraints
+    constraints.append(y[good_data] == (x1 + x2 + soiling + x3)[good_data])
     problem = cp.Problem(objective, constraints)
 
     if trend_type == 'linear':
@@ -232,11 +278,20 @@ def make_problem(
     elif trend_type == 'monotone':
         variables = {'theta': theta, 'x1': x1, 'x2': x2, 'x3': x3}
 
-    return {
+    if include_soiling:
+        variables['soiling'] = soiling
+
+    out = {
         'problem': problem,
         'variables': variables,
         'args': _get_kwargs(make_problem, locals()),
     }
+    if include_soiling:
+        out['parameters'] = {
+            'lam_soiling_down': soiling_down,
+            'lam_soiling_value': soiling_value,
+        }
+    return out
 
 
 def prepare_input(y, log_transform=False, floor=1e-6):
@@ -280,21 +335,265 @@ def recover_components(variables, log_transform=False):
 
     Returns
     -------
-    dict with keys ``'x1'``, ``'x2'``, ``'x3'``, ``'fit'``.
+    dict with keys ``'x1'``, ``'x2'``, ``'x3'``, ``'fit'``, plus ``'soiling'``
+    when a soiling component is present.
     """
     x1 = variables['x1'].value
     x2 = variables['x2'].value
     x3 = variables['x3'].value
+    has_soiling = 'soiling' in variables
+    soiling = variables['soiling'].value if has_soiling else None
 
     if log_transform:
         x1 = np.exp(x1)
         x2 = np.exp(x2)
         x3 = np.exp(x3)
-        fit = x1 * x2
+        if has_soiling:
+            soiling = np.exp(soiling)
+            fit = x1 * x2 * soiling
+        else:
+            fit = x1 * x2
     else:
-        fit = x1 + x2
+        fit = x1 + x2 + soiling if has_soiling else x1 + x2
 
-    return {'x1': x1, 'x2': x2, 'x3': x3, 'fit': fit}
+    out = {'x1': x1, 'x2': x2, 'x3': x3, 'fit': fit}
+    if has_soiling:
+        out['soiling'] = soiling
+    return out
+
+
+_SOILING_LAM_DOWN_GRID = np.logspace(-3.5, -1.5, 9)
+_SOILING_LAM_VALUE = 10 ** -5.8
+_SOILING_Q75_MIN = 0.0075
+_SOILING_MAX_RECOVERIES_PER_YEAR = 30.0
+_SOILING_MAX_NEIGHBOR_NRMSE = 0.75
+_SOILING_MIN_NEIGHBOR_CORRELATION = 0.90
+_SOILING_RECOVERY_THRESHOLD = 0.005
+
+
+def _centered_correlation(left, right):
+    left = left - np.mean(left)
+    right = right - np.mean(right)
+    denominator = np.linalg.norm(left) * np.linalg.norm(right)
+    if denominator <= 1e-12:
+        return np.nan
+    return float(np.dot(left, right) / denominator)
+
+
+def _soiling_candidate_metrics(paths, statuses, T):
+    """Return frozen structural metrics for one regularization path."""
+    n_candidates, n_samples = paths.shape
+    years = max((n_samples - 1) / T, 1 / T)
+    rows = []
+    for index, (weight, path, status) in enumerate(
+            zip(_SOILING_LAM_DOWN_GRID, paths, statuses)):
+        finite = np.all(np.isfinite(path))
+        loss = -path if finite else np.full(n_samples, np.nan)
+        q75 = float(np.quantile(loss, 0.75)) if finite else np.nan
+        recoveries = (
+            float(np.sum(np.diff(path) >= _SOILING_RECOVERY_THRESHOLD) / years)
+            if finite else np.nan
+        )
+        nrmse = np.nan
+        correlation = np.nan
+        if 0 < index < n_candidates - 1 and finite:
+            left = paths[index - 1]
+            right = paths[index + 1]
+            if np.all(np.isfinite(left)) and np.all(np.isfinite(right)):
+                scale = max(q75, 0.001)
+                nrmse = max(
+                    np.sqrt(np.mean((path - left) ** 2)) / scale,
+                    np.sqrt(np.mean((path - right) ** 2)) / scale,
+                )
+                correlations = [
+                    _centered_correlation(path, left),
+                    _centered_correlation(path, right),
+                ]
+                if np.all(np.isfinite(correlations)):
+                    correlation = min(correlations)
+        qualifies = bool(
+            0 < index < n_candidates - 1
+            and status in ('optimal', 'optimal_inaccurate')
+            and np.isfinite(q75)
+            and q75 >= _SOILING_Q75_MIN
+            and recoveries <= _SOILING_MAX_RECOVERIES_PER_YEAR
+            and nrmse <= _SOILING_MAX_NEIGHBOR_NRMSE
+            and correlation >= _SOILING_MIN_NEIGHBOR_CORRELATION
+        )
+        rows.append({
+            'candidate_index': index,
+            'lam_soiling_down': float(weight),
+            'log10_lam_soiling_down': float(np.log10(weight)),
+            'status': status,
+            'q75_loss': q75,
+            'recoveries_per_year': recoveries,
+            'worst_neighbor_nrmse': nrmse,
+            'worst_neighbor_correlation': correlation,
+            'qualifies': qualifies,
+        })
+    return pd.DataFrame(rows)
+
+
+def _solve_soiling_path(build, y, T):
+    """Solve the frozen path and return metrics, selection, and fallback."""
+    problem = build['problem']
+    parameter = build['parameters']['lam_soiling_down']
+    variables = build['variables']
+    observed = np.isfinite(y)
+    paths = []
+    statuses = []
+    for weight in _SOILING_LAM_DOWN_GRID:
+        parameter.value = float(weight)
+        status = 'solver_error'
+        path = np.full(len(y), np.nan)
+        try:
+            problem.solve(solver=cp.CLARABEL, warm_start=True)
+            status = problem.status
+            values = [variables[key].value for key in ('x1', 'x2', 'soiling', 'x3')]
+            if status in ('optimal', 'optimal_inaccurate') and all(
+                    value is not None and np.all(np.isfinite(value)) for value in values):
+                reconstructed = sum(np.asarray(value) for value in values)
+                if np.allclose(
+                        reconstructed[observed], y[observed], rtol=1e-5, atol=1e-6):
+                    path = np.asarray(variables['soiling'].value, dtype=float).copy()
+                else:
+                    status = 'inconsistent_reconstruction'
+        except cp.error.SolverError:
+            pass
+        paths.append(path)
+        statuses.append(status)
+    paths = np.asarray(paths)
+    metrics = _soiling_candidate_metrics(paths, statuses, T)
+    qualifying = metrics.index[metrics['qualifies']].to_numpy()
+    selected_index = int(qualifying[0]) if len(qualifying) else None
+    return metrics, selected_index, paths[-1].copy()
+
+
+def _soiling_intervals(soiling_ratio, index, min_interval_days=7):
+    """Fit compound local rates between material recovery events."""
+    ratio = np.asarray(soiling_ratio, dtype=float)
+    log_ratio = np.log(np.clip(ratio, 1e-12, None))
+    recoveries = np.flatnonzero(np.diff(log_ratio) >= _SOILING_RECOVERY_THRESHOLD) + 1
+    boundaries = np.r_[0, recoveries, len(ratio)]
+    rows = []
+    for interval_index, (start, stop) in enumerate(zip(boundaries[:-1], boundaries[1:])):
+        positions = np.arange(start, stop)
+        valid = np.isfinite(log_ratio[positions])
+        positions = positions[valid]
+        if len(positions) >= 2:
+            slope = np.polyfit(positions - positions[0], log_ratio[positions], 1)[0]
+            rate = float((np.exp(slope) - 1) * 100)
+        else:
+            rate = np.nan
+        length = stop - start
+        is_valid = bool(length >= min_interval_days and np.isfinite(rate) and rate <= 0)
+        recovery = (
+            float((np.exp(log_ratio[stop] - log_ratio[stop - 1]) - 1) * 100)
+            if stop < len(ratio) else np.nan
+        )
+        rows.append({
+            'interval': interval_index,
+            'start': index[start],
+            'end': index[stop - 1],
+            'length_days': length,
+            'soiling_rate_pct_day': rate,
+            'start_soiling_ratio': ratio[start],
+            'end_soiling_ratio': ratio[stop - 1],
+            'subsequent_recovery_pct': recovery,
+            'valid': is_valid,
+        })
+    return pd.DataFrame(rows)
+
+
+def _soiling_rate_summary(intervals, index):
+    """Day-weight interval rates overall and by climatological quarter."""
+    rows = []
+    periods = [('overall', np.ones(len(index), dtype=bool))]
+    periods.extend(
+        (f'Q{quarter}', index.quarter == quarter) for quarter in range(1, 5)
+    )
+    for label, period_mask in periods:
+        rates = []
+        contributing_intervals = 0
+        for _, interval in intervals[intervals['valid']].iterrows():
+            overlap = (
+                (index >= interval['start'])
+                & (index <= interval['end'])
+                & period_mask
+            ).sum()
+            contributing_intervals += int(overlap > 0)
+            rates.extend([interval['soiling_rate_pct_day']] * int(overlap))
+        rows.append({
+            'period': label,
+            'median_rate_pct_day': float(np.median(rates)) if rates else np.nan,
+            'rate_ci_low': np.nan,
+            'rate_ci_high': np.nan,
+            'interval_count': contributing_intervals,
+            'day_count': len(rates),
+        })
+    return pd.DataFrame(rows)
+
+
+def _soiling_loss_metrics(
+        soiling_ratio, index, insolation_daily=None, warn_missing_insolation=True):
+    """Time-average losses and optional insolation-weighted losses."""
+    ratio = np.asarray(soiling_ratio, dtype=float)
+    quarters = index.quarter
+    rows = []
+    for quarter in range(1, 5):
+        mask = quarters == quarter
+        rows.append({
+            'quarter': quarter,
+            'time_averaged_loss_pct': float(100 * np.nanmean(1 - ratio[mask])),
+        })
+    output = {
+        'time_averaged_loss_pct': float(100 * np.nanmean(1 - ratio)),
+        'time_averaged_loss_ci': np.array([np.nan, np.nan]),
+        'quarterly': pd.DataFrame(rows),
+    }
+    output['quarterly']['time_averaged_loss_ci_low'] = np.nan
+    output['quarterly']['time_averaged_loss_ci_high'] = np.nan
+    if insolation_daily is not None:
+        if not isinstance(insolation_daily, pd.Series):
+            raise TypeError('insolation_daily must be a pandas.Series')
+        if not isinstance(insolation_daily.index, pd.DatetimeIndex):
+            raise TypeError('insolation_daily must have a DatetimeIndex')
+        if insolation_daily.index.has_duplicates:
+            raise ValueError('insolation_daily index must not contain duplicates')
+        weights = insolation_daily.reindex(index).to_numpy(dtype=float)
+        if np.any(weights[np.isfinite(weights)] < 0):
+            raise ValueError('insolation_daily must be nonnegative')
+
+        def weighted(mask):
+            valid = mask & np.isfinite(ratio) & np.isfinite(weights) & (weights > 0)
+            if not valid.any():
+                return np.nan
+            weighted_ratio = (
+                np.sum(weights[valid] * ratio[valid]) / np.sum(weights[valid])
+            )
+            return float(100 * (1 - weighted_ratio))
+
+        output['insolation_weighted_loss_pct'] = weighted(np.ones(len(index), dtype=bool))
+        output['insolation_weighted_loss_ci'] = np.array([np.nan, np.nan])
+        quarterly_weighted = [
+            weighted(quarters == quarter) for quarter in range(1, 5)
+        ]
+        output['quarterly']['insolation_weighted_loss_pct'] = quarterly_weighted
+        missing_quarters = [
+            str(quarter) for quarter, value in enumerate(quarterly_weighted, 1)
+            if not np.isfinite(value)
+        ]
+        if missing_quarters and warn_missing_insolation:
+            warnings.warn(
+                'No positive, finite insolation is available for quarter(s) '
+                + ', '.join(missing_quarters)
+                + '; corresponding insolation-weighted losses are NaN.',
+                UserWarning,
+                stacklevel=2,
+            )
+        output['quarterly']['insolation_weighted_loss_ci_low'] = np.nan
+        output['quarterly']['insolation_weighted_loss_ci_high'] = np.nan
+    return output
 
 
 # ---------------------------------------------------------------------------
@@ -509,9 +808,10 @@ def _bootstrap_ci(
     block_size,
     confidence_level,
     random_state,
+    soiling_context=None,
 ):
     if n_bootstrap == 0:
-        return {}
+        return {}, {}
 
     rng = np.random.default_rng(random_state)
     if block_size is None:
@@ -527,6 +827,7 @@ def _bootstrap_ci(
     _skip = {'rate_instantaneous_pct_yr'}
 
     collected = {}
+    soiling_collected = {}
     for _ in range(n_bootstrap):
         starts = rng.integers(0, M - L + 1, size=n_blocks)
         resampled = np.concatenate([res_valid[s:s + L] for s in starts])[:M]
@@ -544,6 +845,41 @@ def _bootstrap_ci(
             for k, v in rates.items():
                 if k.startswith('rate_') and k not in _skip:
                     collected.setdefault(k, []).append(v)
+            if soiling_context is not None:
+                if soiling_context['null_model']:
+                    ratio = np.ones(len(y_star))
+                else:
+                    ratio = np.exp(np.asarray(b['variables']['soiling'].value))
+                index = soiling_context['index']
+                loss_metrics = _soiling_loss_metrics(
+                    ratio, index, soiling_context['insolation_daily'],
+                    warn_missing_insolation=False,
+                )
+                intervals = _soiling_intervals(ratio, index)
+                rate_summary = _soiling_rate_summary(intervals, index)
+                values = {
+                    'time_loss_overall': loss_metrics['time_averaged_loss_pct'],
+                    **{
+                        f'time_loss_Q{row.quarter}': row.time_averaged_loss_pct
+                        for row in loss_metrics['quarterly'].itertuples()
+                    },
+                    **{
+                        f'rate_{row.period}': row.median_rate_pct_day
+                        for row in rate_summary.itertuples()
+                    },
+                }
+                if 'insolation_weighted_loss_pct' in loss_metrics:
+                    values['insolation_loss_overall'] = loss_metrics[
+                        'insolation_weighted_loss_pct'
+                    ]
+                    values.update({
+                        f'insolation_loss_Q{row.quarter}':
+                            row.insolation_weighted_loss_pct
+                        for row in loss_metrics['quarterly'].itertuples()
+                    })
+                for key, value in values.items():
+                    if np.isfinite(value):
+                        soiling_collected.setdefault(key, []).append(value)
         except Exception:
             continue
 
@@ -552,12 +888,18 @@ def _bootstrap_ci(
 
     n_success = len(next(iter(collected.values()), []))
     if n_success < _MIN_SUCCESS_FRAC * n_bootstrap:
-        return {}
+        return {}, {}
 
-    return {
+    rate_ci = {
         k: np.percentile(np.array(v), [lower_pct, upper_pct], axis=0)
         for k, v in collected.items()
     }
+    soiling_ci = {
+        key: np.percentile(values, [lower_pct, upper_pct])
+        for key, values in soiling_collected.items()
+        if len(values) >= _MIN_SUCCESS_FRAC * n_bootstrap
+    }
+    return rate_ci, soiling_ci
 
 
 # ---------------------------------------------------------------------------
@@ -892,12 +1234,13 @@ def plot_trend(sd_trend_results, energy_normalized, figsize=(8, 5)):
 
 def plot_decomposition(sd_trend_results, figsize=(12, 10)):
     """
-    Four-panel seasonal-trend decomposition plot.
+    Seasonal-trend decomposition plot with an optional soiling panel.
 
     - Row 1: Measured signal and fit (``x1 + x2``).
     - Row 2: Seasonal component ``x1``.
     - Row 3: Trend component ``x2``.
-    - Row 4: Residual ``x3``.
+    - Optional row 4: Soiling ratio.
+    - Final row: Residual ``x3``.
 
     Parameters
     ----------
@@ -924,12 +1267,15 @@ def plot_decomposition(sd_trend_results, figsize=(12, 10)):
     # Auto-detect linear vs. log-transform space for residual reference
     x3_ref = 1.0 if (np.nanmedian(x3) > 0.5) else 0.0
 
-    fig, axes = plt.subplots(4, 1, figsize=figsize, sharex=True)
+    has_soiling = 'soiling' in components
+    n_rows = 5 if has_soiling else 4
+    fig, axes = plt.subplots(n_rows, 1, figsize=figsize, sharex=True)
     fig.subplots_adjust(hspace=0.08)
 
     ax = axes[0]
     ax.plot(t, y, lw=0.8, label='Measured y', zorder=1)
-    ax.plot(t, fit, lw=1.5, label='Fit (x1+x2)', zorder=2)
+    fit_label = 'Fit (seasonal × trend × soiling)' if has_soiling else 'Fit (x1+x2)'
+    ax.plot(t, fit, lw=1.5, label=fit_label, zorder=2)
     ax.set_ylabel('y')
     ax.legend(loc='upper right', fontsize=8, framealpha=0.7)
     ax.set_title('Decomposition', fontsize=11, fontweight='bold')
@@ -943,7 +1289,15 @@ def plot_decomposition(sd_trend_results, figsize=(12, 10)):
     ax.plot(t, x2, lw=1.5)
     ax.set_ylabel('x2  (trend)')
 
-    ax = axes[3]
+    residual_axis = 3
+    if has_soiling:
+        ax = axes[3]
+        ax.plot(t, components['soiling'], lw=1.2)
+        ax.axhline(1.0, color='black', lw=0.5, ls='--')
+        ax.set_ylabel('soiling ratio')
+        residual_axis = 4
+
+    ax = axes[residual_axis]
     ax.fill_between(t, x3, x3_ref,
                     where=(x3 >= x3_ref), alpha=0.5, lw=0)
     ax.fill_between(t, x3, x3_ref,
@@ -1068,7 +1422,7 @@ def animate_degradation(
     vlines = [ax.axvline(min_n, color='#888888', lw=0.8, ls=':') for ax in axes]
 
     line_fit, = axes[0].plot([], [], color='#e05c2a', lw=1.5,
-                              label='Fit (x1+x2)', zorder=2)
+                             label='Fit (x1+x2)', zorder=2)
     line_x1, = axes[1].plot([], [], color='#2a7de0', lw=1.2)
     line_x2, = axes[2].plot([], [], color='#27a865', lw=1.5)
 
@@ -1197,6 +1551,51 @@ def format_degradation_report(sd_trend_results):
         else ""
     )
 
+    soiling_section = ""
+    if 'soiling' in sd_trend_results:
+        soiling = sd_trend_results['soiling']
+        selector = soiling['selector']
+        loss = soiling['loss']
+        state = 'yes' if selector['detected'] else 'no (neutral model)'
+        weight = selector['selected_lam_soiling_down']
+        weight_text = f"{weight:.3e}" if weight is not None else 'n/a'
+        rate = soiling['rate_summary'].set_index('period').loc['overall']
+        quarterly_loss = loss['quarterly'].set_index('quarter')
+        quarterly_rate = soiling['rate_summary'].set_index('period')
+        quarterly_rows = []
+        for quarter in range(1, 5):
+            loss_row = quarterly_loss.loc[quarter]
+            rate_row = quarterly_rate.loc[f'Q{quarter}']
+            weighted = (
+                f" | {loss_row['insolation_weighted_loss_pct']:.3f} %"
+                if 'insolation_weighted_loss_pct' in quarterly_loss else ''
+            )
+            quarterly_rows.append(
+                f"| Q{quarter} | {loss_row['time_averaged_loss_pct']:.3f} %"
+                f"{weighted} | {rate_row['median_rate_pct_day']:.4f} %/day |"
+            )
+        has_weighted_loss = 'insolation_weighted_loss_pct' in loss
+        weighted_header = ' | Insolation-weighted loss' if has_weighted_loss else ''
+        weighted_separator = '|---:' if has_weighted_loss else ''
+        soiling_section = (
+            f"\n## Soiling report\n\n"
+            f"**Soiling detected:** {state} | **selected λ down:** {weight_text}\n\n"
+            f"| Metric | Estimate |\n|---|---:|\n"
+            f"| Time-averaged loss | {loss['time_averaged_loss_pct']:.3f} % |\n"
+            f"| Median local rate | {rate['median_rate_pct_day']:.4f} %/day |\n"
+        )
+        if 'insolation_weighted_loss_pct' in loss:
+            soiling_section += (
+                f"| Insolation-weighted loss | "
+                f"{loss['insolation_weighted_loss_pct']:.3f} % |\n"
+            )
+        soiling_section += (
+            f"\n| Quarter | Time-averaged loss{weighted_header} | Median local rate |\n"
+            f"|---|---:{weighted_separator}|---:|\n"
+            + "\n".join(quarterly_rows)
+            + "\n"
+        )
+
     return (
         f"## Degradation report\n\n"
         f"**Trend type:** `{trend_type}` | **Loss:** `{args['loss']}` | "
@@ -1209,6 +1608,7 @@ def format_degradation_report(sd_trend_results):
         f"{body}\n\n"
         f"> Rates expressed as %/yr relative to the trend value at the first sample.\n"
         f"> Negative values indicate degradation.\n"
+        f"{soiling_section}"
     )
 
 
@@ -1219,15 +1619,17 @@ def format_degradation_report(sd_trend_results):
 def degradation(
     energy_normalized,
     trend_type='linear',
-    loss='l2',
-    numharmonics=6,
+    loss=None,
+    numharmonics=None,
     lam_seasonal=1e-1,
     lam_trend=1e0,
     lam_end=0.0,
     end_frac=(0.90, 0.95),
     q=0.75,
-    huber_M=1.0,
-    log_transform=False,
+    huber_M=None,
+    include_soiling=False,
+    insolation_daily=None,
+    log_transform=None,
     confidence_level=68.2,
     n_bootstrap=500,
     block_size=None,
@@ -1238,7 +1640,11 @@ def degradation(
 
     Decomposes *energy_normalized* into seasonal, trend, and residual
     components via convex optimisation and returns the overall degradation
-    rate of the trend component.
+    rate of the trend component. By default this performs one decomposition
+    without soiling. With ``include_soiling=True``, it solves the validated
+    soiling regularisation path, applies the frozen structural selector, and
+    finishes with either a selected soiling model or an actual no-soiling
+    decomposition.
 
     Assumes daily aggregation (``T = 365.2425`` samples/year). Non-daily
     ``aggregation_freq`` support is future work.
@@ -1255,10 +1661,12 @@ def degradation(
     trend_type : str
         Trend model: ``'linear'``, ``'pwl'`` (piecewise-linear with one
         breakpoint after the first year), or ``'monotone'`` (non-increasing).
-    loss : str
-        Residual loss: ``'l2'``, ``'l1'``, ``'huber'``, or ``'quantile'``.
-    numharmonics : int
-        Number of Fourier harmonic pairs for the seasonal component.
+    loss : str or None
+        Residual loss. ``None`` selects ``'l2'`` normally and the validated
+        ``'huber'`` loss when ``include_soiling=True``.
+    numharmonics : int or None
+        Number of Fourier harmonic pairs. ``None`` selects 6 normally and 3
+        when ``include_soiling=True``.
     lam_seasonal : float
         Regularisation weight on Fourier coefficients.
     lam_trend : float
@@ -1272,13 +1680,22 @@ def degradation(
         Default ``(0.90, 0.95)``.
     q : float
         Quantile level in (0, 1); only used when ``loss='quantile'``.
-    huber_M : float
-        Huber threshold; only used when ``loss='huber'``.
-    log_transform : bool
+    huber_M : float or None
+        Huber threshold. ``None`` selects 1 normally and 0.05 when
+        ``include_soiling=True``.
+    include_soiling : bool
+        Run the validated soiling path and selector. This option requires the
+        validated linear/Huber/log configuration; conflicting model options
+        raise ``ValueError``. Default False.
+    insolation_daily : pandas.Series or None
+        Daily insolation aligned by date. When provided, insolation-weighted
+        soiling losses are returned in addition to time-averaged losses.
+    log_transform : bool or None
         If True, apply a natural-log transform before decomposing. The
         returned components are back-transformed to the original domain.
         Rates are computed as compound annual rates via
-        :func:`extract_degradation_rate_log`.
+        :func:`extract_degradation_rate_log`. ``None`` selects False normally
+        and True when ``include_soiling=True``.
     confidence_level : float
         Confidence level for ``Rd_CI`` in percent (e.g. ``68.2`` for ≈1σ,
         ``95`` for 95%). The interval is the empirical
@@ -1317,13 +1734,19 @@ def degradation(
           shape ``(2,)`` for scalar rates or ``(2, n)`` for array rates.
           Present only when ``n_bootstrap > 0`` and enough solves succeed.
           Examples: ``'ci_rate_pct_yr'`` (linear),
-          ``'ci_rate_pre_pct_yr'`` / ``'ci_rate_post_pct_yr'`` / ``'ci_rate_overall_pct_yr'`` (pwl),
+          ``'ci_rate_pre_pct_yr'`` / ``'ci_rate_post_pct_yr'`` /
+          ``'ci_rate_overall_pct_yr'`` (pwl),
           ``'ci_rate_overall_pct_yr'`` / ``'ci_rate_yearly_pct_yr'`` (monotone).
         - ``'components'``: dict with ``'x1'``, ``'x2'``, ``'x3'``,
           ``'fit'`` arrays in the original (non-log) domain
         - ``'y'``: original input values (pre-log-transform) as ndarray
         - ``'args'``: dict of kwargs passed to :func:`make_problem`
         - ``'problem_status'``: solver status string
+        - ``'soiling'`` when requested: selector diagnostics, daily soiling
+          ratio/rate estimates, cleaning-to-cleaning intervals, overall and
+          quarterly rate summaries, and time-averaged loss metrics. Optional
+          insolation-weighted losses are included when *insolation_daily* is
+          supplied. Negative rates denote soiling accumulation.
 
     Raises
     ------
@@ -1331,29 +1754,111 @@ def degradation(
         If the solver does not return ``'optimal'`` or
         ``'optimal_inaccurate'`` status.
     """
+    if include_soiling:
+        resolved = {
+            'loss': 'huber' if loss is None else loss,
+            'numharmonics': 3 if numharmonics is None else numharmonics,
+            'huber_M': 0.05 if huber_M is None else huber_M,
+            'log_transform': True if log_transform is None else log_transform,
+        }
+        incompatible = []
+        if trend_type != 'linear':
+            incompatible.append("trend_type='linear'")
+        if resolved['loss'] != 'huber':
+            incompatible.append("loss='huber'")
+        if resolved['numharmonics'] != 3:
+            incompatible.append('numharmonics=3')
+        if not np.isclose(resolved['huber_M'], 0.05):
+            incompatible.append('huber_M=0.05')
+        if resolved['log_transform'] is not True:
+            incompatible.append('log_transform=True')
+        if not np.isclose(lam_seasonal, 0.1):
+            incompatible.append('lam_seasonal=0.1')
+        if not np.isclose(lam_trend, 1.0):
+            incompatible.append('lam_trend=1.0')
+        if incompatible:
+            raise ValueError(
+                'include_soiling=True requires the validated configuration: '
+                + ', '.join(incompatible)
+            )
+        if len(energy_normalized) < 2 * 365.2425:
+            warnings.warn(
+                'Soiling selection on records shorter than two years is not '
+                'validated; results may be less stable.',
+                UserWarning,
+                stacklevel=2,
+            )
+        if not isinstance(energy_normalized.index, pd.DatetimeIndex):
+            raise ValueError('include_soiling=True requires a DatetimeIndex')
+    else:
+        resolved = {
+            'loss': 'l2' if loss is None else loss,
+            'numharmonics': 6 if numharmonics is None else numharmonics,
+            'huber_M': 1.0 if huber_M is None else huber_M,
+            'log_transform': False if log_transform is None else log_transform,
+        }
+    loss = resolved['loss']
+    numharmonics = resolved['numharmonics']
+    huber_M = resolved['huber_M']
+    log_transform = resolved['log_transform']
+
     energy_normalized = energy_normalized.sort_index()
     y = energy_normalized.values
 
     T = 365.2425
     y_input = prepare_input(y, log_transform=log_transform)
 
-    build = make_problem(
-        y_input,
-        numharmonics=numharmonics,
-        trend_type=trend_type,
-        loss=loss,
-        lam_seasonal=lam_seasonal,
-        lam_trend=lam_trend,
-        lam_end=lam_end,
-        end_frac=end_frac,
-        q=q,
-        huber_M=huber_M,
-        T=T,
+    common_build_args = dict(
+        numharmonics=numharmonics, trend_type=trend_type, loss=loss,
+        lam_seasonal=lam_seasonal, lam_trend=lam_trend, lam_end=lam_end,
+        end_frac=end_frac, q=q, huber_M=huber_M, T=T,
     )
+    selector = None
+    if include_soiling:
+        path_build = make_problem(
+            y_input, include_soiling=True,
+            lam_soiling_down=_SOILING_LAM_DOWN_GRID[0],
+            lam_soiling_value=_SOILING_LAM_VALUE,
+            **common_build_args,
+        )
+        candidate_metrics, selected_index, fallback_component = _solve_soiling_path(
+            path_build, y_input, T
+        )
+        detected = selected_index is not None
+        if detected:
+            selected_weight = float(_SOILING_LAM_DOWN_GRID[selected_index])
+            path_build['parameters']['lam_soiling_down'].value = selected_weight
+            path_build['problem'].solve(solver=cp.CLARABEL, warm_start=True)
+            path_build['args']['lam_soiling_down'] = selected_weight
+            build = path_build
+        else:
+            selected_weight = None
+            build = make_problem(y_input, include_soiling=False, **common_build_args)
+            build['problem'].solve(solver=cp.CLARABEL)
+        selector = {
+            'detected': detected,
+            'final_model': 'soiling' if detected else 'no_soiling',
+            'selected_candidate_index': selected_index,
+            'selected_lam_soiling_down': selected_weight,
+            'null_reason': None if detected else 'no_coherent_soiling',
+            'fallback_candidate_index': len(_SOILING_LAM_DOWN_GRID) - 1,
+            'fallback_lam_soiling_down': float(_SOILING_LAM_DOWN_GRID[-1]),
+            'fallback_soiling_component_log': fallback_component,
+            'lam_soiling_value': _SOILING_LAM_VALUE,
+            'candidate_metrics': candidate_metrics,
+            'thresholds': {
+                'q75_loss_min': _SOILING_Q75_MIN,
+                'max_recoveries_per_year': _SOILING_MAX_RECOVERIES_PER_YEAR,
+                'max_neighbor_nrmse': _SOILING_MAX_NEIGHBOR_NRMSE,
+                'min_neighbor_correlation': _SOILING_MIN_NEIGHBOR_CORRELATION,
+            },
+        }
+    else:
+        build = make_problem(y_input, include_soiling=False, **common_build_args)
+        build['problem'].solve(solver=cp.CLARABEL)
 
     prob = build['problem']
     variables = build['variables']
-    prob.solve(solver=cp.CLARABEL)
 
     if prob.status not in ('optimal', 'optimal_inaccurate'):
         raise ValueError(
@@ -1370,10 +1875,12 @@ def degradation(
         Rd_pct = rates['rate_overall_pct_yr']
 
     fit_work = variables['x1'].value + variables['x2'].value
+    if include_soiling and selector['detected']:
+        fit_work = fit_work + variables['soiling'].value
     residuals_work = variables['x3'].value
     nan_mask = np.isnan(y_input)
 
-    ci_dict = _bootstrap_ci(
+    ci_dict, soiling_ci = _bootstrap_ci(
         fit=fit_work,
         residuals=residuals_work,
         nan_mask=nan_mask,
@@ -1385,12 +1892,80 @@ def degradation(
         block_size=block_size,
         confidence_level=confidence_level,
         random_state=random_state,
+        soiling_context=(
+            {
+                'index': energy_normalized.index,
+                'insolation_daily': insolation_daily,
+                'null_model': not selector['detected'],
+            }
+            if include_soiling else None
+        ),
     )
 
     rate_ci_key = 'rate_pct_yr' if trend_type == 'linear' else 'rate_overall_pct_yr'
     Rd_CI = ci_dict.get(rate_ci_key, np.array([np.nan, np.nan]))
 
     components = recover_components(variables, log_transform=log_transform)
+    soiling_results = None
+    if include_soiling:
+        if selector['detected']:
+            ratio = components['soiling']
+        else:
+            ratio = np.ones(len(y), dtype=float)
+            components['soiling'] = ratio
+            components['fit'] = components['x1'] * components['x2']
+        index = energy_normalized.index
+        log_ratio = np.log(np.clip(ratio, 1e-12, None))
+        changes = np.diff(log_ratio)
+        daily_rate = np.full(len(ratio), np.nan)
+        accumulating = changes <= 0
+        daily_rate[np.flatnonzero(accumulating) + 1] = (
+            np.exp(changes[accumulating]) - 1
+        ) * 100
+        cleaning = np.r_[False, changes >= _SOILING_RECOVERY_THRESHOLD]
+        daily = pd.DataFrame({
+            'soiling_ratio': ratio,
+            'soiling_rate_pct_day': daily_rate,
+            'cleaning_event': cleaning,
+        }, index=index)
+        intervals = _soiling_intervals(ratio, index)
+        rate_summary = _soiling_rate_summary(intervals, index)
+        loss_metrics = _soiling_loss_metrics(ratio, index, insolation_daily)
+        loss_metrics['time_averaged_loss_ci'] = soiling_ci.get(
+            'time_loss_overall', np.array([np.nan, np.nan])
+        )
+        for row_index, quarter in enumerate(range(1, 5)):
+            time_ci = soiling_ci.get(
+                f'time_loss_Q{quarter}', np.array([np.nan, np.nan])
+            )
+            loss_metrics['quarterly'].loc[
+                row_index,
+                ['time_averaged_loss_ci_low', 'time_averaged_loss_ci_high'],
+            ] = time_ci
+            if 'insolation_weighted_loss_pct' in loss_metrics:
+                insolation_ci = soiling_ci.get(
+                    f'insolation_loss_Q{quarter}', np.array([np.nan, np.nan])
+                )
+                loss_metrics['quarterly'].loc[row_index, [
+                    'insolation_weighted_loss_ci_low',
+                    'insolation_weighted_loss_ci_high',
+                ]] = insolation_ci
+        if 'insolation_weighted_loss_pct' in loss_metrics:
+            loss_metrics['insolation_weighted_loss_ci'] = soiling_ci.get(
+                'insolation_loss_overall', np.array([np.nan, np.nan])
+            )
+        for row_index, period in enumerate(rate_summary['period']):
+            rate_ci = soiling_ci.get(
+                f'rate_{period}', np.array([np.nan, np.nan])
+            )
+            rate_summary.loc[row_index, ['rate_ci_low', 'rate_ci_high']] = rate_ci
+        soiling_results = {
+            'selector': selector,
+            'daily': daily,
+            'loss': loss_metrics,
+            'intervals': intervals,
+            'rate_summary': rate_summary,
+        }
 
     sd_trend_results = {
         **rates,
@@ -1400,5 +1975,7 @@ def degradation(
         'problem_status': prob.status,
         **{f'ci_{k}': v for k, v in ci_dict.items()},
     }
+    if include_soiling:
+        sd_trend_results['soiling'] = soiling_results
 
     return Rd_pct, Rd_CI, sd_trend_results
