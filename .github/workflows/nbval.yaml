@@ -26,6 +26,7 @@ jobs:
         fetch-depth: 0  # setuptools-scm needs tags to resolve the version
     - uses: prefix-dev/setup-pixi@v0.10.0
       with:
+        pixi-version: v0.65.0
         environments: dev
     - name: Validate notebook output
       run: |

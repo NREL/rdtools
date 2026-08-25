@@ -56,8 +56,8 @@ RdTools defines several pixi environments in ``pyproject.toml``:
 - **core** — bare RdTools with core dependencies only (Python 3.13)
 - **default** — RdTools + notebook extras for regular users (Python 3.13)
 - **dev** — notebooks + test extras combined (Python 3.13); recommended for day-to-day development (alias for **dev-py313**)
-- **dev-py310** through **dev-py314** — full dev environment pinned to a specific Python version
-- **dev-min** — test-only environment with minimum supported dependency versions (Python 3.10)
+- **dev-py311** through **dev-py314** — full dev environment pinned to a specific Python version
+- **dev-min** — test-only environment with minimum supported dependency versions (Python 3.11)
 
 For most contributors, the **dev** environment is the best starting point
 because it includes everything needed to run the test suite, launch Jupyter
@@ -73,7 +73,7 @@ To test against a specific Python version:
 
 ::
 
-    pixi run -e dev-py310 test
+    pixi run -e dev-py311 test
 
 .. _updating-pixi-environments:
 
@@ -195,7 +195,7 @@ With pixi (recommended):
 ::
 
     pixi install -e dev          # all development dependencies (recommended)
-    pixi install -e dev-py310    # dev environment with Python 3.10
+    pixi install -e dev-py311    # dev environment with Python 3.11
     pixi install -e dev-min      # minimum supported dependency versions
 
 With pip:

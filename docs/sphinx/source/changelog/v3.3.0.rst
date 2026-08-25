@@ -1,0 +1,60 @@
+**********************
+v 3.3.0 (Unreleased)
+**********************
+
+Enhancements
+------------
+* Added signal-decomposition degradation analysis, available through the
+  ``TrendAnalysis.sensor_analysis`` and ``TrendAnalysis.clearsky_analysis``
+  workflows. The basic model jointly estimates a seasonal component, trend,
+  and residual using one mathematical framework. (:pull:`518`)
+* Added linear, piecewise-linear with a year-one breakpoint, and nonlinear
+  monotone trend models. The expanded models report lifecycle-dependent rates,
+  including rates before and after the breakpoint and yearly rates for the
+  monotone trend. (:pull:`518`)
+* Added L2, L1, Huber, and conditional-quantile loss functions, with optional
+  natural-log transformation. The default analysis uses a robust Huber loss
+  and log-transformed performance data. (:pull:`518`)
+* Added moving-block bootstrap uncertainty intervals for signal-decomposition
+  degradation rates, including the additional rates returned by the expanded
+  trend models. (:pull:`518`)
+* Added stability and conditional-quantile sweeps for diagnosing trend-model
+  sensitivity and distinguishing linear degradation, early-life burn-in, and
+  later-life changes. (:pull:`518`)
+* Added SD++ soiling analysis as a deterministic sequence of signal-
+  decomposition problems. The method performs a regularization sweep for
+  structural detection, returns an explicit no-soiling model when no coherent
+  component is found, and applies two interval-weighted IRL1 refinements to
+  reduce shrinkage after a positive detection. (:pull:`518`)
+* Added SD++ soiling outputs for time-averaged and quarterly losses,
+  insolation-weighted losses when insolation is available, local soiling-rate
+  intervals, cleaning-event strength, bootstrap uncertainty, and selector
+  diagnostics. (:pull:`518`)
+* Added decomposition, trend, stability, and soiling plots and formatted
+  reports for inspecting signal-decomposition results. (:pull:`518`)
+
+Documentation
+-------------
+* Added a signal-decomposition guide covering the basic degradation model,
+  robust loss options, bootstrap uncertainty, expanded trend models,
+  conditional-quantile diagnostics, and SD++ soiling analysis. (:pull:`518`)
+* Added public PVDAQ examples and generated decomposition figures, including a
+  synthetic year-one breakpoint and synthetic dry-soiling signal with known
+  ground truth. (:pull:`518`)
+
+Requirements
+------------
+* Raised the minimum supported Python version from 3.10 to 3.11 and removed
+  Python 3.10 from the test matrix and Pixi development environments.
+  (:pull:`518`)
+* Added CVXPY and SPCQE as runtime dependencies for signal decomposition. Their
+  tested lower bounds are CVXPY 1.5.3 and SPCQE 0.0.3. (:pull:`518`)
+* Refreshed the complete minimum-dependency environment for Python 3.11. The
+  tested floors include NumPy 1.23.4, pandas 2.1.0, SciPy 1.13.0, Matplotlib
+  3.6.2, h5py 3.8.0, Plotly 5.11.0, and pvlib 0.11.0. (:pull:`518`)
+* Added a strict ``dev-min`` CI job that builds the exact lower-bound
+  environment and runs the complete test suite. The ``check-deps`` job also
+  verifies that these exact pins remain synchronized with
+  ``project.dependencies``. (:pull:`518`)
+* Pinned the Pixi version used by CI so the committed lockfile is generated and
+  consumed with consistent lock-format behavior. (:pull:`518`)

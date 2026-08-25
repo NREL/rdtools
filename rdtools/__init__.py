@@ -6,6 +6,9 @@ from rdtools.normalization import normalize_with_expected_power
 from rdtools.degradation import degradation_ols
 from rdtools.degradation import degradation_classical_decomposition
 from rdtools.degradation import degradation_year_on_year
+from rdtools.degradation import degradation_hybrid
+from rdtools.degradation import degradation_theil_sen
+from rdtools.degradation import degradation_fourier
 from rdtools.aggregation import aggregation_insol
 from rdtools.clearsky_temperature import get_clearsky_tamb
 from rdtools.filtering import clearsky_filter
@@ -31,6 +34,7 @@ from rdtools.analysis_chains import TrendAnalysis
 from rdtools.plotting import degradation_summary_plots
 from rdtools.plotting import tune_filter_plot
 from rdtools.plotting import degradation_timeseries_plot
+from rdtools.plotting import hybrid_degradation_summary_plots
 # from rdtools.plotting import soiling_monte_carlo_plot
 # from rdtools.plotting import soiling_interval_plot
 # from rdtools.plotting import soiling_rate_histogram

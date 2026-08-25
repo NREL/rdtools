@@ -63,6 +63,16 @@ the uncertainty in the estimate via a bootstrap calculation. The
 :ref:`examples` use the output of
 :py:func:`.degradation.degradation_year_on_year` to visualize the calculation.
 
+Signal decomposition provides a superset of RdTools' degradation and soiling
+analysis jobs through one mathematical theory. It covers the established needs
+for degradation rates, uncertainty, lifecycle-dependent trends, soiling loss,
+and local soiling rates, while adding breakpoint, nonlinear monotone,
+conditional-quantile, stability, and component-level diagnostics. The SD
+estimators are not numerically identical to the existing YOY, hybrid, SRR, or
+CODS methods; they provide a unified route to the same classes of analysis and
+extend them. See :doc:`signal_decomposition` for the model family and guidance
+on choosing and interpreting its analyses.
+
 .. image:: _images/Clearsky_result_updated.png
    :alt: RdTools degradation results plot
 
@@ -103,6 +113,12 @@ in RdTools. CODS self-consistently extracts degradation, soiling, and seasonalit
 of the daily-aggregated normalized performance signal. It is particularly useful
 when soiling trends are biasing degradation results. Its use is shown in both the TrendAnalysis
 example notebook as well as the functional API example notebook for degradation and soiling.
+
+Signal decomposition with soiling (SD++) is a third option for conventional
+dry, sawtooth-style soiling. It applies a fixed sequence of decomposition,
+structural selection, IRL1 debiasing, and final-model bootstrap steps, including
+an explicit no-soiling result when the structural criteria are not met. See
+:doc:`signal_decomposition` for the algorithm, outputs, and limitations.
 
 TrendAnalysis
 ^^^^^^^^^^^^^
@@ -152,7 +168,7 @@ installing requirements. If this occurs, the requirements specified in
 
 For more detailed instructions, see the :ref:`developer_notes` page.
 
-RdTools currently is tested on Python 3.10+.
+RdTools currently is tested on Python 3.11+.
 
 Usage and examples
 ------------------
@@ -260,6 +276,7 @@ Documentation Contents
 .. toctree::
    :maxdepth: 2
 
+   Signal Decomposition <signal_decomposition>
    Examples <examples>
    API Reference <api>
    Change Log <changelog>

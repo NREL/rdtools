@@ -1,0 +1,27 @@
+## Degradation report
+
+**Trend type:** `linear` | **Loss:** `huber` | **Harmonics:** 3 | **λ seasonal:** 1.00e-01 | **λ trend:** 1.00e+00
+
+| Segment | Rate |
+|---|---|
+| Overall | -0.515 %/yr |
+
+> Rates expressed as %/yr relative to the trend value at the first sample.
+> Negative values indicate degradation.
+
+## Soiling report
+
+**Soiling detected:** yes | **selected λ down:** 1.000e-03
+
+| Metric | Estimate |
+|---|---:|
+| Time-averaged loss | 4.001 % |
+| Median local rate | -0.1040 %/day |
+| Insolation-weighted loss | 4.051 % |
+
+| Quarter | Time-averaged loss | Insolation-weighted loss | Median local rate |
+|---|---:|---:|---:|
+| Q1 | 6.786 % | 6.844 % | -0.1468 %/day |
+| Q2 | 4.436 % | 4.541 % | -0.1032 %/day |
+| Q3 | 2.063 % | 2.386 % | -0.0702 %/day |
+| Q4 | 2.985 % | 2.763 % | -0.1140 %/day |
