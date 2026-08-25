@@ -55,19 +55,19 @@ Signal Decomposition
 .. autosummary::
    :toctree: generated/
 
-   signal_decomposition.degradation
-   signal_decomposition.make_problem
-   signal_decomposition.prepare_input
-   signal_decomposition.recover_components
-   signal_decomposition.extract_degradation_rate
-   signal_decomposition.extract_degradation_rate_log
-   signal_decomposition.get_valid_endpoints
-   signal_decomposition.analyze_fit_stability
-   signal_decomposition.plot_trend
-   signal_decomposition.plot_decomposition
-   signal_decomposition.plot_stability
-   signal_decomposition.animate_degradation
-   signal_decomposition.format_degradation_report
+   rdtools.signal_decomposition.degradation
+   rdtools.signal_decomposition.make_problem
+   rdtools.signal_decomposition.prepare_input
+   rdtools.signal_decomposition.recover_components
+   rdtools.signal_decomposition.extract_degradation_rate
+   rdtools.signal_decomposition.extract_degradation_rate_log
+   rdtools.signal_decomposition.get_valid_endpoints
+   rdtools.signal_decomposition.analyze_fit_stability
+   rdtools.signal_decomposition.plot_trend
+   rdtools.signal_decomposition.plot_decomposition
+   rdtools.signal_decomposition.plot_stability
+   rdtools.signal_decomposition.animate_degradation
+   rdtools.signal_decomposition.format_degradation_report
 
 
 Degradation
