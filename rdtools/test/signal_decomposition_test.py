@@ -118,6 +118,7 @@ class TestDegradationReturnStructure:
         assert info['args']['loss'] == 'huber'
         assert info['args']['huber_M'] == 0.05
         assert info['args']['log_transform'] is True
+        assert info['args']['numharmonics'] == 3
 
     def test_problem_status_optimal(self):
         s = _make_series()

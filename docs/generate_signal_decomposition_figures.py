@@ -16,6 +16,7 @@ import rdtools
 
 DOCS_DIR = Path(__file__).resolve().parent
 IMAGE_DIR = DOCS_DIR / "sphinx" / "source" / "_images"
+GENERATED_DIR = DOCS_DIR / "sphinx" / "source" / "_generated"
 
 
 def fitted_limits(values, margin_fraction=0.15, minimum_margin=0.01):
@@ -49,10 +50,10 @@ def load_pvdaq_system_4():
     return data
 
 
-def make_analysis(data):
+def make_analysis(data, power_column="power_ac"):
     """Construct the same sensor analysis used in the SD examples."""
     return rdtools.TrendAnalysis(
-        data["power_ac"],
+        data[power_column],
         data["poa"],
         temperature_ambient=data["Tamb"],
         gamma_pdc=-0.0034,
@@ -203,6 +204,83 @@ def main():
         bbox_inches="tight",
     )
     plt.close(figure)
+
+    # Apply the released synthetic dry-soiling ratio to measured PVDAQ power,
+    # then recover it through the public SD++ sensor-analysis workflow.
+    soiled_data = data.copy()
+    soiled_data["power_with_soiling"] = (
+        soiled_data["power_ac"] * soiled_data["soiling"]
+    )
+    soiling_analysis = make_analysis(soiled_data, "power_with_soiling")
+    soiling_analysis.sensor_analysis(
+        analyses=["signal_decomposition"],
+        sd_kwargs={"include_soiling": True, "n_bootstrap": 0},
+    )
+    soiling_result = soiling_analysis.results["sensor"]["signal_decomposition"]
+    soiling_info = soiling_result["sd_trend_results"]
+    soiling_dates = soiling_analysis.sensor_aggregated_performance.index
+    estimated_soiling = soiling_info["components"]["soiling"]
+    known_soiling = data["soiling"].resample("D").mean().reindex(soiling_dates)
+
+    figure, axes = plt.subplots(
+        2,
+        1,
+        figsize=(10, 6.5),
+        sharex=True,
+        gridspec_kw={"height_ratios": [2, 1]},
+    )
+    axes[0].plot(
+        soiling_dates,
+        soiling_analysis.sensor_aggregated_performance,
+        color="0.55",
+        linewidth=0.7,
+        alpha=0.55,
+        label="Normalized daily performance",
+    )
+    axes[0].plot(
+        soiling_dates,
+        soiling_info["components"]["fit"],
+        color="#0072B2",
+        linewidth=2,
+        label="SD++ fit",
+    )
+    axes[0].set_ylim(fitted_limits(soiling_info["components"]["fit"]))
+    axes[0].set_ylabel("Performance ratio")
+    axes[0].set_title("SD++ recovery of synthetic dry soiling on public PVDAQ")
+    axes[0].legend(loc="lower left")
+
+    axes[1].plot(
+        soiling_dates,
+        known_soiling,
+        color="black",
+        linewidth=1.2,
+        label="Known synthetic soiling",
+    )
+    axes[1].plot(
+        soiling_dates,
+        estimated_soiling,
+        color="#D55E00",
+        linewidth=1.5,
+        label="Estimated soiling component",
+    )
+    axes[1].axhline(1, color="0.5", linestyle=":", linewidth=1)
+    axes[1].set_ylabel("Soiling ratio")
+    axes[1].set_xlabel("Date")
+    axes[1].legend(loc="lower left")
+    figure.tight_layout()
+    figure.savefig(
+        IMAGE_DIR / "signal_decomposition_soiling.png",
+        dpi=180,
+        bbox_inches="tight",
+    )
+    plt.close(figure)
+
+    GENERATED_DIR.mkdir(exist_ok=True)
+    report = rdtools.signal_decomposition.format_degradation_report(soiling_info)
+    (GENERATED_DIR / "signal_decomposition_soiling_report.txt").write_text(
+        report,
+        encoding="utf-8",
+    )
 
 
 if __name__ == "__main__":

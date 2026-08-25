@@ -1798,8 +1798,7 @@ def degradation(
     loss : str or None
         Residual loss. ``None`` selects ``'huber'`` with ``huber_M=0.05``.
     numharmonics : int or None
-        Number of Fourier harmonic pairs. ``None`` selects 6 normally and 3
-        when ``include_soiling=True``.
+        Number of Fourier harmonic pairs. ``None`` selects 3.
     lam_seasonal : float
         Regularisation weight on Fourier coefficients.
     lam_trend : float
@@ -1929,7 +1928,7 @@ def degradation(
     else:
         resolved = {
             'loss': 'huber' if loss is None else loss,
-            'numharmonics': 6 if numharmonics is None else numharmonics,
+            'numharmonics': 3 if numharmonics is None else numharmonics,
             'huber_M': 0.05 if huber_M is None else huber_M,
             'log_transform': True if log_transform is None else log_transform,
         }

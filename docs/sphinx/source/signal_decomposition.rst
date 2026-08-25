@@ -159,6 +159,11 @@ override all three choices. SD++ soiling uses the same log-Huber residual
 preset, but there it is part of the frozen detection and estimation algorithm
 and is not a user-tuning choice.
 
+The default seasonal model uses three Fourier harmonic pairs. This captures
+broad annual structure without giving the seasonal component unnecessary
+short-scale flexibility; ``numharmonics`` remains selectable for ordinary
+trend analysis. SD++ also uses three harmonics as part of its frozen preset.
+
 Typical degradation estimation
 ------------------------------
 
@@ -408,6 +413,31 @@ The fitted daily multiplicative ratio is also available as
 ``soiling_result["sd_trend_results"]["components"]["soiling"]``. A null
 result contains an all-ones ratio and zero loss rather than a forced or heavily
 regularized soiling curve.
+
+Synthetic recovery example
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. figure:: _images/signal_decomposition_soiling.png
+   :alt: Signal decomposition with soiling recovering a known synthetic dry
+         soiling component applied to the public PVDAQ example.
+   :width: 100%
+
+   The released synthetic dry-soiling ratio is applied multiplicatively to the
+   measured PVDAQ power before running the normal ``sensor_analysis`` workflow.
+   The upper panel's y-axis is centered on the SD++ fit so extreme observations
+   remain in the robust estimation but do not determine the displayed range.
+   The lower panel compares the known input ratio with the recovered soiling
+   component.
+
+Example report
+^^^^^^^^^^^^^^
+
+The same fit produces the following report through
+``format_degradation_report``. Negative rates denote degradation or soiling
+accumulation, as indicated by their units.
+
+.. literalinclude:: _generated/signal_decomposition_soiling_report.txt
+   :language: markdown
 
 Scope and limitations
 ^^^^^^^^^^^^^^^^^^^^^
