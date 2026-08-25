@@ -20,10 +20,7 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-try:
-    import tomllib
-except ModuleNotFoundError:  # Python 3.10
-    import tomli as tomllib  # type: ignore[no-redef]
+import tomllib
 
 from packaging.requirements import Requirement
 from packaging.version import Version

@@ -19,6 +19,7 @@ jobs:
         fetch-depth: 0  # setuptools-scm needs tags to resolve the version
     - uses: prefix-dev/setup-pixi@v0.10.0
       with:
+        pixi-version: v0.65.0
         run-install: false
     - name: Verify pixi.lock is in sync with pyproject.toml
       run: |
@@ -44,6 +45,7 @@ jobs:
         fetch-depth: 0  # setuptools-scm needs tags to resolve the version
     - uses: prefix-dev/setup-pixi@v0.10.0
       with:
+        pixi-version: v0.65.0
         environments: core default dev
         frozen: true
     - name: Validate core environment
@@ -57,7 +59,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        environment: [dev-py310, dev-py311, dev-py312, dev-py313, dev-py314]
+        environment: [dev-py311, dev-py312, dev-py313, dev-py314]
       fail-fast: false
 
     steps:
@@ -66,6 +68,7 @@ jobs:
         fetch-depth: 0  # setuptools-scm needs tags to resolve the version
     - uses: prefix-dev/setup-pixi@v0.10.0
       with:
+        pixi-version: v0.65.0
         environments: ${{ matrix.environment }}
     - name: Test with pytest (${{ matrix.environment }})
       run: pixi run -e ${{ matrix.environment }} test
@@ -83,6 +86,7 @@ jobs:
         fetch-depth: 0  # setuptools-scm needs tags to resolve the version
     - uses: prefix-dev/setup-pixi@v0.10.0
       with:
+        pixi-version: v0.65.0
         environments: dev-min
     - name: Test with pytest (minimum versions)
       run: pixi run -e dev-min test
@@ -95,7 +99,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+        python-version: ["3.11", "3.12", "3.13", "3.14"]
       fail-fast: false
 
     steps:

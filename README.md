@@ -58,7 +58,7 @@ pixi run -e dev mo-home # launch Marimo home page in docs/ folder
 
 For API documentation and full examples, please see the [documentation](https://rdtools.readthedocs.io).
 
-RdTools currently is tested on Python 3.10+.
+RdTools currently is tested on Python 3.11+.
 
 ### Marimo 
 

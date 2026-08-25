@@ -1,0 +1,13 @@
+**********************
+v 3.3.0 (Unreleased)
+**********************
+
+Requirements
+------------
+* Raised the minimum supported Python version from 3.10 to 3.11 and removed
+  Python 3.10 from the test matrix and pixi development environments.
+* Raised the minimum versions of NumPy, pandas, Matplotlib, h5py, and Plotly to
+  versions that provide a coherent, tested Python 3.11 environment alongside
+  SciPy 1.13. Added CVXPY and SPCQE to the exact minimum-dependency environment.
+* Pinned the Pixi version used by CI so the committed lockfile is generated and
+  consumed with consistent lock-format behavior.

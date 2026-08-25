@@ -591,7 +591,15 @@ def clearsky_pvlib_analysis(clearsky_example_data):
     rd_analysis = TrendAnalysis(**clearsky_parameters_example)
     rd_analysis.set_clearsky(**cs_input_example)
     rd_analysis.filter_params["clearsky_filter"] = {"model": "pvlib"}
-    rd_analysis.clearsky_analysis(analyses=["yoy_degradation"])
+    # The year-on-year confidence interval is estimated by bootstrap sampling.
+    # Seed this regression fixture so its expected interval is reproducible,
+    # while preserving the process-global RNG state for subsequent tests.
+    random_state = np.random.get_state()
+    try:
+        np.random.seed(1977)
+        rd_analysis.clearsky_analysis(analyses=["yoy_degradation"])
+    finally:
+        np.random.set_state(random_state)
     return rd_analysis
 
 
@@ -644,7 +652,7 @@ def test_clearsky_pvlib_analysis(clearsky_pvlib_analysis):
     ci = yoy_results["rd_confidence_interval"]
     rd = yoy_results["p50_rd"]
     assert pytest.approx(rd, abs=1e-2) == -1.589
-    assert pytest.approx(ci, abs=1e-2) == [-2.417, -0.861]
+    assert pytest.approx(ci, abs=1e-2) == [-2.233, -0.861]
 
 
 def test_clearsky_analysis_filter_components(clearsky_analysis):
