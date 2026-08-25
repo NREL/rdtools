@@ -1336,9 +1336,15 @@ def plot_trend(sd_trend_results, energy_normalized, figsize=(8, 5)):
     x2 = sd_trend_results['components']['x2']
 
     fig, ax = plt.subplots(figsize=figsize)
-    energy_normalized.plot(ax=ax, lw=0.8,
-                           label='normalized daily energy', marker='.',
-                           ls='none', ms=1)
+    ax.plot(
+        energy_normalized.index,
+        energy_normalized.to_numpy(),
+        lw=0.8,
+        label='normalized daily energy',
+        marker='.',
+        ls='none',
+        ms=1,
+    )
     ax.plot(energy_normalized.index, x2, lw=1.5, label='trend')
     ax.legend(fontsize=9, framealpha=0.7)
     ax.spines[['top', 'right']].set_visible(False)

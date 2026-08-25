@@ -338,6 +338,52 @@ def test_soiling_loss_metrics_time_and_insolation_weighting():
     assert q1['insolation_weighted_loss_pct'] == pytest.approx(10)
 
 
+def test_soiling_loss_metrics_validates_insolation():
+    index = pd.date_range('2020-01-01', periods=366, freq='D')
+    ratio = np.full(len(index), 0.98)
+
+    with pytest.raises(TypeError, match='pandas.Series'):
+        signal_decomposition._soiling_loss_metrics(
+            ratio, index, np.ones(len(index))
+        )
+
+    with pytest.raises(TypeError, match='DatetimeIndex'):
+        signal_decomposition._soiling_loss_metrics(
+            ratio, index, pd.Series(np.ones(len(index)))
+        )
+
+    duplicate_index = index.copy().to_list()
+    duplicate_index[-1] = duplicate_index[-2]
+    with pytest.raises(ValueError, match='duplicates'):
+        signal_decomposition._soiling_loss_metrics(
+            ratio,
+            index,
+            pd.Series(
+                np.ones(len(index)), index=pd.DatetimeIndex(duplicate_index)
+            ),
+        )
+
+    negative = pd.Series(np.ones(len(index)), index=index)
+    negative.iloc[0] = -1
+    with pytest.raises(ValueError, match='nonnegative'):
+        signal_decomposition._soiling_loss_metrics(ratio, index, negative)
+
+
+def test_soiling_loss_metrics_warns_for_quarters_without_positive_insolation():
+    index = pd.date_range('2020-01-01', periods=366, freq='D')
+    ratio = np.full(len(index), 0.98)
+    insolation = pd.Series(1.0, index=index)
+    insolation.loc[index.quarter == 2] = np.nan
+    with pytest.warns(UserWarning, match=r'quarter\(s\) 2'):
+        metrics = signal_decomposition._soiling_loss_metrics(
+            ratio, index, insolation
+        )
+    q2 = metrics['quarterly'].loc[
+        metrics['quarterly']['quarter'] == 2
+    ].iloc[0]
+    assert np.isnan(q2['insolation_weighted_loss_pct'])
+
+
 def test_soiling_interval_validity_and_day_weighted_summary():
     index = pd.date_range('2020-01-01', periods=30, freq='D')
     log_ratio = np.r_[
@@ -432,6 +478,15 @@ def test_plot_decomposition_returns_figure():
     plt.close('all')
 
 
+def test_plot_trend_returns_figure_with_datetime_axis():
+    s = _make_series()
+    info = {'components': {'x2': np.linspace(1.0, 0.98, len(s))}}
+    fig = signal_decomposition.plot_trend(info, s)
+    assert isinstance(fig, plt.Figure)
+    assert len(fig.axes[0].lines) == 2
+    plt.close(fig)
+
+
 def test_format_degradation_report_linear():
     s = _make_series()
     _, _, info = signal_decomposition.degradation(s, trend_type='linear')
@@ -490,4 +545,91 @@ def test_plot_stability_returns_figure():
     )
     fig = signal_decomposition.plot_stability(stability)
     assert isinstance(fig, plt.Figure)
+    plt.close('all')
+
+
+def test_animate_degradation_solves_updates_and_selects_gif_writer(
+        monkeypatch, tmp_path):
+    """Exercise animation frames without calling an external image encoder."""
+    calls = {}
+
+    class FakeAnimation:
+        def __init__(self, figure, update, frames, interval, blit):
+            calls['frames'] = frames
+            calls['interval'] = interval
+            calls['blit'] = blit
+            for frame_index in range(frames):
+                update(frame_index)
+
+        def save(self, output_path, writer, dpi):
+            calls['output_path'] = output_path
+            calls['writer'] = writer
+            calls['dpi'] = dpi
+
+    class FakePillowWriter:
+        def __init__(self, fps):
+            self.fps = fps
+
+    monkeypatch.setattr(
+        signal_decomposition.animation, 'FuncAnimation', FakeAnimation
+    )
+    monkeypatch.setattr(
+        signal_decomposition.animation, 'PillowWriter', FakePillowWriter
+    )
+
+    class FakeVariable:
+        def __init__(self, value):
+            self.value = value
+
+    class FakeProblem:
+        status = 'optimal'
+
+        def solve(self, **kwargs):
+            calls['solve_count'] = calls.get('solve_count', 0) + 1
+
+    def fake_make_problem(values, **kwargs):
+        n = len(values)
+        trend = np.linspace(values[0], values[-1], n)
+        seasonal = 0.01 * np.sin(2 * np.pi * np.arange(n) / 4)
+        residual = values - trend - seasonal
+        return {
+            'problem': FakeProblem(),
+            'variables': {
+                'x1': FakeVariable(seasonal),
+                'x2': FakeVariable(trend),
+                'x3': FakeVariable(residual),
+            },
+        }
+
+    monkeypatch.setattr(
+        signal_decomposition, 'make_problem', fake_make_problem
+    )
+
+    t = np.arange(16, dtype=float)
+    y = 1 - 0.002 * t + 0.01 * np.sin(2 * np.pi * t / 4)
+    output_path = tmp_path / 'degradation.gif'
+    result = signal_decomposition.animate_degradation(
+        y,
+        make_problem_kwargs={
+            'trend_type': 'linear',
+            'loss': 'l2',
+            'numharmonics': 1,
+            'T': 4,
+        },
+        output_path=str(output_path),
+        fps=5,
+        step=4,
+        T=4,
+        dpi=72,
+    )
+
+    assert isinstance(result, FakeAnimation)
+    assert calls['frames'] == 4
+    assert calls['solve_count'] == 4
+    assert calls['interval'] == 200
+    assert calls['blit'] is False
+    assert calls['output_path'] == str(output_path)
+    assert isinstance(calls['writer'], FakePillowWriter)
+    assert calls['writer'].fps == 5
+    assert calls['dpi'] == 72
     plt.close('all')
