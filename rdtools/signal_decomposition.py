@@ -1790,8 +1790,7 @@ def degradation(
         Trend model: ``'linear'``, ``'pwl'`` (piecewise-linear with one
         breakpoint after the first year), or ``'monotone'`` (non-increasing).
     loss : str or None
-        Residual loss. ``None`` selects ``'l2'`` normally and the validated
-        ``'huber'`` loss when ``include_soiling=True``.
+        Residual loss. ``None`` selects ``'huber'`` with ``huber_M=0.05``.
     numharmonics : int or None
         Number of Fourier harmonic pairs. ``None`` selects 6 normally and 3
         when ``include_soiling=True``.
@@ -1809,8 +1808,8 @@ def degradation(
     q : float
         Quantile level in (0, 1); only used when ``loss='quantile'``.
     huber_M : float or None
-        Huber threshold. ``None`` selects 1 normally and 0.05 when
-        ``include_soiling=True``.
+        Huber threshold. ``None`` selects 0.05. This default is scaled for
+        normalized PV performance near unity.
     include_soiling : bool
         Run the validated soiling path and selector. This option requires the
         validated linear/Huber/log configuration; conflicting model options
@@ -1824,8 +1823,8 @@ def degradation(
         If True, apply a natural-log transform before decomposing. The
         returned components are back-transformed to the original domain.
         Rates are computed as compound annual rates via
-        :func:`extract_degradation_rate_log`. ``None`` selects False normally
-        and True when ``include_soiling=True``.
+        :func:`extract_degradation_rate_log`. ``None`` selects True. Set False
+        explicitly to fit an additive decomposition in ratio space.
     confidence_level : float
         Confidence level for ``Rd_CI`` in percent (e.g. ``68.2`` for ≈1σ,
         ``95`` for 95%). The interval is the empirical
@@ -1923,10 +1922,10 @@ def degradation(
             raise ValueError('include_soiling=True requires a DatetimeIndex')
     else:
         resolved = {
-            'loss': 'l2' if loss is None else loss,
+            'loss': 'huber' if loss is None else loss,
             'numharmonics': 6 if numharmonics is None else numharmonics,
-            'huber_M': 1.0 if huber_M is None else huber_M,
-            'log_transform': False if log_transform is None else log_transform,
+            'huber_M': 0.05 if huber_M is None else huber_M,
+            'log_transform': True if log_transform is None else log_transform,
         }
     loss = resolved['loss']
     numharmonics = resolved['numharmonics']
@@ -2107,7 +2106,7 @@ def degradation(
         **rates,
         'components':     components,
         'y':              y,
-        'args':           build['args'],
+        'args':           {**build['args'], 'log_transform': log_transform},
         'problem_status': prob.status,
         **{f'ci_{k}': v for k, v in ci_dict.items()},
     }

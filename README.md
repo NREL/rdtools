@@ -67,10 +67,12 @@ RdTools currently is tested on Python 3.11+.
 Edit a specific notebook by running:
 ```
 pixi run -e dev marimo edit docs/signal_decomposition_example.py
+pixi run -e dev marimo edit docs/signal_decomposition_soiling_example.py
 ```
 Run a specific notebook in "app mode" (code hidden):
 ```
 pixi run -e dev marimo run docs/signal_decomposition_example.py
+pixi run -e dev marimo run docs/signal_decomposition_soiling_example.py
 ```
 
 

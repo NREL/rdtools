@@ -195,7 +195,7 @@ def _(mo):
     )
     loss_radio = mo.ui.radio(
         options=['l2', 'l1', 'huber', 'quantile'],
-        value='l2',
+        value='huber',
         label='Loss function',
     )
     numharmonics_slider = mo.ui.slider(
@@ -219,11 +219,11 @@ def _(mo):
         show_value=True,
     )
     huber_m_slider = mo.ui.slider(
-        start=0.01, stop=2.0, step=0.01, value=0.2,
+        start=0.01, stop=2.0, step=0.01, value=0.05,
         label='Huber M',
         show_value=True,
     )
-    log_toggle = mo.ui.switch(label='Log-transform input', value=False)
+    log_toggle = mo.ui.switch(label='Log-transform input', value=True)
     lam_end_slider = mo.ui.slider(
         start=0.0, stop=10.0, step=0.1, value=0.0,
         label='λ end-drop',

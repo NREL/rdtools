@@ -112,6 +112,13 @@ class TestDegradationReturnStructure:
         assert info['args']['loss'] == 'l1'
         assert info['args']['numharmonics'] == 4
 
+    def test_default_model_uses_log_huber_preset(self):
+        s = _make_series()
+        _, _, info = signal_decomposition.degradation(s, n_bootstrap=0)
+        assert info['args']['loss'] == 'huber'
+        assert info['args']['huber_M'] == 0.05
+        assert info['args']['log_transform'] is True
+
     def test_problem_status_optimal(self):
         s = _make_series()
         _, _, info = signal_decomposition.degradation(s)
