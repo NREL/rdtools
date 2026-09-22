@@ -4,8 +4,6 @@ v3.3.0 (unreleased)
 
 Bug Fixes
 ---------
-.. TODO: add the (:pull:`NNN`) reference once the pull request is open.
-
 * :py:class:`~rdtools.analysis_chains.TrendAnalysis` now estimates ``power_dc_rated``
   from the PV stream when it is omitted, instead of normalizing ``energy_normalized``
   by its own 95th percentile. The old normalization constant was a percentile of
@@ -20,4 +18,4 @@ Bug Fixes
   unaffected, since the two constants agree there; where they disagree, more data may now
   be removed by ``normalized_filter``. The sensor and clear-sky workflows also now share
   one normalization constant, where previously each was renormalized by its own
-  percentile.
+  percentile. (:pull:`519`)
