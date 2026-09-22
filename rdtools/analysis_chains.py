@@ -471,9 +471,9 @@ class TrendAnalysis:
             Estimated DC rating, as an average power in the units implied by ``pv``.
         """
         # The same median timestep that energy_from_power() integrated pv over.
-        interval_hours = normalization._t_step_nanoseconds(self.pv_energy).median() / 1e9 / 3600
+        t_steps, _ = normalization._delta_index(self.pv_energy)
         pv_energy = self.pv_energy[np.isfinite(self.pv_energy)]
-        return utilities.robust_quantile(pv_energy, 0.95) / interval_hours
+        return utilities.robust_quantile(pv_energy, 0.95) / t_steps.median()
 
     def _pvwatts_norm(self, poa_global, temperature_cell):
         """
