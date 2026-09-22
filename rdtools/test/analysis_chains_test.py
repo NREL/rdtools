@@ -1102,3 +1102,43 @@ def test_degradation_timeseries_plot_invalid_case(sensor_analysis):
     """Test plot_degradation_timeseries raises error for invalid case."""
     with pytest.raises(ValueError, match="case must be either"):
         sensor_analysis.plot_degradation_timeseries(case="invalid")
+
+
+def test_estimate_power_dc_rated_is_independent_of_pv_units(sensor_parameters):
+    # The estimate is a scale read off pv itself, so a change of units rescales it by the
+    # same factor. normalize_with_pvwatts divides pv by an expected stream built from the
+    # estimate, so the normalized result is unchanged.
+    as_given = TrendAnalysis(**sensor_parameters)
+    rescaled = TrendAnalysis(**dict(sensor_parameters, pv=sensor_parameters["pv"] * 1000))
+    assert rescaled._estimate_power_dc_rated() == pytest.approx(
+        1000 * as_given._estimate_power_dc_rated()
+    )
+
+
+def test_estimate_power_dc_rated_agrees_for_power_and_energy_input(sensor_parameters):
+    # The same plant reported as energy per interval must give the same average power.
+    as_power = TrendAnalysis(**sensor_parameters)
+    energy = normalization.energy_from_power(as_power.pv_power)
+    as_energy = TrendAnalysis(**dict(sensor_parameters, pv=energy, pv_input="energy"))
+    assert as_energy._estimate_power_dc_rated() == pytest.approx(
+        as_power._estimate_power_dc_rated()
+    )
+
+
+def test_pvwatts_norm_does_not_absorb_poa_bias(sensor_parameters):
+    # The reason for estimating the rating from pv: an irradiance channel reading high must
+    # show up in energy_normalized, not be divided out of it. Renormalizing energy_normalized
+    # by its own 95th percentile put poa_global in the normalization constant, which left this
+    # ratio at 1.
+    def normalized_p95(poa_scale):
+        params = dict(
+            sensor_parameters, poa_global=sensor_parameters["poa_global"] * poa_scale
+        )
+        rd_analysis = TrendAnalysis(**params)
+        energy_normalized, _ = rd_analysis._pvwatts_norm(
+            rd_analysis.poa_global, rd_analysis.temperature_ambient
+        )
+        finite = energy_normalized[np.isfinite(energy_normalized)]
+        return finite.quantile(0.95)
+
+    assert normalized_p95(40) / normalized_p95(1) == pytest.approx(1 / 40, rel=1e-3)

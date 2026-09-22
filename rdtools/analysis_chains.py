@@ -52,9 +52,9 @@ class TrendAnalysis:
         have keys 'a', 'b', 'deltaT'. See :py:func:`pvlib.temperature.sapm_cell` documentation
         for details.
     power_dc_rated : float
-        Nameplate DC rating of PV array in Watts. If omitted, pv output will be internally
-        normalized in the normalization step based on it's 95th percentile
-        (see TrendAnalysis._pvwatts_norm() source).
+        Nameplate DC rating of PV array in Watts. If omitted, it is estimated from the 95th
+        percentile of ``pv`` in the normalization step
+        (see TrendAnalysis._estimate_power_dc_rated()).
     interp_freq : str or pandas.tseries.offsets.DateOffset
         Pandas frequency specification used to interpolate the input PV power
         or energy. We recommend using the natural frequency of the
@@ -446,6 +446,35 @@ class TrendAnalysis:
 
         self.temperature_ambient_clearsky = cs_amb_temp
 
+    def _estimate_power_dc_rated(self):
+        """
+        Estimate the DC rating of the array from the PV data, for use when
+        ``power_dc_rated`` was not provided.
+
+        Returns the 95th percentile of ``self.pv_energy``, divided by the interval each of
+        its values covers, so the result is an average power in whatever units ``pv`` was
+        given in. Only the scale of the result matters:
+        :py:func:`rdtools.normalization.normalize_with_pvwatts` divides the measured stream
+        by an expected stream built from this same number, so the normalized result does not
+        depend on the units of ``pv``, nor on whether ``pv`` was passed as power or energy.
+
+        Taking the percentile of the PV stream keeps ``poa_global`` out of the normalization
+        constant. Normalizing ``energy_normalized`` by its own 95th percentile instead
+        divides by a percentile of ``pv / pvwatts_expected(poa_global, temperature_cell)``,
+        which absorbs any bias in the irradiance channel into the constant, where neither
+        :py:func:`rdtools.filtering.normalized_filter` nor a plot of the normalized data can
+        reveal it.
+
+        Returns
+        -------
+        float
+            Estimated DC rating, as an average power in the units implied by ``pv``.
+        """
+        # The same median timestep that energy_from_power() integrated pv over.
+        interval_hours = normalization._t_step_nanoseconds(self.pv_energy).median() / 1e9 / 3600
+        pv_energy = self.pv_energy[np.isfinite(self.pv_energy)]
+        return utilities.robust_quantile(pv_energy, 0.95) / interval_hours
+
     def _pvwatts_norm(self, poa_global, temperature_cell):
         """
         Normalize PV energy to that expected from a PVWatts model.
@@ -466,10 +495,8 @@ class TrendAnalysis:
         """
 
         if self.power_dc_rated is None:
-            renorm = True
-            power_dc_rated = 1.0
+            power_dc_rated = self._estimate_power_dc_rated()
         else:
-            renorm = False
             power_dc_rated = self.power_dc_rated
 
         if self.gamma_pdc is None:
@@ -490,13 +517,6 @@ class TrendAnalysis:
         energy_normalized, insolation = normalization.normalize_with_pvwatts(
             self.pv_energy, pvwatts_kws
         )
-
-        if renorm:
-            # Normalize to the 95th percentile for convenience, this is renormalized out
-            # in the calculations but is relevant to normalized_filter()
-            q = utilities.robust_quantile(energy_normalized[np.isfinite(energy_normalized)], 0.95)
-
-            energy_normalized = energy_normalized / q
 
         return energy_normalized, insolation
 
