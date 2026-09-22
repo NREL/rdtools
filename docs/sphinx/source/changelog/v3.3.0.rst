@@ -1,0 +1,21 @@
+*************************
+v3.3.0 (unreleased)
+*************************
+
+Bug Fixes
+---------
+* :py:class:`~rdtools.analysis_chains.TrendAnalysis` now estimates ``power_dc_rated``
+  from the PV stream when it is omitted, instead of normalizing ``energy_normalized``
+  by its own 95th percentile. The old normalization constant was a percentile of
+  ``pv / pvwatts_expected(poa_global, temperature_cell)``, so it absorbed any bias in the
+  irradiance channel: a ``poa_global`` reading 40x high left ``energy_normalized``
+  unchanged rather than 40x low, hiding the fault from
+  :py:func:`~rdtools.filtering.normalized_filter` and from plots of the normalized data.
+  The new estimate is the 95th percentile of the PV stream expressed as an average power,
+  which is independent of ``poa_global``, of the units of ``pv``, and of whether ``pv``
+  was passed as power or as energy. Analyses that pass ``power_dc_rated`` are unaffected.
+  Analyses that omit it on data with a well matched irradiance channel are essentially
+  unaffected, since the two constants agree there; where they disagree, more data may now
+  be removed by ``normalized_filter``. The sensor and clear-sky workflows also now share
+  one normalization constant, where previously each was renormalized by its own
+  percentile. (:pull:`519`)
