@@ -321,6 +321,18 @@ def test_xgboost_clip_filter(generate_power_time_series_no_clipping,
                 .all(axis=None))
 
 
+def test_xgboost_clip_filter_no_valid_features():
+    # A series too sparse for any row to keep all model features used to
+    # crash (xgboost 3.x predicts shape (0, 0)); it is simply not clipped.
+    index = pd.date_range("2024-06-01", periods=3 * 288, freq="5min", tz="UTC")
+    power = pd.Series(np.nan, index=index)
+    power.iloc[:12] = 1.0
+    mask = xgboost_clip_filter(power)
+    assert mask.index.equals(power.index)
+    assert mask.dtype == bool
+    assert mask.all()
+
+
 def test_clip_filter(generate_power_time_series_clipping, mocker):
     ''' Unit tests for inverter clipping filter.'''
     # Create a time series to test

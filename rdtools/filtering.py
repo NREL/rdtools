@@ -869,10 +869,11 @@ def xgboost_clip_filter(power_ac, mounting_type="fixed"):
     power_ac_df = power_ac_df[feature_cols].dropna()
     # Run the power_ac_df dataframe through the XGBoost ML model,
     # and return boolean outputs. Use DMatrix with explicit feature names
-    # for xgboost 3.x compatibility.
+    # for xgboost 3.x compatibility. ravel(): xgboost 3.x returns shape (0, 0)
+    # when no rows survive dropna(), which pd.Series rejects.
     dmatrix = xgb.DMatrix(power_ac_df, feature_names=feature_cols)
     xgb_predictions = pd.Series(
-        (xgboost_clipping_model.get_booster().predict(dmatrix) > 0.5).astype(bool)
+        (xgboost_clipping_model.get_booster().predict(dmatrix).ravel() > 0.5).astype(bool)
     )
     # Add datetime as an index
     xgb_predictions.index = power_ac_df.index
